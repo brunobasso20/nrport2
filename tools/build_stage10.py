@@ -166,3 +166,78 @@ rbx = ('<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<roblox version="4">\n  <Ext
 write(root / 'NR2003_Patch_Stage10.rbxmx', rbx)
 print('PATCH_STAGE10.lua', len(patch), 'chars;', len(modules), 'modules; selftest', len(selftest),
       'chars; sha256', hashlib.sha256(patch.encode()).hexdigest()[:16])
+
+# ------------------------------------------------------------------ split install (Command Bar in parts)
+# Same modules as PATCH_STAGE10.lua, for when one 2 MB paste is too large for the Command Bar: parts 1..N only store
+# the sources in ServerStorage.NR2003Stage10Staging (the game is not changed), PATCH_STAGE10_INSTALL.lua checks that
+# every staged source is complete and installs exactly like PATCH_STAGE10.lua (backup, self-tests, revert).
+PART_CHARS = 650000
+groups = [[]]; size = 0
+for m in modules:
+    if groups[-1] and size + len(m[2]) > PART_CHARS: groups.append([]); size = 0
+    groups[-1].append(m); size += len(m[2])
+nparts = len(groups)
+for old in root.glob('PATCH_STAGE10_PART*.lua'): old.unlink()
+expect = []
+for k, grp in enumerate(groups, 1):
+    head = (r'''-- PATCH_STAGE10 parte %d/%d — NR2003 Roblox port, estágio 10 (instalação em partes pela Command Bar).
+-- Cole as partes 1..%d em ordem (cada uma inteira, FORA do Play) e depois PATCH_STAGE10_INSTALL.lua.
+-- As partes só guardam fontes em ServerStorage.NR2003Stage10Staging; nada muda no jogo até o INSTALL.
+assert(not game:GetService("RunService"):IsRunning(),"Pare o Play antes do patch")
+local storage=game:GetService("ServerStorage")
+local SES=game:GetService("ScriptEditorService")
+local function setSource(s,src)
+    if #src<200000 then s.Source=src else SES:UpdateSourceAsync(s,function() return src end) end
+end
+local staging=storage:FindFirstChild("NR2003Stage10Staging")
+if not staging then staging=Instance.new("Folder");staging.Name="NR2003Stage10Staging";staging.Parent=storage end
+local function module(folder,name,source)
+    local f=staging:FindFirstChild(folder)
+    if not f then f=Instance.new("Folder");f.Name=folder;f.Parent=staging end
+    local old=f:FindFirstChild(name);if old then old:Destroy() end
+    local s=Instance.new("ModuleScript");s.Name=name;setSource(s,source);s.Parent=f
+    assert(#s.Source==#source,"fonte truncada: "..folder.."."..name)
+end
+''' % (k, nparts, nparts))
+    body_k = [head]
+    for folder, name, src in grp:
+        body_k.append('module(%s,%s,%s)\n' % (json.dumps(folder), json.dumps(name), long_string(src)))
+        expect.append((folder, name, len(src.encode('utf-8')), k))   # Luau #Source counts bytes
+    body_k.append('print("PATCH_STAGE10 parte %d/%d guardada (%d módulos). Próximo: %s")\n' % (
+        k, nparts, len(grp), ('parte %d' % (k + 1)) if k < nparts else 'PATCH_STAGE10_INSTALL.lua'))
+    write(root / ('PATCH_STAGE10_PART%d.lua' % k), ''.join(body_k))
+install_head = header.split('local MODULES={}')[0].replace(
+    '-- PATCH_STAGE10 — NR2003 Roblox port, estágio 10 (setup completo da garagem -> parâmetros de tempo de execução)',
+    '-- PATCH_STAGE10_INSTALL — NR2003 Roblox port, estágio 10: instala o que as partes 1..%d guardaram em\n'
+    '-- ServerStorage.NR2003Stage10Staging (mesmo resultado do PATCH_STAGE10.lua inteiro). Cole na Command Bar, FORA do\n'
+    '-- Play, depois das partes. Se algo falhar, tudo é revertido e as partes guardadas continuam lá (repita só o INSTALL).' % nparts).replace(
+    '''-- Recomendado: Insert from File de NR2003_Patch_Stage10.rbxmx (arquivo grande). Alternativa: cole este arquivo INTEIRO na
+-- Command Bar do Studio, FORA do Play, sobre a bancada Stage 9 validada.
+''', '')
+assert 'Recomendado' not in install_head
+install = [install_head,
+           'local staging=assert(storage:FindFirstChild("NR2003Stage10Staging"),"cole antes as partes 1..%d (PATCH_STAGE10_PART*.lua)")\n' % nparts,
+           'local EXPECT={\n']
+for folder, name, n, k in expect:
+    install.append('    {%s,%s,%d,%d},\n' % (json.dumps(folder), json.dumps(name), n, k))
+install.append('}\n')
+install.append(r'''local MODULES={}
+for _,e in ipairs(EXPECT) do
+    local f=staging:FindFirstChild(e[1]);local s=f and f:FindFirstChild(e[2])
+    assert(s and #s.Source==e[3],"módulo "..e[1].."."..e[2].." ausente ou incompleto: cole de novo a parte "..e[4])
+    MODULES[#MODULES+1]={e[1],e[2],s}
+end
+''')
+install.append(footer.replace(
+    '''        local s=Instance.new("ModuleScript");s.Name=name
+        setSource(s,source);s.Parent=parent
+        assert(#s.Source==#source,"fonte truncada: "..folder.."."..name)''',
+    '''        local s=source:Clone();s.Name=name;s.Parent=parent
+        assert(s.Source==source.Source,"fonte truncada: "..folder.."."..name)''').replace(
+    'print("Stage 10 aplicado. Backup: ServerStorage."..backup.Name)',
+    'staging:Destroy()\nprint("Stage 10 aplicado. Backup: ServerStorage."..backup.Name)'))
+inst = ''.join(install)
+assert 'source:Clone()' in inst and 'staging:Destroy()' in inst
+write(root / 'PATCH_STAGE10_INSTALL.lua', inst)
+print('split install:', nparts, 'parts', [len((root / ('PATCH_STAGE10_PART%d.lua' % k)).read_text()) for k in range(1, nparts + 1)],
+      'install', len(inst))

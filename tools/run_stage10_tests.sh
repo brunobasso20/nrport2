@@ -18,5 +18,5 @@ $LUAU -O2 tests/stage67/patch_mock.luau
 $LUAU -O2 tests/stage8/patch8_mock.luau
 $LUAU -O2 tests/stage9/patch9_mock.luau
 $LUAU -O2 tests/stage10/patch10_mock.luau
-for f in core/*.lua core/NR2003Cup/*.lua roblox/*.lua PATCH_STAGE10.lua; do "$COMPILE" --null "$f" >/dev/null; done
+for f in core/*.lua core/NR2003Cup/*.lua roblox/*.lua PATCH_STAGE10*.lua; do "$COMPILE" --null "$f" >/dev/null; done
 echo "syntax OK"

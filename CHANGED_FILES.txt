@@ -1,5 +1,6 @@
 # Stage 10 (3.9.0-stage10) — arquivos novos/alterados em relação ao pacote Stage 9 (3.8.0-stage9)
-PATCH_STAGE10.lua                          (novo; Command Bar, sobre Stage 9)
+PATCH_STAGE10.lua                          (novo; Command Bar, sobre Stage 9, arquivo único ~2,1 MB)
+PATCH_STAGE10_PART1..4.lua, PATCH_STAGE10_INSTALL.lua (novos; mesma instalação em partes menores para a Command Bar)
 NR2003_Patch_Stage10.rbxmx                 (novo; recomendado: Insert from File)
 SETUP_MAP.md                               (novo: mapa dos 184 itens de setup, gerado)
 core/NR2003Cup/NR2003CupSetupData.lua      (novo, gerado do exe: descritores c05150, constantes, padrões)

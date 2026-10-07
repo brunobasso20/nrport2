@@ -22,6 +22,6 @@ Run $Luau @("-O2", "tests/stage67/patch_mock.luau")
 Run $Luau @("-O2", "tests/stage8/patch8_mock.luau")
 Run $Luau @("-O2", "tests/stage9/patch9_mock.luau")
 Run $Luau @("-O2", "tests/stage10/patch10_mock.luau")
-$files = @(Get-ChildItem core\*.lua, core\NR2003Cup\*.lua, roblox\*.lua) + @(Get-Item PATCH_STAGE10.lua)
+$files = @(Get-ChildItem core\*.lua, core\NR2003Cup\*.lua, roblox\*.lua) + @(Get-Item PATCH_STAGE10*.lua)
 foreach ($f in $files) { & $compile --null $f.FullName | Out-Null; if ($LASTEXITCODE -ne 0) { throw "SYNTAX FAIL $($f.Name)" } }
 "syntax OK"

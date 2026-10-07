@@ -1,12 +1,13 @@
 PATCH_STAGE10.lua 2108080 chars; 21 modules; selftest 198344 chars; sha256 f5373d59e78312fc
+split install: 4 parts [563857, 485681, 633050, 425670] install 6141
 written 733127
-written 3572088
-PASS  load core (image parts + lifted natives + JIT modules)  1.072 s
-PASS  raw: ran 2304 ticks  0.817 s (2821 ticks/s)
+written 5688310
+PASS  load core (image parts + lifted natives + JIT modules)  0.959 s
+PASS  raw: ran 2304 ticks  0.772 s (2986 ticks/s)
 PASS  raw: ticks 1-8 match original (rel <= 2e-5)  worst 4.07e-07 (tick 5 state 42: -0.00079000165 vs -0.000790001242)
 PASS  raw: chassis x/y/z + velocities within original sensitivity envelope  111 samples
       final x: lua 102.8164  orig 102.7992  pert 102.8254
-PASS  drive: ran 2304 ticks  0.939 s (2454 ticks/s)
+PASS  drive: ran 2304 ticks  0.927 s (2484 ticks/s)
 PASS  drive: ticks 1-8 match original (rel <= 2e-5)  worst 2.04e-07 (tick 8 state 42: -0.000117246331 vs -0.000117246127)
 PASS  drive: chassis x/y/z + velocities within original sensitivity envelope  111 samples
       final x: lua 46.3679  orig 46.3356  pert 46.3658
@@ -51,7 +52,7 @@ PASS  nearzero: braking phase from the original onset state, chassis x/y/z + vel
 PASS  nearzero: processed pedal + gear sequence equal to original (except where the original's twin itself differs)  pedal 0, gear 0 mismatches
 PASS  nodriver: braking phase from the original onset state, chassis x/y/z + velocities within envelope (56 samples)  final x lua 122.602 orig 122.602 pert 122.601 | vx lua 0.001 orig 0.001
 PASS  nodriver: processed pedal + gear sequence equal to original (except where the original's twin itself differs)  pedal 0, gear 0 mismatches
-      scenarios: 31968 ticks in 5.29 s (6044 ticks/s)
+      scenarios: 31968 ticks in 5.27 s (6068 ticks/s)
 PASS  zero brake: core brake cell stays 0 and wheel friction torque is drag only (|T| < 120 N*m)
 PASS  light < medium < max braking: speed 1 s after onset ordered
 PASS  74 % bias, full pedal: brake torque saturates (|T| 2780..2815 N*m front, ~1000 rear) and no wheel locks
@@ -108,7 +109,7 @@ PASS  tape100build: chassis x/y/z + velocities inside the original's envelope fr
 PASS  draft: chassis x/y/z + velocities inside the original's envelope from its 10.0 s snapshot (208 samples)  final v lua 74.824 orig 74.825 | z lua 0.4042 orig 0.4042 | factors lua 0.874/0.877/1.000 orig 0.874/0.877/1.000
 PASS  draftside: chassis x/y/z + velocities inside the original's envelope from its 10.0 s snapshot (152 samples)  final v lua 74.811 orig 74.811 | z lua 0.4042 orig 0.4042 | factors lua 0.931/0.936/1.000 orig 0.931/0.936/1.000
 PASS  creep: chassis x/y/z + velocities inside the original's envelope from its 2.5 s snapshot (76 samples)  final v lua 0.026 orig 0.021 | z lua 0.4175 orig 0.4168 | factors lua 1.000/1.000/1.000 orig 1.000/1.000/1.000
-      scenarios: 70992 ticks in 29.77 s (2385 ticks/s)
+      scenarios: 70992 ticks in 27.37 s (2594 ticks/s)
 PASS  top speed: session air lowers the equilibrium (launch 35-40 s) below the post-build no-air car, and lowers the chassis (downforce)  v 74.72 vs 75.57 m/s, z 0.4041 vs 0.4190 m
 PASS  acceleration at speed: 10->15 s gain smaller with air than without (drag)
 PASS  downforce loads the tyres: total Fz at ~74 m/s exceeds the at-rest total by > 2000 N  19130 vs 16003 N
@@ -160,55 +161,55 @@ PASS  00558380 set by step index [down] (1826 vectors)  bit-exact
 PASS  00558da0 setup-file validation [down] (30 setups)  0 mismatching items
 
 Stage 10 setup conversion: 23 passed, 0 failed
-PASS  load core + Stage 10 modules (setup, build code/data, generic callbacks, garage)  0.981 s, footprint 296660 bytes
+PASS  load core + Stage 10 modules (setup, build code/data, generic callbacks, garage)  0.968 s, footprint 296660 bytes
 PASS  shipped image is the default setup build (structure 'image')
 PASS  V.setup() of the image = Cup default garage items (00559950; 0x25/0x41/0x42 recomputed by 00559820)
-PASS  build springs_shocks     structure generic report = original (pool 4711, literals 00ebf8fc, code end 00ebafef)  true 0.18 s violations 0 (nil)
+PASS  build springs_shocks     structure generic report = original (pool 4711, literals 00ebf8fc, code end 00ebafef)  true 0.17 s violations 0 (nil)
 PASS  build springs_shocks     image windows = original build (exact outside the 1190 solve-pass cells)  2141 delta dwords, 0 exact mismatches , 41 variable cells differ (worst rel 0.0e+00)
-PASS  build geometry           structure generic report = original (pool 4711, literals 00ebf8fc, code end 00ebafef)  true 0.39 s violations 0 (nil)
+PASS  build geometry           structure generic report = original (pool 4711, literals 00ebf8fc, code end 00ebafef)  true 0.32 s violations 0 (nil)
 PASS  build geometry           image windows = original build (exact outside the 1190 solve-pass cells)  1633 delta dwords, 0 exact mismatches , 463 variable cells differ (worst rel 1.3e-07)
-PASS  build weight             structure generic report = original (pool 4711, literals 00ebf8fc, code end 00ebafef)  true 0.17 s violations 0 (nil)
+PASS  build weight             structure generic report = original (pool 4711, literals 00ebf8fc, code end 00ebafef)  true 0.20 s violations 0 (nil)
 PASS  build weight             image windows = original build (exact outside the 1190 solve-pass cells)  1884 delta dwords, 0 exact mismatches , 41 variable cells differ (worst rel 0.0e+00)
-PASS  build gearing            structure natural report = original (pool 4660, literals 00ebf950, code end 00ebaee6)  true 0.17 s violations 0 (nil)
+PASS  build gearing            structure natural report = original (pool 4660, literals 00ebf950, code end 00ebaee6)  true 0.19 s violations 0 (nil)
 PASS  build gearing            image windows = original build (exact outside the 1190 solve-pass cells)  282 delta dwords, 0 exact mismatches , 534 variable cells differ (worst rel 1.3e-07)
-PASS  build brakes_aero_tyres  structure generic report = original (pool 4711, literals 00ebf8fc, code end 00ebafef)  true 0.16 s violations 0 (nil)
+PASS  build brakes_aero_tyres  structure generic report = original (pool 4711, literals 00ebf8fc, code end 00ebafef)  true 0.18 s violations 0 (nil)
 PASS  build brakes_aero_tyres  image windows = original build (exact outside the 1190 solve-pass cells)  1485 delta dwords, 0 exact mismatches , 49 variable cells differ (worst rel 0.0e+00)
-PASS  build random             structure generic report = original (pool 4711, literals 00ebf8fc, code end 00ebafef)  true 0.19 s violations 0 (nil)
+PASS  build random             structure generic report = original (pool 4711, literals 00ebf8fc, code end 00ebafef)  true 0.18 s violations 0 (nil)
 PASS  build random             image windows = original build (exact outside the 1190 solve-pass cells)  2438 delta dwords, 0 exact mismatches , 46 variable cells differ (worst rel 0.0e+00)
-PASS  build allmin             structure generic report = original (pool 4711, literals 00ebf8fc, code end 00ebafef)  true 0.16 s violations 0 (nil)
+PASS  build allmin             structure generic report = original (pool 4711, literals 00ebf8fc, code end 00ebafef)  true 0.17 s violations 0 (nil)
 PASS  build allmin             image windows = original build (exact outside the 1190 solve-pass cells)  2504 delta dwords, 0 exact mismatches , 45 variable cells differ (worst rel 0.0e+00)
 PASS  build allmax             structure generic report = original (pool 4711, literals 00ebf8fc, code end 00ebafef)  true 0.17 s violations 0 (nil)
 PASS  build allmax             image windows = original build (exact outside the 1190 solve-pass cells)  2449 delta dwords, 0 exact mismatches , 44 variable cells differ (worst rel 0.0e+00)
 PASS  default rebuilt in Luau (natural structure) = shipped image (exact outside the solve-pass cells)  0 exact mismatches , 528 variable cells differ (worst rel 1.3e-07), 0.16 s
 PASS  applied setup (c055c0 after 00559820) rebuilds identically to the garage setup; rebuild deterministic
 PASS  applySetup(default) restores the shipped image bit for bit (structure 'image')
-PASS  per item min/max/+-1 step: structure, constant pool, literals, image hash, variable cells = original  184 setups (114 natural, 70 generic), worst variable cell rel 6.4e-04, 40.1 s
+PASS  per item min/max/+-1 step: structure, constant pool, literals, image hash, variable cells = original  184 setups (114 natural, 70 generic), worst variable cell rel 6.4e-04, 39.3 s
 PASS  dyn default            image   ticks 1-8 = original (rel <= 2e-5)  worst 2.04e-07
-PASS  dyn default            chassis x/y/z + velocities within the original envelope  final x lua 46.368 orig 46.336 pert 46.366 gen 46.346 (0.86 s)
+PASS  dyn default            chassis x/y/z + velocities within the original envelope  final x lua 46.368 orig 46.336 pert 46.366 gen 46.346 (0.94 s)
 PASS  dyn default            gear sequence = original  0 mismatches
 PASS  dyn springs_shocks     generic ticks 1-8 = original (rel <= 2e-5)  worst 0.00e+00
-PASS  dyn springs_shocks     chassis x/y/z + velocities within the original envelope  final x lua 46.371 orig 46.372 pert 46.376 gen 46.372 (0.91 s)
+PASS  dyn springs_shocks     chassis x/y/z + velocities within the original envelope  final x lua 46.371 orig 46.372 pert 46.376 gen 46.372 (0.94 s)
 PASS  dyn springs_shocks     gear sequence = original  0 mismatches
 PASS  dyn geometry           generic ticks 1-8 = original (rel <= 2e-5)  worst 2.91e-07
-PASS  dyn geometry           chassis x/y/z + velocities within the original envelope  final x lua 45.932 orig 45.958 pert 45.916 gen 45.924 (0.90 s)
+PASS  dyn geometry           chassis x/y/z + velocities within the original envelope  final x lua 45.932 orig 45.958 pert 45.916 gen 45.924 (1.03 s)
 PASS  dyn geometry           gear sequence = original  0 mismatches
 PASS  dyn weight             generic ticks 1-8 = original (rel <= 2e-5)  worst 0.00e+00
-PASS  dyn weight             chassis x/y/z + velocities within the original envelope  final x lua 46.347 orig 46.347 pert 46.408 gen 46.347 (0.91 s)
+PASS  dyn weight             chassis x/y/z + velocities within the original envelope  final x lua 46.347 orig 46.347 pert 46.408 gen 46.347 (1.07 s)
 PASS  dyn weight             gear sequence = original  0 mismatches
 PASS  dyn gearing            natural ticks 1-8 = original (rel <= 2e-5)  worst 4.66e-07
-PASS  dyn gearing            chassis x/y/z + velocities within the original envelope  final x lua 39.905 orig 39.921 pert 39.879 gen 39.880 (0.85 s)
+PASS  dyn gearing            chassis x/y/z + velocities within the original envelope  final x lua 39.905 orig 39.921 pert 39.879 gen 39.880 (1.02 s)
 PASS  dyn gearing            gear sequence = original  0 mismatches
 PASS  dyn brakes_aero_tyres  generic ticks 1-8 = original (rel <= 2e-5)  worst 0.00e+00
-PASS  dyn brakes_aero_tyres  chassis x/y/z + velocities within the original envelope  final x lua 46.301 orig 46.343 pert 46.303 gen 46.301 (0.90 s)
+PASS  dyn brakes_aero_tyres  chassis x/y/z + velocities within the original envelope  final x lua 46.301 orig 46.343 pert 46.303 gen 46.301 (1.06 s)
 PASS  dyn brakes_aero_tyres  gear sequence = original  0 mismatches
 PASS  dyn random             generic ticks 1-8 = original (rel <= 2e-5)  worst 0.00e+00
-PASS  dyn random             chassis x/y/z + velocities within the original envelope  final x lua 34.494 orig 34.494 pert 34.514 gen 34.494 (0.84 s)
+PASS  dyn random             chassis x/y/z + velocities within the original envelope  final x lua 34.494 orig 34.494 pert 34.514 gen 34.494 (1.04 s)
 PASS  dyn random             gear sequence = original  0 mismatches
 PASS  dyn allmin             generic ticks 1-8 = original (rel <= 2e-5)  worst 0.00e+00
-PASS  dyn allmin             chassis x/y/z + velocities within the original envelope  final x lua 47.459 orig 47.459 pert 47.456 gen 47.459 (1.09 s)
+PASS  dyn allmin             chassis x/y/z + velocities within the original envelope  final x lua 47.459 orig 47.459 pert 47.456 gen 47.459 (0.96 s)
 PASS  dyn allmin             gear sequence = original  0 mismatches
 PASS  dyn allmax             generic ticks 1-8 = original (rel <= 2e-5)  worst 0.00e+00
-PASS  dyn allmax             chassis x/y/z + velocities within the original envelope  final x lua 46.750 orig 46.750 pert 46.801 gen 46.750 (1.03 s)
+PASS  dyn allmax             chassis x/y/z + velocities within the original envelope  final x lua 46.750 orig 46.750 pert 46.801 gen 46.750 (1.02 s)
 PASS  dyn allmax             gear sequence = original  0 mismatches
 PASS  setup response (x, vx after 8 s; settled chassis z) vs default = original response  24 probes
 PASS  brake bias 50%: Stage 8 setBrakeBias cells = ORIGINAL build cells (0055e9b0)
@@ -221,7 +222,7 @@ PASS  tape 100% spoiler 70: Stage 9 setAeroSetup items = garage items through th
 PASS  NaN setup item: rejected by both structures, previous setup kept  ok false, cell #2427
 PASS  malformed setup array rejected (assert)
 PASS  setupDump: garage items + runtime cells (spring LF 1700 lb/in -> wheel rate cell 0074e0a0)  62 items, LF wheel rate -93296 N/m, 1st gear 2.2857, final 4.500, generic
-applySetup time: median 0.16 s, max 0.39 s
+applySetup time: median 0.18 s, max 0.32 s
 
 61 passed, 0 failed
 [NR2003 Stage 10] setup aplicado (image, 0.00 s): molas -71344/-71344/-41092/-41092 N/m, freio 2812/988 N*m, marchas 2.133/1.611/1.261/1.000 x 4.500
@@ -273,9 +274,9 @@ PASS  stage 9: SetupGrilleTape / SetupSpoiler / WeatherTemperatureF applied at r
 [NR2003 Stage 10] setup aplicado (image, 0.00 s): molas -71344/-71344/-41092/-41092 N/m, freio 2812/988 N*m, marchas 2.133/1.611/1.261/1.000 x 4.500
 [NR2003 Stage 9] sessão: 70 F, condições 0, dia, vento 0 mph dir 0 -> ar 49.11 C, rho 1.081192 kg/m3, vento (-0.000, 0.000) m/s | fita 0%, aerofólio 65°
 PASS  stage 9: attributes removed -> Cup defaults again
-[NR2003 Stage 10] setup aplicado (generic, 0.35 s): molas -93296/-71344/-41092/-41092 N/m, freio 2812/988 N*m, marchas 2.133/1.611/1.261/1.000 x 4.500
+[NR2003 Stage 10] setup aplicado (generic, 0.37 s): molas -93296/-71344/-41092/-41092 N/m, freio 2812/988 N*m, marchas 2.133/1.611/1.261/1.000 x 4.500
 [NR2003 Stage 9] sessão: 70 F, condições 0, dia, vento 0 mph dir 0 -> ar 49.11 C, rho 1.081192 kg/m3, vento (-0.000, 0.000) m/s | fita 0%, aerofólio 65°
-PASS  stage 10: Setup_<item> attributes -> 005581d0 (snap/clamp) -> ORIGINAL build at reset  generic 0.35 s, spring LF 1700 lb/in -> -93296 N/m, camber LF -3.00 deg
+PASS  stage 10: Setup_<item> attributes -> 005581d0 (snap/clamp) -> ORIGINAL build at reset  generic 0.37 s, spring LF 1700 lb/in -> -93296 N/m, camber LF -3.00 deg
 [NR2003 Stage 9] sessão: 70 F, condições 0, dia, vento 0 mph dir 0 -> ar 49.11 C, rho 1.081192 kg/m3, vento (-0.000, 0.000) m/s | fita 0%, aerofólio 65°
 PASS  stage 10: reset with an unchanged setup does not rebuild (reset image keeps the setup)
 PASS  stage 10: car runs on the rebuilt setup (no fault, loads positive)  nil
@@ -284,9 +285,9 @@ PASS  stage 10: car runs on the rebuilt setup (no fault, loads positive)  nil
 PASS  stage 10: attributes removed -> shipped default image (structure 'image')
 PASS  load Core.NR2003Cup  0.02 s
 PASS  raw: ticks 1-8 vs original (rel <= 2e-5)  worst 4.07e-07
-PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 2458 ticks/s | x lua 3.086 orig 3.085 pert 3.097
+PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 2481 ticks/s | x lua 3.086 orig 3.085 pert 3.097
 PASS  drive: ticks 1-8 vs original (rel <= 2e-5)  worst 2.04e-07
-PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 2153 ticks/s | x lua 2.141 orig 2.131 pert 2.136
+PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 2325 ticks/s | x lua 2.141 orig 2.131 pert 2.136
 PASS  drive: gear sequence (lifted 00553d70)  0 mismatches
 PASS  checkpoint/restore bit-identical
 Stage 6/7 self-test: 7 passed, 0 failed
@@ -294,17 +295,17 @@ PASS  Roblox/Stage67SelfTest.run(false) passes (what PATCH_STAGE6_7 executes)
 PASS  load Core.NR2003Cup (Stage 8 driver layer)  0.02 s
 PASS  00553080 pedal chain vs original (200 vectors)  worst 0 ulp
 PASS  brake bias cells: 74 % -> 2812/988, 60 % -> original rebuild values  2812/987.9999 2280/1520
-PASS  max: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 2355 ticks/s | x lua 122.15 orig 122.15 (twin spread 0.000) | vx lua 0.00 orig 0.00
+PASS  max: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 2093 ticks/s | x lua 122.15 orig 122.15 (twin spread 0.000) | vx lua 0.00 orig 0.00
 PASS  checkpoint/restore bit-identical while braking
 Stage 8 self-test: 5 passed, 0 failed
 PASS  Roblox/Stage8SelfTest.run(false) passes (what PATCH_STAGE8 executes)
 PASS  load Core.NR2003Cup (Stage 8 driver layer)  0.02 s
 PASS  00553080 pedal chain vs original (200 vectors)  worst 0 ulp
 PASS  brake bias cells: 74 % -> 2812/988, 60 % -> original rebuild values  2812/987.9999 2280/1520
-PASS  max: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 2186 ticks/s | x lua 122.15 orig 122.15 (twin spread 0.000) | vx lua 0.00 orig 0.00
-PASS  keyboard: braking phase inside the original envelope (1728 ticks)  0 state / 0 pedal outside | 2467 ticks/s | x lua 132.62 orig 132.62 (twin spread 0.001) | vx lua -0.03 orig -0.03
-PASS  bias85: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 2781 ticks/s | x lua 122.28 orig 122.28 (twin spread 0.000) | vx lua 0.00 orig -0.00
-PASS  nearzero: braking phase inside the original envelope (1584 ticks)  0 state / 0 pedal outside | 2716 ticks/s | x lua 1.98 orig 1.98 (twin spread 0.002) | vx lua -0.03 orig -0.03
+PASS  max: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 2858 ticks/s | x lua 122.15 orig 122.15 (twin spread 0.000) | vx lua 0.00 orig 0.00
+PASS  keyboard: braking phase inside the original envelope (1728 ticks)  0 state / 0 pedal outside | 2333 ticks/s | x lua 132.62 orig 132.62 (twin spread 0.001) | vx lua -0.03 orig -0.03
+PASS  bias85: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 2460 ticks/s | x lua 122.28 orig 122.28 (twin spread 0.000) | vx lua 0.00 orig -0.00
+PASS  nearzero: braking phase inside the original envelope (1584 ticks)  0 state / 0 pedal outside | 2286 ticks/s | x lua 1.98 orig 1.98 (twin spread 0.002) | vx lua -0.03 orig -0.03
 PASS  checkpoint/restore bit-identical while braking
 Stage 8 self-test: 8 passed, 0 failed
 PASS  Roblox/Stage8SelfTest.run(true) passes (full: 4 braking phases)
@@ -318,7 +319,7 @@ PASS  00561b70 aero force/moment (50 vectors) rel <= 1e-5  worst rel 0.00e+00
 PASS  005b0230 wake (120 vectors) <= 1 ulp  worst 0 ulp
 PASS  005afd80 drafting (50 race rings) <= 1 ulp  worst 0 ulp
 PASS  garage grille tape / spoiler conversions (00423de0 / 004241d0)  0 mismatches
-PASS  launch: aero telemetry = original 00561b70 at the snapshot; run inside the original envelope (576 ticks)  aero worst 0 ulp, 0 outside | 2437 ticks/s | x lua 996.1 orig 996.1 | vx lua 69.12 orig 69.12
+PASS  launch: aero telemetry = original 00561b70 at the snapshot; run inside the original envelope (576 ticks)  aero worst 0 ulp, 0 outside | 2385 ticks/s | x lua 996.1 orig 996.1 | vx lua 69.12 orig 69.12
 PASS  startSession() defaults: rho 1.08119202 kg/m^3 (70 F, sun, day)
 PASS  checkpoint/restore bit-identical with session air
 Stage 9 self-test: 13 passed, 0 failed
@@ -333,9 +334,9 @@ PASS  00561b70 aero force/moment (50 vectors) rel <= 1e-5  worst rel 0.00e+00
 PASS  005b0230 wake (120 vectors) <= 1 ulp  worst 0 ulp
 PASS  005afd80 drafting (50 race rings) <= 1 ulp  worst 0 ulp
 PASS  garage grille tape / spoiler conversions (00423de0 / 004241d0)  0 mismatches
-PASS  launch: aero telemetry = original 00561b70 at the snapshot; run inside the original envelope (576 ticks)  aero worst 0 ulp, 0 outside | 2559 ticks/s | x lua 996.1 orig 996.1 | vx lua 69.12 orig 69.12
-PASS  hsbrake: aero telemetry = original 00561b70 at the snapshot; run inside the original envelope (1152 ticks)  aero worst 0 ulp, 0 outside | 1997 ticks/s | x lua 1022.3 orig 1022.3 | vx lua 15.36 orig 15.36
-PASS  draft: aero telemetry = original 00561b70 at the snapshot; run inside the original envelope (2880 ticks)  aero worst 0 ulp, 0 outside | 2277 ticks/s | x lua 1228.0 orig 1228.0 | vx lua 69.56 orig 69.56
+PASS  launch: aero telemetry = original 00561b70 at the snapshot; run inside the original envelope (576 ticks)  aero worst 0 ulp, 0 outside | 3190 ticks/s | x lua 996.1 orig 996.1 | vx lua 69.12 orig 69.12
+PASS  hsbrake: aero telemetry = original 00561b70 at the snapshot; run inside the original envelope (1152 ticks)  aero worst 0 ulp, 0 outside | 2931 ticks/s | x lua 1022.3 orig 1022.3 | vx lua 15.36 orig 15.36
+PASS  draft: aero telemetry = original 00561b70 at the snapshot; run inside the original envelope (2880 ticks)  aero worst 0 ulp, 0 outside | 2648 ticks/s | x lua 1228.0 orig 1228.0 | vx lua 69.56 orig 69.56
 PASS  startSession() defaults: rho 1.08119202 kg/m^3 (70 F, sun, day)
 PASS  checkpoint/restore bit-identical with session air
 Stage 9 self-test: 15 passed, 0 failed
@@ -351,22 +352,22 @@ PASS  Roblox/Stage10SelfTest.run(false) passes (what PATCH_STAGE10 executes)
 PASS  load Core.NR2003Cup (Stage 10: setup, build, generic callbacks, garage)  0.01 s
 PASS  garage conversions / steps = original [nearest] (278 vectors)  0 mismatches
 PASS  garage conversions / steps = original [down] (278 vectors)  0 mismatches
-PASS  setup items through the ORIGINAL build = original (12 builds: 12 natural, 0 generic)  max 0.18 s per applySetup
+PASS  setup items through the ORIGINAL build = original (12 builds: 12 natural, 0 generic)  max 0.22 s per applySetup
 PASS  applySetup(default) restores the shipped image (exact Stage 6-9 state)
 PASS  brakes_aero_tyres setup (generic): first 8 ticks = original (rel <= 2e-5), 8 s within the original envelope  worst 0.00e+00, 32 samples, 0 outside
 Stage 10 self-test: 6 passed, 0 failed
 PASS  Roblox/Stage10SelfTest.run(true) passes (full: more builds, 8 s drive with a setup)
 
 adapter mock: 45 passed, 0 failed
-PASS  load Core.NR2003Cup  0.16 s
+PASS  load Core.NR2003Cup  0.15 s
 PASS  raw: ticks 1-8 vs original (rel <= 2e-5)  worst 4.07e-07
-PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 653 ticks/s | x lua 3.086 orig 3.085 pert 3.097
+PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 726 ticks/s | x lua 3.086 orig 3.085 pert 3.097
 PASS  drive: ticks 1-8 vs original (rel <= 2e-5)  worst 2.04e-07
-PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 561 ticks/s | x lua 2.141 orig 2.131 pert 2.136
+PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 646 ticks/s | x lua 2.141 orig 2.131 pert 2.136
 PASS  drive: gear sequence (lifted 00553d70)  0 mismatches
 PASS  checkpoint/restore bit-identical
 Stage 6/7 self-test: 7 passed, 0 failed
-Stage 6/7 aplicado. Backup: ServerStorage.NR2003Backup_Stage67_1791399984_0
+Stage 6/7 aplicado. Backup: ServerStorage.NR2003Backup_Stage67_1791401054_0
 Modo NR2003_CUP: núcleo original NR2003 Cup (45 estados: suspensão, cubos, rodas, eixo traseiro, motor, embreagem, outshaft).
 Play > F entrar | W/S acel/freio | A/D direção | E/Q marchas | Shift embreagem | R reinicia | G contatos | H render diag | V câmera
 Voltar ao estágio 5: NR2003Lab.Roblox.ModeConfig -> mode="NR2003_CORE" (ou "ROBLOX_ADAPTER").
@@ -385,32 +386,32 @@ PASS  revert restores server/client sources
 patch mock: 11 passed, 0 failed
 PASS  load Core.NR2003Cup  0.10 s
 PASS  raw: ticks 1-8 vs original (rel <= 2e-5)  worst 4.07e-07
-PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 744 ticks/s | x lua 3.086 orig 3.085 pert 3.097
+PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 755 ticks/s | x lua 3.086 orig 3.085 pert 3.097
 PASS  drive: ticks 1-8 vs original (rel <= 2e-5)  worst 2.04e-07
-PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 610 ticks/s | x lua 2.141 orig 2.131 pert 2.136
+PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 638 ticks/s | x lua 2.141 orig 2.131 pert 2.136
 PASS  drive: gear sequence (lifted 00553d70)  0 mismatches
 PASS  checkpoint/restore bit-identical
 Stage 6/7 self-test: 7 passed, 0 failed
-Stage 6/7 aplicado. Backup: ServerStorage.NR2003Backup_Stage67_1791399987_0
+Stage 6/7 aplicado. Backup: ServerStorage.NR2003Backup_Stage67_1791401057_0
 Modo NR2003_CUP: núcleo original NR2003 Cup (45 estados: suspensão, cubos, rodas, eixo traseiro, motor, embreagem, outshaft).
 Play > F entrar | W/S acel/freio | A/D direção | E/Q marchas | Shift embreagem | R reinicia | G contatos | H render diag | V câmera
 Voltar ao estágio 5: NR2003Lab.Roblox.ModeConfig -> mode="NR2003_CORE" (ou "ROBLOX_ADAPTER").
 PASS  baseline: PATCH_STAGE6_7 installs on the Stage 5 bench  nil
-PASS  load Core.NR2003Cup  0.10 s
+PASS  load Core.NR2003Cup  0.12 s
 PASS  raw: ticks 1-8 vs original (rel <= 2e-5)  worst 4.07e-07
-PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 728 ticks/s | x lua 3.086 orig 3.085 pert 3.097
+PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 694 ticks/s | x lua 3.086 orig 3.085 pert 3.097
 PASS  drive: ticks 1-8 vs original (rel <= 2e-5)  worst 2.04e-07
-PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 615 ticks/s | x lua 2.141 orig 2.131 pert 2.136
+PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 649 ticks/s | x lua 2.141 orig 2.131 pert 2.136
 PASS  drive: gear sequence (lifted 00553d70)  0 mismatches
 PASS  checkpoint/restore bit-identical
 Stage 6/7 self-test: 7 passed, 0 failed
 PASS  load Core.NR2003Cup (Stage 8 driver layer)  0.03 s
 PASS  00553080 pedal chain vs original (200 vectors)  worst 0 ulp
 PASS  brake bias cells: 74 % -> 2812/988, 60 % -> original rebuild values  2812/987.9999 2280/1520
-PASS  max: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 648 ticks/s | x lua 122.15 orig 122.15 (twin spread 0.000) | vx lua 0.00 orig 0.00
+PASS  max: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 591 ticks/s | x lua 122.15 orig 122.15 (twin spread 0.000) | vx lua 0.00 orig 0.00
 PASS  checkpoint/restore bit-identical while braking
 Stage 8 self-test: 5 passed, 0 failed
-Stage 8 aplicado. Backup: ServerStorage.NR2003Backup_Stage8_1791399990_0
+Stage 8 aplicado. Backup: ServerStorage.NR2003Backup_Stage8_1791401059_0
 Freio: cadeia original 00553080 (tecla S = ligação digital, rampa 1/12 por quadro; hold automático parado).
 Viés de freio: atributo SetupBrakeBias (50..90, % dianteiro) no TestCar; aplicado ao reiniciar (R). Padrão Cup 74.
 Play > F entrar | W/S acel/freio | A/D direção | E/Q marchas | Shift embreagem | R reinicia | T painel
@@ -422,11 +423,11 @@ PASS  server untouched, client HUD updated
 PASS  Stage 5 / 6-7 modules kept
 PASS  backup folder with package + client in ServerStorage  1
 PASS  package tagged NR2003Stage = 8
-PASS  load Core.NR2003Cup  0.10 s
+PASS  load Core.NR2003Cup  0.09 s
 PASS  raw: ticks 1-8 vs original (rel <= 2e-5)  worst 4.07e-07
-PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 626 ticks/s | x lua 3.086 orig 3.085 pert 3.097
+PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 677 ticks/s | x lua 3.086 orig 3.085 pert 3.097
 PASS  drive: ticks 1-8 vs original (rel <= 2e-5)  worst 2.04e-07
-PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 659 ticks/s | x lua 2.141 orig 2.131 pert 2.136
+PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 713 ticks/s | x lua 2.141 orig 2.131 pert 2.136
 PASS  drive: gear sequence (lifted 00553d70)  0 mismatches
 PASS  checkpoint/restore bit-identical
 Stage 6/7 self-test: 7 passed, 0 failed
@@ -436,50 +437,50 @@ PASS  revert restores the client source
 PASS  refuses a bench without Stage 6/7  [string "PATCH_STAGE8"]:13: Core.NR2003Cup ausente: aplique PATCH_STAGE6_7 antes
 
 patch8 mock: 13 passed, 0 failed
-PASS  load Core.NR2003Cup  0.14 s
+PASS  load Core.NR2003Cup  0.09 s
 PASS  raw: ticks 1-8 vs original (rel <= 2e-5)  worst 4.07e-07
-PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 627 ticks/s | x lua 3.086 orig 3.085 pert 3.097
+PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 780 ticks/s | x lua 3.086 orig 3.085 pert 3.097
 PASS  drive: ticks 1-8 vs original (rel <= 2e-5)  worst 2.04e-07
-PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 576 ticks/s | x lua 2.141 orig 2.131 pert 2.136
+PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 628 ticks/s | x lua 2.141 orig 2.131 pert 2.136
 PASS  drive: gear sequence (lifted 00553d70)  0 mismatches
 PASS  checkpoint/restore bit-identical
 Stage 6/7 self-test: 7 passed, 0 failed
-Stage 6/7 aplicado. Backup: ServerStorage.NR2003Backup_Stage67_1791400001_0
+Stage 6/7 aplicado. Backup: ServerStorage.NR2003Backup_Stage67_1791401070_0
 Modo NR2003_CUP: núcleo original NR2003 Cup (45 estados: suspensão, cubos, rodas, eixo traseiro, motor, embreagem, outshaft).
 Play > F entrar | W/S acel/freio | A/D direção | E/Q marchas | Shift embreagem | R reinicia | G contatos | H render diag | V câmera
 Voltar ao estágio 5: NR2003Lab.Roblox.ModeConfig -> mode="NR2003_CORE" (ou "ROBLOX_ADAPTER").
 PASS  baseline: PATCH_STAGE6_7 installs on the Stage 5 bench  nil
-PASS  load Core.NR2003Cup  0.12 s
+PASS  load Core.NR2003Cup  0.10 s
 PASS  raw: ticks 1-8 vs original (rel <= 2e-5)  worst 4.07e-07
-PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 779 ticks/s | x lua 3.086 orig 3.085 pert 3.097
+PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 716 ticks/s | x lua 3.086 orig 3.085 pert 3.097
 PASS  drive: ticks 1-8 vs original (rel <= 2e-5)  worst 2.04e-07
-PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 711 ticks/s | x lua 2.141 orig 2.131 pert 2.136
+PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 637 ticks/s | x lua 2.141 orig 2.131 pert 2.136
 PASS  drive: gear sequence (lifted 00553d70)  0 mismatches
 PASS  checkpoint/restore bit-identical
 Stage 6/7 self-test: 7 passed, 0 failed
 PASS  load Core.NR2003Cup (Stage 8 driver layer)  0.03 s
 PASS  00553080 pedal chain vs original (200 vectors)  worst 0 ulp
 PASS  brake bias cells: 74 % -> 2812/988, 60 % -> original rebuild values  2812/987.9999 2280/1520
-PASS  max: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 649 ticks/s | x lua 122.15 orig 122.15 (twin spread 0.000) | vx lua 0.00 orig 0.00
+PASS  max: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 612 ticks/s | x lua 122.15 orig 122.15 (twin spread 0.000) | vx lua 0.00 orig 0.00
 PASS  checkpoint/restore bit-identical while braking
 Stage 8 self-test: 5 passed, 0 failed
-Stage 8 aplicado. Backup: ServerStorage.NR2003Backup_Stage8_1791400004_0
+Stage 8 aplicado. Backup: ServerStorage.NR2003Backup_Stage8_1791401073_0
 Freio: cadeia original 00553080 (tecla S = ligação digital, rampa 1/12 por quadro; hold automático parado).
 Viés de freio: atributo SetupBrakeBias (50..90, % dianteiro) no TestCar; aplicado ao reiniciar (R). Padrão Cup 74.
 Play > F entrar | W/S acel/freio | A/D direção | E/Q marchas | Shift embreagem | R reinicia | T painel
 PASS  baseline: PATCH_STAGE8 installs on the Stage 6/7 bench  nil
-PASS  load Core.NR2003Cup  0.09 s
+PASS  load Core.NR2003Cup  0.11 s
 PASS  raw: ticks 1-8 vs original (rel <= 2e-5)  worst 4.07e-07
-PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 753 ticks/s | x lua 3.086 orig 3.085 pert 3.097
+PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 689 ticks/s | x lua 3.086 orig 3.085 pert 3.097
 PASS  drive: ticks 1-8 vs original (rel <= 2e-5)  worst 2.04e-07
-PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 701 ticks/s | x lua 2.141 orig 2.131 pert 2.136
+PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 673 ticks/s | x lua 2.141 orig 2.131 pert 2.136
 PASS  drive: gear sequence (lifted 00553d70)  0 mismatches
 PASS  checkpoint/restore bit-identical
 Stage 6/7 self-test: 7 passed, 0 failed
 PASS  load Core.NR2003Cup (Stage 8 driver layer)  0.03 s
 PASS  00553080 pedal chain vs original (200 vectors)  worst 0 ulp
 PASS  brake bias cells: 74 % -> 2812/988, 60 % -> original rebuild values  2812/987.9999 2280/1520
-PASS  max: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 682 ticks/s | x lua 122.15 orig 122.15 (twin spread 0.000) | vx lua 0.00 orig 0.00
+PASS  max: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 654 ticks/s | x lua 122.15 orig 122.15 (twin spread 0.000) | vx lua 0.00 orig 0.00
 PASS  checkpoint/restore bit-identical while braking
 Stage 8 self-test: 5 passed, 0 failed
 PASS  load Core.NR2003Cup (Stage 9 aero module)  0.02 s
@@ -492,11 +493,11 @@ PASS  00561b70 aero force/moment (50 vectors) rel <= 1e-5  worst rel 0.00e+00
 PASS  005b0230 wake (120 vectors) <= 1 ulp  worst 0 ulp
 PASS  005afd80 drafting (50 race rings) <= 1 ulp  worst 0 ulp
 PASS  garage grille tape / spoiler conversions (00423de0 / 004241d0)  0 mismatches
-PASS  launch: aero telemetry = original 00561b70 at the snapshot; run inside the original envelope (576 ticks)  aero worst 0 ulp, 0 outside | 587 ticks/s | x lua 996.1 orig 996.1 | vx lua 69.12 orig 69.12
+PASS  launch: aero telemetry = original 00561b70 at the snapshot; run inside the original envelope (576 ticks)  aero worst 0 ulp, 0 outside | 618 ticks/s | x lua 996.1 orig 996.1 | vx lua 69.12 orig 69.12
 PASS  startSession() defaults: rho 1.08119202 kg/m^3 (70 F, sun, day)
 PASS  checkpoint/restore bit-identical with session air
 Stage 9 self-test: 13 passed, 0 failed
-Stage 9 aplicado. Backup: ServerStorage.NR2003Backup_Stage9_1791400011_0
+Stage 9 aplicado. Backup: ServerStorage.NR2003Backup_Stage9_1791401082_0
 Aero: sessão original 005a3c00 (70 F, sem vento -> rho 1.0812 kg/m3) + fatores por quadro 005637e0; forças = 00561b70 original.
 Atributos do TestCar (aplicados ao reiniciar, R): WeatherTemperatureF, WeatherWindMph, WeatherWindDirection (0..7), WeatherConditions (0..3),
   WeatherNight, TrackNorth, SetupGrilleTape (0..100 %), SetupSpoiler (45..70°), AeroSession=false (sem ar), DraftTestGap/DraftTestLateral (TESTE).
@@ -510,80 +511,80 @@ PASS  backup folder with package + client in ServerStorage  1
 PASS  package tagged NR2003Stage = 9
 PASS  load Core.NR2003Cup  0.09 s
 PASS  raw: ticks 1-8 vs original (rel <= 2e-5)  worst 4.07e-07
-PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 767 ticks/s | x lua 3.086 orig 3.085 pert 3.097
+PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 709 ticks/s | x lua 3.086 orig 3.085 pert 3.097
 PASS  drive: ticks 1-8 vs original (rel <= 2e-5)  worst 2.04e-07
-PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 643 ticks/s | x lua 2.141 orig 2.131 pert 2.136
+PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 611 ticks/s | x lua 2.141 orig 2.131 pert 2.136
 PASS  drive: gear sequence (lifted 00553d70)  0 mismatches
 PASS  checkpoint/restore bit-identical
 Stage 6/7 self-test: 7 passed, 0 failed
 PASS  load Core.NR2003Cup (Stage 8 driver layer)  0.02 s
 PASS  00553080 pedal chain vs original (200 vectors)  worst 0 ulp
 PASS  brake bias cells: 74 % -> 2812/988, 60 % -> original rebuild values  2812/987.9999 2280/1520
-PASS  max: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 676 ticks/s | x lua 122.15 orig 122.15 (twin spread 0.000) | vx lua 0.00 orig 0.00
+PASS  max: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 559 ticks/s | x lua 122.15 orig 122.15 (twin spread 0.000) | vx lua 0.00 orig 0.00
 PASS  checkpoint/restore bit-identical while braking
 Stage 8 self-test: 5 passed, 0 failed
 PASS  forced failure reports an error  [string "PATCH_STAGE9"]:1818: Patch Stage 9 revertido (nada mudou além do backup em ServerStorage.NR2003Backup_Stage9_1
 PASS  revert restores the previous package
 PASS  revert restores the client source
-PASS  load Core.NR2003Cup  0.10 s
+PASS  load Core.NR2003Cup  0.13 s
 PASS  raw: ticks 1-8 vs original (rel <= 2e-5)  worst 4.07e-07
-PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 649 ticks/s | x lua 3.086 orig 3.085 pert 3.097
+PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 676 ticks/s | x lua 3.086 orig 3.085 pert 3.097
 PASS  drive: ticks 1-8 vs original (rel <= 2e-5)  worst 2.04e-07
 PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 640 ticks/s | x lua 2.141 orig 2.131 pert 2.136
 PASS  drive: gear sequence (lifted 00553d70)  0 mismatches
 PASS  checkpoint/restore bit-identical
 Stage 6/7 self-test: 7 passed, 0 failed
-Stage 6/7 aplicado. Backup: ServerStorage.NR2003Backup_Stage67_1791400030_0
+Stage 6/7 aplicado. Backup: ServerStorage.NR2003Backup_Stage67_1791401102_0
 Modo NR2003_CUP: núcleo original NR2003 Cup (45 estados: suspensão, cubos, rodas, eixo traseiro, motor, embreagem, outshaft).
 Play > F entrar | W/S acel/freio | A/D direção | E/Q marchas | Shift embreagem | R reinicia | G contatos | H render diag | V câmera
 Voltar ao estágio 5: NR2003Lab.Roblox.ModeConfig -> mode="NR2003_CORE" (ou "ROBLOX_ADAPTER").
 PASS  refuses a Stage 6/7 bench without Stage 8  [string "PATCH_STAGE9"]:18: NR2003CupDriver sem a cadeia de freio: aplique PATCH_STAGE8 antes
 
 patch9 mock: 13 passed, 0 failed
-PASS  load Core.NR2003Cup  0.12 s
+PASS  load Core.NR2003Cup  0.10 s
 PASS  raw: ticks 1-8 vs original (rel <= 2e-5)  worst 4.07e-07
-PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 796 ticks/s | x lua 3.086 orig 3.085 pert 3.097
+PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 621 ticks/s | x lua 3.086 orig 3.085 pert 3.097
 PASS  drive: ticks 1-8 vs original (rel <= 2e-5)  worst 2.04e-07
-PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 706 ticks/s | x lua 2.141 orig 2.131 pert 2.136
+PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 645 ticks/s | x lua 2.141 orig 2.131 pert 2.136
 PASS  drive: gear sequence (lifted 00553d70)  0 mismatches
 PASS  checkpoint/restore bit-identical
 Stage 6/7 self-test: 7 passed, 0 failed
-Stage 6/7 aplicado. Backup: ServerStorage.NR2003Backup_Stage67_1791400033_0
+Stage 6/7 aplicado. Backup: ServerStorage.NR2003Backup_Stage67_1791401105_0
 Modo NR2003_CUP: núcleo original NR2003 Cup (45 estados: suspensão, cubos, rodas, eixo traseiro, motor, embreagem, outshaft).
 Play > F entrar | W/S acel/freio | A/D direção | E/Q marchas | Shift embreagem | R reinicia | G contatos | H render diag | V câmera
 Voltar ao estágio 5: NR2003Lab.Roblox.ModeConfig -> mode="NR2003_CORE" (ou "ROBLOX_ADAPTER").
 PASS  baseline: PATCH_STAGE6_7 installs on the Stage 5 bench  nil
-PASS  load Core.NR2003Cup  0.09 s
+PASS  load Core.NR2003Cup  0.10 s
 PASS  raw: ticks 1-8 vs original (rel <= 2e-5)  worst 4.07e-07
-PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 793 ticks/s | x lua 3.086 orig 3.085 pert 3.097
+PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 652 ticks/s | x lua 3.086 orig 3.085 pert 3.097
 PASS  drive: ticks 1-8 vs original (rel <= 2e-5)  worst 2.04e-07
-PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 683 ticks/s | x lua 2.141 orig 2.131 pert 2.136
+PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 656 ticks/s | x lua 2.141 orig 2.131 pert 2.136
 PASS  drive: gear sequence (lifted 00553d70)  0 mismatches
 PASS  checkpoint/restore bit-identical
 Stage 6/7 self-test: 7 passed, 0 failed
 PASS  load Core.NR2003Cup (Stage 8 driver layer)  0.03 s
 PASS  00553080 pedal chain vs original (200 vectors)  worst 0 ulp
 PASS  brake bias cells: 74 % -> 2812/988, 60 % -> original rebuild values  2812/987.9999 2280/1520
-PASS  max: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 701 ticks/s | x lua 122.15 orig 122.15 (twin spread 0.000) | vx lua 0.00 orig 0.00
+PASS  max: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 598 ticks/s | x lua 122.15 orig 122.15 (twin spread 0.000) | vx lua 0.00 orig 0.00
 PASS  checkpoint/restore bit-identical while braking
 Stage 8 self-test: 5 passed, 0 failed
-Stage 8 aplicado. Backup: ServerStorage.NR2003Backup_Stage8_1791400036_0
+Stage 8 aplicado. Backup: ServerStorage.NR2003Backup_Stage8_1791401108_0
 Freio: cadeia original 00553080 (tecla S = ligação digital, rampa 1/12 por quadro; hold automático parado).
 Viés de freio: atributo SetupBrakeBias (50..90, % dianteiro) no TestCar; aplicado ao reiniciar (R). Padrão Cup 74.
 Play > F entrar | W/S acel/freio | A/D direção | E/Q marchas | Shift embreagem | R reinicia | T painel
 PASS  baseline: PATCH_STAGE8 installs on the Stage 6/7 bench  nil
 PASS  load Core.NR2003Cup  0.10 s
 PASS  raw: ticks 1-8 vs original (rel <= 2e-5)  worst 4.07e-07
-PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 666 ticks/s | x lua 3.086 orig 3.085 pert 3.097
+PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 811 ticks/s | x lua 3.086 orig 3.085 pert 3.097
 PASS  drive: ticks 1-8 vs original (rel <= 2e-5)  worst 2.04e-07
-PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 652 ticks/s | x lua 2.141 orig 2.131 pert 2.136
+PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 679 ticks/s | x lua 2.141 orig 2.131 pert 2.136
 PASS  drive: gear sequence (lifted 00553d70)  0 mismatches
 PASS  checkpoint/restore bit-identical
 Stage 6/7 self-test: 7 passed, 0 failed
 PASS  load Core.NR2003Cup (Stage 8 driver layer)  0.03 s
 PASS  00553080 pedal chain vs original (200 vectors)  worst 0 ulp
 PASS  brake bias cells: 74 % -> 2812/988, 60 % -> original rebuild values  2812/987.9999 2280/1520
-PASS  max: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 685 ticks/s | x lua 122.15 orig 122.15 (twin spread 0.000) | vx lua 0.00 orig 0.00
+PASS  max: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 653 ticks/s | x lua 122.15 orig 122.15 (twin spread 0.000) | vx lua 0.00 orig 0.00
 PASS  checkpoint/restore bit-identical while braking
 Stage 8 self-test: 5 passed, 0 failed
 PASS  load Core.NR2003Cup (Stage 9 aero module)  0.02 s
@@ -596,11 +597,11 @@ PASS  00561b70 aero force/moment (50 vectors) rel <= 1e-5  worst rel 0.00e+00
 PASS  005b0230 wake (120 vectors) <= 1 ulp  worst 0 ulp
 PASS  005afd80 drafting (50 race rings) <= 1 ulp  worst 0 ulp
 PASS  garage grille tape / spoiler conversions (00423de0 / 004241d0)  0 mismatches
-PASS  launch: aero telemetry = original 00561b70 at the snapshot; run inside the original envelope (576 ticks)  aero worst 0 ulp, 0 outside | 666 ticks/s | x lua 996.1 orig 996.1 | vx lua 69.12 orig 69.12
+PASS  launch: aero telemetry = original 00561b70 at the snapshot; run inside the original envelope (576 ticks)  aero worst 0 ulp, 0 outside | 658 ticks/s | x lua 996.1 orig 996.1 | vx lua 69.12 orig 69.12
 PASS  startSession() defaults: rho 1.08119202 kg/m^3 (70 F, sun, day)
 PASS  checkpoint/restore bit-identical with session air
 Stage 9 self-test: 13 passed, 0 failed
-Stage 9 aplicado. Backup: ServerStorage.NR2003Backup_Stage9_1791400043_0
+Stage 9 aplicado. Backup: ServerStorage.NR2003Backup_Stage9_1791401116_0
 Aero: sessão original 005a3c00 (70 F, sem vento -> rho 1.0812 kg/m3) + fatores por quadro 005637e0; forças = 00561b70 original.
 Atributos do TestCar (aplicados ao reiniciar, R): WeatherTemperatureF, WeatherWindMph, WeatherWindDirection (0..7), WeatherConditions (0..3),
   WeatherNight, TrackNorth, SetupGrilleTape (0..100 %), SetupSpoiler (45..70°), AeroSession=false (sem ar), DraftTestGap/DraftTestLateral (TESTE).
@@ -608,19 +609,19 @@ Play > F entrar | W/S acel/freio | A/D direção | E/Q marchas | R reinicia | T 
 PASS  baseline: PATCH_STAGE9 installs on the Stage 8 bench  nil
 PASS  load Core.NR2003Cup  0.23 s
 PASS  raw: ticks 1-8 vs original (rel <= 2e-5)  worst 4.07e-07
-PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 757 ticks/s | x lua 3.086 orig 3.085 pert 3.097
+PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 771 ticks/s | x lua 3.086 orig 3.085 pert 3.097
 PASS  drive: ticks 1-8 vs original (rel <= 2e-5)  worst 2.04e-07
-PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 683 ticks/s | x lua 2.141 orig 2.131 pert 2.136
+PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 592 ticks/s | x lua 2.141 orig 2.131 pert 2.136
 PASS  drive: gear sequence (lifted 00553d70)  0 mismatches
 PASS  checkpoint/restore bit-identical
 Stage 6/7 self-test: 7 passed, 0 failed
 PASS  load Core.NR2003Cup (Stage 8 driver layer)  0.03 s
 PASS  00553080 pedal chain vs original (200 vectors)  worst 0 ulp
 PASS  brake bias cells: 74 % -> 2812/988, 60 % -> original rebuild values  2812/987.9999 2280/1520
-PASS  max: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 655 ticks/s | x lua 122.15 orig 122.15 (twin spread 0.000) | vx lua 0.00 orig 0.00
+PASS  max: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 644 ticks/s | x lua 122.15 orig 122.15 (twin spread 0.000) | vx lua 0.00 orig 0.00
 PASS  checkpoint/restore bit-identical while braking
 Stage 8 self-test: 5 passed, 0 failed
-PASS  load Core.NR2003Cup (Stage 9 aero module)  0.04 s
+PASS  load Core.NR2003Cup (Stage 9 aero module)  0.03 s
 PASS  embedded constants / damage-table cells = NR2003.exe (51 cells)  0 mismatching
 PASS  post-build state without a session: no air (rho 0), as in Stages 6-8
 PASS  005a3c00 weather -> wind / density (79 vectors) bit-exact  worst 0 ulp
@@ -630,34 +631,34 @@ PASS  00561b70 aero force/moment (50 vectors) rel <= 1e-5  worst rel 0.00e+00
 PASS  005b0230 wake (120 vectors) <= 1 ulp  worst 0 ulp
 PASS  005afd80 drafting (50 race rings) <= 1 ulp  worst 0 ulp
 PASS  garage grille tape / spoiler conversions (00423de0 / 004241d0)  0 mismatches
-PASS  launch: aero telemetry = original 00561b70 at the snapshot; run inside the original envelope (576 ticks)  aero worst 0 ulp, 0 outside | 695 ticks/s | x lua 996.1 orig 996.1 | vx lua 69.12 orig 69.12
+PASS  launch: aero telemetry = original 00561b70 at the snapshot; run inside the original envelope (576 ticks)  aero worst 0 ulp, 0 outside | 646 ticks/s | x lua 996.1 orig 996.1 | vx lua 69.12 orig 69.12
 PASS  startSession() defaults: rho 1.08119202 kg/m^3 (70 F, sun, day)
 PASS  checkpoint/restore bit-identical with session air
 Stage 9 self-test: 13 passed, 0 failed
-PASS  load Core.NR2003Cup (Stage 10: setup, build, generic callbacks, garage)  0.03 s
+PASS  load Core.NR2003Cup (Stage 10: setup, build, generic callbacks, garage)  0.04 s
 PASS  garage conversions / steps = original [nearest] (278 vectors)  0 mismatches
 PASS  garage conversions / steps = original [down] (278 vectors)  0 mismatches
-PASS  setup items through the ORIGINAL build = original (6 builds: 3 natural, 3 generic)  max 1.34 s per applySetup
+PASS  setup items through the ORIGINAL build = original (6 builds: 3 natural, 3 generic)  max 1.60 s per applySetup
 PASS  applySetup(default) restores the shipped image (exact Stage 6-9 state)
 PASS  brakes_aero_tyres setup (generic): first 8 ticks = original (rel <= 2e-5)  worst 0.00e+00, 0 samples, 0 outside
 Stage 10 self-test: 6 passed, 0 failed
-Stage 10 aplicado. Backup: ServerStorage.NR2003Backup_Stage10_1791400054_0
+Stage 10 aplicado. Backup: ServerStorage.NR2003Backup_Stage10_1791401127_0
 Setup: atributos Setup_<item> no TestCar em unidades da garagem (ex.: Setup_springLF=1700, Setup_camberLF=-2.5,
   Setup_casterRF=4, Setup_trackBarRR=11, Setup_wedge=50, Setup_gearChoice1=120, Setup_tirePressureRF=40). Aplicados ao reiniciar (R)
   pelo build ORIGINAL do carro; SetupStructure / SetupApplySeconds / SetupError mostram o resultado. Lista: SETUP_MAP.md.
 Play > F entrar | W/S acel/freio | A/D direção | E/Q marchas | R reinicia | T painel
-PASS  PATCH_STAGE10 runs to completion on the Stage 9 bench (incl. Stage 6/7 + 8 + 9 + 10 self-tests)  16.7 s
+PASS  PATCH_STAGE10 runs to completion on the Stage 9 bench (incl. Stage 6/7 + 8 + 9 + 10 self-tests)  18.3 s
 PASS  Stage 6/7 image + callbacks and Stage 9 aero untouched
 PASS  Stage 10 modules installed in Core.NR2003Cup  25 modules
 PASS  NR2003CupCore exports the reset image / callback table; driver re-binds cells; vehicle + adapter updated
 PASS  server/client and Stage 6/7, 8, 9 self-tests untouched
 PASS  backup folder with the package in ServerStorage  1
 PASS  package tagged NR2003Stage = 10
-PASS  load Core.NR2003Cup  0.25 s
+PASS  load Core.NR2003Cup  0.26 s
 PASS  raw: ticks 1-8 vs original (rel <= 2e-5)  worst 4.07e-07
-PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 754 ticks/s | x lua 3.086 orig 3.085 pert 3.097
+PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 584 ticks/s | x lua 3.086 orig 3.085 pert 3.097
 PASS  drive: ticks 1-8 vs original (rel <= 2e-5)  worst 2.04e-07
-PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 669 ticks/s | x lua 2.141 orig 2.131 pert 2.136
+PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 610 ticks/s | x lua 2.141 orig 2.131 pert 2.136
 PASS  drive: gear sequence (lifted 00553d70)  0 mismatches
 PASS  checkpoint/restore bit-identical
 Stage 6/7 self-test: 7 passed, 0 failed
@@ -677,35 +678,35 @@ PASS  00561b70 aero force/moment (50 vectors) rel <= 1e-5  worst rel 0.00e+00
 PASS  005b0230 wake (120 vectors) <= 1 ulp  worst 0 ulp
 PASS  005afd80 drafting (50 race rings) <= 1 ulp  worst 0 ulp
 PASS  garage grille tape / spoiler conversions (00423de0 / 004241d0)  0 mismatches
-PASS  launch: aero telemetry = original 00561b70 at the snapshot; run inside the original envelope (576 ticks)  aero worst 0 ulp, 0 outside | 656 ticks/s | x lua 996.1 orig 996.1 | vx lua 69.12 orig 69.12
+PASS  launch: aero telemetry = original 00561b70 at the snapshot; run inside the original envelope (576 ticks)  aero worst 0 ulp, 0 outside | 506 ticks/s | x lua 996.1 orig 996.1 | vx lua 69.12 orig 69.12
 PASS  startSession() defaults: rho 1.08119202 kg/m^3 (70 F, sun, day)
 PASS  checkpoint/restore bit-identical with session air
 Stage 9 self-test: 13 passed, 0 failed
-PASS  load Core.NR2003Cup (Stage 10: setup, build, generic callbacks, garage)  0.04 s
+PASS  load Core.NR2003Cup (Stage 10: setup, build, generic callbacks, garage)  0.03 s
 PASS  garage conversions / steps = original [nearest] (278 vectors)  0 mismatches
 PASS  garage conversions / steps = original [down] (278 vectors)  0 mismatches
-PASS  setup items through the ORIGINAL build = original (6 builds: 3 natural, 3 generic)  max 1.31 s per applySetup
+PASS  setup items through the ORIGINAL build = original (6 builds: 3 natural, 3 generic)  max 1.49 s per applySetup
 PASS  applySetup(default) restores the shipped image (exact Stage 6-9 state)
 PASS  brakes_aero_tyres setup (generic): first 8 ticks = original (rel <= 2e-5)  worst 0.00e+00, 0 samples, 0 outside
 Stage 10 self-test: 6 passed, 0 failed
-Stage 10 aplicado. Backup: ServerStorage.NR2003Backup_Stage10_1791400071_0
+Stage 10 aplicado. Backup: ServerStorage.NR2003Backup_Stage10_1791401145_0
 Setup: atributos Setup_<item> no TestCar em unidades da garagem (ex.: Setup_springLF=1700, Setup_camberLF=-2.5,
   Setup_casterRF=4, Setup_trackBarRR=11, Setup_wedge=50, Setup_gearChoice1=120, Setup_tirePressureRF=40). Aplicados ao reiniciar (R)
   pelo build ORIGINAL do carro; SetupStructure / SetupApplySeconds / SetupError mostram o resultado. Lista: SETUP_MAP.md.
 Play > F entrar | W/S acel/freio | A/D direção | E/Q marchas | R reinicia | T painel
 PASS  re-applying PATCH_STAGE10 on a Stage 10 bench: no duplicate modules  nil
-PASS  load Core.NR2003Cup  0.24 s
+PASS  load Core.NR2003Cup  0.26 s
 PASS  raw: ticks 1-8 vs original (rel <= 2e-5)  worst 4.07e-07
-PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 686 ticks/s | x lua 3.086 orig 3.085 pert 3.097
+PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 674 ticks/s | x lua 3.086 orig 3.085 pert 3.097
 PASS  drive: ticks 1-8 vs original (rel <= 2e-5)  worst 2.04e-07
-PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 589 ticks/s | x lua 2.141 orig 2.131 pert 2.136
+PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 759 ticks/s | x lua 2.141 orig 2.131 pert 2.136
 PASS  drive: gear sequence (lifted 00553d70)  0 mismatches
 PASS  checkpoint/restore bit-identical
 Stage 6/7 self-test: 7 passed, 0 failed
 PASS  load Core.NR2003Cup (Stage 8 driver layer)  0.03 s
 PASS  00553080 pedal chain vs original (200 vectors)  worst 0 ulp
 PASS  brake bias cells: 74 % -> 2812/988, 60 % -> original rebuild values  2812/987.9999 2280/1520
-PASS  max: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 613 ticks/s | x lua 122.15 orig 122.15 (twin spread 0.000) | vx lua 0.00 orig 0.00
+PASS  max: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 652 ticks/s | x lua 122.15 orig 122.15 (twin spread 0.000) | vx lua 0.00 orig 0.00
 PASS  checkpoint/restore bit-identical while braking
 Stage 8 self-test: 5 passed, 0 failed
 PASS  load Core.NR2003Cup (Stage 9 aero module)  0.04 s
@@ -718,43 +719,153 @@ PASS  00561b70 aero force/moment (50 vectors) rel <= 1e-5  worst rel 0.00e+00
 PASS  005b0230 wake (120 vectors) <= 1 ulp  worst 0 ulp
 PASS  005afd80 drafting (50 race rings) <= 1 ulp  worst 0 ulp
 PASS  garage grille tape / spoiler conversions (00423de0 / 004241d0)  0 mismatches
-PASS  launch: aero telemetry = original 00561b70 at the snapshot; run inside the original envelope (576 ticks)  aero worst 0 ulp, 0 outside | 584 ticks/s | x lua 996.1 orig 996.1 | vx lua 69.12 orig 69.12
+PASS  launch: aero telemetry = original 00561b70 at the snapshot; run inside the original envelope (576 ticks)  aero worst 0 ulp, 0 outside | 637 ticks/s | x lua 996.1 orig 996.1 | vx lua 69.12 orig 69.12
 PASS  startSession() defaults: rho 1.08119202 kg/m^3 (70 F, sun, day)
 PASS  checkpoint/restore bit-identical with session air
 Stage 9 self-test: 13 passed, 0 failed
 PASS  forced failure reports an error  [string "PATCH_STAGE10"]:63646: Patch Stage 10 revertido (nada mudou além do backup em ServerStorage.NR2003Backup_Stage
 PASS  revert restores the previous package
-PASS  load Core.NR2003Cup  0.09 s
+PASS  load Core.NR2003Cup  0.08 s
 PASS  raw: ticks 1-8 vs original (rel <= 2e-5)  worst 4.07e-07
-PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 787 ticks/s | x lua 3.086 orig 3.085 pert 3.097
+PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 720 ticks/s | x lua 3.086 orig 3.085 pert 3.097
 PASS  drive: ticks 1-8 vs original (rel <= 2e-5)  worst 2.04e-07
-PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 672 ticks/s | x lua 2.141 orig 2.131 pert 2.136
+PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 607 ticks/s | x lua 2.141 orig 2.131 pert 2.136
 PASS  drive: gear sequence (lifted 00553d70)  0 mismatches
 PASS  checkpoint/restore bit-identical
 Stage 6/7 self-test: 7 passed, 0 failed
-Stage 6/7 aplicado. Backup: ServerStorage.NR2003Backup_Stage67_1791400101_0
+Stage 6/7 aplicado. Backup: ServerStorage.NR2003Backup_Stage67_1791401175_0
 Modo NR2003_CUP: núcleo original NR2003 Cup (45 estados: suspensão, cubos, rodas, eixo traseiro, motor, embreagem, outshaft).
 Play > F entrar | W/S acel/freio | A/D direção | E/Q marchas | Shift embreagem | R reinicia | G contatos | H render diag | V câmera
 Voltar ao estágio 5: NR2003Lab.Roblox.ModeConfig -> mode="NR2003_CORE" (ou "ROBLOX_ADAPTER").
-PASS  load Core.NR2003Cup  0.09 s
+PASS  load Core.NR2003Cup  0.12 s
 PASS  raw: ticks 1-8 vs original (rel <= 2e-5)  worst 4.07e-07
-PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 725 ticks/s | x lua 3.086 orig 3.085 pert 3.097
+PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 685 ticks/s | x lua 3.086 orig 3.085 pert 3.097
 PASS  drive: ticks 1-8 vs original (rel <= 2e-5)  worst 2.04e-07
-PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 638 ticks/s | x lua 2.141 orig 2.131 pert 2.136
+PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 642 ticks/s | x lua 2.141 orig 2.131 pert 2.136
 PASS  drive: gear sequence (lifted 00553d70)  0 mismatches
 PASS  checkpoint/restore bit-identical
 Stage 6/7 self-test: 7 passed, 0 failed
 PASS  load Core.NR2003Cup (Stage 8 driver layer)  0.03 s
 PASS  00553080 pedal chain vs original (200 vectors)  worst 0 ulp
 PASS  brake bias cells: 74 % -> 2812/988, 60 % -> original rebuild values  2812/987.9999 2280/1520
-PASS  max: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 661 ticks/s | x lua 122.15 orig 122.15 (twin spread 0.000) | vx lua 0.00 orig 0.00
+PASS  max: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 604 ticks/s | x lua 122.15 orig 122.15 (twin spread 0.000) | vx lua 0.00 orig 0.00
 PASS  checkpoint/restore bit-identical while braking
 Stage 8 self-test: 5 passed, 0 failed
-Stage 8 aplicado. Backup: ServerStorage.NR2003Backup_Stage8_1791400103_0
+Stage 8 aplicado. Backup: ServerStorage.NR2003Backup_Stage8_1791401178_0
 Freio: cadeia original 00553080 (tecla S = ligação digital, rampa 1/12 por quadro; hold automático parado).
 Viés de freio: atributo SetupBrakeBias (50..90, % dianteiro) no TestCar; aplicado ao reiniciar (R). Padrão Cup 74.
 Play > F entrar | W/S acel/freio | A/D direção | E/Q marchas | Shift embreagem | R reinicia | T painel
 PASS  refuses a Stage 8 bench without Stage 9  [string "PATCH_STAGE10"]:18: Core.NR2003Cup.NR2003CupAero ausente (Stage 9 requerido)
+PASS  load Core.NR2003Cup  0.08 s
+PASS  raw: ticks 1-8 vs original (rel <= 2e-5)  worst 4.07e-07
+PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 762 ticks/s | x lua 3.086 orig 3.085 pert 3.097
+PASS  drive: ticks 1-8 vs original (rel <= 2e-5)  worst 2.04e-07
+PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 626 ticks/s | x lua 2.141 orig 2.131 pert 2.136
+PASS  drive: gear sequence (lifted 00553d70)  0 mismatches
+PASS  checkpoint/restore bit-identical
+Stage 6/7 self-test: 7 passed, 0 failed
+Stage 6/7 aplicado. Backup: ServerStorage.NR2003Backup_Stage67_1791401187_0
+Modo NR2003_CUP: núcleo original NR2003 Cup (45 estados: suspensão, cubos, rodas, eixo traseiro, motor, embreagem, outshaft).
+Play > F entrar | W/S acel/freio | A/D direção | E/Q marchas | Shift embreagem | R reinicia | G contatos | H render diag | V câmera
+Voltar ao estágio 5: NR2003Lab.Roblox.ModeConfig -> mode="NR2003_CORE" (ou "ROBLOX_ADAPTER").
+PASS  load Core.NR2003Cup  0.09 s
+PASS  raw: ticks 1-8 vs original (rel <= 2e-5)  worst 4.07e-07
+PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 695 ticks/s | x lua 3.086 orig 3.085 pert 3.097
+PASS  drive: ticks 1-8 vs original (rel <= 2e-5)  worst 2.04e-07
+PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 694 ticks/s | x lua 2.141 orig 2.131 pert 2.136
+PASS  drive: gear sequence (lifted 00553d70)  0 mismatches
+PASS  checkpoint/restore bit-identical
+Stage 6/7 self-test: 7 passed, 0 failed
+PASS  load Core.NR2003Cup (Stage 8 driver layer)  0.03 s
+PASS  00553080 pedal chain vs original (200 vectors)  worst 0 ulp
+PASS  brake bias cells: 74 % -> 2812/988, 60 % -> original rebuild values  2812/987.9999 2280/1520
+PASS  max: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 679 ticks/s | x lua 122.15 orig 122.15 (twin spread 0.000) | vx lua 0.00 orig 0.00
+PASS  checkpoint/restore bit-identical while braking
+Stage 8 self-test: 5 passed, 0 failed
+Stage 8 aplicado. Backup: ServerStorage.NR2003Backup_Stage8_1791401189_0
+Freio: cadeia original 00553080 (tecla S = ligação digital, rampa 1/12 por quadro; hold automático parado).
+Viés de freio: atributo SetupBrakeBias (50..90, % dianteiro) no TestCar; aplicado ao reiniciar (R). Padrão Cup 74.
+Play > F entrar | W/S acel/freio | A/D direção | E/Q marchas | Shift embreagem | R reinicia | T painel
+PASS  load Core.NR2003Cup  0.09 s
+PASS  raw: ticks 1-8 vs original (rel <= 2e-5)  worst 4.07e-07
+PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 822 ticks/s | x lua 3.086 orig 3.085 pert 3.097
+PASS  drive: ticks 1-8 vs original (rel <= 2e-5)  worst 2.04e-07
+PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 661 ticks/s | x lua 2.141 orig 2.131 pert 2.136
+PASS  drive: gear sequence (lifted 00553d70)  0 mismatches
+PASS  checkpoint/restore bit-identical
+Stage 6/7 self-test: 7 passed, 0 failed
+PASS  load Core.NR2003Cup (Stage 8 driver layer)  0.02 s
+PASS  00553080 pedal chain vs original (200 vectors)  worst 0 ulp
+PASS  brake bias cells: 74 % -> 2812/988, 60 % -> original rebuild values  2812/987.9999 2280/1520
+PASS  max: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 640 ticks/s | x lua 122.15 orig 122.15 (twin spread 0.000) | vx lua 0.00 orig 0.00
+PASS  checkpoint/restore bit-identical while braking
+Stage 8 self-test: 5 passed, 0 failed
+PASS  load Core.NR2003Cup (Stage 9 aero module)  0.02 s
+PASS  embedded constants / damage-table cells = NR2003.exe (51 cells)  0 mismatching
+PASS  post-build state without a session: no air (rho 0), as in Stages 6-8
+PASS  005a3c00 weather -> wind / density (79 vectors) bit-exact  worst 0 ulp
+PASS  005a3ba0 density (100 vectors) <= 1 ulp  worst 0 ulp
+PASS  00561a80 half wind (40 vectors) <= 1 ulp  worst 0 ulp
+PASS  00561b70 aero force/moment (50 vectors) rel <= 1e-5  worst rel 0.00e+00
+PASS  005b0230 wake (120 vectors) <= 1 ulp  worst 0 ulp
+PASS  005afd80 drafting (50 race rings) <= 1 ulp  worst 0 ulp
+PASS  garage grille tape / spoiler conversions (00423de0 / 004241d0)  0 mismatches
+PASS  launch: aero telemetry = original 00561b70 at the snapshot; run inside the original envelope (576 ticks)  aero worst 0 ulp, 0 outside | 706 ticks/s | x lua 996.1 orig 996.1 | vx lua 69.12 orig 69.12
+PASS  startSession() defaults: rho 1.08119202 kg/m^3 (70 F, sun, day)
+PASS  checkpoint/restore bit-identical with session air
+Stage 9 self-test: 13 passed, 0 failed
+Stage 9 aplicado. Backup: ServerStorage.NR2003Backup_Stage9_1791401197_0
+Aero: sessão original 005a3c00 (70 F, sem vento -> rho 1.0812 kg/m3) + fatores por quadro 005637e0; forças = 00561b70 original.
+Atributos do TestCar (aplicados ao reiniciar, R): WeatherTemperatureF, WeatherWindMph, WeatherWindDirection (0..7), WeatherConditions (0..3),
+  WeatherNight, TrackNorth, SetupGrilleTape (0..100 %), SetupSpoiler (45..70°), AeroSession=false (sem ar), DraftTestGap/DraftTestLateral (TESTE).
+Play > F entrar | W/S acel/freio | A/D direção | E/Q marchas | R reinicia | T painel (linha AERO)
+PASS  split: INSTALL before the parts refuses (nothing changed)  [string "PATCH_STAGE10_INSTALL"]:28: cole antes as partes 1..4 (PATCH_STAGE10_PART*.lua)
+PATCH_STAGE10 parte 1/4 guardada (6 módulos). Próximo: parte 2
+PATCH_STAGE10 parte 2/4 guardada (3 módulos). Próximo: parte 3
+PATCH_STAGE10 parte 3/4 guardada (7 módulos). Próximo: parte 4
+PATCH_STAGE10 parte 4/4 guardada (5 módulos). Próximo: PATCH_STAGE10_INSTALL.lua
+PASS  split: parts 1..4 only stage sources (package untouched)
+PASS  load Core.NR2003Cup  0.23 s
+PASS  raw: ticks 1-8 vs original (rel <= 2e-5)  worst 4.07e-07
+PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 739 ticks/s | x lua 3.086 orig 3.085 pert 3.097
+PASS  drive: ticks 1-8 vs original (rel <= 2e-5)  worst 2.04e-07
+PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 730 ticks/s | x lua 2.141 orig 2.131 pert 2.136
+PASS  drive: gear sequence (lifted 00553d70)  0 mismatches
+PASS  checkpoint/restore bit-identical
+Stage 6/7 self-test: 7 passed, 0 failed
+PASS  load Core.NR2003Cup (Stage 8 driver layer)  0.03 s
+PASS  00553080 pedal chain vs original (200 vectors)  worst 0 ulp
+PASS  brake bias cells: 74 % -> 2812/988, 60 % -> original rebuild values  2812/987.9999 2280/1520
+PASS  max: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 701 ticks/s | x lua 122.15 orig 122.15 (twin spread 0.000) | vx lua 0.00 orig 0.00
+PASS  checkpoint/restore bit-identical while braking
+Stage 8 self-test: 5 passed, 0 failed
+PASS  load Core.NR2003Cup (Stage 9 aero module)  0.03 s
+PASS  embedded constants / damage-table cells = NR2003.exe (51 cells)  0 mismatching
+PASS  post-build state without a session: no air (rho 0), as in Stages 6-8
+PASS  005a3c00 weather -> wind / density (79 vectors) bit-exact  worst 0 ulp
+PASS  005a3ba0 density (100 vectors) <= 1 ulp  worst 0 ulp
+PASS  00561a80 half wind (40 vectors) <= 1 ulp  worst 0 ulp
+PASS  00561b70 aero force/moment (50 vectors) rel <= 1e-5  worst rel 0.00e+00
+PASS  005b0230 wake (120 vectors) <= 1 ulp  worst 0 ulp
+PASS  005afd80 drafting (50 race rings) <= 1 ulp  worst 0 ulp
+PASS  garage grille tape / spoiler conversions (00423de0 / 004241d0)  0 mismatches
+PASS  launch: aero telemetry = original 00561b70 at the snapshot; run inside the original envelope (576 ticks)  aero worst 0 ulp, 0 outside | 743 ticks/s | x lua 996.1 orig 996.1 | vx lua 69.12 orig 69.12
+PASS  startSession() defaults: rho 1.08119202 kg/m^3 (70 F, sun, day)
+PASS  checkpoint/restore bit-identical with session air
+Stage 9 self-test: 13 passed, 0 failed
+PASS  load Core.NR2003Cup (Stage 10: setup, build, generic callbacks, garage)  0.03 s
+PASS  garage conversions / steps = original [nearest] (278 vectors)  0 mismatches
+PASS  garage conversions / steps = original [down] (278 vectors)  0 mismatches
+PASS  setup items through the ORIGINAL build = original (6 builds: 3 natural, 3 generic)  max 1.28 s per applySetup
+PASS  applySetup(default) restores the shipped image (exact Stage 6-9 state)
+PASS  brakes_aero_tyres setup (generic): first 8 ticks = original (rel <= 2e-5)  worst 0.00e+00, 0 samples, 0 outside
+Stage 10 self-test: 6 passed, 0 failed
+Stage 10 aplicado. Backup: ServerStorage.NR2003Backup_Stage10_1791401208_0
+Setup: atributos Setup_<item> no TestCar em unidades da garagem (ex.: Setup_springLF=1700, Setup_camberLF=-2.5,
+  Setup_casterRF=4, Setup_trackBarRR=11, Setup_wedge=50, Setup_gearChoice1=120, Setup_tirePressureRF=40). Aplicados ao reiniciar (R)
+  pelo build ORIGINAL do carro; SetupStructure / SetupApplySeconds / SetupError mostram o resultado. Lista: SETUP_MAP.md.
+Play > F entrar | W/S acel/freio | A/D direção | E/Q marchas | R reinicia | T painel
+PASS  split: INSTALL installs the same modules as PATCH_STAGE10 (incl. self-tests), staging removed  nil
 
-patch10 mock: 14 passed, 0 failed
+patch10 mock: 17 passed, 0 failed
 syntax OK

@@ -17,7 +17,7 @@ drivetrain, freio, aero) — nenhuma física paralela, nenhum parâmetro inventa
 | Estruturas de callback | **imagem** (padrão: estado entregue, bit a bit) · **natural** (código do padrão; verificação estrita = exatamente o código original do setup) · **genérica** (`NR2003CupJITG*`: mesmo emissor sem as dobras que variam entre setups; validada em 121 setups novos) |
 | Mudanças em estágios anteriores (documentadas) | `NR2003CupCore`: exporta a imagem de reset e a tabela de callbacks (imagem e callbacks 6/7 inalterados); `NR2003CupDriver`: re-liga as células de freio/inércia após um rebuild (a estrutura genérica aloca constantes em outras posições) |
 | Roblox | atributos `Setup_<item>` (unidades da garagem, via `005581d0`), rebuild no reset só quando o setup muda, `SetupStructure/SetupApplySeconds/SetupError`, 1 linha de Output |
-| Entrega | `PATCH_STAGE10.lua` + `NR2003_Patch_Stage10.rbxmx` (backup + auto-testes 6/7, 8, 9, 10 + reversão), `SETUP_MAP.md`, pseudo-C `recovery/stage10/pseudo/stage10_setup.c`, fontes, testes, fixtures do código original, evidências |
+| Entrega | `PATCH_STAGE10.lua` (ou `PATCH_STAGE10_PART1..4` + `PATCH_STAGE10_INSTALL`) + `NR2003_Patch_Stage10.rbxmx` (backup + auto-testes 6/7, 8, 9, 10 + reversão), `SETUP_MAP.md`, pseudo-C `recovery/stage10/pseudo/stage10_setup.c`, fontes, testes, fixtures do código original, evidências |
 
 ## Números do Cup (original)
 
@@ -53,7 +53,7 @@ Aplicar um setup leva **0,17–0,45 s** em Luau nativo (mediana 0,17 s) e não a
 - Stage 8/9: `setBrakeBias` (50/61/74/90 %) e `setAeroSetup` (3 pares) gravam exatamente as células/itens do build original.
 - Setup inválido (NaN) rejeitado pelas duas estruturas, setup anterior mantido; array malformado recusado.
 - Regressão: Stage 6/7 16/16, Stage 8 49/49, Stage 9 59/59 **inalterados**; adaptador sob mock 45/45 (inclui atributos
-  `Setup_*` e o auto-teste 10 rápido/completo); patches 6/7, 8, 9, 10 em DataModel simulado 11/11, 13/13, 13/13, 14/14.
+  `Setup_*` e o auto-teste 10 rápido/completo); patches 6/7, 8, 9, 10 em DataModel simulado 11/11, 13/13, 13/13, 17/17 (inclui a instalação em partes).
 
 ## Limites explícitos
 

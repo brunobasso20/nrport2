@@ -95,5 +95,34 @@ local o2 = run(PATCH8, "PATCH_STAGE8")
 cache = {}
 local ok4, err4 = run(PATCH10, "PATCH_STAGE10")
 check("refuses a Stage 8 bench without Stage 9", o1 and o2 and not ok4 and tostring(err4):find("Stage 9", 1, true) ~= nil, tostring(err4):sub(1, 120))
+
+-- 5) split install for the Command Bar: parts 1..N stage the sources, INSTALL installs (same result as PATCH_STAGE10)
+stage5()
+cache = {}; local s1 = run(PATCH67, "PATCH_STAGE6_7")
+cache = {}; local s2 = run(PATCH8, "PATCH_STAGE8")
+cache = {}; local s3 = run(PATCH9, "PATCH_STAGE9")
+cache = {}
+local okEarly, errEarly = run(INSTALL10, "PATCH_STAGE10_INSTALL")
+check("split: INSTALL before the parts refuses (nothing changed)", s1 and s2 and s3 and not okEarly and tostring(errEarly):find("PART", 1, true) ~= nil
+	and RS.NR2003Lab:GetAttribute("NR2003Stage") ~= "10", tostring(errEarly):sub(1, 120))
+local partsOk = true
+for k, src in ipairs(PARTS10) do
+	cache = {}
+	local okP, errP = run(src, "PATCH_STAGE10_PART" .. k)
+	if not okP then partsOk = false; print("    part " .. k .. ": " .. tostring(errP):sub(1, 200)) end
+end
+check("split: parts 1.." .. #PARTS10 .. " only stage sources (package untouched)", partsOk and services.ServerStorage:FindFirstChild("NR2003Stage10Staging") ~= nil
+	and RS.NR2003Lab.Core.NR2003Cup:FindFirstChild("NR2003CupGarage") == nil)
+cache = {}
+local okI, errI = run(INSTALL10, "PATCH_STAGE10_INSTALL")
+local cupS = RS.NR2003Lab.Core.NR2003Cup
+local sameAsFull = okI
+for _, c in ipairs(cup:GetChildren()) do
+	local o = cupS:FindFirstChild(c.Name)
+	if not o or o.Source ~= c.Source then sameAsFull = false end
+end
+check("split: INSTALL installs the same modules as PATCH_STAGE10 (incl. self-tests), staging removed", sameAsFull
+	and services.ServerStorage:FindFirstChild("NR2003Stage10Staging") == nil and RS.NR2003Lab:GetAttribute("NR2003Stage") == "10",
+	okI and nil or tostring(errI):sub(1, 300))
 print(string.format("\npatch10 mock: %d passed, %d failed", passed, failed))
 if failed > 0 then error("patch10 mock tests failed") end

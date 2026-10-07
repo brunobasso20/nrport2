@@ -2,9 +2,14 @@
 
 ## Aplicar o Stage 10 sobre o Stage 9
 
-1. Studio, **fora do Play**. Recomendado (arquivo grande, ~2,1 MB): *Insert from File* → `NR2003_Patch_Stage10.rbxmx`;
-   depois, na **Command Bar**: `require(workspace.NR2003_Patch_Stage10)()` e apague o ModuleScript inserido.
-   Alternativa: abrir `PATCH_STAGE10.lua`, copiar o arquivo inteiro e colar na Command Bar.
+1. Studio, **fora do Play**, na **Command Bar** — escolha UMA das formas (o resultado é o mesmo):
+   - **Um arquivo**: abra `PATCH_STAGE10.lua` (~2,1 MB), copie o arquivo inteiro, cole na Command Bar, Enter.
+   - **Em partes** (se a Command Bar não aceitar o arquivo grande): cole, um de cada vez e em ordem,
+     `PATCH_STAGE10_PART1.lua`, `PART2`, `PART3`, `PART4` (cada uma imprime `parte k/4 guardada`; só guardam as fontes em
+     `ServerStorage.NR2003Stage10Staging`, o jogo não muda) e por fim `PATCH_STAGE10_INSTALL.lua`, que confere as
+     partes e instala. Se o INSTALL falhar, tudo é revertido e basta repetir só o INSTALL.
+   - **Arquivo de modelo**: *Insert from File* → `NR2003_Patch_Stage10.rbxmx`; depois, na Command Bar:
+     `require(workspace.NR2003_Patch_Stage10)()` e apague o ModuleScript inserido.
 2. O patch faz backup em `ServerStorage.NR2003Backup_Stage10_*`, instala em `Core.NR2003Cup` os módulos novos
    (`NR2003CupSetupData`, `NR2003CupSetup`, `NR2003CupBuild`, `NR2003CupBuildCode1..6`, `NR2003CupBuildData1..2`,
    `NR2003CupJITG1..4`, `NR2003CupGarage`), troca `NR2003CupCore` (só exportações do host), `NR2003CupDriver`,

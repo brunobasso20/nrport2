@@ -42,7 +42,7 @@ Executada nesta máquina com Luau CLI (codegen nativo), Python 3 + Unicorn 2.1.4
 | Estrutura genérica em 121 setups novos (Unicorn, `generic_search.py literals`) | PASS — 0 violações, 1 código |
 | Regressão Stage 6/7 / 8 / 9 | PASS — 16/16, 49/49, 59/59, inalterados |
 | Adaptador sob mock (inclui atributos `Setup_*` e auto-teste 10 rápido/completo) | PASS — 45/45 |
-| `PATCH_STAGE10.lua` em DataModel simulado (6/7 → 8 → 9 → 10, reaplicação, módulos 6/7/9 intactos, backup, reversão, recusa sem 9) | PASS — 14/14 |
+| `PATCH_STAGE10.lua` e instalação em partes (`PART1..4` + `INSTALL`) em DataModel simulado (6/7 → 8 → 9 → 10, reaplicação, módulos 6/7/9 intactos, backup, reversão, recusa sem 9, INSTALL sem partes recusado, partes = arquivo único) | PASS — 17/17 |
 | `PATCH_STAGE6_7` / `8` / `9` (inalterados) | PASS — 11/11, 13/13, 13/13 |
 | Sintaxe (todos os módulos + patch) | PASS |
 
@@ -51,8 +51,9 @@ natural). Carga dos módulos do Stage 10: +0,6 s no CLI.
 
 ## Validação manual no Roblox Studio — a fazer
 
-1. Aplicar o patch: *Insert from File* → `NR2003_Patch_Stage10.rbxmx` e, na Command Bar (fora do Play),
-   `require(workspace.NR2003_Patch_Stage10)()` (ou colar `PATCH_STAGE10.lua` inteiro na Command Bar). Output:
+1. Aplicar o patch na Command Bar (fora do Play): `PATCH_STAGE10.lua` inteiro, ou as partes
+   `PATCH_STAGE10_PART1..4.lua` em ordem seguidas de `PATCH_STAGE10_INSTALL.lua`, ou `NR2003_Patch_Stage10.rbxmx`
+   (*Insert from File* + `require(workspace.NR2003_Patch_Stage10)()`). Output:
    self-tests 6/7 (7), 8 (5), 9 (13), 10 (6) sem falhas e `Stage 10 aplicado`.
 2. Play → F. Uma linha `[NR2003 Stage 10] setup aplicado (image, 0.00 s): molas -71344/-71344/-41092/-41092 N/m,
    freio 2812/988 N*m, marchas 2.133/1.611/1.261/1.000 x 4.500`. O carro anda **exatamente** como no Stage 9
