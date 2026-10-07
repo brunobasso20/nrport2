@@ -1,0 +1,78 @@
+005b53e0 SUB ESP,0xc
+005b53e3 PUSH EBX
+005b53e4 MOV EBX,dword ptr [ESP + 0x14]
+005b53e8 PUSH ESI
+005b53e9 PUSH EDI
+005b53ea MOV EDI,dword ptr [ESP + 0x20]
+005b53ee MOV AL,byte ptr [EDI + 0x1a]
+005b53f1 MOV byte ptr [EBX + 0x34],AL
+005b53f4 FILD dword ptr [EDI]
+005b53f6 FMUL float ptr [0x006f7428]
+005b53fc FSTP float ptr [EBX]
+005b53fe FILD dword ptr [EDI + 0x4]
+005b5401 FMUL float ptr [0x006f7428]
+005b5407 FSTP float ptr [EBX + 0x4]
+005b540a FILD dword ptr [EDI + 0x8]
+005b540d FMUL float ptr [0x006f7428]
+005b5413 FSTP float ptr [EBX + 0x8]
+005b5416 MOV CL,byte ptr [EDI + 0xc]
+005b5419 AND ECX,0xf
+005b541c MOV dword ptr [ESP + 0x20],ECX
+005b5420 FILD dword ptr [ESP + 0x20]
+005b5424 FMUL float ptr [0x006f5950]
+005b542a CALL 0x006c5018
+005b542f LEA EDX,[EBX + 0x31]
+005b5432 MOV byte ptr [EBX + 0x30],AL
+005b5435 MOV dword ptr [ESP + 0x20],EDX
+005b5439 LEA ESI,[EDI + 0xe]
+005b543c ADD EBX,0x14
+005b543f MOV dword ptr [ESP + 0x1c],0x3
+005b5447 MOV EAX,dword ptr [ESI]
+005b5449 MOV ECX,dword ptr [EDI]
+005b544b SHL EAX,0x16
+005b544e SAR EAX,0x16
+005b5451 ADD EAX,ECX
+005b5453 MOV dword ptr [ESP + 0x14],0x0
+005b545b MOV dword ptr [ESP + 0xc],EAX
+005b545f FILD dword ptr [ESP + 0xc]
+005b5463 FMUL float ptr [0x006f7428]
+005b5469 FSTP float ptr [EBX + -0x8]
+005b546c MOV ECX,dword ptr [ESI]
+005b546e MOV EDX,dword ptr [EDI + 0x4]
+005b5471 SHL ECX,0xc
+005b5474 SAR ECX,0x16
+005b5477 ADD ECX,EDX
+005b5479 MOV dword ptr [ESP + 0xc],ECX
+005b547d FILD dword ptr [ESP + 0xc]
+005b5481 FMUL float ptr [0x006f7428]
+005b5487 FSTP float ptr [EBX + -0x4]
+005b548a MOV EDX,dword ptr [ESI]
+005b548c MOV EAX,dword ptr [EDI + 0x8]
+005b548f SHL EDX,0x4
+005b5492 SAR EDX,0x18
+005b5495 ADD EDX,EAX
+005b5497 MOV dword ptr [ESP + 0xc],EDX
+005b549b FILD dword ptr [ESP + 0xc]
+005b549f FMUL float ptr [0x006f7428]
+005b54a5 FSTP float ptr [EBX]
+005b54a7 MOV EAX,dword ptr [ESI]
+005b54a9 SHR EAX,0x1c
+005b54ac MOV dword ptr [ESP + 0x10],EAX
+005b54b0 FILD qword ptr [ESP + 0x10]
+005b54b4 FMUL float ptr [0x006f5950]
+005b54ba CALL 0x006c5018
+005b54bf MOV ECX,dword ptr [ESP + 0x20]
+005b54c3 ADD EBX,0xc
+005b54c6 ADD ESI,0x4
+005b54c9 MOV byte ptr [ECX],AL
+005b54cb MOV EAX,dword ptr [ESP + 0x1c]
+005b54cf INC ECX
+005b54d0 DEC EAX
+005b54d1 MOV dword ptr [ESP + 0x20],ECX
+005b54d5 MOV dword ptr [ESP + 0x1c],EAX
+005b54d9 JNZ 0x005b5447
+005b54df POP EDI
+005b54e0 POP ESI
+005b54e1 POP EBX
+005b54e2 ADD ESP,0xc
+005b54e5 RET

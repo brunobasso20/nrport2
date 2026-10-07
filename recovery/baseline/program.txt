@@ -1,0 +1,5 @@
+Program: NR2003.exe
+Functions: 17361
+Named functions: 3763
+Physics string references: 316
+

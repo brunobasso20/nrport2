@@ -1,0 +1,645 @@
+address	string	ref_address	function_address	function
+0071f830	fuel_guy	005255a6	00525510	FUN_00525510
+0071f830	fuel_guy	0071f8d4		
+0071f84c	f_wheel_changer_guy	0071f8dc		
+0071f860	f_wheel_carrier_guy	0071f8e0		
+0071f874	r_wheel_changer_guy	0071f8e4		
+0071f888	r_wheel_carrier_guy	0071f8e8		
+00721670	Aerodynamics	0041015e	00410150	FUN_00410150
+00722040	chassis_type	00423339	00423330	FUN_00423330
+00722a00	lfwheel	00427fc3		
+00722a08	rfwheel	0042800b		
+00722a10	lrwheel	00428051		
+00722a18	rrwheel	00428097		
+00722d80	wheel_speed_0	00429421	00429370	FUN_00429370
+00722d90	wheel_speed_1	00429434	00429370	FUN_00429370
+00722da0	wheel_speed_2	00429447	00429370	FUN_00429370
+00722db0	wheel_speed_3	0042945a	00429370	FUN_00429370
+00722dc0	lfwheel	0042946d	00429370	FUN_00429370
+00722dc8	rfwheel	00429480	00429370	FUN_00429370
+00722dd0	lrwheel	00429493	00429370	FUN_00429370
+00722dd8	rrwheel	004294a6	00429370	FUN_00429370
+00722e30	wheel_speed_0	004299a3	004298d0	FUN_004298d0
+00722e40	wheel_speed_1	004299b6	004298d0	FUN_004298d0
+00722e50	wheel_speed_2	004299c9	004298d0	FUN_004298d0
+00722e60	wheel_speed_3	004299dc	004298d0	FUN_004298d0
+00722e70	lfWheel	004299ef	004298d0	FUN_004298d0
+00722e78	rfWheel	00429a0a	004298d0	FUN_004298d0
+00722e80	lrWheel	00429a25	004298d0	FUN_004298d0
+00722e88	rrWheel	00429a40	004298d0	FUN_004298d0
+00722ee4	lc_pfuel	00429b09	00429a80	FUN_00429a80
+00722f6c	fuelPressureLightEnable	00429b9f	00429a80	FUN_00429a80
+00722fac	wheel_speed_0	00429c8b	00429a80	FUN_00429a80
+00722fbc	wheel_speed_1	00429c9e	00429a80	FUN_00429a80
+00722fcc	wheel_speed_2	00429cb1	00429a80	FUN_00429a80
+00722fdc	wheel_speed_3	00429cc4	00429a80	FUN_00429a80
+00723040	fuelPressureLightEnable	00429d35	00429a80	FUN_00429a80
+0072306c	steeringWheelEnable	00429d8f	00429a80	FUN_00429a80
+007230a0	chassis_damage	00429de4	00429a80	FUN_00429a80
+007231d0	lfwheel	0042a06f	00429a80	FUN_00429a80
+007231d8	rfwheel	0042a082	00429a80	FUN_00429a80
+007231e0	lrwheel	0042a095	00429a80	FUN_00429a80
+007231e8	rrwheel	0042a0a8	00429a80	FUN_00429a80
+00723254	pfuel	0042a374	00429a80	FUN_00429a80
+007232dc	wheel_speed_0	0042a8ac	0042a720	FUN_0042a720
+007232ec	wheel_speed_1	0042a8ca	0042a720	FUN_0042a720
+007232fc	wheel_speed_2	0042a8e8	0042a720	FUN_0042a720
+0072330c	wheel_speed_3	0042a906	0042a720	FUN_0042a720
+00723344	steeringWheelEnable	0042a960	0042a720	FUN_0042a720
+00723378	chassis_damage	0042a9ba	0042a720	FUN_0042a720
+007234a8	lfWheel	0042ac53	0042a720	FUN_0042a720
+007234b0	rfWheel	0042ac6d	0042a720	FUN_0042a720
+007234b8	lrWheel	0042ac87	0042a720	FUN_0042a720
+007234c0	rrWheel	0042aca1	0042a720	FUN_0042a720
+007263e0	lstChassis	004388d1	00438880	FUN_00438880
+00726c2c	VehicleAero	00726cc0		
+00726c38	VehicleEngine	00726cc4		
+00726c48	VehicleChassis	00726cc8		
+00727290	chassis	005b2984	005b2980	FUN_005b2980
+00727290	chassis	005b2b3f	005b2b20	FUN_005b2b20
+00727290	chassis	005b2b84	005b2b20	FUN_005b2b20
+00727290	chassis	005b29dc	005b29c0	FUN_005b29c0
+00727290	chassis	005b2a04	005b29c0	FUN_005b29c0
+00727290	chassis	005b2a0a	005b29c0	FUN_005b29c0
+00727290	chassis	005b29d7	005b29c0	FUN_005b29c0
+00727290	chassis	005b29fb	005b29c0	FUN_005b29c0
+00727290	chassis	005b2b30	005b2b20	FUN_005b2b20
+007272b0	inertial	005b2a01	005b29c0	FUN_005b29c0
+007272b0	inertial	005b2a09	005b29c0	FUN_005b29c0
+007277b5	chassis	005b2a09	005b29c0	FUN_005b29c0
+00727cba	chassis			
+007281bf	chassis			
+007290ce	chassis			
+00729fdd	chassis			
+0072aecc	engine			
+0072aeec	chassis			
+0072b3d1	clutch			
+0072b3f1	chassis			
+0072b8f6	chassis			
+0072bdfb	chassis			
+0072cad8	Animated Steering Wheel on or off	004401b4	004401b0	FUN_004401b0
+0072cafc	steeringwheel	004401b9	004401b0	FUN_004401b0
+0072d614	Braking help enabled	00442b44	00442b40	FUN_00442b40
+0072d62c	brakingHelp	00442b49	00442b40	FUN_00442b40
+0072d950	Volume for player engine	004433c4	004433c0	FUN_004433c0
+0072d994	Volume for opponent engines	00443444	00443440	FUN_00443440
+0072dc68	relative volume for player engine	004439c4	004439c0	FUN_004439c0
+0072dc8c	RelativeVol_PlayerEngine	004439c9	004439c0	FUN_004439c0
+0072dcb8	relative volume for opponent engines	00443a44	00443a40	FUN_00443a40
+0072dce0	RelativeVol_OppEngine	00443a49	00443a40	FUN_00443a40
+0072e738	BLOWTIRE.WAV			
+0072e7a8	EXPLTIRE.WAV			
+0072e7d4	RFTIRE.WAV			
+0072e7fc	TIREDOWN.WAV			
+0072e80c	TIREWEAR.WAV			
+0072e81c	WHEELDAM.WAV			
+0072e82c	FUELOUT.WAV			
+0072e838	FUELLO.WAV			
+0072e844	FUELLOWRACE1.WAV			
+0072e858	FUELLOWRACE2.WAV			
+0072e86c	FUELLOWRACE3.WAV			
+0072e880	FUELLOWRACE4.WAV			
+0072e894	FUELLOWRACE5.WAV			
+0072e8a8	FUELLOWRACE6.WAV			
+0072f180	FUELSP.WAV			
+0072f18c	FUELHCAN.WAV			
+0072f19c	FUEL1CAN.WAV			
+0072f1ac	FUEL1HCAN.WAV			
+0072f1bc	FUEL2CAN.WAV			
+00734968	est_fuel	0045f137		
+0073498c	fuel_recommended	0045f184		
+007349a0	lbl_add_fuel	0045f19b		
+007349b0	add_fuel	0045f1b2		
+00734e2c	txtFuel	0046220e		
+00734e34	txtTires	0046222d		
+007355d0	chassis_damage	00467212	00467180	FUN_00467180
+007356a0	wheel_speed_0	00467729	00467180	FUN_00467180
+007356b0	wheel_speed_1	00467744	00467180	FUN_00467180
+007356c0	wheel_speed_2	0046775f	00467180	FUN_00467180
+007356d0	wheel_speed_3	0046777a	00467180	FUN_00467180
+007356e0	lfwheel	00467795	00467180	FUN_00467180
+007356e8	rfwheel	004677b0	00467180	FUN_00467180
+007356f0	lrwheel	004677cb	00467180	FUN_00467180
+007356f8	rrwheel	004677e6	00467180	FUN_00467180
+007371fc	fuelPressure	00473f4b		
+00737a14	areaTelemBrake	004d8743		
+00737a14	areaTelemBrake	00477c6b		
+00737a24	barTelemBrake	004d8730		
+00737a24	barTelemBrake	00477c58		
+00737a34	grpTelemBrake	004d871d		
+00737a34	grpTelemBrake	00477c45		
+00737a44	areaTelemThrottle	004d870a		
+00737a44	areaTelemThrottle	00477c32		
+00737a58	barTelemThrottle	004d86f7		
+00737a58	barTelemThrottle	00477c1f		
+00737a6c	grpTelemThrottle	004d86e4		
+00737a6c	grpTelemThrottle	00477c0c		
+00737f64	btnN3SpringsLFDown			
+00737f78	btnN3SpringsLFUp			
+00737f8c	btnN3SpringsLRDown			
+00737fa0	btnN3SpringsLRUp			
+00737fb4	btnN3SpringsRFDown			
+00737fc8	btnN3SpringsRFUp			
+00737fdc	btnN3SpringsRRDown			
+00737ff0	btnN3SpringsRRUp			
+00738004	btnN3SpringRubbersLFDown			
+00738020	btnN3SpringRubbersLFUp			
+00738038	btnN3SpringRubbersLRDown			
+00738054	btnN3SpringRubbersLRUp			
+0073806c	btnN3SpringRubbersRFDown			
+00738088	btnN3SpringRubbersRFUp			
+007380a0	btnN3SpringRubbersRRDown			
+007380bc	btnN3SpringRubbersRRUp			
+00738194	btnN3CamberLFDown			
+007381a8	btnN3CamberLFUp			
+007381b8	btnN3CamberLRDown			
+007381cc	btnN3CamberLRUp			
+007381dc	btnN3CamberRFDown			
+007381f0	btnN3CamberRFUp			
+00738200	btnN3CamberRRDown			
+00738214	btnN3CamberRRUp			
+00738224	btnN3CasterLFDown			
+00738238	btnN3CasterLFUp			
+00738248	btnN3CasterRFDown			
+0073825c	btnN3CasterRFUp			
+00738340	btnN3BrakeBiasDown			
+00738354	btnN3BrakeBiasUp			
+00738490	radEngineType			
+00739530	NASCAR Racing 2003 Season - DriveTrain & Aero	0047da99		
+00739590	NASCAR Racing 2003 Season - DriveTrain & Aero	0047db2a		
+0073981c	btnN3SpringsLRDown	0047ec7f	0047e910	FUN_0047e910
+00739830	btnN3SpringsLRUp	0047ec9d	0047e910	FUN_0047e910
+00739844	btnN3SpringsRRDown	0047ecbb	0047e910	FUN_0047e910
+00739858	btnN3SpringsRRUp	0047ecd9	0047e910	FUN_0047e910
+0073a0ac	N3TirePressureLFText	004840e7		
+0073a0c4	N3TirePressureRFText	0048410b		
+0073a0f0	N3TirePressureLRText	00484132		
+0073a11c	N3TirePressureRRText	00484159		
+0073a354	btnN3SpringsLFDown	0073ab38		
+0073a368	btnN3SpringsLFUp	0073ab3c		
+0073a37c	btnN3SpringRubbersLFDown	0073ab40		
+0073a398	btnN3SpringRubbersLFUp	0073ab44		
+0073a3e0	btnN3CamberLFDown	0073ab50		
+0073a3f4	btnN3CamberLFUp	0073ab54		
+0073a404	btnN3CasterLFDown	0073ab58		
+0073a418	btnN3CasterLFUp	0073ab5c		
+0073a4d8	btnN3SpringsRFDown	0073ab80		
+0073a4ec	btnN3SpringsRFUp	0073ab84		
+0073a500	btnN3SpringRubbersRFDown	0073ab88		
+0073a51c	btnN3SpringRubbersRFUp	0073ab8c		
+0073a564	btnN3CamberRFDown	0073ab98		
+0073a578	btnN3CamberRFUp	0073ab9c		
+0073a588	btnN3CasterRFDown	0073aba0		
+0073a59c	btnN3CasterRFUp	0073aba4		
+0073a630	btnN3SpringsLRDown	0073abc0		
+0073a644	btnN3SpringsLRUp	0073abc4		
+0073a658	btnN3SpringRubbersLRDown	0073abc8		
+0073a674	btnN3SpringRubbersLRUp	0073abcc		
+0073a6bc	btnN3CamberLRDown	0073abd8		
+0073a6d0	btnN3CamberLRUp	0073abdc		
+0073a7b8	btnN3SpringsRRDown	0073ac08		
+0073a7cc	btnN3SpringsRRUp	0073ac0c		
+0073a7e0	btnN3SpringRubbersRRDown	0073ac10		
+0073a7fc	btnN3SpringRubbersRRUp	0073ac14		
+0073a844	btnN3CamberRRDown	0073ac20		
+0073a858	btnN3CamberRRUp	0073ac24		
+0073a8bc	btnN3BrakeBiasDown	0073ac38		
+0073a8d0	btnN3BrakeBiasUp	0073ac3c		
+0073ad08	grpEngineType	00484dd8	00484da0	FUN_00484da0
+0073ad18	grpDriveTrain	00484df0	00484da0	FUN_00484da0
+0073ad28	grpN3Suspension	00484e05	00484da0	FUN_00484da0
+0073ad38	grpWeightAero	00484e17	00484da0	FUN_00484da0
+0073af40	N3CasterLFText	0048508b	00485070	FUN_00485070
+0073af50	N3CamberLFText	00485090	00485070	FUN_00485070
+0073af74	N3SpringRubbersLFText	0048509a	00485070	FUN_00485070
+0073af8c	N3SpringsLFText	0048509f	00485070	FUN_00485070
+0073afc0	N3TirePressureLFText	004850b2	00485070	FUN_00485070
+0073afec	N3CasterRFText	004850c7	00485070	FUN_00485070
+0073affc	N3CamberRFText	004850cc	00485070	FUN_00485070
+0073b020	N3SpringRubbersRFText	004850d6	00485070	FUN_00485070
+0073b038	N3SpringsRFText	004850db	00485070	FUN_00485070
+0073b06c	N3TirePressureRFText	004850ee	00485070	FUN_00485070
+0073b0ac	N3CamberLRText	00485108	00485070	FUN_00485070
+0073b0d0	N3SpringRubbersLRText	00485112	00485070	FUN_00485070
+0073b0e8	N3SpringsLRText	00485117	00485070	FUN_00485070
+0073b11c	N3TirePressureLRText	0048512a	00485070	FUN_00485070
+0073b15c	N3CamberRRText	00485144	00485070	FUN_00485070
+0073b180	N3SpringRubbersRRText	0048514e	00485070	FUN_00485070
+0073b198	N3SpringsRRText	00485153	00485070	FUN_00485070
+0073b1cc	N3TirePressureRRText	00485166	00485070	FUN_00485070
+0073b248	N3BrakeBiasText	00485192	00485070	FUN_00485070
+0073b33c	radEngineType	004851eb		
+0073d9ec	grpMOTD	00492111		
+0073e02c	stpChassis	0049872f		
+0073e588	btnDnPlayerEngine			
+0073e59c	btnUpPlayerEngine			
+0073e5b0	btnDnOpponentEngines			
+0073e5c8	btnUpOpponentEngines			
+0073e6b4	radGearbox			
+0073e6d8	defBrake			
+0073e6e4	defClutch			
+0073e848	chkAutoClutch			
+0073e858	chkBrakingHelp			
+0073e868	chkThrottleHelp			
+0073e964	chkSteeringWheel			
+0073ec80	btnUpPlayerEngine			
+0073ec94	btnDnPlayerEngine			
+0073eca8	sliPlayerEngine			
+0073ecb8	btnUpOpponentEngines			
+0073ecd0	btnDnOpponentEngines			
+0073ece8	sliOpponentEngines			
+0073fbec	defBrake	0049dcd1	0049dcb0	FUN_0049dcb0
+0073fbf8	defClutch	0049dcd9	0049dcb0	FUN_0049dcb0
+0073fca8	radGearbox	0049de4b	0049dcb0	FUN_0049dcb0
+0073fda8	chkAutoClutch	0049e0bf	0049dcb0	FUN_0049dcb0
+0073fdb8	chkBrakingHelp	0049e0db	0049dcb0	FUN_0049dcb0
+0073fdc8	chkThrottleHelp	0049e0f7	0049dcb0	FUN_0049dcb0
+0073ff64	chkSteeringWheel	0049e60e	0049e270	FUN_0049e270
+007402ec	btnUpPlayerEngine	0049f17b	0049f0d0	FUN_0049f0d0
+00740300	btnDnPlayerEngine	0049f197	0049f0d0	FUN_0049f0d0
+00740314	txtPlayerEngine	0049f1b0	0049f0d0	FUN_0049f0d0
+00740324	sliPlayerEngine	0049f1cf	0049f0d0	FUN_0049f0d0
+00740334	btnUpOpponentEngines	0049f216	0049f0d0	FUN_0049f0d0
+0074034c	btnDnOpponentEngines	0049f232	0049f0d0	FUN_0049f0d0
+00740364	txtOpponentEngines	0049f24b	0049f0d0	FUN_0049f0d0
+00740378	sliOpponentEngines	0049f26a	0049f0d0	FUN_0049f0d0
+0074088c	lfwheel	004ad5b5		
+00740894	rfwheel	004ad5fb		
+0074089c	lrwheel	004ad641		
+007408a4	rrwheel	004ad687		
+00740be0	stpChassis	004ae3e2		
+00743b48	rate at which fuel and tires are used	004cc2c4	004cc2c0	FUN_004cc2c0
+0074420c	rate at which fuel and tires are used	004cdf44	004cdf40	FUN_004cdf40
+007448d0	rate at which fuel and tires are used	004cf5c4	004cf5c0	FUN_004cf5c0
+00744ed4	rate at which fuel and tires are used	004d0ba4	004d0ba0	FUN_004d0ba0
+007451f4	rate at which fuel and tires are used	004d1aa4	004d1aa0	FUN_004d1aa0
+00745a54	rate at which fuel and tires are used	004d31e4	004d31e0	FUN_004d31e0
+007488e4	aiParamVehicleAero	006f3eb4		
+007488f8	aiParamVehicleEngine	006f3eb8		
+00748910	aiParamVehicleChassis	006f3ebc		
+007496c4	physics	0050eeda	0050ee70	FUN_0050ee70
+007496c4	physics	0050eefb	0050ee70	FUN_0050ee70
+007496c4	physics	0074aa74		
+007496dc	physics	0050eeda	0050ee70	FUN_0050ee70
+007496dc	physics	0074aa8c		
+007496f4	physics			
+00749714	physics			
+00749738	physics			
+00749758	physics			
+00749778	physics			
+00749790	physics			
+007497a8	physics			
+007497c0	physics			
+007497d8	physics			
+007497e0	inertial_factor			
+007497f0	physics			
+0074980c	physics			
+00749828	physics			
+00749844	physics			
+0074984c	minimum_rpm			
+00749858	physics			
+00749860	gear_shift_rpm_decrement			
+00749888	ai_inverse_slipcurve_k			
+007498a0	physics			
+007498c4	physics			
+007498cc	wheelspin_min_adj_coeff			
+007498e4	physics			
+007498fc	physics			
+00749914	physics			
+0074991c	cold_tire_coeff			
+0074992c	physics			
+00749934	tire_temp_increment			
+00749964	braking_efficiency_coeff	00529bf5	00529b90	FUN_00529b90
+00749964	braking_efficiency_coeff	0074acb8		
+0074998c	base_suspension_problem_coeff			
+007499b8	base_suspension_failure_coeff			
+007499e4	suspension_problem_slip_angle_adj			
+00749a14	suspension_problem_pitch_adj_coeff			
+00749a44	suspension_problem_roll_adj_coeff			
+00749a74	base_tire_failure_coeff			
+00749a98	tire_problem_slip_angle_adj			
+00749ac0	suspension_mechanical_drag_coeff			
+00749af0	tire_failure_mechanical_drag_coeff			
+00749b20	tire_cond_accel_scaling			
+00749b44	suspension_cond_accel_scaling			
+00749b70	tire_cond_decel_scaling			
+00749b94	suspension_cond_decel_scaling			
+00749c10	suspension_problem_chance			
+00749c38	tire_problem_chance			
+00749c58	fuel_system_problem_chance			
+00749c80	engine_problem_chance			
+00749ca4	brake_problem_chance			
+00749cc8	suspension_failure_chance			
+00749cf0	tire_failure_chance			
+00749d10	fuel_system_failure_chance			
+00749d38	engine_failure_chance			
+00749d5c	brake_failure_chance			
+00749d80	fuel_leak_chance			
+00749ddc	base_tire_wear			
+00749df8	base_brake_wear			
+00749e14	driver_tire_break_wear_scaling			
+00749e40	driver_fuel_consumption_scaling			
+00749e90	crashing_recovery_slip_angle			
+00749ff4	ai_fuel_use			
+0074a02c	ai_drag_modifier			
+0074a0a8	ai_tire_wear_left			
+0074a0c8	ai_tire_wear_right			
+0074a10c	ai_arcade_drag_modifier			
+0074a154	ai_arcade_tire_wear			
+0074a174	ai_arcade_fuel_use			
+0074a1e4	strategy_lap_time_fuel_use_gain			
+0074a380	ai_strength_to_aero_drag			
+0074a3a4	ai_strength_to_engine_power			
+0074a3f8	ai_strength_to_engine_power_spread			
+0074a424	ai_strength_to_aero_drag_spread			
+0074a47c	driver_qualifying_to_aero_drag			
+0074a4a4	driver_qualifying_to_engine_power			
+0074a58c	vehicle_aero_to_aero_drag			
+0074a5b0	vehicle_engine_to_engine_power			
+0074a5d8	vehicle_chassis_to_traction_circle			
+0074a7b0	fuel_risk_factor			
+0074a7d0	fuel_stupidity_factor			
+0074a7f4	tire_wear_risk_factor			
+0074a818	tire_wear_stupidity_factor			
+0074aa24	tire_wear_calibration_enable			
+0074b88c	track_tire_wear	0050fbe0	0050fbd0	FUN_0050fbd0
+0074b88c	track_tire_wear	0050fd26	0050fbd0	FUN_0050fbd0
+0074b88c	track_tire_wear	0074b89c		
+0074b8a0	track_tire_heat	0050fc11	0050fbd0	FUN_0050fbd0
+0074b8a0	track_tire_heat	0050fd7f	0050fbd0	FUN_0050fbd0
+0074b8a0	track_tire_heat	0074b8b0		
+0074b8b4	track_tire_wear_loss	0050fc4e	0050fbd0	FUN_0050fbd0
+0074b8b4	track_tire_wear_loss	0050fdbc	0050fbd0	FUN_0050fbd0
+0074b8b4	track_tire_wear_loss	0074b8cc		
+0074b8d0	track_tire_wear_exp	0050fc8e	0050fbd0	FUN_0050fbd0
+0074b8d0	track_tire_wear_exp	0050fdfc	0050fbd0	FUN_0050fbd0
+0074b8d0	track_tire_wear_exp	0074b8e4		
+0074b8e8	relative tire wear (>1.0 -> more wear)	0050fbdf	0050fbd0	FUN_0050fbd0
+0074b8e8	relative tire wear (>1.0 -> more wear)	0050fd25	0050fbd0	FUN_0050fbd0
+0074b8e8	relative tire wear (>1.0 -> more wear)	0074b910		
+0074b914	relative tire heating (>1.0 -> more heat)	0050fc10	0050fbd0	FUN_0050fbd0
+0074b914	relative tire heating (>1.0 -> more heat)	0050fd7e	0050fbd0	FUN_0050fbd0
+0074b914	relative tire heating (>1.0 -> more heat)	0074b940		
+0074b944	% grip lost for fully worn tire (0.2 -> 20% of grip lost)	0050fc4d	0050fbd0	FUN_0050fbd0
+0074b944	% grip lost for fully worn tire (0.2 -> 20% of grip lost)	0050fdbb	0050fbd0	FUN_0050fbd0
+0074b944	% grip lost for fully worn tire (0.2 -> 20% of grip lost)	0074b980		
+0074ba9c	show_tire			
+0074bcd4	AIMECHFAIL %d: Suspension, wheel %d, damage %d	0052ea4a	0052e990	FUN_0052e990
+0074bd04	AIMECHFAIL %d: Tire, wheel %d, damage %d	0052ead9	0052e990	FUN_0052e990
+0074bd30	AIMECHFAIL %d: Fuel leak, damage %.3f	0052eb5b	0052e990	FUN_0052e990
+0074bd58	AIMECHFAIL %d: Fuel system, damage %.3f	0052ebe3	0052e990	FUN_0052e990
+0074bd80	AIMECHFAIL %d: Engine, damage %.3f	0052ec6f	0052e990	FUN_0052e990
+0074bda4	AIMECHFAIL %d: Brakes	0052ecff	0052e990	FUN_0052e990
+0074c9f8	chassis	0055049d	00550490	FUN_00550490
+0074d094	tire_asphalt.ces	0074d0dc		
+0074d0a8	tire_grass.ces	0074d0e0		
+0074d0b8	tire_gravel.ces	0074d0e4		
+0074d0c8	tire_rumble.ces	0074d0e8		
+0074d174	TireSounds	005554ce	005554c0	FUN_005554c0
+0074d1b4	TireSounds	0055554e	00555540	FUN_00555540
+0074d1f4	TireSounds	005555ce	005555c0	FUN_005555c0
+0074d234	TireSounds	0055564e	00555640	FUN_00555640
+0074d278	TireSounds	005556ce	005556c0	FUN_005556c0
+0074d2bc	TireSounds	0055574e	00555740	FUN_00555740
+0074d300	TireSounds	005557ce	005557c0	FUN_005557c0
+0074d344	TireSounds	0055584e	00555840	FUN_00555840
+0074d384	TireSounds	005558ce	005558c0	FUN_005558c0
+0074d3c4	TireSounds	0055594e	00555940	FUN_00555940
+0074d3f8	TireSounds	005559ce	005559c0	FUN_005559c0
+0074d42c	TireSounds	00555a4e	00555a40	FUN_00555a40
+0074d464	TireSounds	00555ace	00555ac0	FUN_00555ac0
+0074d494	TireSounds	00555b4e	00555b40	FUN_00555b40
+0074d4d4	TireSounds	00555bce	00555bc0	FUN_00555bc0
+0074d514	TireSounds	00555c4e	00555c40	FUN_00555c40
+0074d550	TireSounds	00555cce	00555cc0	FUN_00555cc0
+0074d58c	TireSounds	00555d4e	00555d40	FUN_00555d40
+0074d5bc	TireSounds	00555dce	00555dc0	FUN_00555dc0
+0074d5ec	TireSounds	00555e4e	00555e40	FUN_00555e40
+0074d624	TireSounds	00555ece	00555ec0	FUN_00555ec0
+0074d654	TireSounds	00555f4e	00555f40	FUN_00555f40
+0074d698	TireSounds	00555fce	00555fc0	FUN_00555fc0
+0074d6dc	TireSounds	0055604e	00556040	FUN_00556040
+0074d71c	TireSounds	005560ce	005560c0	FUN_005560c0
+0074d75c	TireSounds	0055614e	00556140	FUN_00556140
+0074d78c	TireSounds	005561ce	005561c0	FUN_005561c0
+0074d7bc	TireSounds	0055624e	00556240	FUN_00556240
+0074d7f4	TireSounds	005562ce	005562c0	FUN_005562c0
+0074d824	TireSounds	0055634e	00556340	FUN_00556340
+0074d868	TireSounds	005563ce	005563c0	FUN_005563c0
+0074d8ac	TireSounds	0055644e	00556440	FUN_00556440
+0074d8ec	TireSounds	005564ce	005564c0	FUN_005564c0
+0074d92c	TireSounds	0055654e	00556540	FUN_00556540
+0074d95c	TireSounds	005565ce	005565c0	FUN_005565c0
+0074d98c	TireSounds	0055664e	00556640	FUN_00556640
+0074d9c4	TireSounds	005566ce	005566c0	FUN_005566c0
+0074d9f4	TireSounds	0055674e	00556740	FUN_00556740
+0074da24	TireSounds	005567ce	005567c0	FUN_005567c0
+0074da54	TireSounds	0055684e	00556840	FUN_00556840
+0074dd10	Record telemetry to replay at physics rate?	0055a264	0055a260	FUN_0055a260
+0074dd3c	record_telem_at_physics_rate	0055a269	0055a260	FUN_0055a260
+0074dd68	Bitwise or(1=hdr,2=chass,4=wheel,8=tire,16=drvline,32=plyrinput)	0055a2e4	0055a2e0	FUN_0055a2e0
+0074e884	chassis	0055ea5f	0055e9b0	FUN_0055e9b0
+0074e8bc	lfwheel	0055eac3	0055e9b0	FUN_0055e9b0
+0074e8c4	rfwheel	0055ead2	0055e9b0	FUN_0055e9b0
+0074e8d4	lrwheel	0055eaf0	0055e9b0	FUN_0055e9b0
+0074e8dc	rrwheel	0055eaff	0055e9b0	FUN_0055e9b0
+0074e8e4	engine	0055eb0e	0055e9b0	FUN_0055e9b0
+0074e8ec	clutch	0055eb1d	0055e9b0	FUN_0055e9b0
+0074ed08	Gearbox	0056b9b6	0056b960	FUN_0056b960
+0074f710	track_tire_wall_grip	0074f804		
+0074f794	track_chassis_grip	0074f81c		
+0074f7a8	track_opp_wheel_grip	0074f820		
+0074f7c0	track_wheel_grip	0074f824		
+0074f98c	relative grip for tire wall material	0074fb08		
+0074fa70	relative grip for chassis material	0074fb20		
+0074fa94	relative grip for opp wheel material	0074fb24		
+0074fabc	relative grip for wheel material	0074fb28		
+0074fbe0	TireWall	00579c42		
+0074fc1c	Chassis	00579c66		
+0074fc24	OppWheel	00579c6c		
+0074fc30	Wheel	00579c72		
+0074fce8	Allow non keypad/F-keys for steer,gas,brake	0057a404	0057a400	FUN_0057a400
+0075095c	grpModemStatus	0058b301	0058b280	FUN_0058b280
+00750a4c	tirejack			
+00750a78	tire_on			
+00750a80	tire_off			
+00751ed4	SUSPENSION	00751f24		
+00751ee0	TIRES	00751f28		
+00751ee8	FUEL_SYSTEM	00751f2c		
+00751ef4	ENGINE	00751f30		
+00751efc	BRAKES	00751f34		
+00752b58	fgmsgCarSetGearboxType	005baada		
+00752bac	fgmsgCarSetThrottleMomentum	005baaec		
+00752bc8	fgmsgCarSetBrakeMomentum	005baaf2		
+00752c20	fgmsgCarSetBrakingHelp	005bab04		
+00752c38	fgmsgCarSetThrottleHelp	005bab0a		
+007574ec	.?AVGetEntityRequest@WONAPI@@			
+00758f70	.?AVHTTPEngine@WONAPI@@			
+0075ae34	WS_RoutingServG2_Throttled	00696a59	00696800	FUN_00696800
+010ca25e	DragQueryFileA			
+0113254e	Brakes			
+01132584	Engine			
+011325ba	Gearbox			
+011325ca	Clutch			
+01132614	Fuel Lk			
+01132624	Fuel Inj			
+01132636	Fuel Pmp			
+01132648	Fuel Ln			
+011326bc	Tire			
+011326c6	Wheel			
+011326e4	Retired			
+0113272c	No Fuel			
+011327e4	Brake Line			
+011330fe	...type of chassis (road course, short track, etc.)			
+0113323e	...tire wear and/or grip			
+01133c4e	You may not cut the entire replay tape.			
+011367ec	Throttle:			
+01136800	Brake:			
+0113681a	Speed, Gear, Throttle, and Brake data for the selected driver.  Throttle and Brake information is available only for the local player driver.			
+011395c8	Steering Wheel			
+0113b040	If checked, your pit crew will animate while changing tires and adding fuel.			
+0113b0da	If checked, displays the steering wheel when driving from the cockpit view.			
+0113b2fa	Skid marks can be generated when one or more tires loses grip with the racing surface.			
+0113c69c	Player Engine:			
+0113c6c0	Opponent Engines:			
+0113c8f2	The relative volume of your car's engine.			
+0113c946	The relative volume of all engines except yours.			
+0113cab4	The relative volume of all track surface sounds such as tire scrubbing, skidding, and road noise. Scrubbing and skidding provide vital audio feedback, so think twice before reducing this volume level!			
+0113d6f4	Throttle:			
+0113d708	Brake:			
+0113d716	Clutch:			
+0113d742	GEARBOX			
+0113d90a	Anti-Lock Brakes			
+0113d952	Automatic Clutch			
+0113ddac	Throttle:			
+0113ddc0	Brake:			
+0113df1a	To re-assign a control, click to the right of its name. KEYBOARD USERS: By default, the steering, throttle, and brake functions may only be assigned to the numeric keypad. Click the Advanced button if you would rather use different keys.			
+0113e72e	This number can reduce unwanted oscillations of the wheel that arise due to latency, although too large a number can introduce jerkiness into the force output.			
+0113ed3a	Smooths out the input from your throttle control.  This is useful for digital controls such as game pads and the keys on your keyboard.  Set to 0 for instant response.			
+0113ee8a	Smooths out the input from your braking control.  This is useful for digital controls such as game pads and the keys on your keyboard.  Set to 0 for instant response.			
+0113f1da	Sets the steering linearity. If you are using a steering wheel, moving the slider toward Linear may give you more precise control. If you are using a joystick to steer, you will probably get better results by moving the slider toward Non-Linear. NOTE: If you are steering with a digital controller such as the keyboard or a standard gamepad, this option will be disabled.			
+0113f99c	If checked, equips your car with an anti-lock braking system.  While anti-lock brakes make the car easier for the novice driver to control, the experienced driver will be able to brake more efficiently with this option turned off. NOTE: If braking has been assigned to a button or a key rather than a controller axis, this aid will be turned on by default. Otherwise, the car would be very difficult to control while braking.			
+0113fe72	If checked, equips your car with an automatic clutch. While the manual clutch can provide greater shifting precision, it requires proper heel and toe downshift technique and therefore is recommended only for experienced users. The manual clutch is not available if Automatic Shifting has been selected.			
+011404cc	If checked, equips your car with a traction control system. While traction control makes the car easier for the novice driver to control, the experienced driver will be able to accelerate and corner more efficiently with this option turned off. NOTE: If the throttle has been assigned to a button or a key rather than a controller axis, this aid will be turned on be default. Otherwise, the car would be very difficult to control while accelerating.			
+011410b2	Throttle			
+011410c4	Brake			
+011410d0	Clutch			
+01141610	Choose a control to engage the clutch.			
+0114169e	Choose a control to brake.			
+01141af8	Retire			
+01141bee	RPM:			
+01141cc0	Press Enter to Retire			
+01141de0	Return to Pit/Retire			
+01142036	RETIRE			
+01142044	RETIRE AND SAVE RACE			
+01142940	FUEL			
+0114294a	TIRE TEMPERATURE			
+0114296c	TIRE CHANGE			
+01142af4	Fuel:			
+01142b00	Tires:			
+01142c1e	Est. Fuel Remaining: %1			
+01142d9c	Tire Pressure			
+01143e9a	The chassis type used on this car. This can be modified only when a driver is created.			
+01145338	Chassis:			
+01145504	Aerodynamics:			
+01145520	Chassis:			
+01145532	Engine:			
+01145e26	The ability of the car to slip through the air with a minimum of drag. A higher Aero rating means less drag, which translates to more speed.			
+01145f58	Engine horsepower.			
+0114610e	A high rating translates to quicker times for all pit operations: changing tires, adding fuel, making setup adjustments, and repairing damage.			
+0114622c	A measurement of the team's willingness to take pitting risks in order to gain track position. This can be done in several ways, the most obvious of which involves taking none or two tires rather than four. As this value increases, the team becomes more willing to take such chances. Because of this fact, a high Strategy rating isn't necessarily better than a low one.			
+01146a24	Multiplies the tire wear and fuel usage rates by the indicated value.  1x translates to normal usage, 2x double, 3x triple, and 4x quadruple usage.  This option is useful for setting up a short race which normally would not require a pit stop.			
+01147482	Arcade mode has fewer rules to follow and features a relatively easy-to-drive car with unrealistically high levels of power and grip. Simulation mode features the full set of NASCAR rules and an ultra-realistic physics model that provides the most authentic NASCAR driving experience available outside of a race car.			
+011476fc	The damage level used. In Moderate mode, the car is able to withstand significantly more damage than it can in Realistic mode. Note that even if None is selected, it is still possible to blow the engine and wear the tires to the point of failure.			
+011478ea	If checked, there will be a realistic chance of suffering a mechanical failure. Note that even if this option is unchecked, it is still possible to blow the engine and wear the tires to the point of failure.			
+0114a212	If checked, a Hardcore Mode can be selected.  If the Visual mode is selected, all competitors will be forced to race from the cockpit view, with smoke and windshield buildup enabled.  If the Driving Aids mode is selected, anti-lock brakes, stability control, steering assistance, and traction control will be disabled for all competitors.			
+0114f39c	Throttle:			
+0114f3b0	Brake:			
+0115020c	Replay time bar. Clicking on any point of the time bar will move the slider control and cause the replay to jump to the corresponding point in time. More precise control can be achieved by clicking on the slider control, dragging it to the desired point in the replay, and releasing it.			
+01151648	Speed, Gear, Throttle, and Brake data for the selected driver.  Throttle and Brake information is available only for the local player driver.			
+01151ac2	FUEL LEVEL			
+01151b0a	LAST TIRE READING			
+01151b58	SUSPENSION			
+01151b6e	Tire Pressure			
+01151bb2	Springs			
+01151bc2	Camber			
+01151bd0	Caster			
+01151c10	Front Brake Bias:			
+01151cb6	TIRE PRESSURE			
+01151cfa	SPRINGS			
+01151d0a	CAMBER			
+01151d18	CASTER			
+01151d52	FRONT BRAKE BIAS:			
+01151dfc	DRIVETRAIN/AERO			
+01151e1c	Engine Type			
+01151fb6	TIRE PRESSURE			
+01152200	Spring Rubbers			
+01152550	This affects the ratio of motion between your game controller (the car steering wheel) and the steering of the front tires.  A higher number gives you finer control, a smaller number gives you fast response.			
+011526f0	The car's current fuel level.			
+0115272c	The desired amount of fuel. The car's fuel level is fully adjustable only in Testing mode. In all other game modes, fuel may be added to the tank, but not removed.  At Daytona and Talladega, a 13.5-gallon fuel tank is used.  At all other tracks, a 22-gallon tank is used.			
+0115294c	Each tire's temperature is taken in three places: inner edge (I), middle (M), and outer edge (O). Note that the location of the INNER and OUTER edges depends upon the side of the car being examined. Cold pressure is measured when the tire is mounted. Hot, or operating pressure is measured at each pit stop.			
+0115338c	Contains the following setup elements: Tire pressure, shock compression and rebound, springs, camber, caster, ride height, front brake bias, front toe-out, sway bars, and track bar.			
+01153594	Contains the following setup elements: Grille tape, spoiler, differential and transmission ratios.			
+01153710	More forward weight increases stability for high-speed cornering and braking. More rear weight permits the car to rotate around slow, sharp corners more quickly.			
+011539fe	The qualifying engine gives more power, but will tend to overheat if used for more than a few laps. The race engine is designed to go the full race distance. You are automatically given the qualifying engine in a qualifying session, and the race engine in a happy hour or race session. In practice or testing you are free to try either.			
+01153ca0	The differential gear ratio is used to adjust all four gears together. A smaller ratio allows for higher top speeds, but produces less torque at the rear wheels, so it will take longer to reach top speed.			
+01153e3a	A taller gear (smaller number) is better for higher speeds.  A shorter gear (larger number) is better for strong acceleration.  Select gearing such that the car accelerates briskly through gears 1-4, and that the engine RPM tops out around 9,000 (7,000 at the restrictor plate tracks) in top gear.			
+0115408e	This is the number of engine revolutions for each revolution of the rear wheels in the given gear. This allows a meaningful comparison of gear ratios when changing both the diff ratio and transmission ratios.			
+01154230	More grille tape reduces drag and increases front downforce, making the car turn better.  More tape also makes the engine run hotter.			
+0115433c	A steeper rear spoiler increases drag and rear downforce, making the car tighter.  A flatter spoiler reduces both, and makes the car looser.			
+01154456	Lower tire pressures result in a more forgiving car, and higher tire temperatures. Higher pressures allow higher top speeds with less temperature buildup. The recommended pressure will keep the middle (M) temperature on the tires near the average of the inside (I) and outside (O) temperatures. Going higher than recommended can result in more speed at a high-speed track, but the loss in grip can hurt at slower tracks.			
+011547a0	At the RF shock, adding compression (higher number) will tighten the car on corner entry, while less will make it looser.  For the LF, adding compression will loosen the car on corner entry, while less will tighten it.  For the RR, adding compression will loosen the car on corner exit, while less will make it tighter.  For the LR, adding compression will tighten the car on corner exit, while less will make it looser.			
+01154aea	At the RF shock, adding rebound (higher number) will loosen the car on corner exit, while less will tighten it.  For the LF, in high-speed corners adding rebound will loosen the car on corner exit, while less will tighten it.  In low-speed corners, the exit effect will be reversed.  For the RR, adding rebound will tighten the car on corner entry, while less will loosen it.  For the LR, adding rebound will loosen the car on corner entry, while less will tighten it.			
+01154e94	Increasing RF spring stiffness will tighten the car, particularly on corner entry.  Softening it will have the reverse effect.  Increasing LF can make the car turn better on corner entry, but may tighten it in the remainder of the corner.  Increasing RR will make the car loose, particularly mid-corner and on exit. In high-speed corners, aerodynamic effects may overcome this.  Increasing LR will make the car tighter on corner exit, but may loosen it in mid-corner.			
+0115523c	Adding negative camber on a right side tire (or adding positive camber on a left side tire) increases lateral grip on that tire, up to a point.  Excessive camber can greatly increase tire wear.			
+011553c0	Adding positive caster 'removes wedge' from the car as the tires are steered, making the car looser.  Unequal caster (caster split) imposes unbalanced forces on the steering system that the driver can feel.			
+01155560	Raising the track bar loosens the car. Increasing the split (running higher right side than left side) loosens the car under power and in high-banked corners, and tightens it under braking.			
+011558d8	If the car doesn't turn well under braking, decrease the front brake bias. If it wants to spin under braking, increase the front bias. Go with the lowest front bias you can control.			
+01155a44	Roll couple can be thought of as the car's weight bias as it's cornering. Displayed as percentage front. Roll couple is not directly adjustable; its value is derived from your spring and sway bar settings. Increasing roll couple will tighten the car and promote understeer, while decreasing it will loosen it and promote oversteer.			
+01155cdc	Increasing front toe-out settles the car in a turn, but too much can produce understeer. 1/8 inch toe-out is a very common setting.			
+01155f22	FUEL LEVEL			
+01155f38	SUSPENSION			
+01155f4e	Wheel			
+01155f5a	Tire Pressure			
+01155f86	Camber			
+01155f94	Front Brake Bias:			
+01156068	Differential			
+01156490	Qualifying Engine			
+011564b4	Race Engine			
+01157366	Your engine is smoking too much. We've got to fix it.			
+01157bdc	You blew the engine.			
+01157c06	You blew a tire.			
+01157c28	Looks like you've got some engine trouble.			
+01157e00	You've exploded a tire.			
+01157eaa	Right front tire's wearing out.			
+01157f36	You have a tire going down.			
+01157fb6	You've got wheel damage.			
+01157fe8	We're out of fuel.			
+0115800e	We're running low on fuel. Watch the fuel pressure gauge.			
+01158082	We're running low on fuel. We should be able to make it to the end.			
+0115810a	We're running low on fuel. We might not make it to the end.			
+01158182	We're running low on fuel. If the fuel pressure gauge drops, come in.			
+0115820e	We're almost out of fuel, but it looks like we'll make it to the end.			
+0115829a	We're almost out of fuel. We might not make it to the end.			
+01158310	We're almost out of fuel. You'll have to come in for a splash.			
+011594da	You're too far left! We can't change your left side tires.			
+01159550	You're too far right! We can't change your right side tires.			
+01159938	There was a problem with one of the tires.			
+0115998e	There was a problem adding fuel.			
+011599d0	There was a problem with one of the fuel cans.			
+0115a4e2	We'll give you just a splash of fuel.			
+0115a530	We'll give you half a can of fuel.			
+0115a576	We'll give you a can of fuel.			
+0115a5b2	We'll give you 1 1/2 cans of fuel.			
+0115a67c	We'll give you four tires.			
+0115a6b2	We'll give you left side tires only.			
+0115a6fc	We won't give you tires this time.			
+0115a742	We'll give you right side tires only.			
+0115a78e	We're changing the tire pressure.			
+0115a8fe	Drivers, start your engines!			
+011683b4	Smoking Engine			
+011689d4	Throttle:			
+011689e8	Brake:			
+01168f38	Speed, Gear, Throttle, and Brake data for the selected driver.  Throttle and Brake information is available only for the local player driver.			
+0116a970	Lets you turn on or off the following instructional items: the ideal racing line, the racing groove, and the throttle and brake bar graphs.			
+0116bfe0	Throttle/Brake Graph			

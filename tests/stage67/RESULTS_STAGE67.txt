@@ -1,0 +1,72 @@
+PASS  load core (image parts + lifted natives + JIT modules)  0.328 s
+PASS  raw: ran 2304 ticks  0.767 s (3004 ticks/s)
+PASS  raw: ticks 1-8 match original (rel <= 2e-5)  worst 4.07e-07 (tick 5 state 42: -0.00079000165 vs -0.000790001242)
+PASS  raw: chassis x/y/z + velocities within original sensitivity envelope  111 samples
+      final x: lua 102.8164  orig 102.7992  pert 102.8254
+PASS  drive: ran 2304 ticks  0.922 s (2499 ticks/s)
+PASS  drive: ticks 1-8 match original (rel <= 2e-5)  worst 2.04e-07 (tick 8 state 42: -0.000117246331 vs -0.000117246127)
+PASS  drive: chassis x/y/z + velocities within original sensitivity envelope  111 samples
+      final x: lua 46.3679  orig 46.3356  pert 46.3658
+PASS  drive: gear sequence equals original (00553d70 + 00552450/80)  0 mismatches
+PASS  drive: reached 4th gear (index 5)  max index 5
+PASS  rev limiter engages near 9300 rpm and cuts throttle  max 9385 rpm
+PASS  checkpoint/restore replays bit-identically
+PASS  contact provider(phase) form and state reads are side-effect free
+PASS  chassis record pose (+0x32d/+0x339) == state x,y,z and quaternion (xyzw)
+PASS  wheel centres above 0055e1e0 contact points, loads positive   w0 h=0.356 Fz=3233 w1 h=0.354 Fz=3962 w2 h=0.350 Fz=4480 w3 h=0.349 Fz=4592
+PASS  translate via original import 005b4560  dx 1.0001
+PASS  x86/x87 stacks balanced after ticks  FT=0 ESP=f7f000
+
+16 passed, 0 failed
+PASS  adapter constructed, root anchored and non-colliding
+PASS  numeric origin on the ground under the spawn  origin y 0.0000
+PASS  initial root height = core chassis z (0.42 m) in studs  1.4996 studs
+PASS  car settles on the raycast ground (chassis ref 0.41..0.43 m)  0.4177 m
+PASS  contact planes from raycasts: n = (0,0,1), d = 0 on flat ground  n=(0 0 1) d=0
+PASS  telemetry: neutral at rest, loads positive  gear 0 loads 4298 3983 3832 3798
+PASS  accelerates forward = Roblox -Z  dz -43.05 studs, 45.1 km/h, gear 2, 7822 rpm
+PASS  upshifts reached 2nd gear  gear 2
+PASS  wheel visual data: compression ~ -0.06 m, spin advancing  comp -0.0707 angle 1.505 rate 34.23
+PASS  render snapshot encodes/decodes  
+PASS  steer right turns toward +X  look (0.854 -0.006 -0.520) steer cell lf -0.4295
+PASS  collision boundary keeps the chassis box out of the wall  front -120.01 wall -120.00 collided true
+PASS  no physics fault  nil
+PASS  reset returns to spawn pose
+PASS  5 % slope: plane normal tilted, car rolls downhill (-Z)  dz -7.41 studs, plane n=(0.0499 0.0000 0.9988)
+PASS  load Core.NR2003Cup  0.02 s
+PASS  raw: ticks 1-8 vs original (rel <= 2e-5)  worst 4.07e-07
+PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 3024 ticks/s | x lua 3.086 orig 3.085 pert 3.097
+PASS  drive: ticks 1-8 vs original (rel <= 2e-5)  worst 2.04e-07
+PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 2451 ticks/s | x lua 2.141 orig 2.131 pert 2.136
+PASS  drive: gear sequence (lifted 00553d70)  0 mismatches
+PASS  checkpoint/restore bit-identical
+Stage 6/7 self-test: 7 passed, 0 failed
+PASS  Roblox/Stage67SelfTest.run(false) passes (what PATCH_STAGE6_7 executes)
+
+adapter mock: 16 passed, 0 failed
+PASS  load Core.NR2003Cup  0.10 s
+PASS  raw: ticks 1-8 vs original (rel <= 2e-5)  worst 4.07e-07
+PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 712 ticks/s | x lua 3.086 orig 3.085 pert 3.097
+PASS  drive: ticks 1-8 vs original (rel <= 2e-5)  worst 2.04e-07
+PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 594 ticks/s | x lua 2.141 orig 2.131 pert 2.136
+PASS  drive: gear sequence (lifted 00553d70)  0 mismatches
+PASS  checkpoint/restore bit-identical
+Stage 6/7 self-test: 7 passed, 0 failed
+Stage 6/7 aplicado. Backup: ServerStorage.NR2003Backup_Stage67_1791323043_0
+Modo NR2003_CUP: núcleo original NR2003 Cup (45 estados: suspensão, cubos, rodas, eixo traseiro, motor, embreagem, outshaft).
+Play > F entrar | W/S acel/freio | A/D direção | E/Q marchas | Shift embreagem | R reinicia | G contatos | H render diag | V câmera
+Voltar ao estágio 5: NR2003Lab.Roblox.ModeConfig -> mode="NR2003_CORE" (ou "ROBLOX_ADAPTER").
+PASS  patch runs to completion on a Stage 5 bench (incl. self-test)  nil
+PASS  Core.NR2003Cup installed with 8 modules  8
+PASS  Core.NR2003CupVehicle / CupTune, Roblox.CupChassisAdapter / Stage67SelfTest installed
+PASS  ModeConfig switched to NR2003_CUP
+PASS  Stage 5 modules kept
+PASS  server/client sources replaced
+PASS  backup folder with package + scripts in ServerStorage  1
+PASS  package tagged NR2003Stage = 6-7
+PASS  forced failure reports an error  [string "PATCH_STAGE6_7"]:24855: Patch Stage 6/7 revertido (nada mudou além do backup em ServerStorage.NR2003Backup_Sta
+PASS  revert restores the previous package
+PASS  revert restores server/client sources
+
+patch mock: 11 passed, 0 failed
+syntax OK

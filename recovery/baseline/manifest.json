@@ -1,0 +1,18 @@
+{
+  "repo": "https://github.com/TChapman500/OpenNR2003",
+  "commit": "03bcafb44cf63464493f1864edbd9f781fac24f4",
+  "program": "NR2003.exe",
+  "tool": "Ghidra 12.1.4",
+  "autoanalysis": false,
+  "original_program_functions": 17361,
+  "exported_candidate_functions": 1546,
+  "candidate_functions_with_decompiler_warnings": 615,
+  "decompile_attempts": 1728,
+  "failed_decompile_attempts": 0,
+  "complete_physics_port": false,
+  "runnable_vehicle": false,
+  "callback_boundary_created_in_memory": [
+    "0055e3e0"
+  ],
+  "fidelity": "Data/selected mathematical dependencies only; no bit-exact NR2003 vehicle parity established."
+}

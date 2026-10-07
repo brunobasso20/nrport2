@@ -1,0 +1,9 @@
+# Stage 9 aero globals: air-velocity vector, air density, pitch offset, ride-height refs, 16-call counter
+007d2f90 12
+00e0b84c 4
+00c083c4 4
+00c084c0 4
+00c08310 4
+00c084c8 4
+00c084cc 4
+0074e090 4

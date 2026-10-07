@@ -1,0 +1,44 @@
+assigned_by,mode,kind,slot,operation,target,confidence
+0057dcd0,0,binary,0074fdac,add,0057ccc0,table bytes + selector
+0057dcd0,0,binary,0074fdb0,wrapped_angle_add,0057cd70,table bytes + selector
+0057dcd0,0,binary,0074fdb4,subtract,0057cea0,table bytes + selector
+0057dcd0,0,binary,0074fdb8,multiply,0057cf50,table bytes + selector
+0057dcd0,0,unary,0074fdbc,copy,0057d040,table bytes + selector
+0057dcd0,0,unary,0074fdc0,negate,0057d070,table bytes + selector
+0057dcd0,0,unary,0074fdc4,reciprocal,0057d0b0,table bytes + selector
+0057dcd0,0,unary,0074fdc8,sqrt,0057d110,table bytes + selector
+0057dcd0,0,unary,0074fdcc,sin,0057d150,table bytes + selector
+0057dcd0,0,unary,0074fdd0,cos,0057d190,table bytes + selector
+0057dcd0,0,unary,0074fdd4,accumulate,0057d1d0,table bytes + selector
+0057dcd0,0,unary,0074fdd8,min_zero,0057d240,table bytes + selector
+0057dcd0,0,unary,0074fddc,abs,0057d290,table bytes + selector
+0057dcd0,1,binary,0074fde0,add,0057d2d0,table bytes + selector
+0057dcd0,1,binary,0074fde4,wrapped_angle_add,0057d2f0,table bytes + selector
+0057dcd0,1,binary,0074fde8,subtract,0057d370,table bytes + selector
+0057dcd0,1,binary,0074fdec,multiply,0057d390,table bytes + selector
+0057dcd0,1,unary,0074fdf0,copy,0057d3b0,table bytes + selector
+0057dcd0,1,unary,0074fdf4,negate,0057d3d0,table bytes + selector
+0057dcd0,1,unary,0074fdf8,reciprocal,0057d3f0,table bytes + selector
+0057dcd0,1,unary,0074fdfc,sqrt,0057d430,table bytes + selector
+0057dcd0,1,unary,0074fe00,sin,0057d450,table bytes + selector
+0057dcd0,1,unary,0074fe04,cos,0057d470,table bytes + selector
+0057dcd0,1,unary,0074fe08,accumulate,0057d490,table bytes + selector
+0057dcd0,1,unary,0074fe0c,min_zero,0057d4b0,table bytes + selector
+0057dcd0,1,unary,0074fe10,abs,0057d4e0,table bytes + selector
+0057dcd0,2,binary,0074fe14,add,0057d500,table bytes + selector
+0057dcd0,2,binary,0074fe18,wrapped_angle_add,0057d610,table bytes + selector
+0057dcd0,2,binary,0074fe1c,subtract,0057d740,table bytes + selector
+0057dcd0,2,binary,0074fe20,multiply,0057d850,table bytes + selector
+0057dcd0,2,unary,0074fe24,copy,0057d9a0,table bytes + selector
+0057dcd0,2,unary,0074fe28,negate,0057d9f0,table bytes + selector
+0057dcd0,2,unary,0074fe2c,reciprocal,0057da40,table bytes + selector
+0057dcd0,2,unary,0074fe30,sqrt,0057dab0,table bytes + selector
+0057dcd0,2,unary,0074fe34,sin,0057db00,table bytes + selector
+0057dcd0,2,unary,0074fe38,cos,0057db50,table bytes + selector
+0057dcd0,2,unary,0074fe3c,accumulate,0057dba0,table bytes + selector
+0057dcd0,2,unary,0074fe40,min_zero,0057dc10,table bytes + selector
+0057dcd0,2,unary,0074fe44,abs,0057dc70,table bytes + selector
+static table,vehicle,brake_output,0074e86c,wheel_0,0055e450,005610b0 + table bytes
+static table,vehicle,brake_output,0074e870,wheel_1,0055e460,005610b0 + table bytes
+static table,vehicle,brake_output,0074e874,wheel_2,0055e470,005610b0 + table bytes
+static table,vehicle,brake_output,0074e878,wheel_3,0055e480,005610b0 + table bytes

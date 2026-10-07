@@ -1,0 +1,56 @@
+[
+  {
+    "pointer": "00e84548",
+    "builder": "005b39a0",
+    "role": "predict",
+    "assigned_by": "005b3090",
+    "allocation": "005b9cf0",
+    "execute": "005b9d10",
+    "target": "runtime generated"
+  },
+  {
+    "pointer": "00e84498",
+    "builder": "005b3180 + 0055e410",
+    "role": "solve/contact preparation",
+    "assigned_by": "005b3090",
+    "allocation": "005b9cf0",
+    "execute": "005b9d10",
+    "target": "runtime generated"
+  },
+  {
+    "pointer": "00e84b90[0..3]",
+    "builder": "0055d9c0",
+    "role": "per-wheel kernel",
+    "assigned_by": "005b3090",
+    "allocation": "005b9cf0",
+    "execute": "005b9d10",
+    "target": "runtime generated"
+  },
+  {
+    "pointer": "00e84bdc",
+    "builder": "005b3990",
+    "role": "forces",
+    "assigned_by": "005b3090",
+    "allocation": "005b9cf0",
+    "execute": "005b9d10",
+    "target": "runtime generated"
+  },
+  {
+    "pointer": "00e84ba0",
+    "builder": "005b3e50",
+    "role": "correct",
+    "assigned_by": "005b3090",
+    "allocation": "005b9cf0",
+    "execute": "005b9d10",
+    "target": "runtime generated"
+  },
+  {
+    "pointer": "00e84604",
+    "builder": "005b2fb0",
+    "role": "commit",
+    "assigned_by": "005b3090",
+    "allocation": "005b9cf0",
+    "execute": "005b9d10",
+    "target": "runtime generated"
+  }
+]

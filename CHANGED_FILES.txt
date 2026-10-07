@@ -1,0 +1,26 @@
+# Stage 9 (3.8.0-stage9) — arquivos novos/alterados em relação ao pacote Stage 8 (3.7.0-stage8)
+PATCH_STAGE9.lua                           (novo; Command Bar, sobre Stage 8)
+NR2003_Patch_Stage9.rbxmx                  (novo)
+core/NR2003Cup/NR2003CupAero.lua           (novo: sessão 005a3c00, fatores 005637e0, vácuo 005afd80, fita/aerofólio, telemetria)
+core/NR2003Cup/NR2003CupDriver.lua         (alterado: V.drive chama V._aeroFrame antes de frameStart)
+core/NR2003CupVehicle.lua                  (alterado: carrega NR2003CupAero, API aero)
+roblox/CupChassisAdapter.lua               (alterado: sessão/atributos, normal da pista, vácuo de teste, telemetria aero)
+roblox/Client.client.lua                   (alterado: linha AERO no painel)
+roblox/Stage9SelfTest.lua                  (novo, gerado)
+tests/stage9/run.luau                      (novo)
+tests/stage9/patch9_mock.luau              (novo, gerado)
+tests/stage9/aero_map.luau, AERO_MAP.txt   (novos: mapa do aero a partir do código original validado)
+tests/stage9/fixtures/aero_constants.lua, aero_units.lua, aero_sync.lua, aero_scenarios.lua (novos, gerados do código original)
+tests/stage9/RESULTS_STAGE9.txt            (novo)
+tests/stage67/adapter_mock.luau            (regenerado: checks aero + Stage9SelfTest)
+tools/build_stage9.py, tools/selftest9_template.lua, tools/make_patch9_mock.py, tools/patch9_mock_tail.luau,
+tools/run_stage9_tests.ps1, tools/run_stage9_tests.sh, tools/update_manifest_stage9.py (novos)
+tools/make_adapter_mock.py, tools/adapter_mock_body.luau (alterados)
+tools/stage8_manifest_files.json, tools/stage9_changes.json (novos: base de comparação do manifesto)
+recovery/ghidra_tools/**                   (novo: scripts Jython do Ghidra reutilizáveis + runners + README de preparação)
+recovery/stage9/**                         (novo: harness, gerador, evidências Ghidra, listas de endereços, ferramentas, fixtures JSON)
+PORT_MAP.md, ROADMAP_STATUS.md, STAGE_RESULT.md, VALIDACAO.md, CHANGELOG.md, CORE_API.md, README_PT.md,
+MANIFEST.json, NEXT_PROMPT_STAGE10.txt, CHANGED_FILES.txt, default.project.json (alterados/novos)
+Inalterados: módulos gerados core/NR2003Cup/NR2003CupCore, Image1..2, JIT1..4; roblox/Server.server.lua;
+PATCH_STAGE6_7.lua; PATCH_STAGE8.lua; Stage67SelfTest; Stage8SelfTest; tests/stage67/run.luau; tests/stage8/**.
+Ausente (já no pacote Stage 8): tools/_patch_mock_head.txt (arquivo temporário de build).

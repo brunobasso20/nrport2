@@ -1,0 +1,41 @@
+[check_syntax]
+PASS: syntax for 64 Lua files
+
+[test_baseline]
+PASS: 16 recovered components; 45 states; hierarchy/cycle checks; 20 material factors; override precedence; float32 assignments; 300 orthogonal rotations.
+
+[test_physics]
+PASS: 93 assertions; forward peak 26.26 km/h; stop -0.049 km/h; reverse peak 16.05 km/h
+
+[test_original_core]
+PASS: 14008 original-x86 intermediate comparisons; max absolute error 1.1920929e-07
+
+[test_core_dynamics]
+PASS: 59 core dynamics checks
+
+[test_seat_access]
+NR2003 Diagnostics	PASS	146	parts	146	connected
+PASS: generated geometry, four raycast contacts, handedness, coil update and joint connectivity
+NR2003: VehicleSeat did not confirm Occupant after Sit; inspect DriverSeat and avatar scripts.
+PASS: 14 seat admission checks
+
+[test_stage5]
+NR2003 Diagnostics	PASS	146	parts	146	connected
+PASS: generated geometry, four raycast contacts, handedness, coil update and joint connectivity
+PASS: 59 stage 5 checks; acceleration 43.19 km/h; one wheel update per tick
+
+[test_render_snapshots]
+PASS: 36 render snapshot/buffer checks
+
+[package]
+PASS: installer/patch XML match Lua; original memory hashes match
+
+[manual_studio_validation_2026-10-04]
+PASS: user validated Stage 5 stabilized build in Roblox Studio.
+PASS: complete vehicle presentation reported smooth after client snapshot interpolation.
+PASS: suspension effects became more visible after the sparse ~20-30 Hz presentation path was removed.
+PASS: no suspension/tire/geometry retune was required for the visual smoothness fix.
+PASS: Stage 5 accepted as baseline for roadmap continuation.
+NEXT: Stage 6 complete suspension/unsprung/rear-axle dynamics, then Stage 7 complete drivetrain integration.
+REFERENCE VEHICLE: first production/reference vehicle is the NR2003 NASCAR/Cup car; recover/use original NR2003 tune/setup/calibration where relevant instead of arbitrary Roblox values.
+NOTE: full vehicle trajectory/state-history parity against original NR2003 remains unvalidated.

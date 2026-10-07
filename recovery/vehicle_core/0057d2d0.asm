@@ -1,0 +1,10 @@
+0057d2d0 MOV EAX,dword ptr [ESP + 0x8]
+0057d2d4 MOV EDX,dword ptr [ESP + 0xc]
+0057d2d8 MOV ECX,dword ptr [EAX]
+0057d2da MOV EAX,dword ptr [EDX]
+0057d2dc FLD float ptr [ECX]
+0057d2de MOV ECX,dword ptr [ESP + 0x4]
+0057d2e2 FADD float ptr [EAX]
+0057d2e4 MOV EDX,dword ptr [ECX]
+0057d2e6 FSTP float ptr [EDX]
+0057d2e8 RET

@@ -1,0 +1,6 @@
+005b5260 XOR EAX,EAX
+005b5262 MOV dword ptr [ECX + 0x9],EAX
+005b5265 MOV dword ptr [ECX + 0x1],EAX
+005b5268 MOV dword ptr [ECX + 0x5],EAX
+005b526b MOV byte ptr [ECX],0x1
+005b526e RET

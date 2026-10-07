@@ -1,0 +1,104 @@
+{
+  "name": "OpenNR2003TestBench",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "NR2003Lab": {
+        "$className": "Folder",
+        "Core": {
+          "$path": "core"
+        },
+        "Roblox": {
+          "$className": "Folder",
+          "CarBuilder": {
+            "$path": "roblox/CarBuilder.lua"
+          },
+          "Cockpit": {
+            "$path": "roblox/Cockpit.lua"
+          },
+          "CoreChassisAdapter": {
+            "$path": "roblox/CoreChassisAdapter.lua"
+          },
+          "CoreChassisBridge": {
+            "$path": "roblox/CoreChassisBridge.lua"
+          },
+          "CupChassisAdapter": {
+            "$path": "roblox/CupChassisAdapter.lua"
+          },
+          "Diagnostics": {
+            "$path": "roblox/Diagnostics.lua"
+          },
+          "DriverConfig": {
+            "$path": "roblox/DriverConfig.lua"
+          },
+          "LegacyRobloxAdapter": {
+            "$path": "roblox/LegacyRobloxAdapter.lua"
+          },
+          "MeshAdapter": {
+            "$path": "roblox/MeshAdapter.lua"
+          },
+          "ModeConfig": {
+            "$path": "roblox/ModeConfig.lua"
+          },
+          "RaycastContacts": {
+            "$path": "roblox/RaycastContacts.lua"
+          },
+          "RenderConfig": {
+            "$path": "roblox/RenderConfig.lua"
+          },
+          "RenderPresentation": {
+            "$path": "roblox/RenderPresentation.lua"
+          },
+          "RenderSnapshot": {
+            "$path": "roblox/RenderSnapshot.lua"
+          },
+          "SeatAccess": {
+            "$path": "roblox/SeatAccess.lua"
+          },
+          "SnapshotBuffer": {
+            "$path": "roblox/SnapshotBuffer.lua"
+          },
+          "Stage67SelfTest": {
+            "$path": "roblox/Stage67SelfTest.lua"
+          },
+          "Stage8SelfTest": {
+            "$path": "roblox/Stage8SelfTest.lua"
+          },
+          "Stage9SelfTest": {
+            "$path": "roblox/Stage9SelfTest.lua"
+          },
+          "Units": {
+            "$path": "roblox/Units.lua"
+          },
+          "VehicleController": {
+            "$path": "roblox/VehicleController.lua"
+          },
+          "VisualRig": {
+            "$path": "roblox/VisualRig.lua"
+          }
+        },
+        "Input": {
+          "$className": "RemoteEvent"
+        },
+        "Telemetry": {
+          "$className": "RemoteEvent"
+        },
+        "RenderState": {
+          "$className": "UnreliableRemoteEvent"
+        }
+      }
+    },
+    "ServerScriptService": {
+      "NR2003Server": {
+        "$path": "roblox/Server.server.lua"
+      }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "NR2003Client": {
+          "$path": "roblox/Client.client.lua"
+        }
+      }
+    }
+  }
+}

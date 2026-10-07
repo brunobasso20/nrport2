@@ -1,0 +1,1824 @@
+-- PATCH_STAGE9 — NR2003 Roblox port, estágio 9 (aerodinâmica completa do NR2003 Cup)
+-- Cole o arquivo INTEIRO na Command Bar do Studio, FORA do Play, sobre a bancada Stage 8 validada.
+-- Atualiza ReplicatedStorage.NR2003Lab no lugar (backup completo em ServerStorage; reverte se falhar).
+-- Altera: Core.NR2003Cup.NR2003CupAero (novo), Core.NR2003Cup.NR2003CupDriver, Core.NR2003CupVehicle,
+-- Roblox.CupChassisAdapter, Roblox.Stage9SelfTest (novo) e o LocalScript NR2003Client (HUD).
+-- Servidor, módulos gerados 6/7 (Core/Image/JIT) e self-tests 6/7 e 8 intactos.
+assert(not game:GetService("RunService"):IsRunning(),"Pare o Play antes do patch")
+local RS=game:GetService("ReplicatedStorage")
+local SP=game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts")
+local storage=game:GetService("ServerStorage")
+local pkg=assert(RS:FindFirstChild("NR2003Lab"),"NR2003Lab ausente: instale Stage 5 + 6/7 + 8 antes")
+local CoreF=assert(pkg:FindFirstChild("Core"),"NR2003Lab.Core ausente")
+local RobloxF=assert(pkg:FindFirstChild("Roblox"),"NR2003Lab.Roblox ausente")
+local cupFolder=assert(CoreF:FindFirstChild("NR2003Cup"),"Core.NR2003Cup ausente: aplique PATCH_STAGE6_7 e PATCH_STAGE8 antes")
+for _,n in ipairs({"NR2003CupCore","NR2003CupDriver","NR2003CupImage1","NR2003CupJIT1"}) do
+    assert(cupFolder:FindFirstChild(n),"Core.NR2003Cup."..n.." ausente (Stage 6/7 requerido)")
+end
+assert(cupFolder.NR2003CupDriver.Source:find("brakePedalOriginal",1,true),"NR2003CupDriver sem a cadeia de freio: aplique PATCH_STAGE8 antes")
+for _,n in ipairs({"CupChassisAdapter","Stage67SelfTest","Stage8SelfTest","ModeConfig"}) do
+    assert(RobloxF:FindFirstChild(n),"Roblox."..n.." ausente (Stage 8 requerido: aplique PATCH_STAGE8 antes)")
+end
+local oldClient=assert(SP:FindFirstChild("NR2003Client"),"StarterPlayerScripts.NR2003Client ausente")
+assert(pkg.Archivable,"Habilite Archivable no pacote para o backup")
+local SES=game:GetService("ScriptEditorService")
+local function setSource(s,src)
+    if #src<200000 then s.Source=src else SES:UpdateSourceAsync(s,function() return src end) end
+end
+local MODULES={}
+local function module(folder,name,source) MODULES[#MODULES+1]={folder,name,source} end
+module("NR2003Cup","NR2003CupAero",[=[
+--!native
+--!optimize 2
+-- NR2003 Cup aerodynamics: session air, per-frame aero factors, drafting, aero setup, telemetry
+-- (Stage 9). Installed on the runtime returned by NR2003CupDriver. Hand port of x87 code: every
+-- float32 store rounds toward -inf like every store of the simulation task (0055cef0 -> CW 0x077f),
+-- x87 extended intermediates are evaluated in IEEE double (same approximation as Stages 6-8).
+--
+-- The aero FORCE model is ORIGINAL generated code (Stage 6/7 modules, untouched). At car build
+-- 00561960 registers two natives in the forces callback of the chassis (both lifted):
+--   00561a80  half wind velocity (e0b840..e0b848 * 0.5), projected on the plane of the car's
+--             track-object vector (car+0x5ae -> +0x24) when the car has a track object
+--   00561b70  body-frame air velocity (chassis velocity - half wind, rotated by the chassis
+--             rotation) and body rates -> q = 0.5*rho*|v|^2 (rho = e0b84c),
+--             yaw = atan2(vy,vx), pitch = atan2(-vz,|vxy|) + c083c4 (setup item 0xb1),
+--             front ride height = ((c084c8 - z_LF) + (c084cc - z_RF))/2 (items 0xad/0xae, live
+--             LF/RF suspension translation), factors car+0x59e/0x5a2/0x5a6 ->
+--             00410280: coefficients from the car spec (+0xa0 area, +0xa4 length, +0xa8..+0xe0
+--             scalars, +0xec..+0x134 yaw/pitch/ride-height curves, +0x138..+0x144 damage tables),
+--             setup items 0x3b grille tape / 0x3d rear spoiler / 0x20 0x21, damage 00410910 ->
+--             force (Fx,Fy,Fz) and moment (Mx,My,Mz) in chassis axes about the chassis origin,
+--             rotated to world (005b8370) and added to the chassis spatial force (005b8040).
+--             Every 16th call 00410b50 integrates the yaw stall state 007636e0/007636e4.
+-- What the car build never runs and the game runs on the simulation task (ported here):
+--   session start  0055d3ec -> 0055af80 -> 0055b140 -> 0055a830 -> 005a3c00(weather e0b728,
+--                  race settings c0692a): air temperature, wind e0b840/e0b844, density e0b84c
+--                  (005a3ba0 humid ideal gas, 005a3be0 saturation pressure polynomial)
+--   every frame    0055d3f4 -> 0055b450 -> 0055bfd0 -> 005637e0(car), BEFORE the 8 physics ticks:
+--                  factors = 1.0, airspeed car+0x5aa, drafting 005afd80 for the focused car
+-- Without startSession() the core stays in its post-build state (rho = 0, factors = 0: no aero),
+-- which is exactly the state of every Stage 6/7/8 fixture and self-test.
+return function(V)
+	local rf32, r32, w32, wf32, wf32d, fd = V.rf32, V.r32, V.w32, V.wf32, V.wf32d, V.fd
+	local ri32 = V.ri32
+	local callx = V._callx
+	local sqrt, sin, cos, atan2, abs, floor = math.sqrt, math.sin, math.cos, math.atan2, math.abs, math.floor
+	local S = buffer.create(8)
+	local function bits(u) buffer.writeu32(S, 0, u); return buffer.readf32(S, 0) end
+	local function f2u(x) buffer.writef32(S, 0, x); return buffer.readu32(S, 0) end
+	local function near32(x) buffer.writef32(S, 0, x); return buffer.readf32(S, 0) end -- x87 CW 0x027f store
+	local function qword(lo, hi) buffer.writeu32(S, 0, lo); buffer.writeu32(S, 4, hi); return buffer.readf64(S, 0) end
+	local NEG0 = -(0 * 1)
+
+	-------------------------------------------------------------------------------------------------
+	-- ORIGINAL constants (address -> IEEE-754 single bits). Most of them lie outside the Stage 6/7
+	-- image windows; tests/stage9 checks every entry against the NR2003.exe memory export.
+	-------------------------------------------------------------------------------------------------
+	local KBITS = {
+		[0x6e97d8] = 0x3f800000, -- 1.0
+		[0x6ea44c] = 0x3f000000, -- 0.5
+		[0x6ea4a4] = 0x3c23d70a, -- 0.01 (005afd80 attenuation limit; 00423de0 percent scale)
+		[0x6ea4cc] = 0x3dcccccd, -- 0.1 (005afd80 minimum distance)
+		[0x6ea514] = 0x40a00000, -- 5.0 (005afd80 minimum wake speed*length)
+		[0x6ea67c] = 0x3a83126f, -- 0.001 (005afd80 rear lift distance weight)
+		[0x6ef640] = 0x3e99999a, -- 0.3 (005afd80 drag blend)
+		[0x6f4164] = 0x3f8ccccd, -- 1.1 (factor upper clamp)
+		[0x6f4658] = 0x3ee66666, -- 0.45 (lateral attenuation base)
+		[0x6f5350] = 0x40600000, -- 3.5 (005b0230 lateral column split)
+		[0x6f5a64] = 0x40e00000, -- 7.0 (maximum lateral offset)
+		[0x6f688c] = 0x39d1b717, -- 0.0004 (front lift distance weight)
+		[0x6f7340] = 0x42840000, -- 66 (maximum normalised gap, car behind)
+		[0x6f7344] = 0x3da0ea0f, -- 0.0785714 (lateral attenuation slope)
+		[0x6f7348] = 0x42960000, -- 75 (gap normalisation speed)
+		[0x6f734c] = 0x43840000, -- 264 (maximum normalised gap, car ahead)
+		[0x6f7350] = 0x3e924925, -- 1/3.5 (005b0230)
+		[0x6f7334] = 0x00000000, -- lateral breakpoints 0 / 3.5 / 7 m (005b0230)
+		[0x6f7338] = 0x40600000,
+		[0x6f733c] = 0x40e00000,
+		[0x6f7228] = 0xc2340000, -- wake table x0 = -45 m
+		[0x6f722c] = 0x3e088889, -- wake table 1/dx (dx = 7.5 m)
+		-- weather -> air (005a3c00 / 005a3ba0 / 005a3be0)
+		[0x6efe7c] = 0x42000000, -- 32 (F -> C)
+		[0x6f53b8] = 0x3f0e38e4, -- 5/9
+		[0x6f6f84] = 0x41e00000, -- +28 C (conditions < 2 and daytime)
+		[0x6f6f80] = 0x3f490fd0, -- 45 deg per wind direction step
+		[0x6f6f7c] = 0x4553a87b, -- 3386.53 Pa per inHg
+		[0x6f6f78] = 0x3b6453d2, -- 0.003484 (1/R_dry)
+		[0x6f6f74] = 0x3aac9f30, -- 0.001317 (0.378/R_dry)
+		[0x6ee350] = 0x43889333, -- 273.15
+		[0x6f6f50] = 0x4418c000, -- 611      saturation vapour pressure (Pa) polynomial in T (C)
+		[0x6f6f54] = 0x41dbd4fe, -- 27.479
+		[0x6f6f58] = 0x40461965, -- 3.0953
+		[0x6f6f5c] = 0xbcd288ce, -- -0.0257
+		[0x6f6f60] = 0x3a6bedfa, -- 0.0009
+	}
+	local K = {}
+	for a, u in pairs(KBITS) do K[a] = bits(u) end
+	local K_0447 = qword(0xe353f7cf, 0x3fdc9ba5) -- qword 006ef7b0 (mph -> m/s, 005a3c00)
+	-- 005a38b0 weather constructor defaults kept in obfuscated (XOR) containers: relative humidity
+	-- (weather +0x00) and barometric pressure in inHg (weather +0x2c). The per-frame drift of
+	-- 005a4cc0 (dynamic weather, 005a4690/005a4b10) is mapped but not ported.
+	local HUMIDITY0, PRESSURE0 = bits(0x3e99999a), bits(0x41ef5c29) -- 0.3, 29.92
+	-- wake table 006f7228 (00567818 format: x0, 1/dx, last index 0x1e, 2 columns) rows 006f7234..
+	-- column 0: lateral offset 0 m, column 1: 3.5 m; column 2 (7 m) is e7d27c, never written (0).
+	local WAKE_BITS = {
+		0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xbcac0831, 0xbbe56041, 0xbd73b646, 0xbcac0831,
+		0xbda4dd2f, 0xbca0902e, 0xbdc8b439, 0xbc83e426, 0xbdf3b646, 0xbcac0831, 0xbe010625, 0xbce56041,
+		0xbdf97247, 0xbd0f5c29, 0xbdf0d844, 0xbd2ee632, 0xbde83e42, 0xbd4e703a, 0xbddfa440, 0xbd5fa440,
+		0xbdd59b3d, 0xbd628241, 0xbdcb923a, 0xbd628241, 0xbdbeab36, 0xbd5fa440, 0xbdb33333, 0xbd5cc63f,
+		0xbda64c2f, 0xbd542c3d, 0xbd9ad42c, 0xbd4b923a, 0xbd8c7e28, 0xbd3d3c36, 0xbd810625, 0xbd2ee632,
+		0xbd6b1c43, 0xbd1db22d, 0xbd542c3d, 0xbd09a027, 0xbd401a37, 0xbcf0d844, 0xbd2c0831, 0xbcc8b439,
+		0xbd17f62b, 0xbca64c2f, 0xbd03e426, 0xbc83e426, 0xbcd42c3d, 0xbc4e703a, 0xbca64c2f, 0xbc15182b,
+		0xbc656041, 0xbbb78035, 0xbbfc5048, 0xbb378035, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	}
+	local WAKE = table.create(#WAKE_BITS, 0)
+	for i, u in ipairs(WAKE_BITS) do WAKE[i] = bits(u) end
+	local WAKE_LAST, WAKE_COLS = 30, 2
+	-- aero damage tables of the Cup spec (+0x138..+0x144 -> 0071f908/0071f960/0071f9b8/0071fa10, 11 zones
+	-- x {slope, detached value}, read by 00410910): these 16 cells (end of the lift table, first 12 cells of
+	-- the yaw-moment table) lie outside the Stage 6/7 image windows because the build trace ran without
+	-- damage. Original .data values (static export = post-build), restored on every reset.
+	local DAMAGE_CELLS = {
+		[0x71fa00] = 0x00000000, [0x71fa04] = 0x00000000, [0x71fa08] = 0x00000000, [0x71fa0c] = 0x00000000,
+		[0x71fa10] = 0x00000000, [0x71fa14] = 0x00000000, [0x71fa18] = 0x00000000, [0x71fa1c] = 0x00000000,
+		[0x71fa20] = 0x3c23d70a, [0x71fa24] = 0x3c449ba6, [0x71fa28] = 0xbc23d70a, [0x71fa2c] = 0xbc449ba6,
+		[0x71fa30] = 0x3ba3d70a, [0x71fa34] = 0x3bb43958, [0x71fa38] = 0xbba3d70a, [0x71fa3c] = 0xbbb43958,
+	}
+	local function restoreImageCells()
+		for a, u in pairs(DAMAGE_CELLS) do w32(a, u) end
+	end
+	restoreImageCells()
+
+	-------------------------------------------------------------------------------------------------
+	-- original cells
+	-------------------------------------------------------------------------------------------------
+	local WEATHER = 0xe0b728        -- 005a3c00 / 005a4cc0 'this' (session weather object)
+	local AIR = WEATHER + 0x118     -- e0b840 wind x, e0b844 wind y, e0b848 wind z, e0b84c density
+	local TRACK_NORTH = 0xbdbcf8    -- track orientation angle read by 005a3c00 (track data)
+	local CAR = 0xc12030            -- player car slot (00562f70(0))
+	local F_DRAG, F_FRONT, F_REAR, AIRSPEED, TRACKOBJ = 0x59e, 0x5a2, 0x5a6, 0x5aa, 0x5ae
+	local SPEC = r32(CAR + 0x58a)   -- car spec (Cup speedway 0x7238e0)
+	local SETUP = 0xc055c0          -- active setup (00557d60(n) = setup + 4n)
+	local ITEM_TAPE, ITEM_SPOILER = 0x3b, 0x3d
+	local DESC_TAPE, DESC_SPOILER = 0x6ee11c, 0x6ee138 -- garage descriptors: int min/max/step/default
+	local ONE = 0x3f800000
+	local HOST = 0xf7f100
+	local BLOCK, OUT6, TOBJ = HOST + 0x600, HOST + 0x640, HOST + 0x680 -- telemetry args, outputs, track object
+	local ROOT = V.ROOT
+	local LF_SUSP, RF_SUSP = r32(0xc084c0), r32(0xc08310) -- lfsusp / rfsusp records (0055e9b0)
+
+	-- x87 FSUB under RC = toward -inf: an exact zero difference is -0 (except +0 - (-0) = +0)
+	local function subRTN(a, b)
+		local r = a - b
+		if r == 0 then
+			if a ~= 0 then return NEG0 end
+			if 1 / a > 0 and 1 / b < 0 then return 0 end
+			return NEG0
+		end
+		return r
+	end
+	local function clampInt(x, lo, hi, default)
+		x = tonumber(x)
+		if x == nil or x ~= x then return default end
+		x = floor(x + 0.5)
+		if x < lo then return lo elseif x > hi then return hi end
+		return x
+	end
+	local function f32(x) return near32(tonumber(x) or 0) end
+
+	-------------------------------------------------------------------------------------------------
+	-- weather -> air (005a3c00 subset that feeds the aero cells; settings clamped by the option
+	-- getters 004cd280 temperature 40..110 F, 004cd2d0 wind 0..30 mph, 004cd2b0 direction 0..7
+	-- (out of range -> 0), 004cd260 conditions 0..3 (out of range -> 0))
+	-------------------------------------------------------------------------------------------------
+	-- 005a3be0: saturation vapour pressure (Pa) at T (C), Horner over 006f6f60..006f6f50
+	local function esat(t)
+		local v = K[0x6f6f60]
+		v = v * t + K[0x6f6f5c]
+		v = v * t + K[0x6f6f58]
+		v = v * t + K[0x6f6f54]
+		return v * t + K[0x6f6f50]
+	end
+	-- 005a3ba0(T C, P Pa (float32 argument), RH): the P*0.003484 product is stored back into the
+	-- float argument slot (FSTP, RC down) before (P' - esat*RH*0.001317) / (T + 273.15)
+	local function density(t, p, rh)
+		local p2 = fd(p * K[0x6f6f78])
+		return (p2 - esat(t) * rh * K[0x6f6f74]) / (t + K[0x6ee350])
+	end
+	V.airDensityOriginal = function(t, p, rh) return fd(density(t, p, rh)) end
+	V.esatOriginal = esat
+
+	local session = nil  -- applied weather settings (nil = post-build state, no aero inputs)
+	local draftEnv = nil
+	local trackNormal = nil
+
+	local function applyWeather(w)
+		local tF = clampInt(w.temperatureF, 40, 110, 70)
+		local mph = clampInt(w.windSpeedMph, 0, 30, 0)
+		local dir = clampInt(w.windDirection, -1, 8, 0); if dir < 0 or dir > 7 then dir = 0 end
+		local cond = clampInt(w.conditions, -1, 4, 0); if cond < 0 or cond > 3 then cond = 0 end
+		local night = w.night == true and 1 or 0
+		local north = f32(w.trackNorth or 0)
+		local rh = w.humidity ~= nil and f32(w.humidity) or HUMIDITY0
+		local inHg = w.pressureInHg ~= nil and f32(w.pressureInHg) or PRESSURE0
+		local applied = {temperatureF = tF, windSpeedMph = mph, windDirection = dir, conditions = cond,
+			night = night == 1, trackNorth = north, humidity = rh, pressureInHg = inHg}
+		-- +0x108 air temperature (C): FILD; FSUB 32; FMUL 5/9; FSTP
+		local tC = fd((tF - K[0x6efe7c]) * K[0x6f53b8])
+		wf32(WEATHER + 0x108, tC)
+		-- +0x10c: +28 C when conditions < 2 and the daytime container (+0x2bc, settings+0x48 bit 1) is 0
+		local tAir = tC
+		if cond < 2 and night == 0 then tAir = fd(tC + K[0x6f6f84]) end
+		wf32(WEATHER + 0x10c, tAir)
+		-- +0x110 wind direction angle: FILD qword dir; FMUL 0.7853975; FSTP (container round trip)
+		local ang = fd(dir * K[0x6f6f80])
+		wf32(WEATHER + 0x110, ang)
+		-- +0x114 wind speed m/s: FILD mph; FMUL qword 0.447; FSTP
+		local spd = fd(mph * K_0447)
+		wf32(WEATHER + 0x114, spd)
+		-- +0x118 / +0x11c wind vector: -(cos|sin)(trackNorth - direction) * speed
+		wf32(TRACK_NORTH, north)
+		local d = subRTN(north, ang)
+		wf32d(AIR, -(cos(d) * spd))
+		wf32d(AIR + 4, -(sin(d) * spd))
+		-- +0x120 (e0b848, wind z) is not written by 005a3c00 (BSS 0)
+		-- +0x124 density: 005a3ba0(T = +0x10c, P = fd(inHg * 3386.53), RH)
+		wf32d(AIR + 12, density(tAir, fd(inHg * K[0x6f6f7c]), rh))
+		applied.airTemperatureC = tC; applied.densityTemperatureC = tAir
+		applied.windAngle = ang; applied.windSpeed = spd
+		applied.wind = {rf32(AIR), rf32(AIR + 4), rf32(AIR + 8)}; applied.density = rf32(AIR + 12)
+		return applied
+	end
+
+	-------------------------------------------------------------------------------------------------
+	-- drafting: 005afd80 + 005b0230 + 00567818 + 00516daa
+	-------------------------------------------------------------------------------------------------
+	-- 00516daa(a, b): b - a, increased by the track length (bad918) while negative
+	local function trackGap(a, b, len)
+		local g = subRTN(b, a)
+		while g < 0 do g = g + len end
+		return g
+	end
+	-- 00567818 on the wake table: 2 float32 outputs (e7d274, e7d278); FIST rounds down (RC)
+	local function wakeLookup(x)
+		local u = (x - K[0x6f7228]) * K[0x6f722c]
+		local i
+		if u ~= u or u >= 2147483648 or u < -2147483648 then i = -2147483648 else i = floor(u) end
+		local frac
+		if i < 0 then i = 0; frac = u
+		elseif i > WAKE_LAST then i = WAKE_LAST; frac = u - WAKE_LAST
+		else frac = u - i end
+		local row, nxt = i * WAKE_COLS, (i + 1) * WAKE_COLS
+		local a0, a1 = WAKE[row + 1], WAKE[row + 2]
+		return fd((WAKE[nxt + 1] - a0) * frac + a0), fd((WAKE[nxt + 2] - a1) * frac + a1)
+	end
+	-- 005b0230(gap, |lateral|): linear blend of the two lateral columns (column 2 = 0)
+	local function wake(g, lat)
+		local c0, c1 = wakeLookup(g)
+		local lo, hi, bp
+		if lat < K[0x6f5350] then lo, hi, bp = c0, c1, K[0x6f7334] else lo, hi, bp = c1, 0, K[0x6f7338] end
+		return subRTN(lat, bp) * subRTN(hi, lo) * K[0x6f7350] + lo
+	end
+	V.wakeOriginal = wake
+
+	-- one direction of the race-order ring (car+4: cars ahead, car+8: cars behind)
+	local function draftPass(cars, selfDist, selfLat, len, ahead)
+		local maxGap = ahead and K[0x6f734c] or K[0x6f7340]
+		local prod, att = 1.0, 1.0
+		for _, c in ipairs(cars) do
+			if not (att > K[0x6ea4a4]) then break end
+			local g
+			if ahead then g = trackGap(selfDist, f32(c.lapDistance), len) else g = trackGap(f32(c.lapDistance), selfDist, len) end
+			if not (g < maxGap) then break end
+			local vx, vy, vz = f32(c.vx), f32(c.vy), f32(c.vz)
+			local d = sqrt((vx * vx + vy * vy) + vz * vz) * f32(c.wakeLength or rf32(SPEC + 0xd4))
+			if d < K[0x6ea514] then d = K[0x6ea514] end
+			local gn = g * (K[0x6f7348] / d)
+			local gn32 = fd(gn)
+			if gn > maxGap then break end
+			local lat = abs(fd(subRTN(selfLat, f32(c.lateral))))
+			if lat < K[0x6f5a64] then
+				local wk = wake(ahead and gn32 or -gn32, lat) * f32(c.wakeStrength or rf32(SPEC + 0xd0)) * att
+				prod = fd((1 + wk) * prod)
+				local gg = gn32 * gn32
+				local r = sqrt(lat * lat + gg)
+				if r > K[0x6ea4cc] then
+					local cell = CAR + (ahead and F_FRONT or F_REAR)
+					local k = ahead and K[0x6f688c] or K[0x6ea67c]
+					wf32d(cell, ((wk * gn32) / ((gg * k + 1) * r) + 1) * rf32(cell))
+				end
+				att = fd((lat * K[0x6f7344] + K[0x6f4658]) * att)
+			end
+		end
+		return prod
+	end
+	local function clampFactor(v)
+		if v < K[0x6ea44c] then return K[0x6ea44c] end
+		if v < K[0x6f4164] or v == K[0x6f4164] or v ~= v then return v end
+		return K[0x6f4164]
+	end
+	-- env: {trackLength, lapDistance, lateral, ahead = {car...}, behind = {car...}}, car = {lapDistance,
+	-- lateral, vx, vy, vz, wakeStrength (spec+0xd0), wakeLength (spec+0xd4)} in race order
+	local function drafting(env)
+		local len = f32(env.trackLength)
+		local selfDist, selfLat = f32(env.lapDistance), f32(env.lateral)
+		local p14 = draftPass(env.ahead or {}, selfDist, selfLat, len, true)
+		local p10 = draftPass(env.behind or {}, selfDist, selfLat, len, false)
+		local mn = (p14 < p10) and p14 or p10
+		local mx = (p14 < p10 or p14 == p10) and p10 or p14
+		wf32d(CAR + F_DRAG, clampFactor((1 - (1 - mx) * K[0x6ef640]) * mn))
+		wf32d(CAR + F_FRONT, clampFactor(rf32(CAR + F_FRONT)))
+		wf32d(CAR + F_REAR, clampFactor(rf32(CAR + F_REAR)))
+	end
+	V.draftingOriginal = drafting
+
+	-------------------------------------------------------------------------------------------------
+	-- per-frame aero update: 005637e0 subset, run by NR2003CupDriver before frameStart
+	-------------------------------------------------------------------------------------------------
+	-- track-object velocity = render copy (005543f0) of the exported chassis velocity bf6d44/4c/54
+	local function frameAero()
+		if session == nil then return end
+		local dx = fd(rf32(0xbf6d44) - rf32(AIR))
+		local dy = rf32(0xbf6d4c) - rf32(AIR + 4)
+		local dz = rf32(0xbf6d54) - rf32(AIR + 8)
+		w32(CAR + F_DRAG, ONE); w32(CAR + F_FRONT, ONE); w32(CAR + F_REAR, ONE)
+		wf32d(CAR + AIRSPEED, sqrt((dz * dz + dy * dy) + dx * dx))
+		if draftEnv then drafting(draftEnv) end
+	end
+	V._aeroFrame = frameAero
+
+	local function applyTrackObject()
+		if trackNormal then
+			wf32(TOBJ + 0x24, trackNormal[1]); wf32(TOBJ + 0x28, trackNormal[2]); wf32(TOBJ + 0x2c, trackNormal[3])
+			w32(CAR + TRACKOBJ, TOBJ)
+		else
+			w32(CAR + TRACKOBJ, 0)
+		end
+	end
+
+	-------------------------------------------------------------------------------------------------
+	-- API
+	-------------------------------------------------------------------------------------------------
+	-- session start (005a3c00): weather = {temperatureF, windSpeedMph, windDirection (0..7, 45 deg
+	-- steps), conditions (0..3), night, trackNorth (rad), humidity, pressureInHg}; nil = defaults
+	-- of the race options (70 F, no wind, conditions 0, daytime) and of the weather constructor.
+	function V.startSession(weather)
+		session = applyWeather(weather or {})
+		session.request = table.clone(weather or {})
+		applyTrackObject()
+		return session
+	end
+	-- back to the post-build state (no session start: rho = 0, factors as built)
+	function V.endSession()
+		session = nil
+		w32(AIR, 0); w32(AIR + 4, 0); w32(AIR + 8, 0); w32(AIR + 12, 0)
+		for _, o in ipairs({F_DRAG, F_FRONT, F_REAR, AIRSPEED}) do w32(CAR + o, 0) end
+		w32(CAR + TRACKOBJ, 0)
+	end
+	function V.sessionActive() return session ~= nil end
+	function V.weather() return session end
+	-- drafting environment (005afd80 inputs); nil = no race-order ring (single car: factors 1.0)
+	function V.setDraftEnvironment(env)
+		if env ~= nil then
+			assert(type(env) == "table", "draft environment must be a table")
+			local hasCars = (env.ahead and #env.ahead > 0) or (env.behind and #env.behind > 0)
+			assert(not hasCars or (tonumber(env.trackLength) or 0) > 0, "draft environment needs trackLength > 0")
+		end
+		draftEnv = env
+	end
+	-- vector of the car's track object (+0x24) used by 00561a80 to project the wind; nil = no
+	-- track object (car+0x5ae = 0: wind used unprojected, as in the post-build state)
+	function V.setTrackNormal(n)
+		trackNormal = n and {f32(n[1]), f32(n[2]), f32(n[3])} or nil
+		applyTrackObject()
+	end
+	function V.aeroFactors()
+		return rf32(CAR + F_DRAG), rf32(CAR + F_FRONT), rf32(CAR + F_REAR), rf32(CAR + AIRSPEED)
+	end
+
+	-- garage aero items read at run time by 00410280 (no build-time conversion uses them):
+	--   0x3b grille tape  % 0..100 step 5 -> 00423de0: FILD; FMUL 0.01f; FSTP (CW 0x027f, nearest)
+	--   0x3d rear spoiler deg 45..70 step 1 -> 004241d0: FILD (deg - 45); FSTP
+	-- (item 0x3b also feeds the engine cooling of 00554520 -> 0051a000: Stage 11, frozen)
+	local function desc(d) return ri32(d + 2), ri32(d + 6), ri32(d + 10), ri32(d + 14) end
+	function V.setAeroSetup(s)
+		s = s or {}
+		local lo, hi, step, def = desc(DESC_TAPE)
+		local tape = tonumber(s.grilleTape) or def
+		tape = math.clamp(floor(tape / step + 0.5) * step, lo, hi)
+		wf32(SETUP + 4 * ITEM_TAPE, near32(tape * K[0x6ea4a4]))
+		local lo2, hi2, _, def2 = desc(DESC_SPOILER)
+		local sp = math.clamp(floor((tonumber(s.spoiler) or def2) + 0.5), lo2, hi2)
+		wf32(SETUP + 4 * ITEM_SPOILER, sp - 45)
+		return tape, sp
+	end
+	function V.aeroSetup()
+		local t, sp = rf32(SETUP + 4 * ITEM_TAPE), rf32(SETUP + 4 * ITEM_SPOILER)
+		return floor(t * 100 + 0.5), sp + 45, t, sp
+	end
+
+	-- telemetry: the ORIGINAL 00561b70 evaluated at the current exported state (chassis velocity
+	-- relative to the half wind of 00561a80, body rates), with its side effects (call counter
+	-- 0074e090, stall state 007636e0/e4) saved and restored. Read-only for the simulation.
+	local st = table.create(45, 0)
+	local pos, rot = table.create(3, 0), table.create(9, 0)
+	function V.aeroState(out)
+		out = out or {}
+		local exportTarget = r32(0xe847c8) -- 005b2cb0 records its target block here
+		V.state(st)
+		w32(0xe847c8, exportTarget)
+		V.componentPose(0, pos, rot)
+		local wx, wy, wz = rf32(AIR), rf32(AIR + 4), rf32(AIR + 8)
+		local tobj = r32(CAR + TRACKOBJ)
+		if tobj ~= 0 then
+			local nx, ny, nz = rf32(tobj + 0x24), rf32(tobj + 0x28), rf32(tobj + 0x2c)
+			local dn = wx * nx + wz * nz + wy * ny
+			wx, wy, wz = wx - dn * nx, wy - dn * ny, wz - dn * nz
+		end
+		local rx, ry, rz = st[2] - wx * 0.5, st[4] - wy * 0.5, st[6] - wz * 0.5
+		local bx = rot[1] * rx + rot[4] * ry + rot[7] * rz
+		local by = rot[2] * rx + rot[5] * ry + rot[8] * rz
+		local bz = rot[3] * rx + rot[6] * ry + rot[9] * rz
+		for k = 0, 5 do w32(BLOCK + 4 * k, OUT6 + 4 * k) end
+		wf32(BLOCK + 24, bx); wf32(BLOCK + 28, by); wf32(BLOCK + 32, bz)
+		wf32(BLOCK + 36, st[11]); wf32(BLOCK + 40, st[12]); wf32(BLOCK + 44, st[13])
+		local c0, e0, e4 = r32(0x74e090), r32(0x7636e0), r32(0x7636e4)
+		callx(0x561b70, BLOCK)
+		w32(0x74e090, c0); w32(0x7636e0, e0); w32(0x7636e4, e4)
+		local fx, fy, fz = rf32(OUT6), rf32(OUT6 + 4), rf32(OUT6 + 8)
+		local mx, my, mz = rf32(OUT6 + 12), rf32(OUT6 + 16), rf32(OUT6 + 20)
+		local rho = rf32(AIR + 12)
+		local v2 = bx * bx + by * by + bz * bz
+		out.density = rho; out.wind = out.wind or {}; out.wind[1], out.wind[2], out.wind[3] = rf32(AIR), rf32(AIR + 4), rf32(AIR + 8)
+		out.q = v2 * rho * 0.5; out.airspeedBody = sqrt(v2)
+		out.vx, out.vy, out.vz = bx, by, bz
+		out.yaw = atan2(by, bx); out.pitch = atan2(-bz, sqrt(bx * bx + by * by)) + rf32(0xc083c4)
+		out.fx, out.fy, out.fz, out.mx, out.my, out.mz = fx, fy, fz, mx, my, mz
+		out.drag = -fx; out.downforce = -fz; out.side = fy
+		-- equivalent axle split of (Fz, My) about the chassis origin, lever arms = LF suspension and
+		-- rear axle attachment x offsets of the component records (presentation/telemetry only)
+		local xf, xr = rf32(LF_SUSP + 0x44), rf32(ROOT + 9 * 0x505 + 0x44)
+		local front = (my - xr * out.downforce) / (xf - xr)
+		out.downforceFront, out.downforceRear = front, out.downforce - front
+		local zlf, zrf = rf32(r32(LF_SUSP + 0x2d5)), rf32(r32(RF_SUSP + 0x2d5))
+		out.rideHeightFront = ((rf32(0xc084c8) - zlf) + (rf32(0xc084cc) - zrf)) * 0.5
+		out.groundProximity = math.max(0, 0.1778 - math.max(0, out.rideHeightFront)) -- 006ec748 = 7 in
+		local d, f, r, a = V.aeroFactors()
+		out.factorDrag, out.factorFront, out.factorRear, out.airspeed = d, f, r, a
+		out.stall = rf32(0x7636e4)
+		out.session = session ~= nil
+		return out
+	end
+
+	-- session state survives V.reset() (a reset reloads the car into the same session)
+	local baseReset = V.reset
+	function V.reset()
+		baseReset()
+		restoreImageCells()
+		if session ~= nil then
+			applyWeather(session.request)
+			applyTrackObject()
+		end
+	end
+	V._aeroConstants = KBITS
+	V._aeroWake = WAKE_BITS
+	V._aeroDamageCells = DAMAGE_CELLS
+	return V
+end
+]=])
+module("NR2003Cup","NR2003CupDriver",[=[
+--!native
+--!optimize 2
+-- NR2003 Cup driver layer + tick sequencing (Stage 7). Installs V.drive / V.componentPose on a
+-- runtime created by NR2003CupCore. Every float32 store goes through V.wf32d (IEEE single,
+-- rounding toward -inf: NR2003 bg task FPU CW 0x077f, 0055cef0 -> 00567704(1,3)).
+--
+-- Per 36 Hz task frame (005b2190 -> 00551e80 tail, player car):
+--   pedals/axes -> bf6390/bf6eac/bf6eb0, throttle^2/brake^2 targets, per-tick ramps (/N),
+--   shift request (00552450/00552480).  Steering: PROVISIONAL (Stage 12 pending) -- the host
+--   supplies the road-wheel target instead of 00552720 shaping + pow linearity + 00554fb0 ratio.
+-- Per 288 Hz tick (005b2190 loop body):
+--   005539c0 input composition (ramps, toe c086b0/c086b4, brake/clutch ramps, lifted 00553d70
+--   shift FSM + auto clutch 005542f0, gear, rev limiter engine+0x438 with 006f5a3c hysteresis),
+--   005b2b90 predictor+solve, 005b2cb0 export, tires (00578da0 -> 0055e1e0 x4), 005b2bd0 forces,
+--   005b2be0 corrector+solve, export, tires (00578de0), forces, 005b2c00 commit.
+-- Per frame end (00554520): 0051aac0 cut-timer subset (in the core: V._frameEnd).
+-- Stage 8 (brake input chain, per frame, 005524f0 player branch):
+--   raw brake control (0057af30 control table) -> 00552d00 axis limiter -> 00553080 pedal
+--   processing (auto-hold below 0.8 m/s, key ramp, braking help 00550130) -> bf6eac; the
+--   00551e80 tail squares it and ramps it per tick into bf636c -> 005b2b90 -> brake cell e84480,
+--   which the ORIGINAL generated force code (005610b0 x4 + 00561040) turns into wheel torque.
+-- Stage 9: frame start calls V._aeroFrame (005637e0 subset, NR2003CupAero) before frameStart.
+-- Not ported (documented): replay/telemetry recording, FFB, auto-shift 005536b0 (transmission
+-- mode 0), H-pattern mode (bf6f0c 1/2), ignition states driven by 005524f0/0057af40(0x19),
+-- throttle/clutch/steering device processing (00552df0/005534f0/00552720 - Stage 7 host
+-- values / Stage 12).
+return function(V)
+	local rf32, r32, ri32, w32, r8, w8 = V.rf32, V.r32, V.ri32, V.w32, V.r8, V.w8
+	local wf32d, fd, rf64, wf64 = V.wf32d, V.fd, V.rf64, V.wf64
+	local wf32 = V.wf32
+	local callx, tires, export, frameEnd, popF = V._callx, V._tires, V._export, V._frameEnd, V._popF
+	local M, BASE = V.memory(), V.base
+	local TPF, ENGINE, ROOT, INPUTS = V.TPF, V.ENGINE, V.ROOT, V.INPUTS
+	local abs, sqrt, atan2 = math.abs, math.sqrt, math.atan2
+
+	---------------------------------------------------------------------------------------------
+	-- Stage 8: ORIGINAL brake input chain (hand port of x87 code; float32 stores round toward
+	-- -inf like every store of the simulation task, intermediates in double).
+	---------------------------------------------------------------------------------------------
+	local CTRL_RAW, CTRL_TYPE = 0xd35b18, 0xd37cc8 -- 0057af30: f32 [d35b18+10n]; 0057af60: i32 [d37cc8+29n]
+	local BRAKE_CTL, THROTTLE_CTL = 6, 5
+	-- .rdata constants read from the image (same cells the original reads)
+	local K_ONE, K_ZERO = rf32(0x6e97d8), rf32(0x6ea454) -- 1.0, 0.0
+	local K_AXIS_LOW, K_AXIS_FAST = rf32(0x6ee390), 0x74c99c -- 0.025, release factor cell (2.5)
+	local K_HOLD_SPEED, K_THROTTLE_ON = rf32(0x6efb28), rf32(0x6e9824) -- 0.8 m/s, 0.2
+	local K_FLAT, K_HOLD = rf32(0x6f5a30), rf32(0x6efac8) -- 0.0087266 rad, 0.98
+	local K_RAMP_UP = rf32(0x6f53c0) -- 1/12 per frame
+	local K_SLOPE = rf64(0x6f5a28) -- 0.363636... (qword)
+	local K_HALF, K_REL_FAST, K_REL_SLOW = rf32(0x6ea44c), rf32(0x6f4614), rf32(0x6f5a24) -- 0.5, 0.125, 1/24
+	local K_HELP_SPEED, K_HELP_SLIP = rf32(0x6ea68c), rf32(0x6efbf0) -- 11 m/s, 12.5
+	local K_1_5, K_R, K_F = rf32(0x6ea494), rf32(0x6f5a20), rf32(0x6f5a18) -- 1.5, -4/9, -20/33
+	local K_2_1, K_R2, K_FLOOR, K_LOWHELP = rf32(0x6f5a1c), rf32(0x6f5a14), rf32(0x6ef640), rf32(0x6ed020) -- 2.1, 2/3, 0.3, 0.9
+	local K_02 = 0.20000000298023224 -- literal 0x3e4ccccd (00553080 @0055323f)
+	local K_PI = rf32(0x6f4a4c) -- 3.14159274 (005f74c0)
+	local K_GIMBAL = rf64(0x6ef4c8) -- 0.01 (qword, 005f74c0)
+
+	-- 00552d00(n): axis value with per-axis slew limit (controls 5..8). Returns the x87 value.
+	local function axis(n)
+		local raw = rf32(CTRL_RAW + 10 * n) -- 0057af30 (FLD dword; the FST copy is the same float)
+		local ecx, edx
+		if n == 5 then ecx, edx = 2, 1 elseif n == 6 then ecx, edx = 3, 2
+		elseif n == 7 then ecx, edx = 0, 0 elseif n == 8 then ecx, edx = 1, 0 else return raw end
+		local rate = rf32(0x74c990 + 4 * edx)
+		if not (rate < K_ONE or rate ~= rate) then return raw end -- FCOMP 1.0; AND 0x100; JZ ret
+		if not (raw >= K_AXIS_LOW or raw ~= raw) then rate = rate * rf32(K_AXIS_FAST) end -- TEST AH,5; JP
+		local prev = rf32(0xbf639c + 4 * ecx)
+		local v
+		if raw <= prev or raw ~= raw or prev ~= prev then -- AND 0x4100; JNZ
+			v = prev - rate -- FSUBR
+			if not (v >= raw or v ~= v or raw ~= raw) then v = raw end -- TEST AH,5; JP keep
+		else
+			v = rate + prev -- FADD
+			if not (v <= raw or v ~= v or raw ~= raw) then v = raw end -- AND 0x4100; JNZ keep
+		end
+		wf32d(0xbf639c + 4 * ecx, v) -- FST dword (state), ST0 keeps the x87 value
+		if edx == 0 then v = math.sin(v * rf64(0x6f5a00)) end -- steering axes only
+		return v
+	end
+
+	-- 00554f50: vehicle speed |v| from the exported state block, cached in bf6f44 (float32).
+	-- The original recomputes when the timer-interrupt count changes; the state block does not
+	-- change inside a frame start, so recomputing on every call returns the same value.
+	local function speed()
+		local vz, vy, vx = rf32(0xbf6d54), rf32(0xbf6d4c), rf32(0xbf6d44)
+		wf32d(0xbf6f44, sqrt((vz * vz + vy * vy) + vx * vx))
+		return rf32(0xbf6f44)
+	end
+
+	-- 005f7570 = 005f6e40 (quaternion xyzw -> row-major 3x3, float32 stores) + 005f74c0 (angles).
+	-- Returns the three float32 outputs (out1, out2, out3) in the original order.
+	local function attitude(q)
+		local x, y, z, w = rf32(q), rf32(q + 4), rf32(q + 8), rf32(q + 12)
+		local w2 = w + w
+		local wx, wy, wz = w2 * x, w2 * y, w2 * z
+		local ww = fd(w2 * w)
+		local x2 = x + x
+		local e0, e4 = fd(x2 * y), fd(x2 * z)
+		local y2 = y + y
+		local e8, ec = fd(y2 * z), fd(y2 * y)
+		local e10 = fd((z * z) + (z * z))
+		local m0 = fd((x2 * x + ww) - K_ONE)
+		local m1 = fd(e0 - wz)
+		local m2 = fd(e4 + wy)
+		local m3 = fd(e0 + wz)
+		local m4 = fd((ec + ww) - K_ONE)
+		local m5 = fd(e8 - wx)
+		local m6 = fd(e4 - wy)
+		local m7 = fd(e8 + wx); local _ = m7
+		local m8 = fd((e10 + ww) - K_ONE); local _2 = m8
+		local a1 = fd(atan2(m3, m0))
+		local c = sqrt(m0 * m0 + m3 * m3)
+		local a2 = fd(atan2(-m6, c))
+		local a3
+		if c >= K_GIMBAL or c ~= c then
+			local ic = K_ONE / c
+			local nA, B = -(ic * m3), ic * m0
+			local Y = -(B * m5 + nA * m2)
+			local X = B * m4 + nA * m1
+			a3 = fd(atan2(Y, X))
+		else
+			local r = a1 - atan2(m5, m2)
+			a3 = fd(r)
+			if not (m6 <= K_ZERO or m6 ~= m6) then a3 = fd(K_PI - r) end
+		end
+		return a1, a2, a3
+	end
+
+	-- 00550130: braking help option (bf6f04), disabled per car by flag 0x20000000 at
+	-- 0055a680()+0x4c (inServer() = false offline; simulation runs inBackground()).
+	local function brakingHelp()
+		if bit32.band(r32(0xc0692a + 0x4c), 0x20000000) ~= 0 then return false end
+		return r8(0xbf6f04) ~= 0
+	end
+
+	-- 00553080: processed brake pedal (returned as the x87 value; 005524f0 stores it to bf6eac)
+	local function pedal()
+		-- 005c2d20([c08194]) is the online-session state; offline host -> 0 (ADAPTER), so the
+		-- driver kind comes from 005672e0 -> 0055a730 = [c067e0] (1 -> brake fully applied)
+		local r
+		if ri32(0xc067e0) == 1 then r = K_ONE else r = fd(axis(BRAKE_CTL)) end
+		local spd = speed()
+		local hold = false
+		if not (spd >= K_HOLD_SPEED or spd ~= spd) then
+			if rf32(0xbf6390) < K_THROTTLE_ON then hold = true
+			elseif ri32(0x74c97c) == 1 then hold = true end -- neutral
+		end
+		if hold then
+			local _, a2, a3 = attitude(0xbf6d58)
+			local pa = abs(a2)
+			if not (pa >= K_FLAT or pa ~= pa) then
+				if r >= K_HOLD or r ~= r then return r end
+				local v = rf32(0xbf6eac) + K_RAMP_UP
+				if v < K_HOLD or v == K_HOLD then return v end
+				return K_HOLD
+			end
+			local h
+			local pr = abs(a3)
+			if pr <= K_ZERO or pr ~= pr then h = K_02
+			else
+				local q = pa * K_SLOPE / pr
+				if not (q <= K_ONE or q ~= q) then q = K_ONE end
+				h = fd((K_ONE - q) * K_HOLD)
+				if not (h >= K_THROTTLE_ON or h ~= h) then h = K_02 end
+			end
+			if not (r >= h or r ~= r or h ~= h) then
+				local v = rf32(0xbf6eac) + K_RAMP_UP
+				if v < h or v == h then return v end
+				return h
+			end
+		end
+		-- 0055327b: button/key binding (0057af60(6)) -> per-frame ramp toward the key state
+		if ri32(CTRL_TYPE + 29 * BRAKE_CTL) ~= 1 then
+			local t = fd(axis(THROTTLE_CTL))
+			local p = rf32(0xbf6eac)
+			local v
+			if not (p >= r or p ~= p or r ~= r) then v = p + K_RAMP_UP
+			elseif p <= r or p ~= p or r ~= r then v = r
+			elseif t >= K_HALF or t ~= t then v = p - K_REL_FAST
+			else v = p - K_REL_SLOW end
+			if v >= K_ZERO or v ~= v then
+				if not (v <= K_ONE or v ~= v) then v = K_ONE end
+			else v = K_ZERO end
+			r = fd(v)
+		end
+		-- 0055332c: braking help (driving aid) while the pedal is rising
+		if brakingHelp() then
+			local p = rf32(0xbf6eac)
+			if p > r or p ~= p or r ~= r then return r end
+			local s = speed()
+			if s <= K_HELP_SPEED or s ~= s then return r * K_LOWHELP end
+			local s0, s1, s2, s3 = rf32(0xbf3cd4), rf32(0xbf470d), rf32(0xbf5146), rf32(0xbf5b7f)
+			local A, B = s0, s2
+			if not (s1 <= A or s1 ~= s1 or A ~= A) then A = s1 end
+			if not (s3 <= B or s3 ~= s3 or B ~= B) then B = s3 end
+			local mn = s0
+			if not (s1 >= mn or s1 ~= s1 or mn ~= mn) and s1 ~= K_ZERO then mn = s1 end
+			if not (s2 >= mn or s2 ~= s2 or mn ~= mn) and s2 ~= K_ZERO then mn = s2 end
+			if not (s3 >= mn or s3 ~= s3 or mn ~= mn) and s3 ~= K_ZERO then mn = s3 end
+			if not (mn <= K_HELP_SLIP or mn ~= mn) then return r end
+			local x = (B - K_1_5) * K_R
+			local y = fd((A - K_2_1) * K_F)
+			if not (x < y) then x = y end
+			if not (x < K_ZERO or x ~= x) then x = (K_1_5 - B) * K_R2 end
+			x = x * K_REL_FAST + rf32(0xbf6eac)
+			if not (x >= K_FLOOR or x ~= x) then x = K_FLOOR end
+			if x <= r or x ~= x or r ~= r then return x end
+			return r
+		end
+		return r
+	end
+	V.brakePedalOriginal = pedal -- exposed for the bit-level tests (tests/stage8)
+	V.attitudeOriginal = attitude
+	V.axisOriginal = axis
+
+	-- 005524f0 'car not driven' branch (another car / no driver): pedal held at 1.0
+	local function notDriven()
+		for _, a in ipairs({0xbf63c8, 0xbf6f14, 0x74c98c, 0xbf6388, 0xbf6e84, 0xbf63bc, 0xbf638c, 0xbf6390, 0xbf6eb0}) do w32(a, 0) end
+		w32(0xbf6eac, 0x3f800000)
+		w8(0xbf6e20, 0); w8(0xbf6e21, 0); w8(0xbf6e22, 0)
+	end
+
+	-- frame start: 005524f0 (driver devices) + 00551e80 tail for the player car.
+	-- controls: throttle pedal 0..1, clutch = engagement 0..1 (1 = pedal up), steer = road-wheel
+	-- target (rad, + = left, PROVISIONAL), shiftUp/shiftDown = sequential shift keys.
+	-- Brake (Stage 8): brakeControl = raw brake control value 0..1 of the input device (keyboard
+	-- 0/1 or pedal axis), brakeDigital = key/button binding (default true; false = analog axis),
+	-- throttleControl/throttleDigital = raw throttle control (key release-rate choice in 00553080).
+	-- Without brakeControl, controls.brake is injected directly as the processed pedal bf6eac
+	-- (Stage 6/7 contract, kept for regression fixtures). driver = false -> 005524f0 'not driven'.
+	local function frameStart(c)
+		local N = ri32(0xbf6e9c)
+		if c.driver == false then
+			notDriven()
+		else
+			if c.brakeControl ~= nil then
+				local bc = math.clamp(tonumber(c.brakeControl) or 0, 0, 1)
+				wf32(CTRL_RAW + 10 * BRAKE_CTL, bc)
+				w32(CTRL_TYPE + 29 * BRAKE_CTL, c.brakeDigital == false and 1 or 0)
+				local tc = c.throttleControl
+				if tc == nil then tc = c.throttle or 0 end
+				wf32(CTRL_RAW + 10 * THROTTLE_CTL, math.clamp(tonumber(tc) or 0, 0, 1))
+				w32(CTRL_TYPE + 29 * THROTTLE_CTL, c.throttleDigital == false and 1 or 0)
+				if r8(0xbf6eb9) ~= 0 then -- 005524f0: car held (bf6eb9)
+					w32(0xbf6eac, 0x3f800000); w32(0xbf6eb0, 0)
+				else
+					wf32d(0xbf6eac, pedal()) -- ORIGINAL 00553080 (reads the previous frame's bf6390)
+					wf32d(0xbf6eb0, c.clutch or 0)
+				end
+			else
+				wf32d(0xbf6eac, c.brake or 0)
+				wf32d(0xbf6eb0, c.clutch or 0)
+			end
+			wf32d(0xbf6390, c.throttle or 0)
+		end
+		for w = 0, 3 do -- per-frame tire accumulators cleared by 00551e80 (bf3ccc.., bf4705.., ...)
+			local t = 0xbf3a20 + w * 0xa39
+			w32(t + 0x2ac, 0); w32(t + 0x2b0, 0); w32(t + 0x2b4, 0); w32(t + 0x2b8, 0)
+			w32(t + 0x2d0, 0); w32(t + 0x2d4, 0); w32(t + 0x2bc, 0); w32(t + 0x2c0, 0)
+		end
+		local target = c.steer or 0
+		wf32d(0xbf63b8, target)
+		w32(0xbf6e38, r32(0xbf6eb0))
+		w32(0xbf63c0, r32(0xbf6e80)); w32(0xbf636c, r32(0xbf6e64))
+		w32(0xbf6ea4, r32(0xbf6e60)); w32(0xbf6e14, r32(0xbf6e68))
+		local thr, brk = rf32(0xbf6390), rf32(0xbf6eac)
+		wf32d(0xbf6e30, thr * thr); wf32d(0xbf6e34, brk * brk)
+		wf32d(0xbf6e88, (target - rf32(0xbf6e80)) / N)
+		wf32d(0xbf6394, (rf32(0xbf6e30) - rf32(0xbf6e60)) / N)
+		wf32d(0xbf6358, (rf32(0xbf6e34) - rf32(0xbf6e64)) / N)
+		local cl = rf32(0xbf6eb0) - rf32(0xbf6e68)
+		buffer.copy(M, 0xbf6e58 - BASE, M, 0xbf6e28 - BASE, 36) -- rep movsd bf6e28 -> bf6e58 (9 dwords)
+		wf32d(0xbf6e50, cl / N)
+		wf32d(0xbf6e80, target)
+		-- sequential shift request (bf6f0c == 0, transmission mode 0074c974 ~= 0); the 'not driven'
+		-- branch of 005524f0 clears the shift keys (bf6e20/21/22)
+		if c.driver ~= false and ri32(0xbf6f0c) ~= 2 and ri32(0xbf63cc) == 0 and ri32(0x74c974) ~= 0 and ri32(0xbf6f0c) == 0 then
+			local d = (c.shiftUp and 1 or 0) - (c.shiftDown and 1 or 0)
+			local st = ri32(0xbf6ea0)
+			if d ~= 0 and (st == 0 or st == 3 or st == 4) then
+				w32(0xbf63cc, d > 0 and 1 or 5); w32(0xbf6e98, 0)
+			end
+		end
+	end
+
+	-- 005539c0 input composition (player car; replay/telemetry recording not ported)
+	local function tickInputs()
+		wf64(0xbf6ef8, rf64(0xbf6ef8) + rf32(0x74fd74))
+		wf32d(0xbf6ea4, rf32(0xbf6394) + rf32(0xbf6ea4))
+		wf32d(0xbf63c0, rf32(0xbf6e88) + rf32(0xbf63c0))
+		wf32d(0xbf6360, rf32(0xbf63c0) - rf32(0xc086b0))
+		w32(0xbf6368, r32(0xbf6ea4))
+		wf32d(0xbf6364, rf32(0xc086b4) + rf32(0xbf63c0))
+		wf32d(0xbf636c, rf32(0xbf636c) + rf32(0xbf6358))
+		local c = rf32(0xbf6e50) + rf32(0xbf6e14)
+		wf32d(0xbf6e14, c); wf32d(0xbf6370, c)
+		callx(0x553d70) -- lifted original: shift FSM, throttle blip/cut, auto clutch (005542f0)
+		wf32d(0xbf6374, ri32(0x74c97c))
+		-- rev limiter (005539c0): engine+0x438 (Cup 9300 rpm), band = max * 006f5a3c
+		local maxr = rf32(ENGINE + 0x438)
+		callx(0x554f10) -- lifted original rpm (state[34] * 9.5493, clamp 300..32000)
+		local rpm = popF()
+		local rpm32 = fd(rpm)
+		local band = fd(maxr * rf32(0x6f5a3c))
+		if maxr < rpm or ((maxr - band) < rpm32 and r8(0xbf6f3c) ~= 0) then
+			w32(0xbf6368, 0); w8(0xbf6f3c, 1)
+		elseif not ((maxr - band) < rpm32) then
+			w8(0xbf6f3c, 0)
+		end
+	end
+
+	-- one 288 Hz tick. contacts: 4 planes or function(phase) -> 4 planes (see core tires()).
+	-- Stage 9: the per-frame car update 005637e0 (aero factors, airspeed, drafting) runs in
+	-- 0055bfd0 before 005b2190 starts the frame; V._aeroFrame is installed by NR2003CupAero and
+	-- does nothing until a session is started (post-build state of Stages 6-8).
+	function V.drive(controls, contacts)
+		if V.tick % TPF == 0 then
+			if V._aeroFrame then V._aeroFrame() end
+			frameStart(controls)
+		end
+		w32(0xe8441c, V.tick % TPF)
+		w8(0xe843fc, 1)
+		tickInputs()
+		callx(0x5b2b90, ROOT, INPUTS); export()
+		tires(contacts, 1); callx(0x5b2bd0)
+		w8(0xe843fc, 0)
+		callx(0x5b2be0); export()
+		tires(contacts, 2); callx(0x5b2bd0)
+		callx(0x5b2c00)
+		V.tick += 1
+		if V.tick % TPF == 0 then frameEnd() end
+	end
+
+	-- component world transforms (vehicle-world axes) through the record pointer fields
+	-- (+0x32d position, +0x339 row-major body->world 3x3) used by the original export/render paths.
+	-- Records: 0 chassis, 4 lfhub, 5 lfwheel, 7 rfhub, 8 rfwheel, 9 raxle, 10 lrwheel, 11 rrwheel.
+	local POSP, ROTP = {}, {}
+	for r = 0, 15 do
+		local rec = ROOT + r * 0x505
+		POSP[r] = { r32(rec + 0x32d), r32(rec + 0x331), r32(rec + 0x335) }
+		local rot = {}
+		for k = 0, 8 do rot[k + 1] = r32(rec + 0x339 + 4 * k) end
+		ROTP[r] = rot
+	end
+	function V.componentPose(r, pos, rot)
+		pos = pos or table.create(3, 0); rot = rot or table.create(9, 0)
+		local p, q = POSP[r], ROTP[r]
+		pos[1], pos[2], pos[3] = rf32(p[1]), rf32(p[2]), rf32(p[3])
+		for k = 1, 9 do rot[k] = rf32(q[k]) end
+		return pos, rot
+	end
+
+	-- engine/drivetrain readouts (original cells)
+	function V.engineRpm() return rf32(0xbf6d40 + 4 * 34) * 9.549296585513721 end -- state[34] rad/s
+	function V.gearIndex() return ri32(0x74c97c) end      -- 0 = R, 1 = N, 2.. = 1st..
+	function V.gearCount() return ri32(ENGINE + 0x444) end -- Cup: 4
+	function V.revLimiter() return r8(0xbf6f3c) ~= 0 end
+	function V.inputs()
+		return rf32(0xbf6360), rf32(0xbf6364), rf32(0xbf6368), rf32(0xbf636c), rf32(0xbf6370), rf32(0xbf6374)
+	end
+
+	---------------------------------------------------------------------------------------------
+	-- Stage 8: brake setup + read-only brake/tire observation (original cells, no side effects)
+	---------------------------------------------------------------------------------------------
+	local SETUP_BIAS = 0xc055c0 + 4 * 0x28 -- active setup item 0x28 (00557d60(0x28)): front fraction
+	local BIAS_DESC = 0x6edf78 -- setup descriptor of item 0x28: int min/max/step/default (50/90/1/74 %)
+	local KB = {} -- per-wheel brake torque cells (0055e9b0 -> c0850c..c08518, JIT cells)
+	local RR = {} -- per-wheel rolling-resistance torque cells (0054cab0 -> c081f4..c08200)
+	for w = 0, 3 do KB[w] = r32(0xc0850c + 4 * w); RR[w] = r32(0xc081f4 + 4 * w) end
+	local BRAKE_CELL = r32(0xe84480) -- e84474[3]: core brake input written by 005b2b90 from bf636c
+	local DRAG0, DRAG2, RATE = r32(0x74e798), r32(0x74e79c), r32(0x74fda0) -- 10, 1e-4, 288 (005610b0)
+	local WHEEL_RECORD = {[0] = 5, 8, 10, 11} -- lfwheel, rfwheel, lrwheel, rrwheel (00561090/1230/1250/1270)
+	local OMEGA, INERTIA = {}, {}
+	for w = 0, 3 do
+		local rec = ROOT + WHEEL_RECORD[w] * 0x505
+		OMEGA[w] = r32(rec + 0x395)   -- spin joint velocity cell (velocity +0x385, axis 4)
+		INERTIA[w] = r32(rec + 0x195) -- articulated spin inertia cell (mass matrix +0x125, [4][4])
+	end
+	local scratch = buffer.create(4)
+
+	-- garage brake bias (front %, integer 50..90) -> setup item 0x28 -> runtime cells, exactly as
+	-- the original car build does: toInternal 00423de0 (pct * 0.01f, x87 default CW = nearest),
+	-- then 0055e9b0 @0055f314: Kb[LF]=Kb[RF]=fd(maxT*b), Kb[LR]=Kb[RR]=fd(maxT*fd(1-b)),
+	-- maxT = car spec +0x1bc via slot +0x582 (Cup 3800 N*m). The original has no in-car brake bias
+	-- adjustment (0055e6d0 is unreferenced): apply after reset(), before driving.
+	function V.setBrakeBias(percent)
+		local lo, hi = ri32(BIAS_DESC + 2), ri32(BIAS_DESC + 6)
+		local p = math.clamp(math.floor((tonumber(percent) or ri32(BIAS_DESC + 14)) + 0.5), lo, hi)
+		buffer.writef32(scratch, 0, rf32(0x6ea4a4)); local k = buffer.readf32(scratch, 0)
+		buffer.writef32(scratch, 0, p * k)
+		wf32(SETUP_BIAS, buffer.readf32(scratch, 0))
+		local b, maxT = rf32(SETUP_BIAS), rf32(0xc12030 + 0x582)
+		local front, rest = fd(maxT * b), fd(K_ONE - b)
+		local rear = fd(maxT * rest)
+		wf32(KB[0], front); wf32(KB[1], front); wf32(KB[2], rear); wf32(KB[3], rear)
+		return p
+	end
+	function V.brakeBias()
+		local b = rf32(SETUP_BIAS)
+		return b, math.floor(b * 100 + 0.5), rf32(0xc12030 + 0x582)
+	end
+
+	-- brake chain readout: processed pedal (bf6eac), frame target pedal^2 (bf6e34), per-tick ramp
+	-- value (bf636c) and the core brake cell (e84480) used by the force code
+	function V.brakeState()
+		return rf32(0xbf6eac), rf32(0xbf6e34), rf32(0xbf636c), rf32(BRAKE_CELL)
+	end
+
+	-- brake temperature of wheel w (K): XOR-obfuscated storage of the tire object (+0x26c ^ +0x274),
+	-- evolved per frame by 0054f260 inside 0054d610 (Stage 11: frozen at the build value)
+	function V.brakeTemperature(w)
+		local t = 0xbf3a20 + w * 0xa39
+		buffer.writeu32(scratch, 0, bit32.bxor(r32(r32(t + 0x26c)), r32(r32(t + 0x274))))
+		return buffer.readf32(scratch, 0)
+	end
+
+	-- per-wheel observation of the last tire + forces pass (w: 0 LF, 1 RF, 2 LR, 3 RR)
+	--   torque   : friction/brake torque recorded by the original 0055e450..0055e480 (tire +0x268)
+	--   kb       : brake torque per unit core brake input (setup cells)
+	--   brakeCap : core brake input * kb (brake share of the 00561040 capacity)
+	--   dragCap  : 10 + 1e-4*omega^2 + rolling-resistance torque (rest of the capacity)
+	--   omega    : wheel spin rate relative to its hub/axle (rad/s); inertia = articulated Iyy
+	--   fx/fy/fz : tire outputs (+0x2d8/+0x2dc/+0x2e0, tire frame), vx: contact longitudinal
+	--              velocity (+0x2f0), vslip: tread - ground (+0x2ec), tread: |band speed| (+0x2cc)
+	function V.wheelBrake(w, out)
+		out = out or {}
+		local t = 0xbf3a20 + w * 0xa39
+		local core, kb, om = rf32(BRAKE_CELL), rf32(KB[w]), rf32(OMEGA[w])
+		out.torque = rf32(t + 0x268); out.kb = kb; out.brakeCap = core * kb
+		out.dragCap = rf32(DRAG0) + om * om * rf32(DRAG2) + rf32(RR[w])
+		out.omega = om; out.inertia = rf32(INERTIA[w]); out.rate = rf32(RATE)
+		out.fx = rf32(t + 0x2d8); out.fy = rf32(t + 0x2dc); out.fz = rf32(t + 0x2e0)
+		out.vx = rf32(t + 0x2f0); out.vslip = rf32(t + 0x2ec); out.tread = rf32(t + 0x2cc)
+		out.rollingTorque = rf32(RR[w])
+		out.temperature = V.brakeTemperature(w)
+		-- presentation-only lock indicator: tread speed ~ 0 while the contact still slides
+		out.locked = abs(out.vx) > 0.5 and out.tread < 0.05 * abs(out.vx)
+		return out
+	end
+	return V
+end
+]=])
+module("Core","NR2003CupVehicle",[=[
+-- Stage 6/7 vehicle core: the ORIGINAL NR2003 Cup car running in Luau.
+-- Core.NR2003Cup holds code generated from NR2003.exe (recovery/stage6_7/gen_runtime.py):
+--   NR2003CupImage1..n : memory image after the game's own car build (spec, setup defaults,
+--                        tire/engine init, component graph, JIT cells, tables)
+--   NR2003CupCore      : machine state + 86 lifted x86 natives + host primitives
+--   NR2003CupJIT1..n   : the x87 callbacks NR2003 generates at car build, translated
+--   NR2003CupDriver    : 005b2190 tick order, 00551e80/005539c0 driver layer (hand port)
+--   NR2003CupAero      : Stage 9 session air (005a3c00), per-frame aero factors (005637e0),
+--                        drafting (005afd80), aero setup items, aero telemetry (hand port)
+-- This module only assembles them and exposes a numeric API (no Instances, no Roblox types).
+-- Axes: NR2003 vehicle-world frame (+X forward, +Y left, +Z up, metres, seconds) fixed at reset.
+local M={};M.__index=M
+
+local function collect(get,prefix)
+    local list={}
+    for k=1,32 do
+        local m=get(prefix..k)
+        if m==nil then break end
+        list[#list+1]=m
+    end
+    return list
+end
+local function merge(parts)
+    assert(#parts>0,"NR2003CupImage parts missing")
+    local p=parts[1]
+    local image={base=p.base,size=p.size,stackTop=p.stackTop,host=p.host,windows={}}
+    for _,part in ipairs(parts) do
+        assert(part.base==image.base and part.size==image.size,"mismatched image part")
+        for _,w in ipairs(part.windows) do image.windows[#image.windows+1]=w end
+    end
+    assert(#parts==p.parts,"image has "..tostring(p.parts).." parts, found "..#parts)
+    return image
+end
+-- get(name) -> module value or nil
+function M.fromLoader(get)
+    local image=merge(collect(get,"NR2003CupImage"))
+    local jit=collect(get,"NR2003CupJIT")
+    assert(#jit>0,"NR2003CupJIT modules missing")
+    local V=get("NR2003CupDriver")(get("NR2003CupCore")(image,jit))
+    local aero=get("NR2003CupAero") -- Stage 9 (absent in a Stage 6/7/8 install)
+    if aero then aero(V) end
+    return setmetatable({V=V,state=table.create(45,0),pos={0,0,0},rot={1,0,0,0,1,0,0,0,1}},M)
+end
+function M.new(folder)
+    folder=folder or (script and script.Parent:FindFirstChild("NR2003Cup"))
+    assert(folder,"Core.NR2003Cup folder missing")
+    return M.fromLoader(function(name)
+        local m=folder:FindFirstChild(name)
+        return m and require(m) or nil
+    end)
+end
+
+function M:reset() self.V.reset() end
+function M:tick() return self.V.tick end
+-- controls: {throttle, clutch(engagement), steer(road-wheel rad, + left), shiftUp, shiftDown,
+--   brakeControl (Stage 8: raw brake device value 0..1 -> ORIGINAL 00552d00/00553080 chain),
+--   brakeDigital (true = key/button binding, false = analog axis), throttleControl/throttleDigital,
+--   driver (false -> 005524f0 'not driven': brake held at 1.0),
+--   brake (no brakeControl: processed pedal injected directly, Stage 6/7 contract)}
+-- contacts: 4 planes {nx,ny,nz,d,gvx,gvy,gvz,surface,grip} or function(phase) -> planes
+function M:step(controls,contacts) self.V.drive(controls,contacts) end
+-- Stage 8 brake API (original cells; see CORE_API.md)
+function M:setBrakeBias(percent) return self.V.setBrakeBias(percent) end
+function M:brakeBias() return self.V.brakeBias() end
+function M:brakeState() return self.V.brakeState() end
+function M:wheelBrake(i,out) return self.V.wheelBrake(i,out) end
+function M:brakeTemperature(i) return self.V.brakeTemperature(i) end
+-- Stage 9 aero API (original cells; see CORE_API.md). Without startSession the core keeps its
+-- post-build state (no air: rho = 0), the condition of every Stage 6/7/8 fixture.
+--   weather = {temperatureF, windSpeedMph, windDirection 0..7, conditions 0..3, night, trackNorth,
+--              humidity, pressureInHg}  (nil fields = original defaults)
+function M:startSession(weather) return self.V.startSession(weather) end
+function M:endSession() self.V.endSession() end
+function M:sessionActive() return self.V.sessionActive() end
+function M:weather() return self.V.weather() end
+function M:setDraftEnvironment(env) self.V.setDraftEnvironment(env) end
+function M:setTrackNormal(n) self.V.setTrackNormal(n) end
+function M:aeroFactors() return self.V.aeroFactors() end
+function M:setAeroSetup(s) return self.V.setAeroSetup(s) end
+function M:aeroSetup() return self.V.aeroSetup() end
+function M:aeroState(out) return self.V.aeroState(out) end
+function M:readState() return self.V.state(self.state) end
+function M:componentPose(record,pos,rot) return self.V.componentPose(record,pos,rot) end
+function M:contactOut(i) return self.V.contactOut(i) end
+function M:resetContactBlock(i,x,y,z) self.V.resetContactBlock(i,x,y,z) end
+function M:translate(dx,dy,dz) self.V.translate(dx,dy,dz) end
+function M:checkpoint() return self.V.checkpoint() end
+function M:restore(c) self.V.restore(c) end
+function M:engineRpm() return self.V.engineRpm() end
+function M:gearIndex() return self.V.gearIndex() end
+function M:gearCount() return self.V.gearCount() end
+function M:revLimiter() return self.V.revLimiter() end
+function M:inputs() return self.V.inputs() end
+-- Stage 5 HUD numbering: -1 R, 0 N, 1.. forward
+function M.displayGear(index) return index-1 end
+return M
+]=])
+module("Roblox","CupChassisAdapter",[=[
+-- Stage 9: session air + aero setup at initialize/reset (car attributes), per-frame track normal and
+-- test-only phantom draft (aeroHostInputs), aero telemetry. The aero forces themselves are computed
+-- by the ORIGINAL core (00561a80/00561b70); the host applies no aero force.
+-- Stage 6/7 host for mode NR2003_CUP: the ORIGINAL NR2003 Cup vehicle core owns all 45 states
+-- (chassis, LF/RF suspension + hub + wheel, rear axle + LR/RR wheels, engine, clutch, output
+-- shaft, head). Roblox only supplies contact planes (raycasts at the core's own wheel positions),
+-- driver controls, and presentation. Nothing rendered feeds back into the core.
+-- No ApplyImpulse / AssemblyMass / Roblox rigid-body integration for this car.
+local Core=script.Parent.Parent.Core
+local Vehicle=require(Core.NR2003CupVehicle)
+local CupTune=require(Core.CupTune)
+local Surface=require(Core.Surface)
+local Fixed=require(Core.NR2003FixedStep)
+local U=require(Core.MathUtil)
+local Visual=require(script.Parent.VisualRig)
+local SeatAccess=require(script.Parent.SeatAccess)
+local Cockpit=require(script.Parent.Cockpit)
+local RenderSnapshot=require(script.Parent.RenderSnapshot)
+local M={};M.__index=M
+
+-- NR2003 vehicle-world (+X fwd, +Y left, +Z up) <-> Roblox origin-local (+X right, +Y up, -Z fwd)
+local function toLocal(x,y,z) return Vector3.new(-y,z,-x) end
+local function fromLocal(v) return -v.Z,-v.X,v.Y end
+-- R' = B R B^T for a row-major NR2003 body->world matrix
+local function localRotation(r)
+    return r[5],-r[6],r[4],
+        -r[8],r[9],-r[7],
+        r[2],-r[3],r[1]
+end
+
+function M.new(car,tune,remote)
+    local cup=CupTune.new()
+    local self=setmetatable({car=car,root=car.Chassis,tune=cup,benchTune=tune,telemetryTimer=0,debugVisible=false,
+        fault=nil,renderSpin={},lastRenderSnapshotTime=nil,renderTeleport=true,pendingShift=0,steerAngle=0,
+        planes={},inContact={},wheelPose={},contactPoints={},scratchPos={0,0,0},scratchRot={1,0,0,0,1,0,0,0,1}},M)
+    for j=1,4 do
+        self.planes[j]={0,0,1,0,0,0,0,1,1};self.inContact[j]=false
+        self.wheelPose[j]={pos={0,0,0},rot={1,0,0,0,1,0,0,0,1},compression=0,steer=0,angle=0,rate=0}
+        self.contactPoints[j]={point=Vector3.zero,grounded=false}
+    end
+    self.spawn=car:GetPivot();self.oldAnchored=self.root.Anchored;self.oldCollide=self.root.CanCollide
+    car:SetAttribute("NR2003CorePoseOwner",true);car:SetAttribute("PhysicsMode","NR2003_CUP")
+    car:SetAttribute("NR2003Tune","CupTune")
+    self.root.Anchored=true;self.root.CanCollide=false
+    self.root.AssemblyLinearVelocity=Vector3.zero;self.root.AssemblyAngularVelocity=Vector3.zero
+    local params=RaycastParams.new();params.FilterType=Enum.RaycastFilterType.Exclude
+    params.FilterDescendantsInstances={car};params.RespectCanCollide=true;params.IgnoreWater=false
+    self.params=params
+    self.visual=Visual.new(car,cup);self.access=SeatAccess.new(car,remote);Cockpit.ensure(car,cup)
+    self.core=Vehicle.new(Core:WaitForChild("NR2003Cup"))
+    self:initialize()
+    return self
+end
+
+-- numeric frame: origin on the ground under the spawn pose (the core starts at z=0.42 m)
+function M:groundOrigin(pivot)
+    local hit=workspace:Raycast(pivot.Position+pivot.UpVector*2,-pivot.UpVector*60,self.params)
+    local rot=pivot-pivot.Position
+    if hit then return CFrame.new(hit.Position)*rot end
+    return CFrame.new(pivot.Position-pivot.UpVector*(0.42/self.tune.metresPerStud))*rot
+end
+function M:worldPoint(x,y,z) return self.origin:PointToWorldSpace(toLocal(x,y,z)/self.tune.metresPerStud) end
+function M:worldVector(x,y,z) return self.origin:VectorToWorldSpace(toLocal(x,y,z)) end
+function M:numericPoint(p)
+    local x,y,z=fromLocal(self.origin:PointToObjectSpace(p)*self.tune.metresPerStud);return x,y,z
+end
+function M:numericVector(v) local x,y,z=fromLocal(self.origin:VectorToObjectSpace(v));return x,y,z end
+
+function M:initialize()
+    self.origin=self:groundOrigin(self.spawn)
+    self.core:reset()
+    -- Stage 8: garage brake bias (setup item 0x28, % front, 50..90). Car attribute SetupBrakeBias;
+    -- absent = shipped Cup default (74). Applied at build/reset only, like the original garage.
+    local bias=self.car:GetAttribute("SetupBrakeBias")
+    if U.finite(bias) then self.brakeBias=self.core:setBrakeBias(bias) else self.brakeBias=select(2,self.core:brakeBias()) end
+    self.car:SetAttribute("BrakeBiasApplied",self.brakeBias)
+    -- Stage 9: garage aero items read at run time by the original aero (00410280): grille tape
+    -- (item 0x3b, % 0..100 step 5) and rear spoiler (item 0x3d, deg 45..70). Absent = Cup defaults.
+    local function num(name) local v=self.car:GetAttribute(name);return U.finite(v) and v or nil end
+    local tape,spoiler=self.core:setAeroSetup({grilleTape=num("SetupGrilleTape"),spoiler=num("SetupSpoiler")})
+    self.car:SetAttribute("GrilleTapeApplied",tape);self.car:SetAttribute("SpoilerApplied",spoiler)
+    -- Stage 9: session start 005a3c00 = race weather settings (ADAPTER: car attributes standing for
+    -- the race options; absent = original defaults 70 F, no wind, conditions 0, daytime). TrackNorth
+    -- (rad) stands for the track's north angle (bdbcf8) in the core frame. AeroSession=false keeps the
+    -- Stage 6/7/8 post-build state (no air) for A/B comparison.
+    self.core:setDraftEnvironment(nil);self.core:setTrackNormal(nil)
+    if self.car:GetAttribute("AeroSession")==false then
+        self.core:endSession();self.weather=nil
+    else
+        self.weather=self.core:startSession({temperatureF=num("WeatherTemperatureF"),windSpeedMph=num("WeatherWindMph"),
+            windDirection=num("WeatherWindDirection"),conditions=num("WeatherConditions"),night=self.car:GetAttribute("WeatherNight")==true,
+            trackNorth=num("TrackNorth")})
+    end
+    self.car:SetAttribute("AirDensityApplied",self.weather and self.weather.density or 0)
+    self.aeroOut={};self.trackNormal=nil;self.draftTest=false
+    local w=self.weather
+    if w then
+        print(string.format("[NR2003 Stage 9] sessão: %d F, condições %d, %s, vento %d mph dir %d -> ar %.2f C, rho %.7g kg/m3, vento (%.3f, %.3f) m/s | fita %d%%, aerofólio %d°",
+            w.temperatureF,w.conditions,w.night and "noite" or "dia",w.windSpeedMph,w.windDirection,w.densityTemperatureC,w.density,w.wind[1],w.wind[2],tape,spoiler))
+    else
+        print("[NR2003 Stage 9] AeroSession=false: estado pós-build (sem ar, rho = 0)")
+    end
+    self.renderSpin={};self.lastRenderSnapshotTime=nil;self.renderTeleport=true
+    for j=1,4 do self.inContact[j]=false end
+    self.pendingShift=0;self.steerAngle=0
+    local controller=self
+    local stepper={state={tick=0}}
+    function stepper:step(input) controller:tickCore(input);self.state.tick=controller.core:tick() end
+    function stepper:checkpoint() return {core=controller.core:checkpoint(),origin=controller.origin,contact=table.clone(controller.inContact)} end
+    function stepper:restore(c)
+        controller.core:restore(c.core);controller.origin=c.origin;controller.inContact=table.clone(c.contact)
+        self.state.tick=controller.core:tick();controller:pose(true)
+    end
+    self.stepper=stepper
+    self.runner=Fixed.new(stepper,96)
+    self.contactFn=function(phase) return self:contacts(phase) end
+    self:pose(true)
+end
+
+-- contact planes at the CURRENT wheel positions of the core (called by the core twice per tick,
+-- like 00578da0 / 00578de0). Plane: n.x + d = 0 in vehicle-world axes (0055e1e0 arguments).
+function M:contacts(phase)
+    local t=self.tune;local q=t.contactQuery;local mps=t.metresPerStud
+    local occupant=self.car.DriverSeat.Occupant
+    self.params.FilterDescendantsInstances=occupant and {self.car,occupant.Parent} or {self.car}
+    local _,crot=self.core:componentPose(0,self.scratchPos,self.scratchRot)
+    local ux,uy,uz=crot[3],crot[6],crot[9]                      -- chassis +Z in vehicle-world
+    local upWorld=self:worldVector(ux,uy,uz)
+    for j,c in ipairs(t.corners) do
+        local w=self.wheelPose[j]
+        local p=self.core:componentPose(c.record,w.pos,w.rot)
+        local origin=self:worldPoint(p[1]+ux*q.rayAbove,p[2]+uy*q.rayAbove,p[3]+uz*q.rayAbove)
+        local hit=workspace:Raycast(origin,-upWorld*(q.rayLength/mps),self.params)
+        local plane=self.planes[j]
+        if hit and hit.Normal:Dot(upWorld)>q.maximumSlopeCos then
+            local nx,ny,nz=self:numericVector(hit.Normal)
+            local px,py,pz=self:numericPoint(hit.Position)
+            -- (+0 normalises signed zeros from the axis permutation; the track code passes +0)
+            plane[1],plane[2],plane[3],plane[4]=nx+0,ny+0,nz+0,-(nx*px+ny*py+nz*pz)+0
+            local gx,gy,gz=0,0,0
+            if hit.Instance:IsA("BasePart") then
+                gx,gy,gz=self:numericVector(hit.Instance:GetVelocityAtPosition(hit.Position)*mps)
+            end
+            plane[5],plane[6],plane[7]=gx+0,gy+0,gz+0
+            local attr=hit.Instance:GetAttribute("NRSurface")
+            plane[8]=U.finite(attr) and math.clamp(math.floor(attr),0,16) or (Surface.indices[hit.Material.Name] or 1)
+            local grip=hit.Instance:GetAttribute("NRGripMultiplier")
+            plane[9]=U.finite(grip) and math.clamp(grip,0,4) or 1
+            if not self.inContact[j] then self.core:resetContactBlock(j-1,px,py,pz) end -- 005778a0 pair init
+            self.inContact[j]=true
+        else
+            -- no geometry under the wheel: plane far below (tire separates). PROVISIONAL: the original
+            -- simply has no contact pair for that wheel.
+            plane[1],plane[2],plane[3]=ux,uy,uz
+            plane[4]=-(ux*p[1]+uy*p[2]+uz*p[3])+q.noContactPlane
+            plane[5],plane[6],plane[7],plane[8],plane[9]=0,0,0,1,1
+            self.inContact[j]=false
+        end
+    end
+    return self.planes
+end
+
+-- PROVISIONAL steering (Stage 12 pending): Stage 5 slew/speed law -> one road-wheel target;
+-- the original 005539c0 adds the setup toe per side (lf = s - toe, rf = s + toe).
+function M:steer(input,dt)
+    local s=self.tune.steering
+    local st=self.core:readState()
+    local _,rot=self.core:componentPose(0,self.scratchPos,self.scratchRot)
+    local speed=st[2]*rot[1]+st[4]*rot[4]+st[6]*rot[7]
+    local fraction=math.max(s.minimumFraction,1/(1+math.abs(speed)*s.speedReduction))
+    local command=U.clamp(input.steer or 0,-1,1)
+    local target=command*s.maximum*fraction
+    self.steerAngle=U.approach(self.steerAngle,target,(command==0 and s.returnRate or s.rate)*dt) -- + = right
+end
+
+function M:tickCore(input)
+    local frame=self.core:tick()%8==0
+    -- Stage 8: the brake goes through the ORIGINAL input chain (00552d00/00553080 -> bf6eac).
+    -- The bench client sends keyboard keys (S/W = 0/1): NR2003 key binding (0057af60 digital).
+    -- brakeAxis=true in the input selects the analog-axis binding for real pedals/triggers.
+    -- No driver seated = 005524f0 'car not driven' branch (pedal held at 1.0).
+    local controls
+    if self:driver()==nil then
+        controls={driver=false,throttle=0,clutch=0,steer=0}
+    else
+        local throttle=U.clamp(input.throttle or 0,0,1)
+        controls={throttle=throttle,throttleControl=throttle,throttleDigital=input.throttleAxis~=true,
+            brakeControl=U.clamp(input.brake or 0,0,1),brakeDigital=input.brakeAxis~=true,
+            clutch=1-U.clamp(input.clutch or 0,0,1),steer=-self.steerAngle}
+    end
+    if frame and self.pendingShift~=0 and controls.driver~=false then
+        controls.shiftUp=self.pendingShift>0;controls.shiftDown=self.pendingShift<0;self.pendingShift=0
+    end
+    if frame and self.weather then self:aeroHostInputs() end
+    self.core:step(controls,self.contactFn)
+    self:pose(false)
+end
+
+-- Stage 9 per-frame host inputs of the aero, set before the frame's first tick (005637e0 order):
+--  * track-object surface normal (0051370a -> car track object +0x24, used by 00561a80 to project the
+--    wind): ADAPTER = mean normal of the grounded contact planes (core frame). Airborne: unchanged.
+--  * drafting (005afd80): no other cars on the bench, so no race-order ring (factors stay 1.0).
+--    TEST ADAPTER only: attribute DraftTestGap (m, > 0) puts a phantom car that far ahead on a straight
+--    line along the core +X axis (lap distance = x, lateral = y + DraftTestLateral, same velocity as
+--    the player, Cup wake), to exercise the ORIGINAL drafting code. Not an NR2003 feature.
+function M:aeroHostInputs()
+    local nx,ny,nz,n=0,0,0,0
+    for j=1,4 do
+        if self.inContact[j] then local p=self.planes[j];nx+=p[1];ny+=p[2];nz+=p[3];n+=1 end
+    end
+    if n>0 then
+        local m=math.sqrt(nx*nx+ny*ny+nz*nz)
+        if m>1e-6 then self.trackNormal={nx/m,ny/m,nz/m};self.core:setTrackNormal(self.trackNormal) end
+    end
+    local gap=self.car:GetAttribute("DraftTestGap")
+    if U.finite(gap) and gap>0 then
+        local st=self.core:readState()
+        local lat=self.car:GetAttribute("DraftTestLateral");lat=U.finite(lat) and lat or 0
+        local L=5000
+        local other={lapDistance=(st[1]+gap)%L,lateral=st[3]+lat,vx=st[2],vy=st[4],vz=st[6]}
+        self.core:setDraftEnvironment({trackLength=L,lapDistance=st[1]%L,lateral=st[3],ahead={other},behind={other}})
+        self.draftTest=true
+    elseif self.draftTest then
+        self.core:setDraftEnvironment(nil);self.draftTest=false
+    end
+end
+
+-- chassis pose from the core (+ host collision boundary). PROVISIONAL collision: a Blockcast of
+-- the chassis box; on a hit the core is translated back through the ORIGINAL state import
+-- 005b4560 (positions only). Momentum/velocity is not changed: NR2003 body collision response
+-- (car-wall/car-car penalty forces) is not recovered yet.
+function M:pose(teleport)
+    local p,r=self.core:componentPose(0,self.scratchPos,self.scratchRot)
+    local mps=self.tune.metresPerStud
+    local function target()
+        local lp=toLocal(p[1],p[2],p[3])/mps
+        local r00,r01,r02,r10,r11,r12,r20,r21,r22=localRotation(r)
+        return self.origin*CFrame.new(lp.X,lp.Y,lp.Z,r00,r01,r02,r10,r11,r12,r20,r21,r22)
+    end
+    local cf=target()
+    if not teleport and self.rootCF then
+        local delta=cf.Position-self.rootCF.Position
+        if delta.Magnitude>1e-6 then
+            local cast=self.rootCF*CFrame.new(0,self.tune.collision.raise/mps,0)
+            local hit=workspace:Blockcast(cast,self.root.Size,delta,self.params)
+            if hit then
+                local allowed=self.rootCF.Position+delta.Unit*math.max(0,hit.Distance-0.01)
+                local ax,ay,az=self:numericPoint(allowed)
+                local tx,ty,tz=self:numericPoint(cf.Position)
+                self.core:translate(ax-tx,ay-ty,az-tz) -- takes effect in the core's next tick
+                cf=cf-cf.Position+allowed;self.collision=true
+            else self.collision=false end
+        end
+    end
+    self.rootCF=cf
+end
+
+function M:wheels()
+    local _,cr=self.core:componentPose(0,self.scratchPos,self.scratchRot)
+    local cp=self.scratchPos;local st=self.core:readState()
+    for j,c in ipairs(self.tune.corners) do
+        local w=self.wheelPose[j]
+        local p,r=self.core:componentPose(c.record,w.pos,w.rot)
+        local dx,dy,dz=p[1]-cp[1],p[2]-cp[2],p[3]-cp[3]
+        w.compression=cr[3]*dx+cr[6]*dy+cr[9]*dz              -- centre height in chassis frame
+        -- spin axis (wheel +Y column) in chassis frame -> road-wheel yaw (Stage 5 sign: + right)
+        local ax=cr[1]*r[2]+cr[4]*r[5]+cr[7]*r[8]
+        local ay=cr[2]*r[2]+cr[5]*r[5]+cr[8]*r[8]
+        w.steer=math.atan2(ax,ay)
+        w.angle=st[c.state.angle+1];w.rate=st[c.state.rate+1]
+    end
+    return self.wheelPose
+end
+
+function M:driver() return self.access:driver() end
+function M:requestEntry(player) return self.access:request(player) end
+function M:exit(player) return self.access:exit(player) end
+function M:shift(delta) if U.finite(delta) and delta~=0 then self.pendingShift=delta>0 and 1 or -1 end end
+function M:step(elapsed,input)
+    self.access:step();self.telemetryTimer=self.telemetryTimer+elapsed
+    if self.fault then return end
+    local ok,reason=pcall(function()
+        self:steer(input,elapsed)
+        self.runner:advance(elapsed,input,nil)
+        self.car:PivotTo(self.rootCF)
+        self.car:SetAttribute("CoreTick",self.core:tick());self.car:SetAttribute("CoreCollision",self.collision==true)
+        local wheels=self:wheels()
+        for j=1,4 do
+            local _,_,_,px,py,pz=self.core:contactOut(j-1)
+            self.contactPoints[j].point=self:worldPoint(px,py,pz);self.contactPoints[j].grounded=self.inContact[j]
+        end
+        self.visual:update({wheels=wheels},self.contactPoints,self.debugVisible)
+        Cockpit.update(self.car,self.tune,self.steerAngle)
+    end)
+    if not ok then self.fault=tostring(reason);self.car:SetAttribute("PhysicsFault",self.fault);warn("NR2003 Cup core paused: "..self.fault) end
+end
+
+function M:kinematics()
+    local st=self.core:readState()
+    local _,r=self.core:componentPose(0,self.scratchPos,self.scratchRot)
+    local linear=self:worldVector(st[2],st[4],st[6])/self.tune.metresPerStud
+    local bx,by,bz=st[11],st[12],st[13]                          -- body rates
+    local angular=self:worldVector(r[1]*bx+r[2]*by+r[3]*bz,r[4]*bx+r[5]*by+r[6]*bz,r[7]*bx+r[8]*by+r[9]*bz)
+    return linear,angular
+end
+
+function M:renderSnapshot(seq,time,vehicleId)
+    local cf=self.root.CFrame
+    local px,py,pz,r00,r01,r02,r10,r11,r12,r20,r21,r22=cf:GetComponents()
+    local qx,qy,qz,qw=RenderSnapshot.quatFromMatrix(r00,r01,r02,r10,r11,r12,r20,r21,r22)
+    local linear,angular=self:kinematics()
+    local dt=self.lastRenderSnapshotTime and math.max(0,time-self.lastRenderSnapshotTime) or 0
+    local wheels={}
+    for j,w in ipairs(self.wheelPose) do
+        local spin=RenderSnapshot.unwrapSpin(self.renderSpin[j],w.angle,w.rate,dt)
+        self.renderSpin[j]=spin
+        local localPoint=cf:PointToObjectSpace(self.contactPoints[j].point)
+        wheels[j]={comp=w.compression,steer=w.steer,spin=spin,cx=localPoint.X,cy=localPoint.Y,cz=localPoint.Z,
+            grounded=self.contactPoints[j].grounded}
+    end
+    local flags=self.renderTeleport and RenderSnapshot.FLAG_TELEPORT or 0
+    self.renderTeleport=false;self.lastRenderSnapshotTime=time
+    return {vehicleId=vehicleId or 1,seq=seq,flags=flags,tick=self.core:tick(),time=time,
+        px=px,py=py,pz=pz,qx=qx,qy=qy,qz=qz,qw=qw,
+        lx=linear.X,ly=linear.Y,lz=linear.Z,ax=angular.X,ay=angular.Y,az=angular.Z,
+        steer=self.steerAngle,wheels=wheels}
+end
+
+function M:telemetry()
+    local st=self.core:readState()
+    local linear=self:kinematics()
+    local _,r=self.core:componentPose(0,self.scratchPos,self.scratchRot)
+    local forward=st[2]*r[1]+st[4]*r[4]+st[6]*r[7]
+    local lf,rf,thr,brk,clu,gearIn=self.core:inputs()
+    local wheels={}
+    for j,c in ipairs(self.tune.corners) do
+        local fx,fy,fz=self.core:contactOut(j-1)
+        local travel=st[c.state.travel+1]
+        local w=self.wheelPose[j]
+        -- Stage 8: original per-wheel brake/tire cells (no side effects on the core)
+        local b=self.core:wheelBrake(j-1)
+        wheels[j]={name=c.name,load=self.inContact[j] and fz or 0,compression=travel,
+            slip=b.vslip/math.max(math.abs(b.vx),2),
+            omega=w.rate,temperature=self.tune.environment.ambientC,grounded=self.inContact[j],
+            surface=self.planes[j][8],out1={fx,fy,fz},
+            brakeTorque=b.torque,brakeCapacity=b.brakeCap,dragCapacity=b.dragCap,locked=b.locked,
+            fx=b.fx,fy=b.fy,fz=b.fz,slipVelocity=b.vslip,brakeTemperatureK=b.temperature}
+    end
+    local pedal,target,tickValue,coreBrake=self.core:brakeState()
+    local gear=self.core:gearIndex()
+    -- Stage 9: ORIGINAL 00561b70 evaluated at the current state (read-only; see CORE_API.md)
+    local a=self.core:aeroState(self.aeroOut)
+    local tape,spoiler=self.core:aeroSetup()
+    local aero={session=a.session,density=a.density,q=a.q,drag=a.drag,downforce=a.downforce,
+        front=a.downforceFront,rear=a.downforceRear,side=a.side,mx=a.mx,my=a.my,mz=a.mz,
+        factorDrag=a.factorDrag,factorFront=a.factorFront,factorRear=a.factorRear,airspeed=a.airspeedBody,
+        yaw=a.yaw,pitch=a.pitch,rideHeight=a.rideHeightFront,proximity=a.groundProximity,stall=a.stall,
+        windX=a.wind[1],windY=a.wind[2],grilleTape=tape,spoiler=spoiler,draftTest=self.draftTest==true}
+    return {speed=linear.Magnitude*self.tune.metresPerStud*3.6,rpm=self.core:engineRpm(),
+        gear=Vehicle.displayGear(gear),gearIndex=gear,wheels=wheels,torque=0,
+        clutchSlip=st[35]-st[37],limiter=self.core:revLimiter(),
+        throttleIn=thr,brakeIn=brk,clutchIn=clu,lfSteer=lf,rfSteer=rf,
+        brakePedal=pedal,brakeTarget=target,brakeTick=tickValue,brakeCore=coreBrake,brakeBias=self.brakeBias,
+        droppedTime=0,fault=self.fault,mode="NR2003_CUP",tick=self.core:tick(),backlog=self.runner.accumulator,
+        chassisStateCount=45,chassisIntegration="NR2003 original JIT (005b39a0/005b3180/005b3e50/005b2fb0)",
+        collision=self.collision==true,aero=aero,
+        roadWheelAngle=self.steerAngle,steeringWheelAngle=Cockpit.angle(self.steerAngle,self.tune)}
+end
+function M:reset()
+    self.car:PivotTo(self.spawn);self.fault=nil;self.car:SetAttribute("PhysicsFault",nil)
+    self.rootCF=nil;self:initialize();self.car:PivotTo(self.rootCF)
+end
+function M:destroy()
+    self.access:destroy();self.car:SetAttribute("NR2003CorePoseOwner",nil)
+    self.root.Anchored=self.oldAnchored;self.root.CanCollide=self.oldCollide
+end
+return M
+]=])
+module("Roblox","Stage9SelfTest",[=[
+-- Stage 9 Studio self-test (edit mode or Play, server side). Golden values embedded below were
+-- produced by the ORIGINAL NR2003.exe code (Unicorn, recovery/stage9/gen_fixtures_stage9.py).
+--   require(game.ReplicatedStorage.NR2003Lab.Roblox.Stage9SelfTest).run()        -- quick (~1-3 s)
+--   require(game.ReplicatedStorage.NR2003Lab.Roblox.Stage9SelfTest).run(true)    -- full (+ driving runs)
+local Core=script.Parent.Parent.Core
+local Vehicle=require(Core.NR2003CupVehicle)
+local G={
+cells={{7247832,1065353216},{7251020,1056964608},{7251108,1008981770},{7251148,1036831949},{7251220,1084227584},{7251580,981668463},{7267152,1133024051},{7272000,1050253722},{7274108,1107296256},{7291236,1066192077},{7292504,1055286886},{7295824,1080033280},{7295928,1057896676},{7297636,1088421888},{7301260,970045207},{7302992,1142472704},{7302996,1104925950},{7303000,1078335845},{7303004,3167914190},{7303008,980151802},{7303028,984391472},{7303032,996430802},{7303036,1163110523},{7303040,1061752784},{7303044,1105199104},{7303720,3258187776},{7303724,1040746633},{7303988,0},{7303992,1080033280},{7303996,1088421888},{7304000,1115947008},{7304004,1033955855},{7304008,1117126656},{7304012,1132724224},{7304016,1049774373},{7469568,0},{7469572,0},{7469576,0},{7469580,0},{7469584,0},{7469588,0},{7469592,0},{7469596,0},{7469600,1008981770},{7469604,1011129254},{7469608,3156465418},{7469612,3158612902},{7469616,1000593162},{7469620,1001666904},{7469624,3148076810},{7469628,3149150552}},
+weather={{40,0,0,0,0,0,2147483648,0,0,1066602020,1083062500,1107412764,0,0},{42,2,0,0,0,0,2147483648,0,0,1067579677,1085392669,1085392669,0,0},{45,0,0,0,0,0,2147483648,0,0,1066506600,1088887922,1108140942,0,0},{47,2,0,0,0,0,2147483648,0,0,1067472701,1090868565,1090868565,0,0},{50,0,0,0,0,0,2147483648,0,0,1066411720,1092616192,1108869120,0,0},{52,2,0,0,0,0,2147483648,0,0,1067367305,1093781277,1093781277,0,0},{55,0,0,0,0,0,2147483648,0,0,1066317220,1095528903,1109597297,0,0},{57,2,0,0,0,0,2147483648,0,0,1067263431,1096693988,1096693988,0,0},{60,0,0,0,0,0,2147483648,0,0,1066222935,1098441615,1110325475,0,0},{62,2,0,0,0,0,2147483648,0,0,1067161006,1099257173,1099257173,0,0},{65,0,0,0,0,0,2147483648,0,0,1066128690,1100130987,1111053653,0,0},{67,2,0,0,0,0,2147483648,0,0,1067059945,1100713529,1100713529,0,0},{70,0,0,0,0,0,2147483648,0,0,1066034304,1101587342,1111781831,0,0},{72,2,0,0,0,0,2147483648,0,0,1066960154,1102169885,1102169885,0,0},{75,0,0,0,0,0,2147483648,0,0,1065939590,1103043698,1112510009,0,0},{77,2,0,0,0,0,2147483648,0,0,1066861527,1103626240,1103626240,0,0},{80,0,0,0,0,0,2147483648,0,0,1065844353,1104500054,1113238187,0,0},{82,2,0,0,0,0,2147483648,0,0,1066763948,1105082596,1105082596,0,0},{85,0,0,0,0,0,2147483648,0,0,1065748391,1105956409,1113966364,0,0},{87,2,0,0,0,0,2147483648,0,0,1066667289,1106538951,1106538951,0,0},{90,0,0,0,0,0,2147483648,0,0,1065651499,1107354510,1114694542,0,0},{92,2,0,0,0,0,2147483648,0,0,1066571418,1107645781,1107645781,0,0},{95,0,0,0,0,0,2147483648,0,0,1065553462,1108082688,1115422720,0,0},{97,2,0,0,0,0,2147483648,0,0,1066476187,1108373959,1108373959,0,0},{100,0,0,0,0,0,2147483648,0,0,1065454063,1108810866,1115917881,0,0},{102,2,0,0,0,0,2147483648,0,0,1066381446,1109102137,1109102137,0,0},{105,0,0,0,0,0,2147483648,0,0,1065352939,1109539044,1116281970,0,0},{107,2,0,0,0,0,2147483648,0,0,1066287034,1109830315,1109830315,0,0},{110,0,0,0,0,0,2147483648,0,0,1065147337,1110267221,1116646058,0,0},{70,0,0,0,2,0,2147483648,0,0,1066034304,1101587342,1111781831,1070141392,0},{70,0,0,0,5,3215353446,2147483648,2147483648,0,1066034304,1101587342,1111781831,1081824196,0},{70,0,0,1,1,1060320051,3202615213,1025256024,0,1066034304,1101587342,1111781831,1061752784,1055186223},{70,0,0,2,0,0,3211058479,0,0,1066034304,1101587342,1111781831,0,1063574831},{70,0,0,2,6,3215353446,3210511879,3195331334,0,1066034304,1101587342,1111781831,1083624412,1063574831},{70,0,0,3,2,1086897647,1012641242,1068213168,0,1066034304,1101587342,1111781831,1070141392,1068213731},{70,0,0,3,6,0,917183621,3215697379,0,1066034304,1101587342,1111781831,1083624412,1068213731},{70,0,0,4,2,3215353446,1071416849,1056236146,0,1066034304,1101587342,1111781831,1070141392,1071963439},{70,0,0,5,1,1060320051,3222176972,1044591853,0,1066034304,1101587342,1111781831,1061752784,1074727485},{70,0,0,6,0,0,3224085987,0,0,1066034304,1101587342,1111781831,0,1076602339},{70,0,0,6,3,3215353446,1075145461,3215521592,0,1066034304,1101587342,1111781831,1075235804,1076602339},{70,0,0,6,6,1086897647,3168509848,3224085425,0,1066034304,1101587342,1111781831,1083624412,1076602339},{70,0,0,7,4,0,1078477192,923080239,0,1066034304,1101587342,1111781831,1078530000,1078477193},{70,0,0,8,2,3215353446,1079805457,1064624754,0,1066034304,1101587342,1111781831,1070141392,1080352047},{70,0,0,9,0,1086897647,3229661893,1025820604,0,1066034304,1101587342,1111781831,0,1082178666},{70,0,0,9,4,0,1082178665,925572229,0,1066034304,1101587342,1111781831,1078530000,1082178666},{70,0,0,9,7,3215353446,3227525254,1073574535,0,1066034304,1101587342,1111781831,1085271510,1082178666},{70,0,0,10,5,1060320051,1083081933,3200463731,0,1066034304,1101587342,1111781831,1081824196,1083116093},{70,0,0,11,4,0,1084053519,928064220,0,1066034304,1101587342,1111781831,1078530000,1084053520},{70,0,0,12,1,3215353446,1076426575,1083534062,0,1066034304,1101587342,1111781831,1061752784,1084990947},{70,0,0,12,4,1086897647,1084990384,3176900282,0,1066034304,1101587342,1111781831,1078530000,1084990947},{70,0,0,13,0,0,3233412022,0,0,1066034304,1101587342,1111781831,0,1085928374},{70,0,0,13,6,3215353446,3232967910,3217487989,0,1066034304,1101587342,1111781831,1083624412,1085928374},{70,0,0,14,5,1060320051,1086817978,3205014532,0,1066034304,1101587342,1111781831,1081824196,1086865801},{70,0,0,15,2,0,3071186886,1087803227,0,1066034304,1101587342,1111781831,1070141392,1087803228},{70,0,0,15,5,3215353446,3226678503,3233465789,0,1066034304,1101587342,1111781831,1081824196,1087803228},{70,0,0,16,1,1060320051,3236169645,1058810456,0,1066034304,1101587342,1111781831,1061752784,1088740655},{70,0,0,17,0,0,3237161730,0,0,1066034304,1101587342,1111781831,0,1089678082},{70,0,0,17,6,3215353446,3236580968,3221362843,0,1066034304,1101587342,1111781831,1083624412,1089678082},{70,0,0,18,2,1086897647,1034207843,1090566852,0,1066034304,1101587342,1111781831,1070141392,1090567274},{70,0,0,18,6,0,939545956,3238050922,0,1066034304,1101587342,1111781831,1083624412,1090567274},{70,0,0,19,2,3215353446,1090711449,1074882163,0,1066034304,1101587342,1111781831,1070141392,1091035987},{70,0,0,20,1,1060320051,3238954188,1061369069,0,1066034304,1101587342,1111781831,1061752784,1091504701},{70,0,0,21,0,0,3239457062,0,0,1066034304,1101587342,1111781831,0,1091973414},{70,0,0,21,3,3215353446,1090698646,3230914640,0,1066034304,1101587342,1111781831,1075235804,1091973414},{70,0,0,21,6,1086897647,3183487909,3239456571,0,1066034304,1101587342,1111781831,1083624412,1091973414},{70,0,0,22,4,0,1092442127,936452828,0,1066034304,1101587342,1111781831,1078530000,1092442128},{70,0,0,23,2,3215353446,1092517979,1076888257,0,1066034304,1101587342,1111781831,1070141392,1092910841},{70,0,0,24,0,1086897647,3240862641,1037808891,0,1066034304,1101587342,1111781831,0,1093379555},{70,0,0,24,4,0,1093379554,937698823,0,1066034304,1101587342,1111781831,1078530000,1093379555},{70,0,0,24,7,3215353446,3239406340,1084815109,0,1066034304,1101587342,1111781831,1085271510,1093379555},{70,0,0,25,5,1060320051,1093805568,3212050512,0,1066034304,1101587342,1111781831,1081824196,1093848268},{70,0,0,26,4,0,1094316981,938944819,0,1066034304,1101587342,1111781831,1078530000,1094316982},{70,0,0,27,1,3215353446,1086199353,1093146700,0,1066034304,1101587342,1111781831,1061752784,1094785695},{70,0,0,27,4,1086897647,1094785062,3187088272,0,1066034304,1101587342,1111781831,1078530000,1094785695},{70,0,0,28,0,0,3242738057,0,0,1066034304,1101587342,1111781831,0,1095254409},{70,0,0,28,6,3215353446,3242259782,3226879653,0,1066034304,1101587342,1111781831,1083624412,1095254409},{70,0,0,29,5,1060320051,1095673591,3213722957,0,1066034304,1101587342,1111781831,1081824196,1095723122},{70,0,0,30,2,0,3079575494,1096191835,0,1066034304,1101587342,1111781831,1070141392,1096191836},{70,0,0,30,5,3215353446,3235067111,3241854397,0,1066034304,1101587342,1111781831,1081824196,1096191836}},
+density={{1101587342,1204427478,1058508557,1067186237},{1118069589,1202363718,0,1062945265},{1111781831,1202232581,1050253722,1063995606},{1118362715,1204455861,1050253722,1064502785},{1090655662,1204526072,0,1067796297},{1112844262,1204151933,1050253722,1065895950},{1102777276,1204151933,1050253722,1066918886},{1101587342,1204151933,0,1067028168},{1087190395,1204149764,0,1067555500},{1112382836,1203841900,1065353216,1065428397},{1111781831,1204225019,0,1066205568},{1111781831,1203744778,1043543000,1065795611},{1112547767,1204528556,1065353216,1065880488},{1111544020,1204151933,1050253722,1066065156},{1112213458,1204151933,1065353216,1065677543},{1101587342,1204151933,1056012066,1066983768},{1117578803,1204047806,1050253722,1064465537},{1118083581,1204151933,1025860766,1065110787},{1101587342,1203860321,1065353216,1066707751},{1101587342,1202338833,1065353216,1065527176},{1112238034,1203700971,1050253722,1065657218},{1111781831,1203978341,1050253722,1065911311},{1111781831,1204216376,1049399988,1066090096},{1111781831,1204151933,1055938350,1065966831},{1092644306,1204112961,1050253722,1067376839},{1111781831,1203923452,1050253722,1065872422},{1113517504,1204564260,1065353216,1065717887},{1102168928,1203342335,1065353216,1066264023},{1117291700,1204151933,0,1065439813},{1101587342,1204434617,1064974693,1067155492},{1113421484,1204151933,0,1065978828},{1112686529,1204462910,1050253722,1066134557},{1101587342,1204323349,1050253722,1067132933},{1107343670,1204151933,0,1066663314},{1116583670,1204292857,0,1065666432},{1104649741,1205002401,1065353216,1067347867},{1111781831,1202399198,0,1064470671},{1107185990,1204569694,1065353216,1066818060},{1101587342,1204151933,0,1067028168},{1117644608,1204151933,1016973598,1065343132},{1101587342,1204151933,1052758705,1066992897},{1111781831,1202228959,1050253722,1063990474},{1105920984,1204214976,0,1066800788},{1109931113,1204151933,1046905544,1066295356},{1111781831,1204151933,1060805445,1065863473},{1111781831,1202227657,1065353216,1063431050},{1111781831,1204151933,1050253722,1066034304},{1101587342,1204151933,1050253722,1066999925},{1111781831,1204120973,1065353216,1065733580},{1112113004,1203851902,1059587207,1065629141},{1111781831,1204151933,0,1066153785},{1110385549,1203884565,1055044155,1065978257},{3239489603,1202470606,1065353216,1066710040},{1117302853,1204151933,1050253722,1064765754},{1105531623,1204151933,1050015256,1066735078},{1107881449,1204151933,1050253722,1066540534},{1100251324,1204151933,1050253722,1067091877},{1110413424,1203723022,1050253722,1065902659},{1112868961,1204284219,1054148393,1065929421},{1114548638,1204151933,1065353216,1065095708},{1111781831,1204151933,1065353216,1065755515},{1105181422,1204151933,0,1066799063},{1111230076,1204151933,1043936868,1066148869},{1110056881,1203833943,1065353216,1065823233},{1108071632,1204151933,1050253722,1066515657},{1101587342,1204151933,1065353216,1066934023},{1101587342,1204405014,1065353216,1067130398},{1108403687,1203554374,1059115527,1065961019},{1101587342,1202721599,1050253722,1065890079},{1111781831,1204498657,1050253722,1066279964},{1102373180,1203973433,1054935573,1066794169},{1111781831,1204145015,0,1066148884},{1111781831,1204151933,1064145831,1065784177},{1112073027,1203907056,1065353216,1065530180},{1101587342,1204151933,1050253722,1066999925},{1111781831,1202880191,1039883953,1065054487},{1101587342,1203977335,1065353216,1066798546},{1101587342,1203695589,1024973014,1066670585},{1101587342,1202442116,1059769385,1065638650},{1101587342,1204538596,1065353216,1067234048},{1101587342,1204151933,1050253722,1066999925},{1107642347,1204039104,0,1066543197},{3217772518,1203714655,0,1067501708},{1101587342,1204151933,1061262382,1066956979},{1101587342,1204151933,1065353216,1066934023},{1104588871,1204009760,0,1066727903},{1110491325,1202869810,1065353216,1064762029},{1111781831,1204151933,0,1066153785},{1101587342,1204178217,0,1067048563},{1111201328,1203883041,1065353216,1065666198},{1101587342,1203618677,0,1066614397},{1101587342,1204767241,1065353216,1067411462},{1112706232,1204151933,0,1066054322},{1111096637,1204488365,1065353216,1066116568},{1111781831,1202444326,1050253722,1064295655},{1117804575,1204151933,1065353216,1062421476},{1107307160,1204151933,1065353216,1066494978},{1098673057,1204151933,1065353216,1067146315},{1101587342,1204151933,0,1067028168},{1105813880,1204146179,1050253722,1066710960}},
+halfwind={{3239639096,1091059870,3235967250,1051036532,1051929290,1063326626,1,3228620768,1084979852,3208624508},{0,3242381174,1067451627,3200706967,1039259846,1063907860,1,3177906566,3233955993,1061327255},{3235013557,1090692151,3244940044,3180341683,1056482319,1063194450,1,3227851298,1086533764,3228308786},{0,0,1084313913,3205459527,1032378320,1062427374,1,1066745222,3188613824,1062039530},{0,3218008745,1093773958,999427452,3166691143,1065348447,1,3167443821,3207431611,3162582784},{0,1096986911,1087343688,3192312588,3204482758,1062715117,1,3190014341,1087731121,1081866398},{1068582168,3230678300,0,0,0,1065353216,0,1060193560,3222289692,0},{3244308012,0,0,1047856991,3200453191,1063559741,1,3235078063,3206774822,1069525358},{3229828867,3232724774,3231256949,3197346350,1050499881,1063790638,1,3224367142,3221207589,3192503264},{1059745732,0,0,1033470832,1051298227,1064356710,1,1051294365,3154599681,3166717050},{0,1083102995,0,1032338217,1044024616,1065034663,1,3168637222,1074403697,3201055269},{0,0,1091906554,1018848521,1009664217,1065347923,1,3185125404,3175809779,994099200},{3239454348,3242394726,0,3179049942,1034947789,1065259099,1,3231096074,3233963812,1047459385},{1082256501,1077290231,0,3138611237,3137162403,1065353142,1,1073867823,1068901504,1005566855},{1074088765,3239398723,1094048926,1010228715,3171608584,1065342520,1,1064951763,3230594105,3190187360},{0,0,1082409627,3162468921,3189503182,1065155432,1,1023568657,1050623815,1028024000},{1067122422,0,0,0,0,1065353216,0,1058733814,0,0},{0,3228822703,0,1008150830,3175743535,1065332086,1,3127069846,3220395216,3183491808},{0,0,0,1027446682,3203038328,1063470077,1,0,2147483648,0},{3243091158,0,1090725472,0,0,1065353216,0,3234702550,0,1082336864},{3229044561,1080897938,3226381366,1047092053,1051664378,1063870670,1,3218212038,1074959637,3202742812},{3242049650,1068848768,0,3162697777,3175358073,1065331828,1,3233659002,1060509051,3178822110},{3232328292,0,3239327520,0,0,1065353216,0,3223939684,0,3230938912},{0,0,1094553856,0,0,1065353216,0,0,0,1086165248},{0,0,3244104698,1040800118,1045731931,1064832620,1,1063642564,1068625361,3201836368},{3221760726,0,0,3203560332,1041430190,1063155432,1,3209905234,3180597522,3202359903},{1097241563,1087199775,3243872025,1033629617,3201825483,1063733707,1,1089962293,1049515680,3204817896},{0,1093434786,0,1057642575,978391955,1062692374,1,3138929262,1085046170,3144486961},{0,1077153193,3218770889,0,0,1065353216,0,0,1068764585,3210382281},{1067839158,0,0,0,0,1065353216,0,1059450550,0,0},{3236344475,0,3231931206,0,0,1065353216,0,3227955867,0,3223542598},{3244684328,1087637774,3243581965,0,0,1065353216,0,3236295720,1079249166,3235193357},{3232166316,1097596111,1088244573,0,0,1065353216,0,3223777708,1089207503,1079855965},{0,0,3242203210,1048714135,1055134533,1062978930,1,1067950110,1074981856,3217692496},{0,0,3244288623,3189735761,3168845979,1065142038,1,3213476392,3192003619,3191029536},{1095730934,1090487737,1089087748,1038548473,3155898668,1065245402,1,1086318389,1082200772,3206835888},{1093238704,0,1096078717,3193266818,1057281741,1062485075,1,1086777431,3222435504,1077914135},{0,0,1091329210,0,0,1065353216,0,0,0,1082940602},{1095039738,0,1085041323,1048123367,1042072585,1064645296,1,1084570905,3206533086,3214612356},{0,1069156127,0,1043238873,994523278,1065107565,1,3116723710,1060767406,3138299390}},
+halfwindCells={15450256,15450260,15450264},
+aero={{1066999925,0,1060317965,1065353216,825704436,1028882306,965335528,1043491377,1041077465,1028443341,0,3171875385,3182436110,6,3155165479,1065353216,1,1116446350,3169626434,3222438983,1016217681,0,0,0,0,0,0,0,0,0,0,0,0,0,2147483648,1086955315,1150611977,3270507274,3296865795,1071879295,5,3155165479,1065353216},{1066999925,0,1065352977,0,1004631425,965320574,1033162120,1045117976,1044730203,1028443341,1101529088,3171875385,1036082559,6,3139782399,1065353216,1,0,1051144597,3185663430,3158135676,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3188800761,1042113480,1038998314,1030469894,3009933281,5,3139782399,1065353216},{1066034304,0,1057872855,1065353216,1013719676,1026167080,1028454173,1045117976,1045117976,1061129381,0,974269191,3181241088,1,0,0,1,1075992133,1083072382,1063211875,1064427425,3174752415,0,0,0,0,0,0,0,0,0,0,0,0,2147483648,3258779251,1102109471,3219403688,1100026839,3236665062,16,0,0},{1066034304,0,0,1065353216,825704436,1016934114,3176916367,1042109776,1045117976,1065353216,1103626240,3185900988,3171875385,8,0,0,1,3225768687,1036912686,3186894225,3188683976,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3210756794,1103487964,1067868715,1091646202,1044711000,7,0,0},{1066034304,1065353216,1065353216,1065353216,825704436,3170110779,1018288523,1045117976,1045117976,0,0,3142560292,3171875385,1,3146118169,0,1,1028443341,1036469136,3188307605,0,0,1025995938,0,0,0,0,0,0,0,0,0,0,0,3156160240,3172645021,1029097784,1009281157,3130564486,3151215171,16,0,0},{1067587976,1065353216,1065353216,1065353216,825704436,3163188961,1029024712,1045117976,1041458497,0,1090519040,3171875385,3171875385,1,0,1065353216,1,1117431483,1114847876,1086955115,0,3192325330,0,0,0,0,0,0,0,0,0,0,0,0,3318879802,3330344952,1140496513,1156423891,1159809342,3310830406,16,3194792512,1061475696},{1066034304,0,0,1065353216,825704436,965320574,1033812283,1045117976,1039715678,1049973743,0,3171875385,1034596549,1,3154179622,1065353216,1,1116149551,1095218889,1008534849,3203967179,3171548705,1010711936,0,0,0,0,0,0,0,0,0,0,0,2147483648,3306688643,3298426309,1146907549,3292005673,3291198309,16,3190011682,1062670903},{1066999925,1065353216,1065353216,1065353216,3139648851,965320574,965335528,1046679692,1046817737,0,1103626240,1033236631,3181699525,1,0,0,1,1114769597,3233570296,3197685726,0,0,3205343484,0,0,0,0,0,0,0,0,0,0,0,3307386732,1150103381,3305905027,3272525535,3299948465,1145914684,16,0,0},{0,1065353216,1065353216,1065353216,3157520257,1010431330,965335528,1045117976,1045348791,1028002271,1103626240,1033865471,3158217249,1,1005714544,0,1,1083761439,3214761474,3197445306,0,1060099253,3198167183,0,0,0,0,0,0,0,0,0,0,0,2147483648,0,0,2147483648,2147483648,0,16,0,0},{1066999925,1065353216,1065353216,1065353216,825704436,1029332144,965335528,1046647605,1045506540,1065353216,1103626240,3171875385,1027436344,13,995419148,1055592708,1,0,3207404737,3168747322,1056413065,1021407358,3139139765,0,0,0,0,0,0,0,0,0,0,0,1015601400,1061747498,1057694117,3196573010,1047802354,966844707,12,995419148,1055592708},{1067629535,1065353216,1065353216,1065353216,1013174014,1025581486,1023459261,1045427005,1045117976,1065353216,1103626240,1039334865,3185259150,1,3148345280,0,0,1116598730,3204652935,3239188737,0,3191510773,1064206906,0,0,0,0,0,0,0,0,0,0,0,3307564060,1122627986,1161374036,3251068454,3313235650,3291346266,16,3148345280,0},{1066034304,1064665648,0,1060049844,3163482096,1030197679,1025504528,1042262891,1039640706,1065353216,0,1032714420,3176918788,1,3152782945,1065353216,1,1028443341,1073972760,1042586314,0,1063225758,3171401280,0,1065353216,0,1049094636,1065353216,0,0,1040222623,1065353216,0,0,3171928739,3236802371,1085474159,1065565758,1065436423,3181436337,16,3163947746,1065045992},{1066034304,1065353216,1065353216,0,825704436,1025762342,1030653734,1045117976,1042374167,1065353216,1103626240,3186493979,3171875385,1,1000728190,1025089690,1,3224525977,1058175196,1048794205,1065287541,1008022735,1036170811,0,0,0,0,0,0,0,0,0,0,0,1095882942,3231310264,1099215483,3206546275,1041154115,1064069870,16,3150103314,1023494199},{1066034304,1065353216,1065353216,1065353216,1010095987,1013568828,3171309920,1045117976,1040546253,0,1101004800,3171875385,3179850937,15,3150461722,0,0,1112320799,1087294063,3223299995,1054238213,0,0,0,0,0,0,0,0,0,0,0,0,0,3301296748,3295377254,1145960198,3278071457,3283428825,3280282003,14,3150461722,0},{1064333676,0,0,1065353216,3162783015,965320574,965335528,1045117976,1045117976,1058931145,1102577664,3171875385,3157492423,1,0,0,1,1117508440,1085858440,3252069387,3206067898,1063000858,0,0,0,0,0,0,0,0,0,0,0,0,2147483648,3296644936,1175766091,1145297441,3325225350,3282444647,16,0,0},{1066999925,1063517491,1065353216,0,992545325,1020937912,1023605718,1045117976,1046730212,1056964608,0,3171875385,3171011315,1,1005174411,1048975062,1,1109000013,1085589023,3233451265,996188397,0,3204889591,0,0,0,0,1065353216,0,1057260483,0,1065353216,0,1063201995,3295457766,3290891652,1154961730,1125429706,3293314748,1098016654,16,3177435297,1045641603},{1066999925,1065353216,1061265900,1065353216,825704436,965320574,1013490626,1041407825,1045117976,1056964608,1103626240,3171875385,3180545308,7,0,0,1,1108235157,1108959849,3226856546,0,3206095192,1051395901,0,0,0,0,0,0,0,0,0,0,0,3299468089,3314375856,1163159817,1143075228,1140114094,3297511342,6,0,0},{1066034304,1065353216,1065353216,1065353216,987093875,965320574,1005188982,1045117976,1043622188,1028443341,1101004800,3171875385,1037973683,1,1006547566,1057278153,1,1118264742,3249384802,1049553630,3168607412,1015044225,3163013141,1065353216,0,0,0,0,1065353216,0,1065353216,1065353216,1065353216,0,3318466724,1167940353,3307934596,3282957949,3286627640,1151817011,16,3194050507,1050207660},{1066999925,1065353216,1060336695,1059927199,825704436,1030495743,1031432688,1043259501,1045117976,1065353216,1101004800,1025299616,3147972997,1,0,1065353216,1,1118550167,3246771003,991637615,0,1058589514,1015764379,1062508884,1060011618,0,0,1061546293,0,0,0,0,1031637035,1051818452,3316627124,1166939397,3314585586,3289083732,3298428527,1151688382,16,3196503767,1060936852},{1066940157,0,1065353216,1065353216,1013947780,3169234872,965335528,1040789983,1045117976,1028443341,1101004800,3171875385,3171875385,11,0,1060374747,1,3225366800,1059312575,3201721157,3206743959,0,1042029596,0,0,0,0,0,0,0,0,0,0,0,0,3233121469,1107151950,1075973015,1096356226,1065778878,10,0,1060374747},{1066034304,0,1065353216,1065353216,825704436,1025159559,965335528,1045117976,1042011273,1028443341,1101004800,3171875385,3171875385,1,928363812,0,1,1028443341,3146364885,3197661906,0,1061612617,1064026781,1065353216,1062202038,1065353216,0,1063181440,1065353216,0,0,1047831431,1065353216,1065353216,2147483648,997020588,1043257942,3122612523,3163387104,3152332290,16,0,0},{1066034304,1065353216,1060054453,0,825704436,1026630255,1023640985,1045117976,1046115463,1049464243,1101004800,3176122668,3171875385,10,0,1030682487,1,1119711952,1091125749,3255045458,3208340959,0,0,0,0,0,0,0,0,0,0,0,0,0,3298401175,3305252771,1183728495,1157526258,3327365082,3291229972,9,0,1030682487},{0,1061217347,1065353216,1065353216,825704436,1030973244,965335528,1042178836,1045117976,1050753723,0,3171875385,1032156156,1,3150270351,0,1,1115550556,1090845856,3239809127,0,0,1051690273,0,0,0,0,0,0,0,0,0,0,0,2147483648,2147483648,0,0,2147483648,2147483648,16,0,0},{1066999925,1065353216,1065353216,1065353216,825704436,1030572847,965335528,1045117976,1045117976,1054706724,1099956224,991495513,3171875385,11,3145844070,1046937511,1,1028443341,1010592357,3190956651,3182770597,3154122623,1032238518,0,0,0,0,0,0,0,0,0,0,0,3155573829,3152234663,1032038502,999958517,3148875323,3146662958,10,3145844070,1046937511},{1064633446,1060887390,1065353216,1065353216,825704436,3177596288,965335528,1045117976,1045117976,1065353216,1101004800,3171875385,3171875385,1,3155378854,0,1,1028443341,3154986634,1034172522,3207116440,3186306305,3206051632,0,0,0,0,0,0,0,0,0,0,0,3143920307,991984996,3164409758,975520655,992979615,983682183,16,0,0},{1066034304,0,1065353216,1065353216,825704436,965320574,965335528,1044560030,1042839579,1040314348,1101004800,1036333395,1032185366,1,0,0,0,1110899142,1119998340,3192722655,0,0,0,0,1056816574,0,0,0,0,0,0,1065353216,1049950179,1057579363,2147483648,3331365709,1180305415,1164861383,1151537278,3308938983,16,0,0},{1066999925,1065353216,1065353216,1060483755,1011336618,1026151966,3158528915,1045117976,1045415257,1065353216,1103626240,3171875385,3171875385,1,0,1039274581,1,1111607254,1087102207,1099380548,1043985285,3172968537,1007842830,1044572395,0,0,0,1065353216,1065353216,0,1065353216,1065353216,1034378003,0,3299017053,3295017785,3320660842,3285383256,1167689516,3283014278,16,3184383674,1016131180},{0,0,0,1065353216,3155712696,3174755119,1019612717,1045117976,1041551609,1028443341,1101004800,3171875385,3171875385,1,0,1065191082,0,1028443341,1013585502,3181600721,1007261041,3193078921,1043865532,0,0,0,0,0,0,0,0,0,0,0,2147483648,2147483648,0,0,2147483648,2147483648,16,0,1065191082},{1066999925,1065353216,1065353216,1058169448,1009432644,1008534785,965335528,1042643804,1045117976,0,1101004800,3171875385,1029858991,1,3130856415,1065353216,1,0,0,3168847328,3169679046,1021356524,0,0,0,0,0,0,0,0,0,0,0,0,917314032,712519406,986952537,939147427,3083737692,696954706,16,3158945273,1065146696},{1066999925,0,1065353216,1065353216,3154601664,3171148595,3172795424,1041766426,1043724221,1056964608,1101004800,1022823395,3171875385,1,0,0,1,1028443341,3210692276,1036679850,3175524357,1051918869,3162220592,0,0,0,0,0,0,0,0,0,0,0,2147483648,1069768261,1066423934,3187829974,1052304295,1024338420,16,0,0},{0,1065353216,0,0,825704436,1026482024,965335528,1046212597,1042261995,1065353216,1101004800,3171875385,3171875385,1,964896393,1063476039,1,1028443341,1068233476,1047226658,0,3172496833,0,1052423259,0,1065353216,1060315173,1063867422,1065353216,0,0,1065353216,0,1065353216,2147483648,2147483648,0,0,0,2147483648,16,3157389870,1063293822},{1066034304,1057149357,1065353216,0,3155470941,965320574,3174922233,1045117976,1045117976,1065353216,1103626240,1036290204,3163455135,1,3147894778,0,0,0,0,3195509703,3199855885,3181479606,1052140783,1065353216,1065353216,0,1064141619,1065353216,0,1059446090,0,0,1060068336,1028046496,3111859970,2909604049,1038572646,1000799002,982232139,3148077783,16,3147894778,0},{1066999925,1065353216,1065353216,1065353216,3161563922,965320574,1024520321,1042272101,1044767446,1028443341,0,3182849269,3171875385,1,3155394563,0,1,1071689830,3168297086,1027785190,0,3205857766,1052065895,0,0,0,0,0,0,0,0,0,0,0,3221363808,1041771668,3220446379,3163798565,1055491144,3191207973,16,0,0},{1064182834,1059869267,1065353216,1058205740,998321653,965320574,1026468540,1047241412,1045117976,1028443341,1103626240,3171875385,3171875385,1,0,1065353216,1,1118964799,1098967806,3225920862,3175343743,3194176831,1020649260,0,0,0,0,0,0,0,0,0,0,0,3308323175,3311214177,1149535776,1143553440,3293907494,3297287502,16,3194172545,1061630687},{1067374192,0,0,1065353216,825704436,965320574,1033585070,1044560604,1045117976,1056964608,1101004800,3171875385,3176421908,1,0,0,1,3229706710,3208896997,3192694904,3165018901,3174874080,3171648464,0,0,0,0,0,0,0,0,0,0,0,0,1092729212,1113174617,3207654769,1099322492,3216481574,16,0,0},{1066034304,1065353216,1065353216,1065353216,1013409557,965320574,1023050625,1045117976,1046609908,1040231203,1103626240,3162719240,3179431605,1,3136156897,0,1,1028443341,998027392,3187629604,996269156,1026925799,1044684462,0,0,0,0,0,0,0,0,0,0,0,3151291323,3134396053,1023606985,963129160,3149123790,3139999919,16,0,0},{1066034304,1065353216,0,1065353216,1012330624,965320574,3107967367,1045117976,1045117976,1056964608,0,3171875385,3180463594,1,1001795353,0,1,1110424995,3207801214,1073909365,3192676807,3174318449,0,0,0,0,0,0,0,0,0,0,0,0,3297849587,1118956408,3296064698,1130249249,3280462418,1103379767,16,0,0},{0,1065353216,1060953962,0,1008074617,965320574,965335528,1044808710,1041708595,1065353216,1103626240,3171875385,3171875385,16,0,0,0,3223327911,1083768597,3167593545,3152436079,0,3207520349,0,0,0,0,0,0,0,0,0,0,0,0,2147483648,0,0,0,0,15,0,0},{1066034304,1062950252,0,1064577497,3160517560,3160214313,1027677408,1040462336,1045117976,0,0,3171279102,1030846942,9,3137519178,1060603083,1,1075603334,1065144650,1043007726,1025327104,0,0,0,0,0,0,0,0,0,0,0,0,0,3230077516,3235800111,3224775945,1048892112,1061292459,3217784217,8,3137519178,1060603083},{0,0,0,1065353216,825704436,1026033292,1027361098,1045117976,1045117976,1028443341,1103626240,1038877514,1029449994,1,994095743,0,0,1028443341,3151187640,1039997247,3208197391,1017600578,0,0,0,0,0,0,0,0,0,0,0,0,2147483648,0,2147483648,0,0,0,16,994095743,0},{1066999925,0,1065353216,0,825704436,1025886535,965335528,1040556838,1045117976,0,1103626240,1034317962,3171875385,1,0,1065097372,1,1028443341,984104844,3183111202,0,1012078389,1023509403,1044257011,0,0,1057575257,0,0,0,1043963319,0,1062822437,1065353216,2147483648,3120433477,1019041303,950976186,3140134315,3122543750,16,3157658855,1064910952},{0,1065353216,1065353216,1065353216,825704436,1023616888,1019539182,1046410987,1045117976,1056964608,0,1034385060,3179808225,1,0,0,0,1118547924,1098226517,1011414007,0,1022511850,0,0,0,0,0,0,0,0,0,0,0,0,2147483648,2147483648,2147483648,0,0,2147483648,16,0,0},{1066034304,1065353216,1065353216,1065353216,825704436,1018604787,965335528,1045117976,1045117976,1008073056,1101004800,3182449361,3171875385,14,3154526733,0,1,1100883608,3259806948,1034551825,0,0,3146823870,1058519947,1065353216,0,0,1055277174,0,0,0,0,1057553576,0,3295975209,1167639333,1164567598,3296818703,1137420471,1144484619,13,3154526733,0},{0,0,1065353216,1065353216,3150639383,965320574,1028998829,1045117976,1045117976,1065353216,0,3171875385,3171875385,1,0,1064857154,1,1117491883,3243106927,3197369491,1012252424,1028006725,0,0,0,0,0,0,0,0,0,0,0,0,2147483648,0,2147483648,2147483648,0,0,16,3157658466,1064670740},{1066034304,0,1065353216,1065353216,3147524785,1016046527,1028932019,1040662350,1040548130,0,1103626240,3171875385,1038860802,6,961909075,1065353216,1,0,0,1047445056,3196432876,1024352198,3146656011,0,0,0,0,0,0,0,0,0,0,0,0,753295399,3184986913,1004149720,3127384396,954723140,5,961909075,1065353216},{0,1065353216,1065353216,1065353216,987638727,1025027216,1008914422,1042446260,1046573383,1028443341,1092616192,3163465407,3171875385,1,0,1065353216,1,1028443341,1062928017,3193698366,3204817147,3212286350,3174676012,0,0,0,0,0,0,0,0,0,0,0,2147483648,2147483648,0,0,0,2147483648,16,3157658466,1065166802},{1066034304,1065353216,1065353216,0,825704436,1021638751,965335528,1045117976,1044419282,1056964608,0,3171875385,3185560984,1,0,1036622519,1,1091423958,1069309770,1037727814,1048465141,1040384943,990847936,0,0,0,0,0,0,0,0,0,0,0,3259016394,3256361292,3256783743,3230058646,1099288715,3240787455,16,3160259606,1034806068},{0,1065353216,0,0,825704436,3178219790,1028127013,1046431394,1045117976,1065353216,1098907648,3171875385,3167559095,1,0,0,1,1116898482,3263448436,1085981892,3170956768,0,1008322505,0,0,0,0,0,0,0,0,0,0,0,2147483648,0,0,2147483648,0,0,16,0,0},{1067114231,1065353216,1065353216,0,825704436,1028096952,1003824521,1043944005,1045117976,1065353216,1103626240,3181558903,3171875385,1,0,0,1,1097253176,1059159731,1044206304,0,3173008438,0,0,0,0,0,0,0,0,0,0,0,0,3271423446,3253313570,3273192775,1080324385,1121884544,3238127518,16,0,0},{1066999925,1063940792,1061124099,0,1000556935,965320574,1012825212,1047591777,1047723304,0,1101004800,3171875385,3171875385,1,3154328822,0,1,3221653154,3185618344,1051040041,981840343,0,0,0,0,0,0,0,0,0,0,0,0,0,1089995525,1061830173,1090070253,3168211255,3223628972,3190040436,16,0,0}},
+aeroCells={15458328,15458848},
+wake={{1125207392,1080033280,3161611091},{1131529085,1080033280,2147483648},{0,1080033279,3165390901},{1125747005,1080033279,3157485282},{2147483648,0,3186865735},{3249348189,1080033279,3165304695},{2147483648,1078685288,3170222101},{2147483648,1080033279,3165390901},{1121583520,0,3177111047},{1118109696,1078472940,3176585435},{0,1080033280,3165390899},{1116143616,0,3182637875},{1110704128,1080033280,3177349697},{1112670208,1080033279,3177349698},{0,1071261713,3180460632},{1126498304,1080033280,3149365293},{1133624204,0,2147483648},{1101615128,1080033279,3173599249},{2147483648,1080033280,3165390899},{1132659479,0,2147483648},{1089470464,1066023890,3183746700},{2147483648,1079613659,3166894819},{1123627216,1086197336,3154318346},{1118109696,0,3181040684},{0,1080033279,3165390901},{2147483648,0,3186865735},{2147483648,1080033279,3165390901},{0,1080033279,3165390901},{1106106661,1079963739,3176040891},{1101801808,1080033280,3173697377},{1132628914,1082125230,2147483648},{1117422293,1080033279,3176240644},{0,1080033280,3165390899},{0,1080033280,3165390899},{2147483648,1079221769,3168299353},{1130585006,1080033279,2147483648},{2147483648,1080033279,3165390901},{1130861768,1080516245,2147483648},{1122957755,1088748403,984422356},{3261047031,1080189175,2147483648},{1110051279,1080033279,3177287304},{1122041856,1085488668,3160145360},{2147483648,1083319932,3161401212},{3239073030,1080033279,3163141241},{1124007936,0,3173779504},{1115951003,1080033280,3177010705},{1123022772,0,3175097680},{1122041856,1080033280,3171524646},{1127972864,1084857417,2147483648},{1129903992,1081128568,2147483648},{2147483648,1080033279,3165390901},{2147483648,1080033280,3165390899},{1133513515,1078422259,2147483648},{1126006784,0,3165015083},{1113447520,1086335210,3162514563},{1124081392,1078012747,3168372145},{1116143616,1080033279,3176973888},{0,1083580081,3160602034},{1127481344,1088847397,2147483648},{0,1080033279,3165390901},{2147483648,1080033280,3165390899},{1125846118,1080033280,3156727477},{0,1082108583,3163797066},{1131881362,1080033279,2147483648},{1121802672,1080033279,3171844682},{0,1080033279,3165390901},{0,1081223154,3164477076},{2147483648,1079877280,3165950001},{2147483648,1075857975,3175624508},{1106558628,1082187357,3174072431},{1124093402,1080033280,3167028190},{1122041856,1080033279,3171524647},{1106247680,1078406703,3177908179},{1123024896,0,3175094838},{2147483648,1074821534,3177481811},{1132784708,1080126361,2147483648},{1133384079,0,2147483648},{1119132642,1078947174,3175311970},{1119066830,1080033280,3174931693},{1130769788,1080033280,2147483648},{0,1080033280,3165390899},{1123600720,1080033280,3168359674},{2147483648,1081212642,3164485149},{2147483648,1083864649,3159727841},{1122041856,1080033280,3171524646},{2147483648,1080033279,3165390901},{1128318170,1080033280,2147483648},{1105859065,1076098580,3179864955},{0,0,3186865735},{2147483648,0,3186865735},{1127494005,1084795658,2147483648},{1131431090,1080033279,2147483648},{2147483648,1078440075,3170997385},{1126975651,1080033280,3141323443},{1132081944,1080033280,2147483648},{1133372992,1080033280,2147483648},{1108484273,1079326082,3177736355},{1133674861,1085829443,2147483648},{1124802662,1080033279,3163774446},{1132708396,0,2147483648},{0,1080810117,3164794289},{0,1080897756,3164726982},{1130806657,1080033280,2147483648},{1119092736,1080033279,3174906935},{0,1080033280,3165390899},{2147483648,1079845591,3166063575},{0,1085505260,3154687883},{1129008301,0,2147483648},{0,0,3186865735},{2147483648,1079754379,3166390478},{2147483648,1082124038,3163785197},{3253765915,1081420592,3150831443},{2147483648,1080033279,3165390901},{1130777313,1078312991,2147483648},{1126006784,0,3165015083},{1112670208,1080033280,3177349697},{2147483648,1080033280,3165390899},{0,1080889122,3164733613},{1124627342,1084535482,3156806984},{1125180272,1080033280,3161818447}},
+draft={{1164833000,0,1079085447,1065353216,1065353216,1065353216,1063873308,1064893418,1065353216,{{1107410602,1079085447,1107776950,1086506791,3174871490,1066028111,1064517681}}},{1165718979,1165714883,0,1065353216,1065353216,1065353216,1065353216,1065353216,1065353216,{{1165667021,0,1077869386,3198025275,1041019738,1067666527,1065353216}}},{1165718979,1130403434,0,1065353216,1062176362,1065353216,1065353216,1062176362,1065353216,{{1129598959,1068643155,0,0,1025758260,1060746420,1065353216},{1130213219,0,1061574306,1037587674,3170341136,1065353216,1065353216},{1136779228,1064627601,1116068353,3240103562,3180219310,1065353216,1065353216},{1130627454,3226914704,0,2147483648,3165015437,1057980224,1067073909},{1139265979,3209879713,1112041849,1059126683,1029308397,1065353216,1065353216},{1131554299,0,1077849291,1051993258,1040297775,1065353216,1065353216}}},{1162304528,1151092614,1063428092,1065353216,1058968941,1065353216,1065353216,1058968941,1065353216,{{1151078383,1063428092,1117341372,3244260432,3166798373,1065353216,1069225570},{1151035011,1070414317,1101485220,3212451703,3190000215,1066406650,1059732511},{1151063072,1041805538,1077821059,1053769911,1043107514,1065353216,1065353216},{1150933658,1063428092,0,2147483648,1032745165,1065353216,1065353216}}},{1159479296,1155167798,3235143234,1065353216,1065353216,1065353216,1063120688,1065353216,1064080915,{{1155167798,3235658523,1117322299,3240574755,3189374290,1065353216,1065353216},{1155167798,1084960204,0,0,3186690195,1062658323,1060157635},{1155162929,3235482648,1118767698,3245121245,1040602063,1065353216,1069033541},{1155167798,1082685965,1116884998,3233066183,3192498032,1065353216,1065353216},{1155279028,3235143234,0,2147483648,3186152115,1065353216,1065353216},{1155164873,3233704995,0,2147483648,985502083,1063733074,1065353216}}},{1145569280,1127366499,1086283327,1065116119,1065353216,1065353216,1064302266,1064957745,1065353216,{{1127647547,1091202357,0,2147483648,1041427124,1065353216,1061388145},{1126708813,1084697662,1077870109,1050485548,1026054738,1065353216,1065353216},{1127366499,1086283327,1077799341,3202473546,1034583077,1068808208,1065353216},{1134492050,1086283327,0,2147483648,3188473018,1065353216,1065353216},{1127836886,1087427015,1077902387,3194016169,1033139198,1065353216,1065353216},{1128118914,1086283327,0,2147483648,1038807741,1065353216,1065353216}}},{1150955362,1137280717,3210230027,1065353216,1056998797,1065353216,1065353216,1056998797,1065353216,{{1135141623,3210230027,1116920145,3240066372,3177890127,1065353216,1065353216}}},{1167791208,1162647541,1059175004,1065426717,1065353216,1058663525,1063538163,1065353216,1058663525,{{1162647541,1086417616,1077811647,3201795440,1012027651,1065353216,1069058690},{1162616541,3217826715,1096571249,1068635127,1029889205,1068064586,1065353216},{1162647541,1059175004,1117037518,3242529619,1032924150,1065353216,1065353216},{1162647541,1059175004,1077933252,1032018860,3174670711,1063896996,1065353216},{1163515638,3214897968,1077715324,3205447264,1024508464,1065353216,1065353216},{1162647541,1042150028,1118535298,1092812618,3186917826,1065353216,1065353216}}},{1165718979,1163454471,3191336955,1065353216,1065353216,1065353216,1065353216,1065353216,1065353216,{{1163564187,3191336955,0,2147483648,1045034727,1065353216,1065353216}}},{1159479296,1065353216,0,1062513752,1062983150,1060453186,1065353216,1062983150,1060453186,{{1103748788,3234746844,0,2147483648,3182253484,1065353216,1065353216}}},{1165718979,1133245612,1070199466,1065353216,1065353216,1065353216,1065353216,1065353216,1065353216,{{1132791823,1078859822,1077693915,1058403982,1039943626,1057113944,1065353216},{1132980165,1069019282,0,2147483648,1040915943,1065353216,1067920157}}},{1165718979,1151251817,1068018843,1058940280,1065551314,1065353216,1065353216,1065551314,1065353216,{{1151164024,1074620147,1077931051,3182330470,3189450998,1065353216,1065353216},{1151251817,1033250947,0,0,1043841786,1065353216,1057325407},{1151419446,1073615444,1077929724,1036255367,1033088885,1065353216,1065353216}}},{1159479296,1144212298,1071907880,1065353216,1060849882,1065353216,1063330673,1059891276,1065353216,{{1144252562,1071907880,0,0,1043197451,1066195171,1069330426},{1144412704,1071907880,1077773362,3203809743,1044264870,1065353216,1065353216}}},{1160859009,1065353216,3219698412,1065353216,1060131511,1065353216,1065353216,1060131511,1065353216,{{1109844603,3225381125,1077909612,1044862011,1043990346,1065353216,1065353216},{1160823613,3217541733,1077916373,1043075653,3176668415,1068659808,1065353216}}},{1165718979,1165714883,1086602543,1065353216,1065353216,1065353216,1065353216,1065353216,1065353216,{{1165643900,1087661560,0,2147483648,999268569,1059121714,1059183227},{1125062293,1084619988,1110349518,1086602760,1036778195,1065353216,1061855265}}},{1165718979,1126829110,0,1065353216,1061400976,1065353216,1065353216,1061400976,1065353216,{{1136284141,1087771884,1077903519,1046283499,3186994315,1065353216,1065353216},{1124799061,0,0,0,1044959789,1067226994,1065353216}}},{1146052778,1145639190,0,1065353216,1065353216,1065353216,1065353216,1065353216,1065353216,{{1145578340,0,1077809955,1054406991,1027487809,1067326850,1065353216}}},{1159479296,1145997701,0,1065353216,1057989462,1065353216,1063392045,1057989462,1063899828,{{1145997701,3210607825,1118422237,3241984692,3172274241,1063502041,1065353216},{1145904329,3217238887,1100996574,1071088439,1037294068,1064453088,1058828172},{1145866815,3232677774,1116815691,1077643091,1007182849,1067312094,1066066733},{1145997701,3222673852,0,0,3186881520,1065353216,1068409536},{1146378169,1060856089,1116654199,1094273093,1036884009,1065353216,1060193424},{1145987632,0,1077831298,1053154189,1033868064,1065353216,1066908681}}},{1159479296,0,1087396186,1065353216,1065353216,1065353216,1063399035,1064098860,1065353216,{{1108464086,1087396186,1116886344,1075777183,3131052190,1065905298,1065353216},{1159408265,3236950127,1115725924,3239649912,3178687830,1065353216,1065353216}}},{1165718979,1156743462,1067553931,1065353216,1065353216,1065353216,1064359237,1065353216,1064462615,{{1156737578,1067553931,1077854511,1051634092,1042401889,1059576104,1065353216}}},{1165718979,1152363882,3236531315,1065353216,1065353216,1065353216,1065353216,1065353216,1065353216,{{1152279673,3236487298,1077883758,3196845552,3190132092,1065353216,1065353216},{1152240053,3236531315,1117869280,3211058684,1036007031,1065353216,1065907020},{1152353493,3235790381,0,0,1018299617,1065353216,1065353216},{1152539022,1055939598,1118339915,3236405838,3178042257,1065852155,1068300826},{1152465981,3236833669,1118781403,3227521009,3190595189,1068449212,1065353216},{1152363882,1078927673,1117287966,1089735813,1038428220,1062169621,1065353216}}},{1165718979,1164751742,1078553297,1065353216,1065353216,1058111691,1065353216,1065353216,1058111691,{{1113064751,1079656482,0,0,3176044157,1062739066,1065353216},{1164751742,3224271268,1077830108,3200710889,1019144152,1065353216,1066244197},{1164784614,1076864375,1117645258,1060419387,1035526802,1065353216,1066542772},{1164682217,1078158298,0,0,3192681848,1065353216,1062398339}}},{1145569280,1065353216,0,1065353216,1057046770,1065353216,1064925302,1056974676,1065353216,{{1094408931,0,0,0,3181802300,1065353216,1065353216},{1094882107,3231917300,1116068167,3212037911,3171195955,1065353216,1065353216},{1107815881,3204554410,0,2147483648,1043220675,1065932827,1060541021},{1103928271,1085666816,1101309873,1075920014,1031695858,1065353216,1067320512}}},{1159479296,1157969797,0,1065353216,1065353216,1065889866,1064114645,1065353216,1065236173,{{1157938580,1062744525,1113641554,3221709060,3187352733,1065353216,1065353216}}},{1152449296,1136369034,3230817334,1065353216,1065353216,1064184256,1065353216,1065353216,1064184256,{{1143196272,3230817334,1117282083,3239410561,1033238382,1060000161,1065353216}}},{1145569280,1126546067,0,1065353216,1066019015,1065353216,1063819567,1066019015,1063892011,{{1126170299,3201464651,1115031543,3239652342,3182806532,1065495476,1065353216}}},{1159479296,1131686904,1039715663,1058984529,1065544676,1065353216,1063109870,1065544676,1065353216,{{1131686904,1058750259,1116336004,3221671210,1035570665,1065353216,1063213132}}},{1165718979,1115828835,1070123854,1065353216,1065353216,1065353216,1063721724,1064223652,1065353216,{{1116119925,1075473608,0,2147483648,3189042597,1065353216,1065353216}}},{1165718979,1145828730,1068356358,1061107752,1062513950,1058579223,1062605135,1061107126,1058579223,{{1145941126,1060729937,1116030620,1074878951,3190143063,1064756411,1068056623},{1145828730,1059409311,1114733149,1086589564,1032645649,1063185678,1065353216}}},{1145569280,1145552896,1063119451,1065353216,1065353216,1057839271,1065353216,1065353216,1057839271,{{1145552896,1090769220,1077786924,1055643305,1033751218,1065353216,1065353216}}},{1165718979,1159524545,3226589878,1065353216,1062341668,1065353216,1065353216,1062341668,1065353216,{{1159516330,3229893314,1100513991,1062080066,3181252033,1064259564,1065353216},{1159524545,1083152962,1077887623,1049017606,3188712735,1066679352,1068220261},{1159492509,3226589878,1077855548,3199045051,1034424331,1068113375,1066028416}}},{1165718979,1165714883,1074062445,1065353216,1059320924,1065353216,1065353216,1059320924,1065353216,{{1099179346,3224226809,0,2147483648,1033524235,1065353216,1065353216}}},{1159479296,1142870671,0,1065353216,1065353216,1065353216,1065353216,1065353216,1065353216,{{1143437831,0,1077926407,3186718568,1008334899,1065353216,1060204455},{1143109529,1058375246,1077840773,3200040263,3174588101,1065353216,1065353216},{1144186135,0,1092699521,1072814311,3183569962,1062058950,1064861962},{1145233413,1064426149,1077931258,1034611608,3156667262,1067820703,1058310407},{1145245008,3229925665,1077869253,3198035595,1021827250,1065353216,1066801201},{1143127211,0,0,2147483648,1032980308,1065432583,1065353216}}},{1145569280,1145552896,0,1060455186,1065353216,1065353216,1065353216,1065353216,1065353216,{{1131385387,1085415714,1091158166,3208312505,1040462317,1065353216,1065353216}}},{1154227466,1154219274,1070116793,1065353216,1065353216,1061924944,1063356727,1065353216,1061924944,{{1154219274,1070116793,1116086101,3235309353,3188017045,1065353216,1065353216},{1154181806,1065925018,1100689250,1075077578,1016914112,1059976944,1066698699},{1117184651,1070116793,1118567329,3236120075,1043694249,1065353216,1065353216}}},{1145569280,1136902221,1073694125,1065353216,1065353216,1065353216,1065353216,1065353216,1065353216,{{1136321860,3222737224,1116685056,1088327462,1041606085,1066745159,1065353216},{1137385312,3235039839,1077900764,3194365808,3191120635,1065353216,1066666119},{1135329228,1070908729,1116043309,3234936937,1032346046,1061165085,1065353216},{1136942322,1086055319,1077892050,1048605704,3124192760,1065353216,1065353216}}},{1166735346,1125075172,1050868011,1065353216,1065353216,1057800074,1065353216,1065353216,1057800074,{{1124641146,1031816181,1113492649,1084716759,3182581127,1058624505,1067250487},{1125075172,3181718044,1118136026,3239662633,1042132000,1065353216,1065353216},{1125075172,3237770763,1118657156,3241793629,3168773841,1061533926,1069179255},{1126043751,1050868011,1119030595,3237312987,1015125436,1065353216,1068248629},{1124601570,3180693150,1109449082,3233940484,1042621868,1061662031,1065353216},{1125264608,1087875524,1077922816,1041057030,3151320228,1068975778,1065353216}}},{1165718979,1150146694,0,1065353216,1065353216,1065353216,1062938141,1063014705,1065353216,{{1150167475,1058301789,1117905024,3241124031,1032573661,1068471278,1065353216},{1150146694,1090407837,0,2147483648,1036651908,1065353216,1065353216}}},{1145569280,1141568897,1069769059,1065353216,1065353216,1065353216,1065353216,1065353216,1065353216,{{1141525483,1075137974,1077893162,3195905806,3188558191,1067276362,1065353216}}},{1163917836,1163146445,1087131393,1065353216,1065353216,1065353216,1065353216,1065353216,1065353216,{{1093407844,1087018824,1077790109,3202962077,1042424316,1065353216,1065353216}}},{1145569280,1137100925,1083717614,1065353216,1065353216,1065353216,1065353216,1065353216,1065353216,{{1137100925,3232299972,1077934113,3176916423,1034842095,1065507744,1067804347}}},{1165718979,1165161370,3229530634,1065353216,1065353216,1063715547,1063552484,1063553406,1063715547,{{1165165219,3229530634,1119323802,1061019302,3162302842,1063575094,1059964179}}},{1159479296,1158077590,3208487839,1065353216,1065353216,1065353216,1065286649,1065353216,1065353216,{{1158428142,3167818815,0,2147483648,1010414383,1065353216,1065353216},{1158077590,1085481562,1077823114,3201132265,1025383485,1065353216,1069303271}}},{1163694455,1065353216,1072303889,1065353216,1060747743,1065353216,1065353216,1060747743,1065353216,{{1163498689,3238967127,1110533486,1051499006,3188513877,1066496370,1065353216}}},{1159479296,1155511452,3217073011,1065353216,1065353216,1059553634,1062675144,1065251308,1059553634,{{1155511452,3217073011,1119186594,1098560500,982063638,1065353216,1059052468},{1155512084,3221635930,1116902232,1083806781,1034052462,1065353216,1065353216},{1155410073,3217073011,1077920509,1041826988,3141273957,1065353216,1065353216},{1155542557,3214383922,0,2147483648,1041683821,1066752610,1065353216}}},{1159479296,1159475200,3217991686,1065353216,1065353216,1057907653,1065353216,1065353216,1057907653,{{1103400231,1072334236,0,2147483648,1022081081,1064236087,1065353216}}},{1145569280,1125842497,3234299773,1060534516,1065353216,1065353216,1064657609,1065353216,1065353216,{{1125842497,3238303203,0,0,3177216328,1057336352,1062479823}}},{1166355891,1158722280,1069099377,1063614735,1065353216,1065353216,1064363397,1064661062,1065353216,{{1158854535,1069099377,1116940261,3234630223,1027136308,1057426471,1065353216}}},{1159479296,1159475200,3205338761,1065353216,1065353216,1066022248,1065353216,1065353216,1066022248,{{1159434360,3210197832,1077927774,3185563505,1042671801,1059367402,1065353216},{1127075396,3214067980,0,0,3132235648,1065353216,1065353216}}},{1145569280,1124737791,3231525217,1065353216,1065353216,1065353216,1061919214,1064222269,1065353216,{{1127772941,3231860615,1115978734,3229975606,3185539433,1065353216,1068511465},{1124737791,3231525217,0,2147483648,3179679543,1067415130,1065353216}}}},
+tape={{0,0},{5,1028443340},{10,1036831948},{15,1041865113},{20,1045220556},{25,1048576000},{30,1050253721},{35,1051931443},{40,1053609164},{45,1055286886},{50,1056964608},{55,1057803469},{60,1058642329},{65,1059481190},{70,1060320051},{75,1061158912},{80,1061997772},{85,1062836633},{90,1063675494},{95,1064514355},{100,1065353216}},
+spoiler={{45,0},{46,1065353216},{47,1073741824},{48,1077936128},{49,1082130432},{50,1084227584},{51,1086324736},{52,1088421888},{53,1090519040},{54,1091567616},{55,1092616192},{56,1093664768},{57,1094713344},{58,1095761920},{59,1096810496},{60,1097859072},{61,1098907648},{62,1099431936},{63,1099956224},{64,1100480512},{65,1101004800},{66,1101529088},{67,1102053376},{68,1102577664},{69,1103101952},{70,1103626240}},
+scenarios={
+{name='launch',ticks=6336,onset=5760,weather={},draft=nil,aero={3309872084,1109006327,3309931865,1115723236,3299122595,3267319458},snapshot={{7653728,"AIC7RAIAAAACAAAAAACAvwAAgD8BAAAAAgAAAAUAAAA="},{7653792,"AQAAAAAAoEIAAIA/0AIAAA=="},{12384096,"O/b/QscjHUYAAIA/BQAAAN7SGkSoB/1G3tIaRKgH/Uav8HFDtUBRRlJKIUN4gAtG"},{12532464,"kqtePxPoxT+935M/CAr3AA=="},{12532864,"AAAAAAAAAAAgYY7BsB/3AA=="},{12532928,"730XQo9+gDY0HQDJSzIZvqvITkBv+05AEAAAALX6Lj0BAAAAPRMsO13WIUFJZZVCAAAAAAAAAAAZjdnBJAsrRN7EcEVA1nU9sjzjPgBgJrx8apVCMzP7wQAAoEA5AQAA"},{12534784,"Vjo6P3zlNz985Tc/CnZWRH5eUEMAAACAEvWLQoBM0UHIVH+8AAAAAAAAAAAAAAAA"},{12535072,"AAAAAAAAAIA/kqteP/2bvT+lrI0//B73AOge9wAQH/c="},{12535488,"ADgwl8HgHPcAzBz3APQc9w=="},{12535552,"NjQdAMnRQNG9MTdPv6PsUD8QAAAAA8AAvQEAAAA9Eyw7tF1TQWlzlUIAAAAAAAAAAE8sCMKlhKFDGjqdRUDkdDzUU/K9ACAlvJJ4lUIzM/s="},{12537408,"P3zlNz8gmVZEZepOQwAAAICtAYxCW1/RQR8nlTsAAAA="},{12537696,"gD+Sq14/BLy/PyNDjz8sHA=="},{12538096,"AAAAAAAAAAAAADo/mMEQGg=="},{12538160,"xzjvfRdCj36ANjQdAMlBOLk/ScnIP2N2FkAQAAAAHFACOgEAAAA9Eyw7OrJMQSEplkIAAAAAAAAAAEkodURJTAtE+kOYRVCVKT31DnQ+ABu9PgZslUIzM/vBAACgQDkB"},{12540016,"Oz9WOjo/fOU3P3zlNz/0zFVEkl1PQwAAAICp/otC2PHQQVFX1rsAAAAAAAAAAAAA"},{12540304,"AAAAAAAAAAAAgD+Sq14/NGq8PyvIjD9cGfcASBn3AHA="},{12540720,"AAAAxkacwUAX9wAsF/cAVA=="},{12540784,"foA2NB0AyagFjz/EGdg+7DyuPxAAAAB6ck06AQAAAD0TLDsdMWNBmimWQgAAAAAAAAAAETJNRJXwDEPK/6hFwC7PPDgflD0A/rI+nHaVQjM="},{12542640,"5Tc/fOU3P4fvVURN7U1DAAAAgGgIjEJ+ANFBAU0RPQA="},{12542816,"X88Su1/PEjsAAIA/AAAAAAAAgD8AAKBAAAAAAAAAAAA="},{12542864,"AACAPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUAAAA="},{12545344,"5z5WROX+i0KnNk9DDDvRQcnszj6PAdC5cDtHO9uCBzurUzc+udx7P6kDJLyZtpU7PL98PMaKRz3OMgW7X88SuwAAAADQXoNADo5QQ30LZD1kfC87X88SOwAAAABGQ6pAxqFQQ6wNwj1Lm/07ufDIu1WBj7wWHHdAdJ9RQ8U8XUAdoFFDFFrGPt0Ib0TENnNA2whvRBm1eUDTW2xErABvuapaozy1cwq7Fdieu3Ef9Db/mxs6OQAAAKuqqj6rqqo/lnTJOwEAAABoIiw/AAAAAAAAAAAAAIA/AAAAAJBycgA="},{12545584,"AACAPwAAAAAAAIA/AAAAAA=="},{12545632,"AACAPwAAAAAAAIA/AAAAAA=="},{12545680,"uwaQQBcE8UAAAAAACAAAAAAAAAAAAIA/AAAAAAAAAAAAAIA/HjaRPwAAAAAAAAAAAAAAAEad2jraDHtEAAAAAC16C8JMxUI8fEVPu5q98EWhMB1GYA2rRB+JIURTnuPCCeMsQgAAAAAAAIACAAA0QA=="},{12545840,"AAAAAAABAAAAAAAAAAAAAAAAAADqipVC8UCuP+jWbgA="},{12609920,"AAAAAAAARgAAAAAAAAAAAA=="},{12616080,"HjaRPwAAAAAAAAAAAAAAAA=="},{12616160,"AAAAAGjC6wAAAAAAG6mvQQ=="},{12616320,"oL/rAAIAAADcw+sAQsHxOg=="},{12617168,"FN3rABjd6wBYwusA9k/Pug=="},{12617248,"ZsNuOok0RD/0v+sA+L/rAA=="},{12657856,"aJ4NRgAAgD8+B3xETHe2Qw=="},{12658048,"AAAAACIAAAD/////AAAAAA=="},{12658128,"gD8AAIA/AACAPwAAAAAAAA=="},{13851456,"AAAAAAAAAAAAAAAAgD8AAA=="},{14727216,"juOoQcdxREIAAAAAAAAAAAAAAIAAAAAAAAAAAIBkij8="},{15221776,"uwaQQBcE8UAeNpE/BwAAAA=="},{15222720,"ZH3UAGR91AD08vcADMzrAA=="},{15449936,"HjaRP6uqqj7bD8lAAAAAAA=="},{15450112,"AAAAgAAAAAAAAAAAAAAAAIfvVURN7U1DAAAAgDrcZ0DMaJdAq6GSQPm+okC/hUC/AUYpPgLpfT56IkM/eiJDPwLpfT5/rlW/Aul9PnoiQz96IkM/Aul9PgFGKT6/hUC/eiJDP3oiQz+ssmE9HXcWPayyYT0CRqm+AkapvqyyYT0ddxY9rLJhPQJGqb4CRqm+AAAAgAAAAAAAAAAA46bTMw=="},{15453296,"GY3ZwSQLK0TexHBFAAAAAAAAAAAAAAAAelz9QiGhRURWXm9FAAAAAAAAAAAAAAAA"},{15453408,"AAAAAAAAAABPLAjCpYShQxo6nUUAAAAAAAAAAAAAAADytihDW2Z7QxdFnUUAAAAA"},{15453536,"SSh1RElMC0T6Q5hFAAAAAAAAAAAAAAAAUH7HRErnC0SpFZNFAAAAAAAAAAAAAAAA"},{15453648,"AAAAAAAAAAARMk1ElfAMQ8r/qEUAAAAAAAAAAAAAAAAPPrxEky0RQzVTpEUAAAAA"},{15453792,"AAAAANGjSMX2FxpCVo1JxeKVgEKgnaTEn1a/wgAAAAA="},{15453904,"mMsgRKEtiUMAAAAAAAAAAFXHj8EAAAAAAAAAAJasmMEAAAAAAAAAAAAAAABAP5jB"},{15453968,"zEacwQAAAAAAAAAAAAAAAF6H50OhMeVBAAAAAAAAAAA="},{15455952,"W+B5QmpnXTvUX6S1LSpiPkNIzEGwfohCGzIkwfaRpr8VJCI0D2r3wFEEEUCtR5kzAU4JQbYODEBYAxe0E6pewneYsUIYSOi0iRMIQ0JIzEFVoz6+mh/zQ+bOiEKhN0q2GzIkwW8aEkDgdT8z8dx9NFhecT+2kza06m4RQbYODMC6lQ2z2LZeQkO8sUKIN422EPOJPRmiz75SSiHD3tIaRN7SGkT2LqpD08c2vpdIjzuEvZRCWpd5xV2RmMM79v9Cr/Bxw/vOpT8vwFRDSzy6QkVpqzKZrUdDqmLaQRaVtz/mAh0ve/T5PZfj571Lk28xxfDJQQRKX7bFGTAsGne9vaegqsMZSRKz2pc2v9ii88L9o1o8xT+8PMs/vLxZj1G8E+hHQIVLtMCGwT9Ccw+wQQpi+sXHpae+Zq3CQTmuT7yW0mPBUrWpQMgE4MCO5lE/D9/nvVH3Db6O5lE/+HNtvVL3DT4aiVfF2EwRPvvOpT/0759Ek07tPeY1qbpLddG92yv5PwnL48EAAACA83lXP/1qtzlHdyhFG8RGwsoyM0CU4+c9/nkfwHn0+T3vQUG7e88KPcBGRUEAAAAAAAAAAA=="},{15457552,"SdQzRMTW0UPE/6hFh+9VRE3tTUMAAACAaAiMQn4A0UEBTRE9ShQSN1mtJzYAAACAX88Su1/PEjsAAIA/AAAAAAAAgD8AAKBAAAAAAAAAAAAAAAAA5z5WROX+i0KnNk9DDDvRQcnszj6PAdC5cDtHO9uCBzurUzc+udx7P6kDJLyZtpU7PL98PBjieUIY4nlC"},{15457712,"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"},{15463232,"QOfHQEDnx0Cf6/ND8yN0wkiPKUWpVRLCqQVzRbaPcj94c3Q95LsmPjtqWT8Ec7s8pl+KOwRzuzw1aQA+De8Ivs1fijsM7wi+PEhTP3QohbtwKIW7rNFwPwHScD+mN5Y+bneOPUhfhT07alk/CnO7vKZfijsJc7u8NmkAPgzvCD7MX4o7DO8IPjxIUz9vPkiyyKSUrNQZX6/Ab3NBntRJsvNbVUNHK7cylm5zwfM68bAIwOGx/t0vrpCg1LP0W1VD7BO/PWA6f6tC1GauRE9asJhuc8HsEb89ega/QlqGJ7A0ZGevwW9zQbfg5rBk/Sksp3k4sBtvBUA6b/O0HR8dskj3TC5q5ZYwFFZVtQAAAAA="},{16183440,"fPD2AAAAAACE8PYAiPD2AIzw9gCQ8PYAAQAAAJjw9gA="},{16183504,"AgAAAMDw9gDE8PYAyPD2AMzw9gADAAAA1PD2ANjw9gA="},{16248848,"0AIAAAAAAAAAAAAAAAAAAOhbQF3/2R2sbr8AwwAAAAA="},{16249088,"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"}},controls={{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,1.0,0.0,1,0,1},{0.0,0.0,1,1.0,0.0,0,0,1},{0.0,0.0,1,1.0,0.0,0,0,1},{0.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,1,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,1,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,1,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1}},rows={[5832]={orig={874.4702758789062,69.92884826660156,213.78750610351562,26.444623947143555,0.40417593717575073,0.0015747752040624619},spread={0.0001220703125,4.57763671875e-05,0.0009613037109375,0.0001964569091796875,1.1920928955078125e-07,1.489534042775631e-06}},[5904]={orig={891.9317016601562,69.77664184570312,220.4319305419922,26.71047592163086,0.4041195213794708,-0.0009301601676270366},spread={0.0001220703125,3.0517578125e-05,0.0009765625,0.000232696533203125,1.1920928955078125e-07,2.804095856845379e-06}},[5976]={orig={909.366455078125,69.72048950195312,227.14630126953125,27.008848190307617,0.40418002009391785,0.001461817417293787},spread={0.0001220703125,0.00011444091796875,0.00103759765625,0.000244140625,8.940696716308594e-08,2.804095856845379e-06}},[6048]={orig={926.7738037109375,69.56261444091797,233.93072509765625,27.270599365234375,0.4041501581668854,-0.0009744232520461082},spread={0.0001220703125,0.00011444091796875,0.001129150390625,0.00023651123046875,5.960464477539063e-08,2.55415216088295e-07}},[6120]={orig={944.154052734375,69.50189971923828,240.78500366210938,27.570873260498047,0.4041413962841034,0.0013453610008582473},spread={0.0001220703125,9.918212890625e-05,0.0011749267578125,0.0002422332763671875,5.960464477539063e-08,3.079039743170142e-07}},[6192]={orig={961.5064086914062,69.34548950195312,247.70913696289062,27.829561233520508,0.40415239334106445,-0.0007028672844171524},spread={0.0001220703125,3.814697265625e-05,0.0012664794921875,0.0002841949462890625,5.960464477539063e-08,1.1875235941261053e-06}},[6264]={orig={978.831298828125,69.2745590209961,254.70277404785156,28.12822914123535,0.40416043996810913,-1.9891769625246525e-05},spread={0.0001220703125,6.866455078125e-05,0.001312255859375,0.0003223419189453125,5.960464477539063e-08,1.1875235941261053e-06}},[6336]={orig={996.1273193359375,69.12491607666016,261.7655334472656,28.387554168701172,0.40415045619010925,0.0006622995715588331},spread={0.0001220703125,6.866455078125e-05,0.001312255859375,0.00032806396484375,1.1920928955078125e-07,9.795185178518295e-07}}}},
+{name='hsbrake',ticks=6912,onset=5760,weather={},draft=nil,aero={3309872084,1109006327,3309931865,1115723236,3299122595,3267319458},snapshot={{7653728,"AIC7RAIAAAACAAAAAACAvwAAgD8BAAAAAgAAAAUAAAA="},{7653792,"AQAAAAAAoEIAAIA/0AIAAA=="},{12384096,"O/b/QscjHUYAAIA/BQAAAN7SGkSoB/1G3tIaRKgH/Uav8HFDtUBRRlJKIUN4gAtG"},{12532464,"kqtePxPoxT+935M/CAr3AA=="},{12532864,"AAAAAAAAAAAgYY7BsB/3AA=="},{12532928,"730XQo9+gDY0HQDJSzIZvqvITkBv+05AEAAAALX6Lj0BAAAAPRMsO13WIUFJZZVCAAAAAAAAAAAZjdnBJAsrRN7EcEVA1nU9sjzjPgBgJrx8apVCMzP7wQAAoEA5AQAA"},{12534784,"Vjo6P3zlNz985Tc/CnZWRH5eUEMAAACAEvWLQoBM0UHIVH+8AAAAAAAAAAAAAAAA"},{12535072,"AAAAAAAAAIA/kqteP/2bvT+lrI0//B73AOge9wAQH/c="},{12535488,"ADgwl8HgHPcAzBz3APQc9w=="},{12535552,"NjQdAMnRQNG9MTdPv6PsUD8QAAAAA8AAvQEAAAA9Eyw7tF1TQWlzlUIAAAAAAAAAAE8sCMKlhKFDGjqdRUDkdDzUU/K9ACAlvJJ4lUIzM/s="},{12537408,"P3zlNz8gmVZEZepOQwAAAICtAYxCW1/RQR8nlTsAAAA="},{12537696,"gD+Sq14/BLy/PyNDjz8sHA=="},{12538096,"AAAAAAAAAAAAADo/mMEQGg=="},{12538160,"xzjvfRdCj36ANjQdAMlBOLk/ScnIP2N2FkAQAAAAHFACOgEAAAA9Eyw7OrJMQSEplkIAAAAAAAAAAEkodURJTAtE+kOYRVCVKT31DnQ+ABu9PgZslUIzM/vBAACgQDkB"},{12540016,"Oz9WOjo/fOU3P3zlNz/0zFVEkl1PQwAAAICp/otC2PHQQVFX1rsAAAAAAAAAAAAA"},{12540304,"AAAAAAAAAAAAgD+Sq14/NGq8PyvIjD9cGfcASBn3AHA="},{12540720,"AAAAxkacwUAX9wAsF/cAVA=="},{12540784,"foA2NB0AyagFjz/EGdg+7DyuPxAAAAB6ck06AQAAAD0TLDsdMWNBmimWQgAAAAAAAAAAETJNRJXwDEPK/6hFwC7PPDgflD0A/rI+nHaVQjM="},{12542640,"5Tc/fOU3P4fvVURN7U1DAAAAgGgIjEJ+ANFBAU0RPQA="},{12542816,"X88Su1/PEjsAAIA/AAAAAAAAgD8AAKBAAAAAAAAAAAA="},{12542864,"AACAPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUAAAA="},{12545344,"5z5WROX+i0KnNk9DDDvRQcnszj6PAdC5cDtHO9uCBzurUzc+udx7P6kDJLyZtpU7PL98PMaKRz3OMgW7X88SuwAAAADQXoNADo5QQ30LZD1kfC87X88SOwAAAABGQ6pAxqFQQ6wNwj1Lm/07ufDIu1WBj7wWHHdAdJ9RQ8U8XUAdoFFDFFrGPt0Ib0TENnNA2whvRBm1eUDTW2xErABvuapaozy1cwq7Fdieu3Ef9Db/mxs6OQAAAKuqqj6rqqo/lnTJOwEAAABoIiw/AAAAAAAAAAAAAIA/AAAAAJBycgA="},{12545584,"AACAPwAAAAAAAIA/AAAAAA=="},{12545632,"AACAPwAAAAAAAIA/AAAAAA=="},{12545680,"uwaQQBcE8UAAAAAACAAAAAAAAAAAAIA/AAAAAAAAAAAAAIA/HjaRPwAAAAAAAAAAAAAAAEad2jraDHtEAAAAAC16C8JMxUI8fEVPu5q98EWhMB1GYA2rRB+JIURTnuPCCeMsQgAAAAAAAIACAAA0QA=="},{12545840,"AAAAAAABAAAAAAAAAAAAAAAAAADqipVC8UCuP+jWbgA="},{12609920,"AAAAAAAARgAAAAAAAAAAAA=="},{12616080,"HjaRPwAAAAAAAAAAAAAAAA=="},{12616160,"AAAAAGjC6wAAAAAAG6mvQQ=="},{12616320,"oL/rAAIAAADcw+sAQsHxOg=="},{12617168,"FN3rABjd6wBYwusA9k/Pug=="},{12617248,"ZsNuOok0RD/0v+sA+L/rAA=="},{12657856,"aJ4NRgAAgD8+B3xETHe2Qw=="},{12658048,"AAAAACIAAAD/////AAAAAA=="},{12658128,"gD8AAIA/AACAPwAAAAAAAA=="},{13851456,"AAAAAAAAAAAAAAAAgD8AAA=="},{14727216,"juOoQcdxREIAAAAAAAAAAAAAAIAAAAAAAAAAAIBkij8="},{15221776,"uwaQQBcE8UAeNpE/BwAAAA=="},{15222720,"ZH3UAGR91AD08vcADMzrAA=="},{15449936,"HjaRP6uqqj7bD8lAAAAAAA=="},{15450112,"AAAAgAAAAAAAAAAAAAAAAIfvVURN7U1DAAAAgDrcZ0DMaJdAq6GSQPm+okC/hUC/AUYpPgLpfT56IkM/eiJDPwLpfT5/rlW/Aul9PnoiQz96IkM/Aul9PgFGKT6/hUC/eiJDP3oiQz+ssmE9HXcWPayyYT0CRqm+AkapvqyyYT0ddxY9rLJhPQJGqb4CRqm+AAAAgAAAAAAAAAAA46bTMw=="},{15453296,"GY3ZwSQLK0TexHBFAAAAAAAAAAAAAAAAelz9QiGhRURWXm9FAAAAAAAAAAAAAAAA"},{15453408,"AAAAAAAAAABPLAjCpYShQxo6nUUAAAAAAAAAAAAAAADytihDW2Z7QxdFnUUAAAAA"},{15453536,"SSh1RElMC0T6Q5hFAAAAAAAAAAAAAAAAUH7HRErnC0SpFZNFAAAAAAAAAAAAAAAA"},{15453648,"AAAAAAAAAAARMk1ElfAMQ8r/qEUAAAAAAAAAAAAAAAAPPrxEky0RQzVTpEUAAAAA"},{15453792,"AAAAANGjSMX2FxpCVo1JxeKVgEKgnaTEn1a/wgAAAAA="},{15453904,"mMsgRKEtiUMAAAAAAAAAAFXHj8EAAAAAAAAAAJasmMEAAAAAAAAAAAAAAABAP5jB"},{15453968,"zEacwQAAAAAAAAAAAAAAAF6H50OhMeVBAAAAAAAAAAA="},{15455952,"W+B5QmpnXTvUX6S1LSpiPkNIzEGwfohCGzIkwfaRpr8VJCI0D2r3wFEEEUCtR5kzAU4JQbYODEBYAxe0E6pewneYsUIYSOi0iRMIQ0JIzEFVoz6+mh/zQ+bOiEKhN0q2GzIkwW8aEkDgdT8z8dx9NFhecT+2kza06m4RQbYODMC6lQ2z2LZeQkO8sUKIN422EPOJPRmiz75SSiHD3tIaRN7SGkT2LqpD08c2vpdIjzuEvZRCWpd5xV2RmMM79v9Cr/Bxw/vOpT8vwFRDSzy6QkVpqzKZrUdDqmLaQRaVtz/mAh0ve/T5PZfj571Lk28xxfDJQQRKX7bFGTAsGne9vaegqsMZSRKz2pc2v9ii88L9o1o8xT+8PMs/vLxZj1G8E+hHQIVLtMCGwT9Ccw+wQQpi+sXHpae+Zq3CQTmuT7yW0mPBUrWpQMgE4MCO5lE/D9/nvVH3Db6O5lE/+HNtvVL3DT4aiVfF2EwRPvvOpT/0759Ek07tPeY1qbpLddG92yv5PwnL48EAAACA83lXP/1qtzlHdyhFG8RGwsoyM0CU4+c9/nkfwHn0+T3vQUG7e88KPcBGRUEAAAAAAAAAAA=="},{15457552,"SdQzRMTW0UPE/6hFh+9VRE3tTUMAAACAaAiMQn4A0UEBTRE9ShQSN1mtJzYAAACAX88Su1/PEjsAAIA/AAAAAAAAgD8AAKBAAAAAAAAAAAAAAAAA5z5WROX+i0KnNk9DDDvRQcnszj6PAdC5cDtHO9uCBzurUzc+udx7P6kDJLyZtpU7PL98PBjieUIY4nlC"},{15457712,"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"},{15463232,"QOfHQEDnx0Cf6/ND8yN0wkiPKUWpVRLCqQVzRbaPcj94c3Q95LsmPjtqWT8Ec7s8pl+KOwRzuzw1aQA+De8Ivs1fijsM7wi+PEhTP3QohbtwKIW7rNFwPwHScD+mN5Y+bneOPUhfhT07alk/CnO7vKZfijsJc7u8NmkAPgzvCD7MX4o7DO8IPjxIUz9vPkiyyKSUrNQZX6/Ab3NBntRJsvNbVUNHK7cylm5zwfM68bAIwOGx/t0vrpCg1LP0W1VD7BO/PWA6f6tC1GauRE9asJhuc8HsEb89ega/QlqGJ7A0ZGevwW9zQbfg5rBk/Sksp3k4sBtvBUA6b/O0HR8dskj3TC5q5ZYwFFZVtQAAAAA="},{16183440,"fPD2AAAAAACE8PYAiPD2AIzw9gCQ8PYAAQAAAJjw9gA="},{16183504,"AgAAAMDw9gDE8PYAyPD2AMzw9gADAAAA1PD2ANjw9gA="},{16248848,"0AIAAAAAAAAAAAAAAAAAAOhbQF3/2R2sbr8AwwAAAAA="},{16249088,"aWeGw31vHUTRxHBFAAAAABaNEMO+cZFDEjqdRQAAAAApTTRE6MlYRPVDmEUAAAAASdQzRMTW0UPE/6hFAAAAAAp2VkR+XlBDAAAAgAAAAAAgmVZEZepOQwAAAIAAAAAA9MxVRJJdT0MAAACAAAAAAIfvVURN7U1DAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACnZWRH5eUEMAAACAP8jCO/9KIbkAAAAAAAAAAAAAAAAgmVZEZepOQwAAAIABO8+6i0QRuQAAAAAAAAAAAAAAAPTMVUSSXU9DAAAAgIX+TDuK8w87AAAAAAAAAAAAAAAAh+9VRE3tTUMAAACAZsNuOkLB8ToAAAAAAAAAAAAAAADnPlZE5f6LQqc2T0MMO9FByezOPo8B0LlwO0c724IHO6tTNz653Hs/qQMkvJm2lTs8v3w8xopHPc4yBbtfzxK7AAAAANBeg0AOjlBDfQtkPWR8LztfzxI7AAAAAEZDqkDGoVBDrA3CPUub/Tu58Mi7VYGPvBYcd0AR61JDxTxdQLrrUkMUWsY+00htRMQ2c0DTSG1EGbV5QNNIbUSsAG+5qlqjPLVzCrsV2J67cR/0Nv+bGzoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="}},controls={{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,1.0,0.0,1,0,1},{0.0,0.0,1,1.0,0.0,0,0,1},{0.0,0.0,1,1.0,0.0,0,0,1},{0.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,1,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,1,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,1,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1},{0.0,1.0,0,1.0,0.0,0,0,1}},rows={[5832]={orig={874.07373046875,66.38551330566406,213.63246154785156,25.07982063293457,0.4022698998451233,0.016569700092077255},spread={6.103515625e-05,1.52587890625e-05,0.0,7.62939453125e-06,8.940696716308594e-08,1.000240445137024e-06}},[5904]={orig={890.1676635742188,62.399112701416016,219.75656127929688,23.927236557006836,0.4073392152786255,0.013209603726863861},spread={6.103515625e-05,1.9073486328125e-05,0.0,1.52587890625e-05,2.9802322387695312e-08,2.1550804376602173e-06}},[5976]={orig={905.2771606445312,58.511070251464844,225.59652709960938,22.796432495117188,0.41025131940841675,0.010393228381872177},spread={0.0001220703125,5.340576171875e-05,0.0,2.47955322265625e-05,8.940696716308594e-08,2.1550804376602173e-06}},[6048]={orig={919.4268188476562,54.72572708129883,231.15234375,21.650529861450195,0.4126397967338562,0.008856814354658127},spread={0.00018310546875,0.00011444091796875,0.0,3.62396240234375e-05,8.940696716308594e-08,1.9492581486701965e-06}},[6120]={orig={932.6436157226562,51.04340744018555,236.41802978515625,20.47382164001465,0.41471782326698303,0.007825200445950031},spread={0.00018310546875,8.0108642578125e-05,1.52587890625e-05,1.52587890625e-05,5.960464477539063e-08,2.8219074010849e-06}},[6192]={orig={944.9522705078125,47.459930419921875,241.3852996826172,19.26303482055664,0.41658228635787964,0.007139968685805798},spread={0.000244140625,5.340576171875e-05,1.52587890625e-05,2.86102294921875e-05,2.9802322387695312e-08,1.7131678760051727e-06}},[6264]={orig={956.376708984375,43.966915130615234,246.04617309570312,18.024578094482422,0.41829219460487366,0.006552217062562704},spread={0.000244140625,1.9073486328125e-05,1.52587890625e-05,1.9073486328125e-05,2.9802322387695312e-08,1.1976808309555054e-06}},[6336]={orig={966.9380493164062,40.554718017578125,250.39501953125,16.76846694946289,0.4198582172393799,0.00598762184381485},spread={0.000244140625,2.6702880859375e-05,0.0,1.71661376953125e-05,2.9802322387695312e-08,1.416075974702835e-06}},[6408]={orig={976.6556396484375,37.214569091796875,254.4281005859375,15.503052711486816,0.4212886691093445,0.005461629945784807},spread={0.000244140625,3.4332275390625e-05,0.0,7.62939453125e-06,2.9802322387695312e-08,6.873160600662231e-07}},[6480]={orig={985.5464477539062,33.939117431640625,258.1441345214844,14.233595848083496,0.42259055376052856,0.004962048958986998},spread={0.000244140625,3.4332275390625e-05,0.0,1.049041748046875e-05,2.9802322387695312e-08,6.710179150104523e-07}},[6552]={orig={993.6257934570312,30.722314834594727,261.54290771484375,12.962928771972656,0.4237707555294037,0.004489173647016287},spread={0.000244140625,3.0517578125e-05,0.0,1.33514404296875e-05,2.9802322387695312e-08,8.204951882362366e-07}},[6624]={orig={1000.9076538085938,27.559043884277344,264.62347412109375,11.692706108093262,0.42483583092689514,0.0040441821329295635},spread={0.000244140625,4.00543212890625e-05,0.0,1.9073486328125e-05,5.960464477539063e-08,1.669861376285553e-06}},[6696]={orig={1007.4049682617188,24.444826126098633,267.3875427246094,10.423718452453613,0.4257926046848297,0.0036200189497321844},spread={0.000244140625,4.1961669921875e-05,3.0517578125e-05,1.9073486328125e-05,8.940696716308594e-08,1.2237578630447388e-06}},[6768]={orig={1013.1294555664062,21.375778198242188,269.8330993652344,9.156553268432617,0.4266466796398163,0.0032243418972939253},spread={0.000244140625,5.340576171875e-05,3.0517578125e-05,2.288818359375e-05,8.940696716308594e-08,9.443610906600952e-07}},[6840]={orig={1018.0919189453125,18.348520278930664,271.9622497558594,7.8916826248168945,0.42740413546562195,0.0028485581278800964},spread={0.000244140625,5.340576171875e-05,3.0517578125e-05,2.288818359375e-05,2.9802322387695312e-08,1.0647345334291458e-06}},[6912]={orig={1022.3026733398438,15.360594749450684,273.7764587402344,6.629944801330566,0.4280712604522705,0.002501231385394931},spread={0.000244140625,5.435943603515625e-05,3.0517578125e-05,2.4318695068359375e-05,2.9802322387695312e-08,9.003560990095139e-07}}}},
+{name='draft',ticks=7200,onset=4320,weather={},draft={8.0,0.0},aero={3306276144,1110350251,3306906876,3230108005,3297685558,3267073013},snapshot={{7653728,"AIC7RAIAAAACAAAAAACAvwAAgD8BAAAAAgAAAAUAAAA="},{7653792,"AQAAAAAAoEIAAIA/HAIAAA=="},{12384096,"9iSpQMNmHEYAAIA/BQAAAIPsuUSerfxGg+y5RJ6t/EYd6MdDaCxRRl9FhUPucgtG"},{12532464,"kqteP/Slzz8lJ5s/CAr3AA=="},{12532864,"AAAAAAAAAADyx4DBsB/3AA=="},{12532928,"730XQo9+gDY0HQDJT2POvtgEckAuY3NAEAAAAP1NNz0BAAAAPRMsO5g88kBA3YZCAAAAAAAAAABrMLnCbCMiRMEwNEXwh5M929nlPgDYHb378IZCMzP7wQAAoEA5AQAA"},{12534784,"Vjo6P3zlNz985Tc/cXoCRG9Mg0IAAACA4huEQscjXEH8IyW5AAAAAAAAAAAAAAAA"},{12535072,"AAAAAAAAAIA/kqteP20Evj+u+o0//B73AOge9wAQH/c="},{12535488,"AC7PkMHgHPcAzBz3APQc9w=="},{12535552,"NjQdAMkbWUy+C53GvtZR3z4QAAAAdtrHvAEAAAA9Eyw7IUlTQYb0hkIAAAAAAAAAAMQXycIdkLFDzCqdRYBjBDyJXlO9AODRvKQBh0IzM/s="},{12537408,"P3zlNz8ajwJEIkOAQgAAAIByK4RCAj5cQcYfhrgAAAA="},{12537696,"gD+Sq14/UPq+P2eyjj8sHA=="},{12538096,"AAAAAAAAAAAAAK3Ik8EQGg=="},{12538160,"xzjvfRdCj36ANjQdAMm0dxFBW1jbP9AFFEEQAAAAEDMgOgEAAAA9Eyw7b/9QQT9PiUIAAAAAAAAAAAvLf0XDlzREH3ebRVAUPD4i0G0+gFCXP/3xhkIzM/vBAACgQDkB"},{12540016,"Oz9WOjo/fOU3P3zlNz/CyQFEUB2CQgAAAIDbIYRCUk9bQQyuw7gAAAAAAAAAAAAA"},{12540304,"AAAAAAAAAAAAgD+Sq14/F0a7P+btiz9cGfcASBn3AHA="},{12540720,"AAAAwoOYwUAX9wAsF/cAVA=="},{12540784,"foA2NB0AyUTjAkHsRxU/SDgDQRAAAACXH2w6AQAAAD0TLDsPamtBP0+JQgAAAAAAAAAArceERSoshEOTHa9F+IImPsabqD1Aj5M/AgGHQjM="},{12542640,"5Tc/fOU3P/bdAUSsNn5CAAAAgGEwhEK0Z1tBk/L5uAA="},{12542816,"X88Su1/PEjsAAIA/AAAAAAAAgD8AAKBAAAAAAAAAAAA="},{12542864,"AACAPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUAAAA="},{12545344,"3TgCRAkmhEIURoFCo9VbQfR/0j5gxL26q4vCO9/zuzqZANU9WZt+P6TAWrmPs/w3hkiaPI0tGz3f0p06X88SuwAAAACcGN4/7EQ8Q74vTj2vz4U6X88SOwAAAAAtPxpAamU8QyGZtz1DJtw6YJE7vC1+TDlEzvo/z64/Q8ud9D/Prj9DacHTPxMJXkTDJaJAEwleRA01skDkGltEXKXIu1RVKTr6uAy7qqr2uCspBjdUVf00OQAAAKuqqj6rqqo/lnTJOwEAAABoIiw/AAAAAAAAAAAAAIA/AAAAAJBycgA="},{12545584,"AACAPwAAAAAAAIA/AAAAAA=="},{12545632,"AACAPwAAAAAAAIA/AAAAAA=="},{12545680,"uwaQQBcE8UAAAAAACAAAAAAAAAAAAIA/AAAAAAAAAAAAAIA/HjaRPwAAAAAAAAAAAAAAAN8U/jpr3XpEAAAAAJiYDsLWHVo8pafIuukwtEXgKh1GRiKiRJaMMURqs7nCSEisQQAAAAAAAMADAAAuQA=="},{12545840,"AAAAAAABAAAAAAAAAAAAAAAAAABBx4ZC8UCuP+jWbgA="},{12609920,"AAAAAAAARgAAAAAAAAAAAA=="},{12616080,"HjaRPwAAAAAAAAAAAAAAAA=="},{12616160,"AAAAAGjC6wAAAAAAWUAzQQ=="},{12616320,"oL/rAAIAAADcw+sAhKOJPA=="},{12617168,"FN3rABjd6wBYwusAkaFIug=="},{12617248,"VBWdOuzeQT/0v+sA+L/rAA=="},{12657856,"o8oCRgAAgD9HkX9E62ygQw=="},{12658048,"AAAAACIAAAD/////AAAAAA=="},{12658112,"AAAAAAAAAAAAAAAAAAD58V8/Lu5gPwAAgD8AAAAAgPf3AAAAAAAAAAAAAAAAAAAA"},{13851456,"AAAAAAAAAAAAAAAAgD8AAA=="},{14727216,"juOoQcdxREIAAAAAAAAAAAAAAIAAAAAAAAAAAIBkij8="},{15221776,"uwaQQBcE8UAeNpE/BwAAAA=="},{15222720,"ZH3UAGR91AD08vcADMzrAA=="},{15449936,"HjaRP6uqqj7bD8lAAAAAAA=="},{15450112,"AAAAgAAAAAAAAAAAAAAAAPbdAUSoNn5CAAAAgO6FLUAPWpdAgbaVQNOiqEC/hUC/AUYpPgLpfT56IkM/eiJDPwLpfT5/rlW/Aul9PnoiQz96IkM/Aul9PgFGKT6/hUC/eiJDP3oiQz+ssmE9HXcWPayyYT0CRqm+AkapvqyyYT0ddxY9rLJhPQJGqb4CRqm+AAAAgAAAAAAAAAAA46bTMw=="},{15453296,"azC5wmwjIkTBMDRFAAAAAAAAAAAAAAAA3gnSQUDdOUS31jJFAAAAAAAAAAAAAAAA"},{15453408,"AAAAAAAAAADEF8nCHZCxQ8wqnUUAAAAAAAAAAAAAAACm19lCflebQ+VAnUUAAAAA"},{15453536,"C8t/RcOXNEQfd5tFAAAAAAAAAAAAAAAA3uuSRUxaNURhnIlFAAAAAAAAAAAAAAAA"},{15453648,"AAAAAAAAAACtx4RFKiyEQ5Mdr0UAAAAAAAAAAAAAAAAPTppFNbKGQ6R4nEUAAAAA"},{15453792,"AAAAADDFEcWrmS5C/GQbxWWJh8A2sI7E9ZO7wgAAAAA="},{15453904,"0VovRB0slEMAAAAAAAAAAPALgsEAAAAAAAAAAIA7ksEAAAAAAAAAAAAAAACzyJPB"},{15453968,"yIOYwQAAAAAAAAAAAAAAAA+n+kMSsMjBAAAAAAAAAAA="},{15455952,"Sd15Qv62eTsHkJe14MHWPptNcUGEyI5CXZwiwZ2MaL8NPhs091P3wKsoQ0CzO4MzNE75QLcODEDp7Au0MJZewsBgsUKmp+e03BEIQ5tNcUGt7M69DTvzQyPojkKlEkm2XZwiwY9IK0CGaO8yzNt9NKZw3T/Yy0a0GDMLQbUODMBqd++yDK1eQs+gsUJqJI22BtMhPSNfYb5fRYXDg+y5RIPsuUSwRxhEDBU/vvOaxjo5xC1CBvhgxYgAu8T2JKlAHejHw4MdR0AAZkFDEDq6QkScjzNqulBDQ67cQddUJUAUiGEwe/T5PZfj57139EUylzjBQWNLX7YnHpurCNcwvmaOqsOYZOqzV4HIv9ii88Lsg0w8xT+8PMs/vLwLRP+7E+hHQD93hL/5O+FBZcxOQcEJ6MXvFzi/QJbCQcjZwbwbI27BL0NGQEoZOcGO5lE/D9/nvVH3Db6O5lE/c0hsvVL3DT78hynFpsjzv4MdR0BT8Z9ExGLtPcFxGLs9oDy+Scr7P6dg0sEAAACA83lXP69TKDrabyhFiD5Gwpk4LkCU4+c9pmUkwHn0+T3fmzW8hqAWPX/+6D0AAAAAAAAAAA=="},{15457552,"Q0qARQvgjESAHa9F9t0BRKw2fkIAAACAYTCEQrRnW0GT8vm4wt7ZN0cJgTcAAACAX88Su1/PEjsAAIA/AAAAAAAAgD8AAKBAAAAAAAAAAAAAAAAA3TgCRAkmhEIURoFCo9VbQfR/0j5gxL26q4vCO9/zuzqZANU9WZt+P6TAWrmPs/w3hkiaPBjieUIY4nlC"},{15457712,"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"},{15463232,"QOfHQEDnx0CoGfRDHll1wgeHKUX+ixPCLvdyRUmRZj+gRls9+nYTPjtqWT8Ec7s8pl+KOwRzuzw1aQA+De8Ivs1fijsM7wi+PEhTP8ZgVrzfYFa8MwbdP14G3T9XU7w+P2iHPR18gz07alk/CnO7vKZfijsJc7u8NmkAPgzvCD7MX4o7DO8IPjxIUz8HQ0iyAgd5rtQZX6/Ab3NB6+yksvNbVUNt0pIzrWtzwc30LbFl6xWyPAoBrzwxprP0W1VD4lsyPj4Y2KyTAxSuRE9asK5rc8HiWjI+ega/QlqGJ7A0ZGevwW9zQcfj5rBAkB+rp3k4sBtvBUA6b/O0HY2SspqGMC9q5ZYwFFZVtQAAAAA="},{16183440,"fPD2AAAAAACE8PYAiPD2AIzw9gCQ8PYAAQAAAJjw9gA="},{16183504,"AgAAAMDw9gDE8PYAyPD2AMzw9gADAAAA1PD2ANjw9gA="},{16248848,"HAIAAAAAAAAAAAAAAAAAAOhbQF3/2R2sbr8AwwAAAAA="},{16249088,"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"}},controls={{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,0.0,0.0,0,0,1},{0.0,0.0,1,1.0,0.0,1,0,1},{0.0,0.0,1,1.0,0.0,0,0,1},{0.0,0.0,1,1.0,0.0,0,0,1},{0.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,1,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,1,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,1,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1},{1.0,0.0,1,1.0,0.0,0,0,1}},rows={[4392]={orig={537.5040893554688,66.86426544189453,68.1329345703125,14.231546401977539,0.41077056527137756,-0.0014537799870595336},spread={0.00042724609375,9.1552734375e-05,3.814697265625e-05,4.1961669921875e-05,5.960464477539063e-08,1.3373792171478271e-06}},[4464]={orig={554.3141479492188,67.62921905517578,71.75233459472656,14.726280212402344,0.4104073643684387,-0.0014412436867132783},spread={0.00042724609375,9.1552734375e-05,3.814697265625e-05,5.91278076171875e-05,1.7881393432617188e-07,2.2471649572253227e-06}},[4536]={orig={571.3123168945312,68.36912536621094,75.4957046508789,15.223283767700195,0.4100475013256073,-0.0014425290282815695},spread={0.00048828125,7.62939453125e-05,2.288818359375e-05,7.62939453125e-05,2.9802322387695312e-08,8.00006091594696e-07}},[4608]={orig={588.4923095703125,69.08316802978516,79.36354064941406,15.721744537353516,0.4096875786781311,-0.0014225452905520797},spread={0.00054931640625,3.814697265625e-05,7.62939453125e-06,9.441375732421875e-05,5.960464477539063e-08,5.853362381458282e-07}},[4680]={orig={605.8475341796875,69.77162170410156,83.35610961914062,16.221097946166992,0.4093324840068817,-0.0014159021666273475},spread={0.00054931640625,4.57763671875e-05,3.0517578125e-05,0.0001125335693359375,5.960464477539063e-08,2.9943184927105904e-06}},[4752]={orig={623.37158203125,70.4338607788086,87.47357940673828,16.720808029174805,0.40897855162620544,-0.0013988293940201402},spread={0.00048828125,4.57763671875e-05,6.103515625e-05,0.0001163482666015625,5.960464477539063e-08,2.9943184927105904e-06}},[4824]={orig={641.057373046875,71.07028198242188,91.71595001220703,17.22032356262207,0.4086313247680664,-0.001373707433231175},spread={0.00054931640625,4.57763671875e-05,9.1552734375e-05,0.000110626220703125,2.384185791015625e-07,1.6187550500035286e-06}},[4896]={orig={658.8995971679688,71.680419921875,96.08312225341797,17.719120025634766,0.408286452293396,-0.0013622497208416462},spread={0.00054931640625,4.57763671875e-05,0.00011444091796875,0.0001220703125,2.384185791015625e-07,4.269881173968315e-06}},[4968]={orig={676.8910522460938,72.26465606689453,100.57485961914062,18.216768264770508,0.4079485237598419,-0.001329832011833787},spread={0.00054931640625,2.288818359375e-05,0.00016021728515625,0.00012969970703125,8.940696716308594e-08,4.269881173968315e-06}},[5040]={orig={694.971435546875,72.33267211914062,105.17892456054688,18.59610366821289,0.4050835072994232,-0.003460800042375922},spread={0.00054931640625,5.340576171875e-05,0.0001983642578125,0.0001316070556640625,2.9802322387695312e-08,1.0649673640727997e-06}},[5112]={orig={713.053466796875,72.33197021484375,109.87114715576172,18.939208984375,0.40471112728118896,-0.0024617824237793684},spread={0.00054931640625,0.0001068115234375,0.00025177001953125,0.0001220703125,5.960464477539063e-08,1.5960540622472763e-06}},[5184]={orig={731.126953125,72.26868438720703,114.64314270019531,19.237009048461914,0.4044574201107025,-0.0015548377996310592},spread={0.0006103515625,0.0001068115234375,0.0002899169921875,0.0001068115234375,8.940696716308594e-08,1.7668353393673897e-06}},[5256]={orig={749.1854858398438,72.20374298095703,119.49075317382812,19.543291091918945,0.4042624831199646,-0.0013599692611023784},spread={0.0006103515625,6.103515625e-05,0.0003509521484375,0.0001049041748046875,8.940696716308594e-08,2.1792948246002197e-06}},[5328]={orig={767.2208862304688,72.1082534790039,124.41232299804688,19.835988998413086,0.4042123854160309,0.0011374708265066147},spread={0.0006103515625,6.866455078125e-05,0.00035858154296875,9.34600830078125e-05,2.9802322387695312e-08,2.1792948246002197e-06}},[5400]={orig={785.2374877929688,72.04576873779297,129.40927124023438,20.145143508911133,0.4042093753814697,-0.0004538190260063857},spread={0.0006103515625,6.866455078125e-05,0.0003814697265625,9.34600830078125e-05,8.940696716308594e-08,1.0193325579166412e-06}},[5472]={orig={803.2332153320312,71.9264907836914,134.48072814941406,20.428691864013672,0.4041750133037567,-0.00023731875990051776},spread={0.0006103515625,0.0001068115234375,0.00042724609375,7.82012939453125e-05,1.1920928955078125e-07,1.3556273188441992e-06}},[5544]={orig={821.2078247070312,71.88941192626953,139.6266326904297,20.744924545288086,0.40425872802734375,-0.0007786646019667387},spread={0.0006103515625,0.0001068115234375,0.0004425048828125,0.000102996826171875,8.940696716308594e-08,1.2401142157614231e-06}},[5616]={orig={839.1598510742188,71.7579345703125,144.84678649902344,21.027067184448242,0.40417397022247314,0.00047860556514933705},spread={0.00054931640625,5.340576171875e-05,0.0005035400390625,9.1552734375e-05,5.960464477539063e-08,1.2401142157614231e-06}},[5688]={orig={857.0909423828125,71.71295166015625,150.14157104492188,21.335304260253906,0.4041869342327118,0.0013886686647310853},spread={0.00054931640625,7.62939453125e-05,0.0005035400390625,0.0001049041748046875,5.960464477539063e-08,1.382431946694851e-06}},[5760]={orig={874.9996948242188,71.57585906982422,155.51080322265625,21.620237350463867,0.4042074382305145,-0.0017501910915598273},spread={0.00054931640625,5.340576171875e-05,0.00054931640625,0.000118255615234375,2.9802322387695312e-08,2.0154984667897224e-06}},[5832]={orig={892.8861083984375,71.53633880615234,160.95399475097656,21.928857803344727,0.40425002574920654,0.0008303126669488847},spread={0.00054931640625,3.0517578125e-05,0.00054931640625,0.0001068115234375,5.960464477539063e-08,2.2562744561582804e-06}},[5904]={orig={910.7498779296875,71.4006118774414,166.4712677001953,22.215545654296875,0.4041706621646881,-0.00033609956153668463},spread={0.00054931640625,5.340576171875e-05,0.0005645751953125,9.1552734375e-05,5.960464477539063e-08,2.2562744561582804e-06}},[5976]={orig={928.5906372070312,71.33080291748047,172.06259155273438,22.513885498046875,0.4041712284088135,0.0008790885331109166},spread={0.0006103515625,7.62939453125e-05,0.0005645751953125,6.866455078125e-05,2.9802322387695312e-08,1.1645606718957424e-06}},[6048]={orig={946.40869140625,71.2215576171875,177.7280731201172,22.80977439880371,0.4042273461818695,-0.002241588430479169},spread={0.0006103515625,9.918212890625e-05,0.0005950927734375,6.29425048828125e-05,5.960464477539063e-08,2.6714405976235867e-06}},[6120]={orig={964.2012939453125,71.14207458496094,183.46670532226562,23.106334686279297,0.4041919708251953,0.0017552560893818736},spread={0.0006103515625,9.918212890625e-05,0.0006103515625,6.4849853515625e-05,5.960464477539063e-08,2.6714405976235867e-06}},[6192]={orig={981.9714965820312,71.03943634033203,189.27978515625,23.403825759887695,0.4041902720928192,-0.0008385433466173708},spread={0.001708984375,0.000152587890625,0.0006103515625,0.0014495849609375,2.6434659957885742e-05,0.001894696499221027}},[6264]={orig={999.7174682617188,70.92984771728516,195.16627502441406,23.688138961791992,0.40416622161865234,6.737241346854717e-05},spread={0.00177001953125,0.0003204345703125,0.0005035400390625,0.0014495849609375,2.6434659957885742e-05,0.001894696499221027}},[6336]={orig={1017.4393310546875,70.85811614990234,201.12640380859375,23.99708366394043,0.4042471945285797,-0.0015357654774561524},spread={0.0018310546875,0.00012969970703125,0.0006103515625,0.0005245208740234375,1.2546777725219727e-05,5.588971544057131e-05}},[6408]={orig={1035.13330078125,70.73283386230469,207.15939331054688,24.277685165405273,0.4041767716407776,0.0009808237664401531},spread={0.0018310546875,4.57763671875e-05,0.0006561279296875,0.0001983642578125,6.258487701416016e-07,2.3518456146121025e-05}},[6480]={orig={1052.803466796875,70.66181182861328,213.2662353515625,24.584501266479492,0.40419280529022217,6.017787382006645e-05},spread={0.0018310546875,3.0517578125e-05,0.0006561279296875,0.0001373291015625,2.980232238769531e-07,1.1940646800212562e-06}},[6552]={orig={1070.4462890625,70.51720428466797,219.4461212158203,24.859310150146484,0.4041956961154938,-0.001404138165526092},spread={0.0018310546875,3.814697265625e-05,0.0006866455078125,6.67572021484375e-05,8.940696716308594e-08,2.2496096789836884e-06}},[6624]={orig={1088.062744140625,70.46783447265625,225.6989288330078,25.173938751220703,0.40423455834388733,0.0021042583975940943},spread={0.0018310546875,0.0001068115234375,0.000701904296875,4.57763671875e-05,8.940696716308594e-08,2.2496096789836884e-06}},[6696]={orig={1105.6539306640625,70.31295776367188,232.0250244140625,25.44594383239746,0.40418222546577454,0.00013193540507927537},spread={0.0018310546875,0.00014495849609375,0.000701904296875,4.00543212890625e-05,5.960464477539063e-08,1.5104888007044792e-06}},[6768]={orig={1123.220458984375,70.24574279785156,238.4240264892578,25.747575759887695,0.4041799008846283,0.0014350030105561018},spread={0.001708984375,8.392333984375e-05,0.000701904296875,3.0517578125e-05,5.960464477539063e-08,1.5104888007044792e-06}},[6840]={orig={1140.7591552734375,70.09849548339844,244.89593505859375,26.02804946899414,0.40421220660209656,-0.0018836974631994963},spread={0.001708984375,5.340576171875e-05,0.000701904296875,1.71661376953125e-05,5.960464477539063e-08,1.4324614312499762e-06}},[6912]={orig={1158.26904296875,70.03010559082031,251.43988037109375,26.330434799194336,0.4042064845561981,0.002507598837837577},spread={0.0015869140625,3.814697265625e-05,0.0006866455078125,4.38690185546875e-05,5.960464477539063e-08,1.4324614312499762e-06}},[6984]={orig={1175.754150390625,69.8836441040039,258.0569152832031,26.610889434814453,0.40418195724487305,-0.0013052616268396378},spread={0.0015869140625,3.814697265625e-05,0.0006866455078125,4.38690185546875e-05,5.960464477539063e-08,1.9782455638051033e-06}},[7056]={orig={1193.209716796875,69.78863525390625,264.7455749511719,26.902040481567383,0.4041811227798462,-0.00028246306465007365},spread={0.0015869140625,6.103515625e-05,0.00067138671875,8.58306884765625e-05,8.940696716308594e-08,1.9782455638051033e-06}},[7128]={orig={1210.6385498046875,69.67615509033203,271.5068664550781,27.197437286376953,0.40425020456314087,-0.000207466451684013},spread={0.001708984375,6.103515625e-05,0.00067138671875,8.7738037109375e-05,5.960464477539063e-08,1.0604708222672343e-06}},[7200]={orig={1228.0389404296875,69.56404876708984,278.3401184082031,27.481346130371094,0.40419596433639526,0.0012750611640512943},spread={0.001708984375,3.0517578125e-05,0.0006103515625,7.2479248046875e-05,1.1920928955078125e-07,1.778709702193737e-06}}}}
+}}
+local M={}
+local FLAT={}
+for i=1,4 do FLAT[i]={0,0,1,0,0,0,0,1,1} end
+local S=buffer.create(8)
+local function fb(u) buffer.writeu32(S,0,u);return buffer.readf32(S,0) end
+local function bf(x) buffer.writef32(S,0,x);return buffer.readu32(S,0) end
+local function ulps(a,b)
+    if a==b then return 0 end
+    local function ord(u) if u>=0x80000000 then return 0x80000000-u end return u end
+    return math.abs(ord(a)-ord(b))
+end
+local B64={}
+do
+    local chars="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    for i=1,64 do B64[string.byte(chars,i)]=i-1 end
+end
+local function loadChunk(V,addr,s)
+    local Mm,o=V.memory(),addr-V.base
+    for i=1,#s,4 do
+        local a,b,c,d=string.byte(s,i,i+3)
+        local x=B64[a]*262144+B64[b]*4096+(c~=61 and B64[c]*64 or 0)+(d~=61 and B64[d] or 0)
+        buffer.writeu8(Mm,o,bit32.rshift(x,16));o+=1
+        if c~=61 then buffer.writeu8(Mm,o,bit32.band(bit32.rshift(x,8),0xff));o+=1 end
+        if d~=61 then buffer.writeu8(Mm,o,bit32.band(x,0xff));o+=1 end
+    end
+end
+local function controls(s,frame)
+    local row=s.controls[frame+1]
+    if row[8]==0 then return {driver=false,throttle=0,clutch=0,steer=0} end
+    local c={throttle=row[1],clutch=row[4],steer=row[5],shiftUp=row[6]==1,shiftDown=row[7]==1}
+    if row[2]>=0 then c.brakeControl=row[2];c.brakeDigital=row[3]==1 end
+    return c
+end
+local function draftEnv(V,d)
+    local x,y=V.rf32(0xbf6d40),V.rf32(0xbf6d48)
+    local L=5000
+    local o={lapDistance=(x+d[1])%L,lateral=y+d[2],vx=V.rf32(0xbf6d44),vy=V.rf32(0xbf6d4c),vz=V.rf32(0xbf6d54),wakeStrength=1,wakeLength=1}
+    return {trackLength=L,lapDistance=x%L,lateral=y,ahead={o},behind={o}}
+end
+function M.run(full)
+    local results,passed,failed={},0,0
+    local function check(name,ok,detail)
+        if ok then passed+=1 else failed+=1 end
+        local line=(ok and "PASS  " or "FAIL  ")..name..(detail and ("  "..detail) or "")
+        results[#results+1]=line;print(line)
+    end
+    local t0=os.clock()
+    local car=Vehicle.new(Core.NR2003Cup);local V=car.V
+    check("load Core.NR2003Cup (Stage 9 aero module)",V.startSession~=nil and V.aeroState~=nil and V.draftingOriginal~=nil,string.format("%.2f s",os.clock()-t0))
+    local w32,r32=V.w32,V.r32
+    local AIR,CAR,HOST=0xe0b840,0xc12030,0xf7f100
+    local BLOCK,OUT6,TOBJ=HOST+0x600,HOST+0x640,HOST+0x680
+    -- constants embedded by the hand port = NR2003.exe bytes
+    local cbad=0
+    for _,c in ipairs(G.cells) do
+        local mine=V._aeroConstants[c[1]];if mine==nil then mine=V._aeroDamageCells[c[1]] end
+        if mine~=c[2] then cbad+=1 end
+    end
+    check("embedded constants / damage-table cells = NR2003.exe ("..#G.cells.." cells)",cbad==0,cbad.." mismatching")
+    V.reset()
+    check("post-build state without a session: no air (rho 0), as in Stages 6-8",r32(AIR+12)==0 and not V.sessionActive())
+    -- 005a3c00 session weather
+    local worst=0
+    for _,r in ipairs(G.weather) do
+        V.startSession({temperatureF=r[1],conditions=r[2],night=r[3]==1,windSpeedMph=r[4],windDirection=r[5],trackNorth=fb(r[6])})
+        for k=1,4 do worst=math.max(worst,ulps(r32(AIR+4*(k-1)),r[6+k])) end
+    end
+    V.endSession()
+    check("005a3c00 weather -> wind / density ("..#G.weather.." vectors) bit-exact",worst==0,"worst "..worst.." ulp")
+    worst=0
+    for _,r in ipairs(G.density) do worst=math.max(worst,ulps(bf(V.airDensityOriginal(fb(r[1]),fb(r[2]),fb(r[3]))),r[4])) end
+    check("005a3ba0 density ("..#G.density.." vectors) <= 1 ulp",worst<=1,"worst "..worst.." ulp")
+    -- lifted aero natives
+    worst=0
+    for _,r in ipairs(G.halfwind) do
+        w32(AIR,r[1]);w32(AIR+4,r[2]);w32(AIR+8,r[3]);w32(TOBJ+0x24,r[4]);w32(TOBJ+0x28,r[5]);w32(TOBJ+0x2c,r[6])
+        w32(CAR+0x5ae,r[7]==1 and TOBJ or 0)
+        V._callx(0x561a80)
+        for k=1,3 do worst=math.max(worst,ulps(r32(G.halfwindCells[k]),r[7+k])) end
+    end
+    w32(CAR+0x5ae,0);w32(AIR,0);w32(AIR+4,0);w32(AIR+8,0)
+    check("00561a80 half wind ("..#G.halfwind.." vectors) <= 1 ulp",worst<=1,"worst "..worst.." ulp")
+    V.reset()
+    local cells={AIR+12,CAR+0x59e,CAR+0x5a2,CAR+0x5a6,0xc083c4,G.aeroCells[1],G.aeroCells[2],0xc084c8,0xc084cc,
+        0xc055c0+4*0x3b,0xc055c0+4*0x3d,0xc055c0+4*0x20,0xc055c0+4*0x21,0x74e090,0x7636e0,0x7636e4,0x71f904}
+    local maxRel=0
+    for _,r in ipairs(G.aero) do
+        for k,a in ipairs(cells) do w32(a,r[k]) end
+        for k=0,5 do w32(BLOCK+4*k,OUT6+4*k);w32(BLOCK+24+4*k,r[18+k]) end
+        for k=0,10 do w32(CAR+0x14a3+4*k,r[24+k]) end
+        V._callx(0x561b70,BLOCK)
+        for k=0,5 do
+            local g,o=fb(r32(OUT6+4*k)),fb(r[35+k])
+            maxRel=math.max(maxRel,math.abs(g-o)/math.max(math.abs(g),math.abs(o),1e-2))
+        end
+    end
+    V.reset()
+    check("00561b70 aero force/moment ("..#G.aero.." vectors) rel <= 1e-5",maxRel<=1e-5,string.format("worst rel %.2e",maxRel))
+    worst=0
+    for _,r in ipairs(G.wake) do worst=math.max(worst,ulps(bf(V.fd(V.wakeOriginal(fb(r[1]),fb(r[2])))),r[3])) end
+    check("005b0230 wake ("..#G.wake.." vectors) <= 1 ulp",worst<=1,"worst "..worst.." ulp")
+    worst=0
+    for _,r in ipairs(G.draft) do
+        w32(CAR+0x59e,r[4]);w32(CAR+0x5a2,r[5]);w32(CAR+0x5a6,r[6])
+        local cars,rev={},{}
+        for _,c in ipairs(r[10]) do cars[#cars+1]={lapDistance=fb(c[1]),lateral=fb(c[2]),vx=fb(c[3]),vy=fb(c[4]),vz=fb(c[5]),wakeStrength=fb(c[6]),wakeLength=fb(c[7])} end
+        for i=#cars,1,-1 do rev[#rev+1]=cars[i] end
+        V.draftingOriginal({trackLength=fb(r[1]),lapDistance=fb(r[2]),lateral=fb(r[3]),ahead=cars,behind=rev})
+        worst=math.max(worst,ulps(r32(CAR+0x59e),r[7]),ulps(r32(CAR+0x5a2),r[8]),ulps(r32(CAR+0x5a6),r[9]))
+    end
+    V.reset()
+    check("005afd80 drafting ("..#G.draft.." race rings) <= 1 ulp",worst<=1,"worst "..worst.." ulp")
+    local gbad=0
+    for _,r in ipairs(G.tape) do V.setAeroSetup({grilleTape=r[1],spoiler=65});if r32(0xc055c0+4*0x3b)~=r[2] then gbad+=1 end end
+    for _,r in ipairs(G.spoiler) do V.setAeroSetup({grilleTape=0,spoiler=r[1]});if r32(0xc055c0+4*0x3d)~=r[2] then gbad+=1 end end
+    V.reset()
+    check("garage grille tape / spoiler conversions (00423de0 / 004241d0)",gbad==0,gbad.." mismatches")
+    -- original snapshot at speed: telemetry = original 00561b70, then 2 frames vs the original
+    local list=full and G.scenarios or {G.scenarios[1]}
+    for _,s in ipairs(list) do
+        V.reset();V.endSession();V.setDraftEnvironment(nil);V.setTrackNormal(nil)
+        V.startSession(s.weather)
+        if s.draft then V.setTrackNormal({0,0,1}) end
+        for _,ch in ipairs(s.snapshot) do loadChunk(V,ch[1],ch[2]) end
+        V.tick=s.onset
+        local a=V.aeroState()
+        local got={a.fx,a.fy,a.fz,a.mx,a.my,a.mz};local aw=0
+        for k=1,6 do aw=math.max(aw,ulps(bf(got[k]),s.aero[k])) end
+        local st=table.create(45,0);local bad,last=0,nil
+        local t=os.clock()
+        for k=s.onset+1,s.ticks do
+            if s.draft and (k-1)%8==0 then V.setDraftEnvironment(draftEnv(V,s.draft)) end
+            V.drive(controls(s,(k-1)//8),FLAT)
+            local row=s.rows[k]
+            if row then
+                V.state(st)
+                for i=1,6 do
+                    local o=row.orig[i]
+                    local floor=(i%2==0) and 0.05 or 0.02
+                    if math.abs(st[i]-o)>3*row.spread[i]+floor+0.01*math.abs(o) then bad+=1 end
+                end
+                last={st[1],row.orig[1],st[2],row.orig[2]}
+            end
+        end
+        local dt=os.clock()-t
+        check(s.name..": aero telemetry = original 00561b70 at the snapshot; run inside the original envelope ("..(s.ticks-s.onset).." ticks)",
+            aw<=1 and bad==0,string.format("aero worst %d ulp, %d outside | %.0f ticks/s | x lua %.1f orig %.1f | vx lua %.2f orig %.2f",aw,bad,(s.ticks-s.onset)/dt,last[1],last[2],last[3],last[4]))
+    end
+    -- API
+    V.reset();V.endSession();V.setDraftEnvironment(nil);V.setTrackNormal(nil)
+    V.startSession(nil)
+    check("startSession() defaults: rho 1.08119202 kg/m^3 (70 F, sun, day)",r32(AIR+12)==bf(1.08119202))
+    for k=1,800 do V.drive({throttle=1,clutch=1,brakeControl=0,brakeDigital=true,shiftUp=(k==150 or k==500)},FLAT) end
+    local cp=V.checkpoint();for k=801,1200 do V.drive({throttle=1,clutch=1,brakeControl=0,brakeDigital=true},FLAT) end
+    local a1=V.state();V.restore(cp);for k=801,1200 do V.drive({throttle=1,clutch=1,brakeControl=0,brakeDigital=true},FLAT) end
+    local b1=V.state();local same=true
+    for i=1,45 do if a1[i]~=b1[i] then same=false end end
+    check("checkpoint/restore bit-identical with session air",same)
+    V.endSession()
+    print(string.format("Stage 9 self-test: %d passed, %d failed",passed,failed))
+    return failed==0,results
+end
+return M
+]=])
+local clientSource=[=[
+local Players=game:GetService("Players")
+local RunService=game:GetService("RunService")
+local CAS=game:GetService("ContextActionService")
+local UIS=game:GetService("UserInputService")
+local player=Players.LocalPlayer
+local package=game:GetService("ReplicatedStorage"):WaitForChild("NR2003Lab")
+local Config=require(package.Roblox.DriverConfig)
+local Tune=require(package.Core.TestTune)
+local RenderPresentation=require(package.Roblox.RenderPresentation)
+local remote=package:WaitForChild("Input");local telemetry=package:WaitForChild("Telemetry")
+local renderState=package:WaitForChild("RenderState")
+local car=workspace:WaitForChild("NR2003LabWorld"):WaitForChild("TestCar")
+local seat=car:WaitForChild("DriverSeat");local root=car:WaitForChild("Chassis")
+-- Stage 6/7: NR2003_CUP presents the car with the Cup geometry (CupTune); other modes keep TestTune
+local modeName=require(package.Roblox.ModeConfig).mode
+local presentationTune=(modeName=="NR2003_CUP" and package.Core:FindFirstChild("CupTune")) and require(package.Core.CupTune).new() or Tune.new()
+local presentation=RenderPresentation.new(car,presentationTune,renderState)
+local keys={};local driving=false;local sendTimer=0;local cameraMode=1;local expanded=true;local renderDiag=false
+local savedCameraType,savedCameraSubject,savedFieldOfView
+local gui=Instance.new("ScreenGui");gui.Name="NR2003LabHUD";gui.ResetOnSpawn=false
+gui.Parent=player:WaitForChild("PlayerGui")
+local entry=Instance.new("TextLabel");entry.Name="EntryStatus";entry.Size=UDim2.fromOffset(560,42)
+entry.Position=UDim2.new(.5,-280,1,-70);entry.BackgroundColor3=Color3.fromRGB(17,24,34)
+entry.TextColor3=Color3.fromRGB(240,245,250);entry.TextSize=16;entry.TextWrapped=true
+entry.Font=Enum.Font.Gotham;entry.Visible=false;entry.Parent=gui
+local entryUntil=0
+remote.OnClientEvent:Connect(function(message)
+    if type(message)=="table" and message.kind=="seat" then
+        entry.Text=tostring(message.message);entryUntil=os.clock()+5;entry.Visible=true
+    end
+end)
+UIS.InputBegan:Connect(function(input,processed)
+    if processed or UIS:GetFocusedTextBox() or input.KeyCode~=Enum.KeyCode.F then return end
+    local character=player.Character;local hrp=character and character:FindFirstChild("HumanoidRootPart")
+    if hrp and (hrp.Position-seat.Position).Magnitude<=Config.entryDistanceStuds then remote:FireServer({kind="enter"}) end
+end)
+local panel=Instance.new("Frame");panel.Name="Telemetry";panel.Position=UDim2.new(0,16,0,70)
+panel.Size=UDim2.fromOffset(460,250);panel.BackgroundColor3=Color3.fromRGB(17,24,34)
+panel.BackgroundTransparency=0.08;panel.BorderSizePixel=0;panel.Visible=false;panel.Parent=gui
+local corner=Instance.new("UICorner");corner.CornerRadius=UDim.new(0,8);corner.Parent=panel
+local function label(parent,name,y,height,size)
+    local l=Instance.new("TextLabel");l.Name=name;l.Position=UDim2.fromOffset(14,y)
+    l.Size=UDim2.new(1,-28,0,height);l.BackgroundTransparency=1
+    l.TextColor3=Color3.fromRGB(225,232,240);l.TextXAlignment=Enum.TextXAlignment.Left
+    l.Font=Enum.Font.Code;l.TextSize=size;l.TextWrapped=false;l.Parent=parent;return l
+end
+local title=label(panel,"Title",10,22,17);title.Text="NR2003 / bancada de física";title.TextColor3=Color3.fromRGB(94,197,255)
+local gauge=label(panel,"Gauges",38,28,22);gauge.Text="0 km/h | 900 rpm | 1"
+local header=label(panel,"Header",80,18,13);header.Text="RODA   CARGA N  CURSO mm  SLIP %  PNEU °C"
+local rows={};for j=1,4 do rows[j]=label(panel,"Wheel"..j,98+(j-1)*20,20,13) end
+-- Stage 9: aero line (ORIGINAL 00561b70 evaluated by the server adapter at telemetry rate)
+local aeroLine=label(panel,"Aero",180,30,11);aeroLine.Text="";aeroLine.TextColor3=Color3.fromRGB(150,214,160)
+local hint=label(panel,"Controls",215,50,11)
+hint.Text="W/S acelerar/frear   A/D direção   E/Q marchas\nShift embreagem   Espaço freio de mão   X sair\nT painel   G contatos   H render diag   V câmera   R reposicionar"
+local status=label(panel,"Status",264,16,11);status.Text="Tune de teste | contato por raycast"
+local renderInfo=Instance.new("TextLabel");renderInfo.Name="RenderDiagnostics";renderInfo.AnchorPoint=Vector2.new(1,0)
+renderInfo.Position=UDim2.new(1,-16,0,20);renderInfo.Size=UDim2.fromOffset(390,142);renderInfo.BackgroundColor3=Color3.fromRGB(17,24,34)
+renderInfo.BackgroundTransparency=0.08;renderInfo.BorderSizePixel=0;renderInfo.TextColor3=Color3.fromRGB(225,232,240)
+renderInfo.Font=Enum.Font.Code;renderInfo.TextSize=13;renderInfo.TextXAlignment=Enum.TextXAlignment.Left;renderInfo.TextYAlignment=Enum.TextYAlignment.Top
+renderInfo.TextWrapped=false;renderInfo.Visible=false;renderInfo.Parent=gui
+local renderCorner=Instance.new("UICorner");renderCorner.CornerRadius=UDim.new(0,8);renderCorner.Parent=renderInfo
+local function isDriver()
+    local h=player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+    return h and h.SeatPart==seat
+end
+local bindings={
+    {"Gas","Acelerar",Enum.KeyCode.W,Enum.KeyCode.Up},{"Brake","Frear",Enum.KeyCode.S,Enum.KeyCode.Down},
+    {"Left","←",Enum.KeyCode.A,Enum.KeyCode.Left},{"Right","→",Enum.KeyCode.D,Enum.KeyCode.Right},
+    {"Handbrake","Mão",Enum.KeyCode.Space},{"Clutch","Embreagem",Enum.KeyCode.LeftShift},
+    {"UpGear","+ marcha",Enum.KeyCode.E},{"DownGear","− marcha",Enum.KeyCode.Q},
+    {"Reset","Reset",Enum.KeyCode.R},{"Debug","Contato",Enum.KeyCode.G},
+    {"Details","Painel",Enum.KeyCode.T},{"Camera","Câmera",Enum.KeyCode.V},{"RenderDiag","Render",Enum.KeyCode.H},{"Exit","Sair",Enum.KeyCode.X},
+}
+local function action(name,state)
+    if not isDriver() then return Enum.ContextActionResult.Pass end
+    name=name:gsub("NR2003_","")
+    if state==Enum.UserInputState.Begin then
+        keys[name]=true
+        if name=="UpGear" then remote:FireServer({kind="shift",delta=1})
+        elseif name=="DownGear" then remote:FireServer({kind="shift",delta=-1})
+        elseif name=="Reset" then remote:FireServer({kind="reset"})
+        elseif name=="Debug" then remote:FireServer({kind="debug"})
+        elseif name=="Exit" then remote:FireServer({kind="exit"})
+        elseif name=="Details" then expanded=not expanded
+        elseif name=="Camera" then cameraMode=cameraMode%3+1
+        elseif name=="RenderDiag" then renderDiag=not renderDiag;renderInfo.Visible=renderDiag end
+    elseif state==Enum.UserInputState.End or state==Enum.UserInputState.Cancel then keys[name]=nil end
+    return Enum.ContextActionResult.Sink
+end
+local function bind()
+    for i,b in ipairs(bindings) do
+        local codes={};for j=3,#b do table.insert(codes,b[j]) end
+        CAS:BindActionAtPriority("NR2003_"..b[1],action,i<=8,2100,table.unpack(codes))
+        CAS:SetTitle("NR2003_"..b[1],b[2])
+        if i<=8 then CAS:SetPosition("NR2003_"..b[1],UDim2.new(1,-80-((i-1)%4)*78,1,-90-math.floor((i-1)/4)*75)) end
+    end
+end
+local function unbind() for _,b in ipairs(bindings) do CAS:UnbindAction("NR2003_"..b[1]) end;keys={} end
+UIS.WindowFocusReleased:Connect(function() keys={} end)
+telemetry.OnClientEvent:Connect(function(data)
+    if not driving then return end
+    title.Text=data.mode=="NR2003_CUP" and "NR2003 Cup / núcleo original 45 estados · estágios 6-8"
+        or (data.mode=="NR2003_CORE" and "NR2003 / chassi numérico · estágio 5 estabilizado" or "NR2003 / adaptador Roblox")
+    local gear=data.gear==-1 and "R" or (data.gear==0 and "N" or tostring(data.gear))
+    gauge.Text=string.format("%3.0f km/h | %4.0f rpm | %s",data.speed,data.rpm,gear)
+    local cup=data.mode=="NR2003_CUP" and data.brakePedal~=nil
+    header.Text=cup and "RODA   CARGA N  CURSO mm  SLIP %  FREIO Nm" or "RODA   CARGA N  CURSO mm  SLIP %  PNEU °C"
+    for j,w in ipairs(data.wheels) do
+        if cup then
+            rows[j].Text=string.format("%s   %7.0f  %8.1f  %6.1f  %7.0f%s",w.name,w.load,w.compression*1000,w.slip*100,math.abs(w.brakeTorque or 0),w.locked and " TRAV" or "")
+            rows[j].TextColor3=w.locked and Color3.fromRGB(255,96,96) or (w.grounded and Color3.fromRGB(216,228,237) or Color3.fromRGB(246,147,106))
+        else
+            rows[j].Text=string.format("%s   %7.0f  %8.1f  %6.1f  %7.1f",w.name,w.load,w.compression*1000,w.slip*100,w.temperature)
+            rows[j].TextColor3=w.grounded and Color3.fromRGB(216,228,237) or Color3.fromRGB(246,147,106)
+        end
+    end
+    local a=data.aero
+    if a then
+        if a.session then
+            aeroLine.Text=string.format("AERO rho %.4f  q %5.0f Pa  arrasto %5.0f N  downforce %5.0f N (D %5.0f / T %5.0f)\nfatores %.3f/%.3f/%.3f%s  alt. diant. %4.0f mm  fita %d%%  aerofólio %d°  yaw %.1f°",
+                a.density,a.q,a.drag,a.downforce,a.front,a.rear,a.factorDrag,a.factorFront,a.factorRear,a.draftTest and " (vácuo TESTE)" or "",
+                a.rideHeight*1000,a.grilleTape,a.spoiler,math.deg(a.yaw))
+        else
+            aeroLine.Text="AERO sem sessão (AeroSession=false): estado pós-build, rho = 0, sem forças aero"
+        end
+    else aeroLine.Text="" end
+    if data.mode=="NR2003_CUP" then
+        status.Text=data.fault and "Física pausada; veja Output. R reinicia." or string.format("acel %.2f | pedal freio %.2f -> núcleo %.2f | viés %d%% | embr %.2f | lim %s%s",
+            data.throttleIn or 0,data.brakePedal or 0,data.brakeCore or data.brakeIn or 0,data.brakeBias or 74,data.clutchIn or 0,data.limiter and "ON" or "off",data.collision and " | colisão" or "")
+    else
+        status.Text=data.fault and "Física pausada; veja Output. R reinicia." or string.format("Motor %.0f Nm | embreagem Δ %.0f rad/s",data.torque,data.clutchSlip)
+    end
+end)
+local diagTimer=0
+local function updateRenderDiag(dt)
+    if not renderDiag then return end
+    diagTimer=diagTimer+dt;if diagTimer<0.25 then return end;diagTimer=0
+    local s=presentation:stats()
+    renderInfo.Text=string.format(" RENDER / PRESENTATION ONLY\n sim %6.1f Hz   snapshot %5.1f Hz   recv %5.1f Hz\n render %5.1f FPS  delay %5.1f ms   buffer %d\n drops %d   out-of-order %d   resets %d\n extrap episodes %d   max %.1f ms\n mode %-7s alpha %.3f   active %s",
+        s.serverTickHz or 0,s.serverSnapshotHz or 0,s.recvHz or 0,s.renderFPS or 0,(s.delay or 0)*1000,s.buffer or 0,
+        s.dropped or 0,s.outOfOrder or 0,s.resets or 0,s.extrapEpisodes or 0,(s.maxExtrapSeen or 0)*1000,
+        tostring(s.mode),s.alpha or 0,tostring(s.active))
+end
+local function frame(dt)
+    presentation:update() -- MUST precede every camera path; render state never feeds physics.
+    entry.Visible=os.clock()<entryUntil
+    local nowDriving=isDriver() and true or false
+    if nowDriving~=driving then
+        driving=nowDriving;panel.Visible=driving
+        if driving then
+            bind();savedCameraType=workspace.CurrentCamera.CameraType;savedCameraSubject=workspace.CurrentCamera.CameraSubject
+            savedFieldOfView=workspace.CurrentCamera.FieldOfView
+        else
+            unbind();renderDiag=false;renderInfo.Visible=false
+            if savedCameraType then workspace.CurrentCamera.CameraType=savedCameraType end
+            if savedCameraSubject and savedCameraSubject.Parent then workspace.CurrentCamera.CameraSubject=savedCameraSubject end
+            if savedFieldOfView then workspace.CurrentCamera.FieldOfView=savedFieldOfView end
+        end
+    end
+    updateRenderDiag(dt)
+    if not driving then return end
+    header.Visible=expanded;for _,r in ipairs(rows) do r.Visible=expanded end
+    aeroLine.Visible=expanded
+    hint.Visible=expanded;status.Visible=expanded;panel.Size=UDim2.fromOffset(560,expanded and 284 or 76)
+    local camera=workspace.CurrentCamera
+    if cameraMode==1 then
+        camera.CameraType=Enum.CameraType.Scriptable;camera.FieldOfView=savedFieldOfView or 70
+        local look=root.Position+Vector3.new(0,2,0)
+        local behind=root.Position-root.CFrame.LookVector*24+Vector3.new(0,10,0)
+        camera.CFrame=camera.CFrame:Lerp(CFrame.lookAt(behind,look+root.CFrame.LookVector*8),1-math.exp(-8*dt))
+    elseif cameraMode==2 and seat:FindFirstChild("CockpitCamera") then
+        camera.CameraType=Enum.CameraType.Scriptable;camera.FieldOfView=Config.cockpitFieldOfView
+        camera.CFrame=seat.CockpitCamera.WorldCFrame
+    else
+        camera.CameraType=Enum.CameraType.Custom;camera.CameraSubject=seat;camera.FieldOfView=savedFieldOfView or 70
+    end
+    sendTimer=sendTimer+dt
+    if sendTimer>=1/30 then
+        sendTimer=sendTimer%(1/30)
+        remote:FireServer({kind="input",throttle=keys.Gas and 1 or 0,brake=keys.Brake and 1 or 0,
+            steer=(keys.Right and 1 or 0)-(keys.Left and 1 or 0),handbrake=keys.Handbrake and 1 or 0,clutch=keys.Clutch and 1 or 0})
+    end
+end
+local renderName="NR2003_Presentation"
+RunService:BindToRenderStep(renderName,Enum.RenderPriority.Camera.Value-1,frame)
+script.Destroying:Connect(function()
+    RunService:UnbindFromRenderStep(renderName);presentation:destroy();unbind()
+end)
+]=]
+-- backup (complete copies) -------------------------------------------------------------
+local backup=Instance.new("Folder")
+local base="NR2003Backup_Stage9_"..tostring(os.time());local suffix=0
+while storage:FindFirstChild(base.."_"..suffix) do suffix=suffix+1 end
+backup.Name=base.."_"..suffix
+pkg:Clone().Parent=backup;oldClient:Clone().Parent=backup
+backup.Parent=storage
+local function apply()
+    local dest={NR2003Cup=cupFolder,Core=CoreF,Roblox=RobloxF}
+    for _,m in ipairs(MODULES) do
+        local folder,name,source=m[1],m[2],m[3]
+        local parent=dest[folder]
+        local existing=parent:FindFirstChild(name)
+        if existing then existing:Destroy() end
+        local s=Instance.new("ModuleScript");s.Name=name
+        setSource(s,source);s.Parent=parent
+        assert(#s.Source==#source,"fonte truncada: "..folder.."."..name)
+    end
+    setSource(oldClient,clientSource)
+    pkg:SetAttribute("NR2003Stage","9");pkg:SetAttribute("NR2003Version","3.8.0-stage9")
+    local ok67,r67=require(RobloxF.Stage67SelfTest).run(false)
+    assert(ok67,"self-test Stage 6/7 falhou:\n"..table.concat(r67,"\n"))
+    local ok8,r8=require(RobloxF.Stage8SelfTest).run(false)
+    assert(ok8,"self-test Stage 8 falhou:\n"..table.concat(r8,"\n"))
+    local ok9,r9=require(RobloxF.Stage9SelfTest).run(false)
+    assert(ok9,"self-test Stage 9 falhou:\n"..table.concat(r9,"\n"))
+end
+local ok,reason=pcall(apply)
+if not ok then
+    local savedPkg=backup:FindFirstChild("NR2003Lab");local savedClient=backup:FindFirstChild("NR2003Client")
+    pkg:Destroy();savedPkg:Clone().Parent=RS
+    setSource(oldClient,savedClient.Source)
+    error("Patch Stage 9 revertido (nada mudou além do backup em ServerStorage."..backup.Name.."): "..tostring(reason))
+end
+print("Stage 9 aplicado. Backup: ServerStorage."..backup.Name)
+print("Aero: sessão original 005a3c00 (70 F, sem vento -> rho 1.0812 kg/m3) + fatores por quadro 005637e0; forças = 00561b70 original.")
+print("Atributos do TestCar (aplicados ao reiniciar, R): WeatherTemperatureF, WeatherWindMph, WeatherWindDirection (0..7), WeatherConditions (0..3),")
+print("  WeatherNight, TrackNorth, SetupGrilleTape (0..100 %), SetupSpoiler (45..70°), AeroSession=false (sem ar), DraftTestGap/DraftTestLateral (TESTE).")
+print("Play > F entrar | W/S acel/freio | A/D direção | E/Q marchas | R reinicia | T painel (linha AERO)")

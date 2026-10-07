@@ -1,0 +1,21 @@
+Continue from the Stage 8 package (3.7.0-stage8). Stages 1-8 are implemented; Stage 8 still needs the manual
+Roblox Studio validation listed in VALIDACAO.md before Stage 9 starts.
+
+Facts to keep:
+- Mode NR2003_CUP runs the ORIGINAL NR2003 Cup vehicle core generated from NR2003.exe (Core/NR2003Cup,
+  recovery/stage6_7). Generated modules were NOT changed in Stage 8 and still regenerate byte-identically.
+- Stage 8 hand port (NR2003CupDriver): 00553080 brake pedal chain (+00552d00, 00554f50, 005f7570, 00550130,
+  005524f0 not-driven branch), setBrakeBias (00423de0 + 0055e9b0 brake block), wheelBrake/brakeState/
+  brakeTemperature readouts. Bit-exact against the original executed code (tests/stage8).
+- Validation method for later stages: original code in Unicorn (recovery/stage8/orig_brake.py extends the
+  Stage 7 driver harness), bit-level unit vectors for hand ports, one/two-frame synchronized snapshots
+  (recovery/stage8/image_windows.py) and braking-phase envelopes from a twin perturbed through the
+  original import 005b4560 (writing a translation cell directly has no effect).
+- Tooling on Windows: Ghidra 11.1.2 headless needs Jython scripts on Java > 21 (recovery/stage8/ghidra_scripts)
+  and JAVA_TOOL_OPTIONS=-Duser.name=TChapman500 (project owner).
+- No brake fade / ABS in the original; brake temperature (0054f260) evolves only in Stage 11.
+
+Stage 9 - complete aero: the original aero natives (00561b70, 00410280) already execute inside the force
+callbacks. Recover and validate the aero inputs (speed, ride heights, yaw, setup spoiler/valance items,
+drafting/disturbed air from other cars, damage), confirm forces/moments per component against the
+original executed code, and replace nothing by feel.

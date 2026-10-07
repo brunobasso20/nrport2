@@ -1,0 +1,23 @@
+0057d0b0 MOV EDX,dword ptr [ESP + 0x8]
+0057d0b4 MOV ECX,dword ptr [EDX]
+0057d0b6 FLD float ptr [ECX]
+0057d0b8 FCOMP float ptr [0x006ea454]
+0057d0be FNSTSW AX
+0057d0c0 TEST AH,0x44
+0057d0c3 JP 0x0057d0cf
+0057d0c5 MOV dword ptr [ESP + 0x8],0x3f800000
+0057d0cd JMP 0x0057d0db
+0057d0cf FLD float ptr [0x006e97d8]
+0057d0d5 FDIV float ptr [ECX]
+0057d0d7 FSTP float ptr [ESP + 0x8]
+0057d0db PUSH EDX
+0057d0dc CALL 0x0057c890
+0057d0e1 ADD ESP,0x4
+0057d0e4 TEST EAX,EAX
+0057d0e6 JZ 0x0057d0f5
+0057d0e8 MOV EAX,dword ptr [ESP + 0x8]
+0057d0ec MOV dword ptr [ESP + 0x8],EAX
+0057d0f0 JMP 0x0057c990
+0057d0f5 MOV EDX,dword ptr [ESP + 0x8]
+0057d0f9 MOV dword ptr [ESP + 0x8],EDX
+0057d0fd JMP 0x0057ca60

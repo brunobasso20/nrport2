@@ -1,0 +1,18 @@
+/* Ghidra pseudo-C; not original source. Program: NR2003.exe; address: 005607f0 */
+
+void FUN_005607f0(void)
+
+{
+  FUN_0057cbd0(&DAT_00c08320);
+  FUN_0057cbd0(&DAT_00c08324);
+  FUN_0057cbd0(&DAT_00c08328);
+  FUN_0057cbd0(&DAT_00c0832c);
+  FUN_0057cbd0(&DAT_00c08330);
+  FUN_0057cbd0(&DAT_00c08334);
+  FUN_0057cc10(&LAB_00560870);
+  FUN_005b87c0(&DAT_00c0832c,DAT_00c08378 + 0x339,&DAT_00c0832c);
+  FUN_005b8040(DAT_00c08378 + 0x39d,DAT_00c08378 + 0x39d,&DAT_00c08320);
+  return;
+}
+
+

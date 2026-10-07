@@ -1,0 +1,2737 @@
+{
+  "00551480": {
+    "referencedFunctionSymbols": [
+      "004f5970",
+      "0055ab00",
+      "00562f70"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "004f5970",
+      "0055ab00",
+      "00562f70"
+    ]
+  },
+  "00551760": {
+    "referencedFunctionSymbols": [
+      "005b2f20"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005543f0": {
+    "referencedFunctionSymbols": [
+      "004f5970",
+      "0055ab00",
+      "00562f70",
+      "005f58d0",
+      "005f5a60",
+      "005f5ac0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "004f5970",
+      "0055ab00",
+      "00562f70",
+      "005f58d0",
+      "005f5a60",
+      "005f5ac0"
+    ]
+  },
+  "005544d0": {
+    "referencedFunctionSymbols": [
+      "00551880",
+      "005b2bd0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "00551880"
+    ]
+  },
+  "005544e0": {
+    "referencedFunctionSymbols": [
+      "00551480",
+      "00551880",
+      "005543f0",
+      "005b2be0",
+      "005b2cb0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "00551880"
+    ]
+  },
+  "00554510": {
+    "referencedFunctionSymbols": [
+      "00551880",
+      "005b2c00"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "00551880"
+    ]
+  },
+  "0055e160": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0055e180": {
+    "referencedFunctionSymbols": [
+      "00554e70"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "00554e70"
+    ]
+  },
+  "0055e1e0": {
+    "referencedFunctionSymbols": [
+      "005b9d10"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0055e3e0": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0055e410": {
+    "referencedFunctionSymbols": [
+      "0055e3e0",
+      "0057cc10",
+      "005b7fe0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0055e490": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0055e510": {
+    "referencedFunctionSymbols": [
+      "005677d1"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "005677d1"
+    ]
+  },
+  "0055e5d0": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0055e610": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0055e670": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0055e6c0": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0055e780": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0055e7e0": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0055e840": {
+    "referencedFunctionSymbols": [
+      "00548a00"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "00548a00"
+    ]
+  },
+  "0055e880": {
+    "referencedFunctionSymbols": [
+      "0055e490",
+      "0055e510"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0055e8f0": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0055e980": {
+    "referencedFunctionSymbols": [
+      "0055e8f0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0055e9b0": {
+    "referencedFunctionSymbols": [
+      "00410b30",
+      "00557d60",
+      "00557d70",
+      "0055ab00",
+      "0055e840",
+      "0055e880",
+      "0055e980",
+      "0055f880",
+      "00562f70",
+      "0057c990",
+      "0057ca10",
+      "0057ca60",
+      "005b2b20",
+      "005f5890",
+      "005f58a0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "00410b30",
+      "00557d60",
+      "00557d70",
+      "0055ab00",
+      "00562f70",
+      "005f5890",
+      "005f58a0"
+    ]
+  },
+  "0055f880": {
+    "referencedFunctionSymbols": [
+      "0051c2d0",
+      "0057c990",
+      "0057ca60"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "0051c2d0"
+    ]
+  },
+  "0055f8e0": {
+    "referencedFunctionSymbols": [
+      "0055f8f0",
+      "0055fc50",
+      "00560120",
+      "00560140",
+      "00560160",
+      "00560180",
+      "005601a0",
+      "0057cba0",
+      "0057cc10",
+      "005b80c0",
+      "005b8fd0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "0055fc50",
+      "00560120",
+      "00560140",
+      "00560160",
+      "00560180",
+      "005601a0"
+    ]
+  },
+  "0055f8f0": {
+    "referencedFunctionSymbols": [
+      "0055fc50",
+      "00560120",
+      "00560140",
+      "00560160",
+      "00560180",
+      "005601a0",
+      "0057cba0",
+      "0057cc10",
+      "005b80c0",
+      "005b8fd0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "0055fc50",
+      "00560120",
+      "00560140",
+      "00560160",
+      "00560180",
+      "005601a0"
+    ]
+  },
+  "005601c0": {
+    "referencedFunctionSymbols": [
+      "00557d60",
+      "00558770",
+      "0055ab00",
+      "00562f70"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "00557d60",
+      "00558770",
+      "0055ab00",
+      "00562f70"
+    ]
+  },
+  "00560550": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005605c0": {
+    "referencedFunctionSymbols": [
+      "0055ab00",
+      "00562f70",
+      "005b4840",
+      "005f5890",
+      "005f58a0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "0055ab00",
+      "00562f70",
+      "005f5890",
+      "005f58a0"
+    ]
+  },
+  "00560650": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "00560670": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "00560680": {
+    "referencedFunctionSymbols": [
+      "00560300",
+      "00560710",
+      "00560780",
+      "00560790",
+      "005607a0",
+      "005607b0",
+      "005607c0",
+      "005607d0",
+      "005607e0",
+      "005607f0",
+      "005608d0",
+      "00560b20",
+      "00560bf0",
+      "00560c10",
+      "00560d30",
+      "00560e00",
+      "00560e80",
+      "00561090",
+      "00561230",
+      "00561250",
+      "00561270",
+      "00561290",
+      "005615c0",
+      "00561710",
+      "00561960",
+      "00561d90",
+      "0057cc10"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "00560300"
+    ]
+  },
+  "00560710": {
+    "referencedFunctionSymbols": [
+      "00560720"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "00560720": {
+    "referencedFunctionSymbols": [
+      "005b7df0",
+      "005b7fe0",
+      "005b8040",
+      "005b87c0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "00560780": {
+    "referencedFunctionSymbols": [
+      "00560720"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "00560790": {
+    "referencedFunctionSymbols": [
+      "00560720"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005607a0": {
+    "referencedFunctionSymbols": [
+      "00560720"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005607b0": {
+    "referencedFunctionSymbols": [
+      "00560720"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005607c0": {
+    "referencedFunctionSymbols": [
+      "00560720"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005607d0": {
+    "referencedFunctionSymbols": [
+      "00560720"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005607e0": {
+    "referencedFunctionSymbols": [
+      "00560720"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005607f0": {
+    "referencedFunctionSymbols": [
+      "00560870",
+      "0057cbd0",
+      "0057cc10",
+      "005b8040",
+      "005b87c0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "00560870": {
+    "referencedFunctionSymbols": [
+      "00550880"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "00550880"
+    ]
+  },
+  "005608d0": {
+    "referencedFunctionSymbols": [
+      "0057cc40",
+      "005b7fe0",
+      "005b8040",
+      "005b8080",
+      "005b8fd0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "00560b20": {
+    "referencedFunctionSymbols": [
+      "00560b40"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "00560b40": {
+    "referencedFunctionSymbols": [
+      "0057cc40",
+      "005b7fe0",
+      "005b8040",
+      "005b8080",
+      "005b8fd0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "00560bf0": {
+    "referencedFunctionSymbols": [
+      "00560b40"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "00560c10": {
+    "referencedFunctionSymbols": [
+      "00560c30"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "00560c30": {
+    "referencedFunctionSymbols": [
+      "005b7fe0",
+      "005b8040",
+      "005b8080",
+      "005b8fd0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "00560d30": {
+    "referencedFunctionSymbols": [
+      "00560dd0",
+      "0057cba0",
+      "0057cbd0",
+      "0057cc10",
+      "005b7fe0",
+      "005b8040",
+      "005b8080",
+      "005b8fd0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "00560dd0": {
+    "referencedFunctionSymbols": [
+      "0051a000",
+      "0051a870"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "0051a000",
+      "0051a870"
+    ]
+  },
+  "00560e00": {
+    "referencedFunctionSymbols": [
+      "005b7fe0",
+      "005b8040",
+      "005b8080",
+      "005b8fd0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "00560e80": {
+    "referencedFunctionSymbols": [
+      "00561040",
+      "0057cba0",
+      "0057cbd0",
+      "0057cc10",
+      "005b7fe0",
+      "005b8040",
+      "005b8080"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "00561040": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "00561090": {
+    "referencedFunctionSymbols": [
+      "005610b0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005610b0": {
+    "referencedFunctionSymbols": [
+      "00561040",
+      "0057cba0",
+      "0057cbd0",
+      "0057cc10",
+      "005b7fe0",
+      "005b8040",
+      "005b8080",
+      "005b8fd0",
+      "0074e86c"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "0074e86c"
+    ]
+  },
+  "00561230": {
+    "referencedFunctionSymbols": [
+      "005610b0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "00561250": {
+    "referencedFunctionSymbols": [
+      "005610b0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "00561270": {
+    "referencedFunctionSymbols": [
+      "005610b0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "00561290": {
+    "referencedFunctionSymbols": [
+      "00561040",
+      "005614b0",
+      "0057cba0",
+      "0057cbd0",
+      "0057cc10",
+      "005b7fe0",
+      "005b8040",
+      "005b8080"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005614b0": {
+    "referencedFunctionSymbols": [
+      "00557d60",
+      "006c5018"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "00557d60",
+      "006c5018"
+    ]
+  },
+  "005615c0": {
+    "referencedFunctionSymbols": [
+      "0057cc40",
+      "005b7fe0",
+      "005b8040",
+      "005b8080",
+      "005b8fd0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "00561710": {
+    "referencedFunctionSymbols": [
+      "005618d0",
+      "0057cba0",
+      "0057cbd0",
+      "0057cc10",
+      "005b7d10",
+      "005b7e90",
+      "005b7fe0",
+      "005b8040",
+      "005b8370"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005618d0": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "00561960": {
+    "referencedFunctionSymbols": [
+      "00561a80",
+      "00561b70",
+      "0057cba0",
+      "0057cbd0",
+      "0057cc10",
+      "005b7db0",
+      "005b8040",
+      "005b8370",
+      "005b87c0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "00561a80": {
+    "referencedFunctionSymbols": [
+      "0055ab00",
+      "00562f70"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "0055ab00",
+      "00562f70"
+    ]
+  },
+  "00561b70": {
+    "referencedFunctionSymbols": [
+      "00410280",
+      "00410b50",
+      "0055ab00",
+      "00562f70"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "00410280",
+      "00410b50",
+      "0055ab00",
+      "00562f70"
+    ]
+  },
+  "00561d90": {
+    "referencedFunctionSymbols": [
+      "00561e50",
+      "0057cba0",
+      "0057cbd0",
+      "0057cc10",
+      "005b8040",
+      "005b8370",
+      "005b87c0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "00561e50": {
+    "referencedFunctionSymbols": [
+      "005501d0",
+      "005f6a70"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "005501d0",
+      "005f6a70"
+    ]
+  },
+  "0057c860": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057c890": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057c8b0": {
+    "referencedFunctionSymbols": [
+      "0057c890"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057c8d0": {
+    "referencedFunctionSymbols": [
+      "0057c8b0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057c900": {
+    "referencedFunctionSymbols": [
+      "0057c8b0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057c930": {
+    "referencedFunctionSymbols": [
+      "005bcdd0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "005bcdd0"
+    ]
+  },
+  "0057c990": {
+    "referencedFunctionSymbols": [
+      "0057c9b0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057c9b0": {
+    "referencedFunctionSymbols": [
+      "0057c860",
+      "0057c890",
+      "005b2980",
+      "005bcd70",
+      "005bcd80"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "005bcd70",
+      "005bcd80"
+    ]
+  },
+  "0057ca10": {
+    "referencedFunctionSymbols": [
+      "0057ca30"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057ca30": {
+    "referencedFunctionSymbols": [
+      "005bcd80"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "005bcd80"
+    ]
+  },
+  "0057ca60": {
+    "referencedFunctionSymbols": [
+      "0057c860",
+      "0057c890",
+      "0057c8b0",
+      "0057cb30"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057cb30": {
+    "referencedFunctionSymbols": [
+      "0057c860",
+      "0057c890",
+      "0057cb5f"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "0057cb5f"
+    ]
+  },
+  "0057cb80": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057cba0": {
+    "referencedFunctionSymbols": [
+      "005b9c10"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057cbd0": {
+    "referencedFunctionSymbols": [
+      "0057c990",
+      "005b9bf0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057cc10": {
+    "referencedFunctionSymbols": [
+      "005b9c30"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057cc40": {
+    "referencedFunctionSymbols": [
+      "005677d1",
+      "0057c890",
+      "0057c990",
+      "0057ca60",
+      "005b9c50"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "005677d1"
+    ]
+  },
+  "0057ccc0": {
+    "referencedFunctionSymbols": [
+      "0057c890",
+      "0057c8d0",
+      "0057c990",
+      "0057ca60",
+      "0057d040"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057cd70": {
+    "referencedFunctionSymbols": [
+      "0057c890",
+      "0057c8d0",
+      "0057c990",
+      "0057ca60",
+      "0057ce40",
+      "0057d040"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057ce40": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057cea0": {
+    "referencedFunctionSymbols": [
+      "0057c890",
+      "0057c8d0",
+      "0057c990",
+      "0057ca60",
+      "0057d040",
+      "0057d070"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057cf50": {
+    "referencedFunctionSymbols": [
+      "0057c890",
+      "0057c8d0",
+      "0057c900",
+      "0057c990",
+      "0057ca60",
+      "0057d040"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057d040": {
+    "referencedFunctionSymbols": [
+      "0057c890",
+      "0057c990",
+      "0057ca60"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057d070": {
+    "referencedFunctionSymbols": [
+      "0057c890",
+      "0057c990",
+      "0057ca60"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057d0b0": {
+    "referencedFunctionSymbols": [
+      "0057c890",
+      "0057c990",
+      "0057ca60"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057d110": {
+    "referencedFunctionSymbols": [
+      "0057c890",
+      "0057c990",
+      "0057ca60"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057d150": {
+    "referencedFunctionSymbols": [
+      "0057c890",
+      "0057c990",
+      "0057ca60"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057d190": {
+    "referencedFunctionSymbols": [
+      "0057c890",
+      "0057c990",
+      "0057ca60"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057d1d0": {
+    "referencedFunctionSymbols": [
+      "0057c8b0",
+      "0057ccc0",
+      "0057d040"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057d240": {
+    "referencedFunctionSymbols": [
+      "0057c890",
+      "0057c990",
+      "0057ca60"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057d290": {
+    "referencedFunctionSymbols": [
+      "0057c890",
+      "0057c990",
+      "0057ca60"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057d2d0": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057d2f0": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057d3b0": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057d3d0": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057d3f0": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057d430": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057d450": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057d470": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057d490": {
+    "referencedFunctionSymbols": [
+      "0057d2d0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057d4b0": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057d4e0": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057d500": {
+    "referencedFunctionSymbols": [
+      "0057c890",
+      "0057c8d0",
+      "0057c990",
+      "0057ca60",
+      "0057d9a0",
+      "005b9a70"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057d610": {
+    "referencedFunctionSymbols": [
+      "0057c890",
+      "0057c8d0",
+      "0057c990",
+      "0057ca60",
+      "0057ce40",
+      "0057d9a0",
+      "005b9a90"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057d740": {
+    "referencedFunctionSymbols": [
+      "0057c890",
+      "0057c8d0",
+      "0057c990",
+      "0057ca60",
+      "0057d9a0",
+      "0057d9f0",
+      "005b9ab0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057d850": {
+    "referencedFunctionSymbols": [
+      "0057c890",
+      "0057c8d0",
+      "0057c900",
+      "0057c990",
+      "0057ca60",
+      "0057d9a0",
+      "005b9ad0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057d9a0": {
+    "referencedFunctionSymbols": [
+      "0057c890",
+      "0057c990",
+      "0057ca60",
+      "005b9af0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057d9f0": {
+    "referencedFunctionSymbols": [
+      "0057c890",
+      "0057c990",
+      "0057ca60",
+      "005b9b10"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057da40": {
+    "referencedFunctionSymbols": [
+      "0057c890",
+      "0057c990",
+      "0057ca60",
+      "005b9b30"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057dab0": {
+    "referencedFunctionSymbols": [
+      "0057c890",
+      "0057c990",
+      "0057ca60",
+      "005b9b50"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057db00": {
+    "referencedFunctionSymbols": [
+      "0057c890",
+      "0057c990",
+      "0057ca60",
+      "005b9b70"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057db50": {
+    "referencedFunctionSymbols": [
+      "0057c890",
+      "0057c990",
+      "0057ca60",
+      "005b9b90"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057dc10": {
+    "referencedFunctionSymbols": [
+      "0057c890",
+      "0057c990",
+      "0057ca60",
+      "005b9bb0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057dc70": {
+    "referencedFunctionSymbols": [
+      "0057c890",
+      "0057c990",
+      "0057ca60",
+      "005b9bd0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057dcd0": {
+    "referencedFunctionSymbols": [
+      "0057d3b0",
+      "0074fdac",
+      "0074fdbc",
+      "0074fde0",
+      "0074fe14",
+      "0074fe24"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "0074fdac",
+      "0074fdbc",
+      "0074fde0",
+      "0074fe14",
+      "0074fe24"
+    ]
+  },
+  "0057dd50": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057dd60": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057dd70": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "0057dd80": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b2190": {
+    "referencedFunctionSymbols": [
+      "00551e80",
+      "005539c0",
+      "005544d0",
+      "005544e0",
+      "00554510",
+      "00554520",
+      "005548d0",
+      "00555140",
+      "005789c0",
+      "00578a60",
+      "00578da0",
+      "00578de0",
+      "00578e20",
+      "005b22b0",
+      "005b23f0",
+      "005b2410",
+      "005b2430",
+      "005b25a0",
+      "005f6020"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "00551e80",
+      "005539c0",
+      "00554520",
+      "005548d0",
+      "00555140",
+      "005789c0",
+      "00578a60",
+      "00578da0",
+      "00578de0",
+      "00578e20",
+      "005b22b0",
+      "005b23f0",
+      "005b2410",
+      "005b2430",
+      "005b25a0",
+      "005f6020"
+    ]
+  },
+  "005b2980": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b29c0": {
+    "referencedFunctionSymbols": [
+      "005b2a30",
+      "005b2b10"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b2a30": {
+    "referencedFunctionSymbols": [
+      "005b2a6c",
+      "005b2a71",
+      "005b2ac0",
+      "005b2af0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "005b2a6c",
+      "005b2a71"
+    ]
+  },
+  "005b2ac0": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b2af0": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b2b10": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b2b20": {
+    "referencedFunctionSymbols": [
+      "005b2b3b",
+      "005b2b5f"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "005b2b3b",
+      "005b2b5f"
+    ]
+  },
+  "005b2b90": {
+    "referencedFunctionSymbols": [
+      "005b9d10"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b2bd0": {
+    "referencedFunctionSymbols": [
+      "005b9d10"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b2be0": {
+    "referencedFunctionSymbols": [
+      "005b9d10"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b2c00": {
+    "referencedFunctionSymbols": [
+      "005b9d10"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b2c10": {
+    "referencedFunctionSymbols": [
+      "005b2b90",
+      "005b2bd0",
+      "005b2be0",
+      "005b9d10"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b2c40": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b2cb0": {
+    "referencedFunctionSymbols": [
+      "005b2cd0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b2cd0": {
+    "referencedFunctionSymbols": [
+      "005b2edd",
+      "005b2ef0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "005b2edd"
+    ]
+  },
+  "005b2ef0": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b2f20": {
+    "referencedFunctionSymbols": [
+      "0055e9b0",
+      "0057c930",
+      "0057c990",
+      "0057dcd0",
+      "005b2fb0",
+      "005b3090",
+      "005b3f50",
+      "005b4060",
+      "005b4560",
+      "005b9ce0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b2fb0": {
+    "referencedFunctionSymbols": [
+      "005b2ef0",
+      "005b7d10",
+      "005b7fe0",
+      "005b8180",
+      "005b8fd0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b3090": {
+    "referencedFunctionSymbols": [
+      "0055d9c0",
+      "0055e1e0",
+      "0055e410",
+      "005b2fb0",
+      "005b3180",
+      "005b3990",
+      "005b39a0",
+      "005b3e50",
+      "005b9cf0",
+      "005b9d10"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "0055d9c0"
+    ]
+  },
+  "005b3180": {
+    "referencedFunctionSymbols": [
+      "005b31a0",
+      "005b3390"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b31a0": {
+    "referencedFunctionSymbols": [
+      "005b2ef0",
+      "005b31e0",
+      "005b7fe0",
+      "005b8d90"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b31e0": {
+    "referencedFunctionSymbols": [
+      "005b2ef0",
+      "005b32e0",
+      "005b7fe0",
+      "005b8040",
+      "005b8080",
+      "005b8d90",
+      "005b8dd0",
+      "005b8ec0",
+      "005b8fd0",
+      "005b9210"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b32e0": {
+    "referencedFunctionSymbols": [
+      "005b7d70",
+      "005b8260",
+      "005b8370",
+      "005b8880",
+      "005b94e0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b3390": {
+    "referencedFunctionSymbols": [
+      "005b2ef0",
+      "005b3490",
+      "005b36c0",
+      "005b3850",
+      "005b7fe0",
+      "005b8e20",
+      "005b8ec0",
+      "005b8fd0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b3490": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b36c0": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b3850": {
+    "referencedFunctionSymbols": [
+      "005b2ef0",
+      "005b3490",
+      "005b36c0",
+      "005b8040",
+      "005b8080",
+      "005b8e20",
+      "005b8ec0",
+      "005b8fd0",
+      "005b9420"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b3990": {
+    "referencedFunctionSymbols": [
+      "0055f8f0",
+      "00560680"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b39a0": {
+    "referencedFunctionSymbols": [
+      "005b2ef0",
+      "005b39e0",
+      "005b3cb0",
+      "005b3d40"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b39e0": {
+    "referencedFunctionSymbols": [
+      "005b3a90",
+      "005b3ae0",
+      "005b7d10",
+      "005b7d70",
+      "005b7df0",
+      "005b8180",
+      "005b8370"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b3a90": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b3ae0": {
+    "referencedFunctionSymbols": [
+      "005b3c60",
+      "005b7df0",
+      "005b8180",
+      "005b8260",
+      "005b8920",
+      "005b8b50",
+      "005b9590",
+      "005b9620",
+      "005b9660"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b3c60": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b3cb0": {
+    "referencedFunctionSymbols": [
+      "005b8040",
+      "005b80c0",
+      "005b8370",
+      "005b86c0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b3d40": {
+    "referencedFunctionSymbols": [
+      "005b2ef0",
+      "005b3cb0",
+      "005b3d80"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b3d80": {
+    "referencedFunctionSymbols": [
+      "005b3a90",
+      "005b3ae0",
+      "005b7d70",
+      "005b7df0",
+      "005b8260",
+      "005b8370"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b3e50": {
+    "referencedFunctionSymbols": [
+      "005b2ef0",
+      "005b39e0",
+      "005b3cb0",
+      "005b3ed0",
+      "005b8040",
+      "005b80c0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b3ed0": {
+    "referencedFunctionSymbols": [
+      "005b2ef0",
+      "005b3cb0",
+      "005b3d80",
+      "005b8040",
+      "005b80c0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b3f50": {
+    "referencedFunctionSymbols": [
+      "0055d9c0",
+      "005b2ef0",
+      "005b3990",
+      "005b39e0",
+      "005b3fd0",
+      "005b7fe0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "0055d9c0"
+    ]
+  },
+  "005b3fd0": {
+    "referencedFunctionSymbols": [
+      "005b2ef0",
+      "005b32e0",
+      "005b3d80",
+      "005b7fe0",
+      "005b8040",
+      "005b9420"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b4060": {
+    "referencedFunctionSymbols": [
+      "0057c990",
+      "0057ca60",
+      "005b2ef0",
+      "005b4448",
+      "005b8c40"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "005b4448"
+    ]
+  },
+  "005b4560": {
+    "referencedFunctionSymbols": [
+      "005b2ef0",
+      "005b45bd",
+      "005b4639",
+      "005b46b4",
+      "005b482d"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "005b45bd",
+      "005b4639",
+      "005b46b4",
+      "005b482d"
+    ]
+  },
+  "005b4840": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b4b60": {
+    "referencedFunctionSymbols": [
+      "005b4bf0",
+      "005b4ca0",
+      "005b4cc0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "005b4bf0"
+    ]
+  },
+  "005b4ca0": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b4cc0": {
+    "referencedFunctionSymbols": [
+      "006c5018"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "006c5018"
+    ]
+  },
+  "005b4de0": {
+    "referencedFunctionSymbols": [
+      "005b4e60"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b4e60": {
+    "referencedFunctionSymbols": [
+      "006c5018"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "006c5018"
+    ]
+  },
+  "005b5010": {
+    "referencedFunctionSymbols": [
+      "00501870",
+      "00501a20",
+      "00501a40"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "00501870",
+      "00501a20",
+      "00501a40"
+    ]
+  },
+  "005b5090": {
+    "referencedFunctionSymbols": [
+      "005b50c0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b50c0": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b50f0": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b5150": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b51b0": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b51f0": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b5250": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b5260": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b5270": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b5290": {
+    "referencedFunctionSymbols": [
+      "005b4de0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b5310": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b5350": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b5390": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b53e0": {
+    "referencedFunctionSymbols": [
+      "006c5018"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "006c5018"
+    ]
+  },
+  "005b54f0": {
+    "referencedFunctionSymbols": [
+      "00502460",
+      "005b51b0",
+      "005b51f0",
+      "005b5250",
+      "005b5270",
+      "005b5310",
+      "005b5350",
+      "005b5390",
+      "005b53e0",
+      "005b56a0",
+      "005b56c0",
+      "005b5700"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "00502460"
+    ]
+  },
+  "005b56a0": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b56c0": {
+    "referencedFunctionSymbols": [
+      "005b4ca0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b5700": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b5760": {
+    "referencedFunctionSymbols": [
+      "005b50f0",
+      "005b5150"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b5800": {
+    "referencedFunctionSymbols": [
+      "005b5290",
+      "006c5018"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "006c5018"
+    ]
+  },
+  "005b58d0": {
+    "referencedFunctionSymbols": [
+      "005b50c0",
+      "005b5260",
+      "005b56c0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b5900": {
+    "referencedFunctionSymbols": [
+      "005b50c0",
+      "005b5260"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b5920": {
+    "referencedFunctionSymbols": [
+      "005b5010"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b5c40": {
+    "referencedFunctionSymbols": [
+      "005cfd02",
+      "006ed680"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "005cfd02",
+      "006ed680"
+    ]
+  },
+  "005b5c90": {
+    "referencedFunctionSymbols": [
+      "005b5ca0",
+      "006c4f40"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "005b5ca0",
+      "006c4f40"
+    ]
+  },
+  "005b5cb0": {
+    "referencedFunctionSymbols": [
+      "005b5d30",
+      "005b6190",
+      "005c39b0",
+      "005c3a60",
+      "005c3ae0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "005c39b0",
+      "005c3a60",
+      "005c3ae0"
+    ]
+  },
+  "005b5d30": {
+    "referencedFunctionSymbols": [
+      "00538b20",
+      "00540310",
+      "005404a0",
+      "00540530",
+      "005b5dc8",
+      "005c3ab0",
+      "005c3ad0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "00538b20",
+      "00540310",
+      "005404a0",
+      "00540530",
+      "005b5dc8",
+      "005c3ab0",
+      "005c3ad0"
+    ]
+  },
+  "005b5fc0": {
+    "referencedFunctionSymbols": [
+      "006c4f81"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "006c4f81"
+    ]
+  },
+  "005b6030": {
+    "referencedFunctionSymbols": [
+      "005b615a",
+      "006c4ac9",
+      "006c4f81"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "005b615a",
+      "006c4ac9",
+      "006c4f81"
+    ]
+  },
+  "005b6190": {
+    "referencedFunctionSymbols": [
+      "00538b00",
+      "00538b10",
+      "00538b20",
+      "00538b30",
+      "00538b40",
+      "00538b90",
+      "0053b2b0",
+      "0053b320",
+      "0053c270",
+      "0053c3a0",
+      "0053ceb0",
+      "0053e850",
+      "0053e880",
+      "0053e8b0",
+      "0053e940",
+      "00540320",
+      "00540360",
+      "005404b0",
+      "00540500",
+      "005405d0",
+      "00540630",
+      "00540b80",
+      "005410a0",
+      "0055a4f0",
+      "0055a5a0",
+      "0055a5c0",
+      "0055a5d0",
+      "0055a5e0",
+      "0055a5f0",
+      "0055a600",
+      "0055a660",
+      "0055a6f0",
+      "0055a910",
+      "0055ab00",
+      "0055ab30",
+      "0055ab50",
+      "0055ab90",
+      "0055c800",
+      "0055c810",
+      "00567140",
+      "00574020",
+      "005742e0",
+      "00574370",
+      "005743b0",
+      "0059c110",
+      "0059f590",
+      "005b6030",
+      "005b6b10",
+      "005bb2f0",
+      "005c2d20",
+      "005cfeb8",
+      "005cfed0",
+      "00619640",
+      "006c4b00",
+      "006c4f81"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "00538b00",
+      "00538b10",
+      "00538b20",
+      "00538b30",
+      "00538b40",
+      "00538b90",
+      "0053b2b0",
+      "0053b320",
+      "0053c270",
+      "0053c3a0",
+      "0053ceb0",
+      "0053e850",
+      "0053e880",
+      "0053e8b0",
+      "0053e940",
+      "00540320",
+      "00540360",
+      "005404b0",
+      "00540500",
+      "005405d0",
+      "00540630",
+      "00540b80",
+      "005410a0",
+      "0055a4f0",
+      "0055a5a0",
+      "0055a5c0",
+      "0055a5d0",
+      "0055a5e0",
+      "0055a5f0",
+      "0055a600",
+      "0055a660",
+      "0055a6f0",
+      "0055a910",
+      "0055ab00",
+      "0055ab30",
+      "0055ab50",
+      "0055ab90",
+      "0055c800",
+      "0055c810",
+      "00567140",
+      "00574020",
+      "005742e0",
+      "00574370",
+      "005743b0",
+      "0059c110",
+      "0059f590",
+      "005bb2f0",
+      "005c2d20",
+      "005cfeb8",
+      "005cfed0",
+      "00619640",
+      "006c4b00",
+      "006c4f81"
+    ]
+  },
+  "005b6b10": {
+    "referencedFunctionSymbols": [
+      "00574370",
+      "005b6b6e",
+      "005b6b95",
+      "005b6bd6",
+      "006c4b00"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "00574370",
+      "005b6b6e",
+      "005b6b95",
+      "005b6bd6",
+      "006c4b00"
+    ]
+  },
+  "005b6c10": {
+    "referencedFunctionSymbols": [
+      "006f7354"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "006f7354"
+    ]
+  },
+  "005b6c70": {
+    "referencedFunctionSymbols": [
+      "005b6c80",
+      "006c4f40"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "005b6c80",
+      "006c4f40"
+    ]
+  },
+  "005b75a0": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b7720": {
+    "referencedFunctionSymbols": [
+      "005b78c0",
+      "005b7a60",
+      "005b7b40",
+      "005b7c00"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b78c0": {
+    "referencedFunctionSymbols": [
+      "005b7bb0",
+      "005b7c00"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b7900": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b7940": {
+    "referencedFunctionSymbols": [
+      "005b7900"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b7960": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b79e0": {
+    "referencedFunctionSymbols": [
+      "005b7c80"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b7a60": {
+    "referencedFunctionSymbols": [
+      "005b7c80"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b7ac0": {
+    "referencedFunctionSymbols": [
+      "005b7c40"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b7b20": {
+    "referencedFunctionSymbols": [
+      "005b7c00"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b7b40": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b7b70": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b7b90": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b7ba0": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b7bb0": {
+    "referencedFunctionSymbols": [
+      "005b7c00"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b7c00": {
+    "referencedFunctionSymbols": [
+      "005b7c20"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b7c20": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b7c40": {
+    "referencedFunctionSymbols": [
+      "005b7c60"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b7c60": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b7c80": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b7d10": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b7d70": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b7db0": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b7df0": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b7e30": {
+    "referencedFunctionSymbols": [
+      "0057cb80"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b7e90": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b7f80": {
+    "referencedFunctionSymbols": [
+      "005b7e30"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b7fa0": {
+    "referencedFunctionSymbols": [
+      "005b7df0",
+      "005b7f80"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b7fe0": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b8040": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b8080": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b80c0": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b8180": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b8260": {
+    "referencedFunctionSymbols": [
+      "0057cb80",
+      "005b8180"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b8370": {
+    "referencedFunctionSymbols": [
+      "0057cb80",
+      "005b7d10"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b86c0": {
+    "referencedFunctionSymbols": [
+      "0057cb80",
+      "005b8180"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b87c0": {
+    "referencedFunctionSymbols": [
+      "0057cb80",
+      "005b7d10"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b8880": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b8920": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b8b50": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b8c40": {
+    "referencedFunctionSymbols": [
+      "0057ca60"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b8d90": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b8dd0": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b8e20": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b8ec0": {
+    "referencedFunctionSymbols": [
+      "0057cb80",
+      "005b8d90"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b8fd0": {
+    "referencedFunctionSymbols": [
+      "0057cb80",
+      "005b7fe0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b9210": {
+    "referencedFunctionSymbols": [
+      "0057cb80",
+      "005b8d90"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b9420": {
+    "referencedFunctionSymbols": [
+      "0057cb80",
+      "005b7fe0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b94e0": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b9590": {
+    "referencedFunctionSymbols": [
+      "005b7df0",
+      "005b7e30"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b9620": {
+    "referencedFunctionSymbols": [
+      "005b7d70"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b9660": {
+    "referencedFunctionSymbols": [
+      "005b7d70",
+      "005b7df0",
+      "005b7e30",
+      "005b7e90"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b9970": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b99c0": {
+    "referencedFunctionSymbols": [
+      "0057c8b0",
+      "005b9970"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b99f0": {
+    "referencedFunctionSymbols": [
+      "005bcd70",
+      "005bce40",
+      "005bcff0",
+      "005bd050",
+      "005bd100",
+      "005bd160",
+      "005bd250",
+      "005bd270",
+      "005bd290",
+      "005bd2c0",
+      "005bd300",
+      "005bd330",
+      "005bd380",
+      "005bd3c0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "005bcd70",
+      "005bce40",
+      "005bcff0",
+      "005bd050",
+      "005bd100",
+      "005bd160",
+      "005bd250",
+      "005bd270",
+      "005bd290",
+      "005bd2c0",
+      "005bd300",
+      "005bd330",
+      "005bd380",
+      "005bd3c0"
+    ]
+  },
+  "005b9a00": {
+    "referencedFunctionSymbols": [
+      "005b99c0",
+      "005bce40"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "005bce40"
+    ]
+  },
+  "005b9a40": {
+    "referencedFunctionSymbols": [
+      "005b99c0",
+      "005bce40"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "005bce40"
+    ]
+  },
+  "005b9a70": {
+    "referencedFunctionSymbols": [
+      "005b9a00"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b9a90": {
+    "referencedFunctionSymbols": [
+      "005b9a00"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b9ab0": {
+    "referencedFunctionSymbols": [
+      "005b9a00"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b9ad0": {
+    "referencedFunctionSymbols": [
+      "005b9a00"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b9af0": {
+    "referencedFunctionSymbols": [
+      "005b9a40"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b9b10": {
+    "referencedFunctionSymbols": [
+      "005b9a40"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b9b30": {
+    "referencedFunctionSymbols": [
+      "005b9a40"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b9b50": {
+    "referencedFunctionSymbols": [
+      "005b9a40"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b9b70": {
+    "referencedFunctionSymbols": [
+      "005b9a40"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b9b90": {
+    "referencedFunctionSymbols": [
+      "005b9a40"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b9bb0": {
+    "referencedFunctionSymbols": [
+      "005b9a40"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b9bd0": {
+    "referencedFunctionSymbols": [
+      "005b9a40"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b9bf0": {
+    "referencedFunctionSymbols": [
+      "005b99c0",
+      "005bce40"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "005bce40"
+    ]
+  },
+  "005b9c10": {
+    "referencedFunctionSymbols": [
+      "005b99c0",
+      "005bce40"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "005bce40"
+    ]
+  },
+  "005b9c30": {
+    "referencedFunctionSymbols": [
+      "005bce40"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "005bce40"
+    ]
+  },
+  "005b9c50": {
+    "referencedFunctionSymbols": [
+      "005b99c0",
+      "005bce40"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "005bce40"
+    ]
+  },
+  "005b9c80": {
+    "referencedFunctionSymbols": [
+      "005bce40"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "005bce40"
+    ]
+  },
+  "005b9ca0": {
+    "referencedFunctionSymbols": [
+      "005bce40"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "005bce40"
+    ]
+  },
+  "005b9cc0": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b9cd0": {
+    "referencedFunctionSymbols": [
+      "005b9c80"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b9ce0": {
+    "referencedFunctionSymbols": [
+      "005b9cc0",
+      "005b9cd0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b9cf0": {
+    "referencedFunctionSymbols": [
+      "005b9ca0",
+      "005b9cd0"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b9d10": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b9e70": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b9e90": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005b9ed0": {
+    "referencedFunctionSymbols": [
+      "005b9e70",
+      "005b9e90",
+      "005b9f94",
+      "005ceb90",
+      "005cfcfc",
+      "006c6b50"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": [
+      "005b9f94",
+      "005ceb90",
+      "005cfcfc",
+      "006c6b50"
+    ]
+  },
+  "005ba070": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005ba080": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005ba0c0": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005ba0f0": {
+    "referencedFunctionSymbols": [
+      "005ba080"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005ba130": {
+    "referencedFunctionSymbols": [
+      "005ba080",
+      "005ba150"
+    ],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  },
+  "005ba150": {
+    "referencedFunctionSymbols": [],
+    "method": "decompiled symbol references",
+    "missingExports": []
+  }
+}

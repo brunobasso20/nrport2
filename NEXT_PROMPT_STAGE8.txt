@@ -1,0 +1,15 @@
+Continue from the Stage 6+7 package (3.6.0-stage7). Stages 1–7 are implemented; Stage 6/7 still need the
+manual Roblox Studio validation listed in VALIDACAO.md before Stage 8 starts.
+
+Facts to keep:
+- Mode NR2003_CUP runs the ORIGINAL NR2003 Cup vehicle core generated from NR2003.exe
+  (Core/NR2003Cup, recovery/stage6_7). Do not hand-edit generated modules: change the generators
+  (gen_runtime.py, jit2lua.py, lift.py, runtime_*.luau) and regenerate; outputs must stay byte-reproducible.
+- Validation method: fixtures from the original code in Unicorn (gen_fixtures.py) + 1-ulp sensitivity
+  envelope; ticks 1–8 must stay <= 2e-5 relative.
+- NR2003_CORE and ROBLOX_ADAPTER remain as fallbacks; presentation never feeds physics.
+
+Stage 8 — complete brake model: the original brake torque path already executes inside the force
+callbacks. Recover and validate the brake inputs/bias/pressure chain feeding bf636c (00551e80 brake
+target, 005539c0 ramp) and the per-frame brake thermal (Stage 11 boundary), confirm torques per wheel
+against the original executed code, and replace nothing by feel.

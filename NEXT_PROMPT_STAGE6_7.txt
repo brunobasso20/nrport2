@@ -1,0 +1,15 @@
+Continue from the current **validated Stage 5 baseline**. Stages 1–5 are complete enough to proceed and must NOT be redone or destabilized. The Stage 5 Roblox build has been manually validated: the vehicle is now visually smooth, the 288 Hz authoritative NR2003 core remains intact, and the suspension motion is more visible after fixing the presentation path.
+
+Implement the next two roadmap stages, in order, in this same pass:
+
+**Stage 6 — Complete suspension / unsprung mass / rear-axle dynamics**
+Make the recovered LF/RF suspension, hubs, wheels, rear axle, LR/RR wheels and their relevant states/constraints/forces live in the original 45-state multibody core. Recover missing Ghidra dependencies instead of approximating them. Preserve correct contact geometry separation from NR2003 physics.
+
+**Stage 7 — Complete drivetrain integration**
+Integrate the recovered engine, clutch, output shaft, rear axle/differential and wheel rotational states/torque propagation into the original core path. Replace provisional adapter behavior only when the corresponding original NR2003 behavior is recovered and validated.
+
+The **first/reference car is the NR2003 NASCAR/Cup car**. Therefore, for every Stage 6/7 parameter that affects this car, use the original NR2003 NASCAR tune/setup/calibration exactly where recoverable. Do not keep arbitrary Roblox/TestTune values as final, and do not tune by feel. If the current baseline is insufficient, inspect `nr2003 original code` / the complete Ghidra project and recursively recover the missing functions/data.
+
+Preserve all validated Stage 5 behavior: 288 Hz fixed-step core, server authority, `NR2003_CORE`, `ROBLOX_ADAPTER` fallback, seat/controls, cockpit, steering-wheel visuals, raycast geometry query, collision path, checkpoint/replay, and the client snapshot interpolation/render smoothing. Presentation must never feed back into physics.
+
+Update `PORT_MAP.md`, validation/tests, roadmap status, changelog and patch/install package. Return only changed/new files plus concise install/validation instructions. Stop after Stage 7; do NOT start Stage 8.

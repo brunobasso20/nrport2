@@ -1,0 +1,11 @@
+005b7c00 MOV EAX,dword ptr [ECX + 0x4]
+005b7c03 MOV EDX,dword ptr [ECX + 0x1c]
+005b7c06 MOV ECX,dword ptr [ECX + 0x18]
+005b7c09 PUSH EAX
+005b7c0a MOV EAX,dword ptr [EDX]
+005b7c0c MOV EDX,dword ptr [ECX]
+005b7c0e PUSH EAX
+005b7c0f PUSH EDX
+005b7c10 CALL 0x005b7c20
+005b7c15 ADD ESP,0xc
+005b7c18 RET

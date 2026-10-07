@@ -1,0 +1,62 @@
+PASS  embedded constants + aero damage-table cells = NR2003.exe bytes (51 cells, 64 wake rows, header, qword 0.447)  0 / 0 mismatching
+PASS  image holds the original aero cells (00410b50 flag 0071f904 = 1, half-wind cell pointers 0074e094..9c, Cup spec, damage tables after reset)  flag 1 spec 7238e0
+PASS  post-build state has no air (rho e0b84c = 0, factors 0): the Stage 6/7/8 contract
+PASS  005a3c00 session weather -> wind e0b840/44/48, density e0b84c, temperatures: 1576 vectors bit-exact  exact 1576, worst 0 ulp 
+PASS  005a3ba0 humid-air density (T, P, RH) vs original: 2500 vectors <= 1 ulp  exact 2500/2500, worst 0 ulp 
+PASS  00561a80 half wind (lifted) vs original: 600 vectors <= 1 ulp  exact 600/600, worst 0 ulp 
+PASS  00561b70 aero force + moment (lifted 00410280 path, incl. damage) vs original: 5000 vectors, rel <= 1e-5  bit-exact 4892/5000, worst 58 ulp, worst rel 4.51e-06 row 3961 out 5 lua 24.528223 orig 24.5281124
+PASS  00561b70 side effects: 16-call counter 0074e090 exact, 00410b50 stall state 007636e0/e4 <= 2 ulp  exact 5000/5000, worst 0 
+PASS  005b0230 wake lookup vs original: 3000 vectors <= 1 ulp  exact 3000/3000, worst 0 ulp 
+PASS  005afd80 drafting factors vs original: 3000 race rings (1884 with an active wake) <= 1 ulp  exact 3000/3000, worst 0 ulp 
+PASS  garage aero items: grille tape (00423de0, 0..100 % step 5) and spoiler (004241d0, 45..70 deg) = original conversions; clamps  0 / 0 mismatches; 7 % -> 5 %, 99 deg -> 70
+PASS  shipped Cup setup: grille tape 0 %, spoiler 65 deg (internal 20)  0 % 65 deg
+PASS  sync: 43 original snapshots (aero on) x 2 frames, 39 chassis/suspension/wheel/drivetrain states vs original (rel <= 1e-3, floor 2e-2)  worst after 1 frame 1.73e-04, after 2 frames 2.80e-04 spin@5760 +16 state 20 lua -0.00165202 orig -0.001646416
+PASS  sync: 6 driver-head joint states (3 kg head, C 39..44) vs original (rel <= 3e-3, floor 2e-2)  worst 1.08e-03 draft@7200 +16 state 40 lua 0.02824656 orig 0.02821604
+PASS  sync: 1 near-standstill sliding snapshots: chassis position within 1 mm of the original after 1-2 frames  worst 3.81e-06 m tape100build@2880 +16
+PASS  sync: per-wheel tyre Fx / Fy / Fz vs original (rel <= 2e-3, floor 50 N)  worst 1.50e-03 draft@7200 +16 wheel 1 f0 lua -46.0874 orig -46.1626
+PASS  sync: per-frame aero factors (005637e0 + 005afd80) and gear identical to original  factors 0, gear 0 mismatches
+PASS  telemetry: aeroState = ORIGINAL 00561b70 at 44 original snapshot states (rel <= 1e-6, floor 1 N)  bit-exact 44/44, worst 0 ulp, rel 0.00e+00 
+PASS  launch: chassis x/y/z + velocities inside the original's envelope from its 5.0 s snapshot (344 samples)  final v lua 74.751 orig 74.750 | z lua 0.4041 orig 0.4041 | factors lua 1.000/1.000/1.000 orig 1.000/1.000/1.000
+PASS  hsbrake: chassis x/y/z + velocities inside the original's envelope from its 20.0 s snapshot (112 samples)  final v lua 0.017 orig 0.017 | z lua 0.4182 orig 0.4182 | factors lua 1.000/1.000/1.000 orig 1.000/1.000/1.000
+PASS  hscorner: chassis x/y/z + velocities inside the original's envelope from its 18.0 s snapshot (160 samples)  final v lua 74.395 orig 74.394 | z lua 0.4060 orig 0.4059 | factors lua 1.000/1.000/1.000 orig 1.000/1.000/1.000
+PASS  spin: chassis x/y/z + velocities inside the original's envelope from its 18.0 s snapshot (104 samples)  final v lua 65.702 orig 65.702 | z lua 0.4090 orig 0.4090 | factors lua 1.000/1.000/1.000 orig 1.000/1.000/1.000
+PASS  cold: chassis x/y/z + velocities inside the original's envelope from its 10.0 s snapshot (152 samples)  final v lua 74.669 orig 74.669 | z lua 0.4033 orig 0.4033 | factors lua 1.000/1.000/1.000 orig 1.000/1.000/1.000
+PASS  hot: chassis x/y/z + velocities inside the original's envelope from its 10.0 s snapshot (152 samples)  final v lua 74.765 orig 74.765 | z lua 0.4053 orig 0.4053 | factors lua 1.000/1.000/1.000 orig 1.000/1.000/1.000
+PASS  cloudy: chassis x/y/z + velocities inside the original's envelope from its 10.0 s snapshot (152 samples)  final v lua 74.672 orig 74.673 | z lua 0.4028 orig 0.4028 | factors lua 1.000/1.000/1.000 orig 1.000/1.000/1.000
+PASS  headwind: chassis x/y/z + velocities inside the original's envelope from its 10.0 s snapshot (152 samples)  final v lua 74.610 orig 74.605 | z lua 0.4013 orig 0.4013 | factors lua 1.000/1.000/1.000 orig 1.000/1.000/1.000
+PASS  tailwind: chassis x/y/z + velocities inside the original's envelope from its 10.0 s snapshot (152 samples)  final v lua 74.802 orig 74.803 | z lua 0.4059 orig 0.4059 | factors lua 1.000/1.000/1.000 orig 1.000/1.000/1.000
+PASS  crosswind: chassis x/y/z + velocities inside the original's envelope from its 10.0 s snapshot (152 samples)  final v lua 74.753 orig 74.753 | z lua 0.4049 orig 0.4049 | factors lua 1.000/1.000/1.000 orig 1.000/1.000/1.000
+PASS  spoiler45: chassis x/y/z + velocities inside the original's envelope from its 10.0 s snapshot (152 samples)  final v lua 74.757 orig 74.758 | z lua 0.4097 orig 0.4097 | factors lua 1.000/1.000/1.000 orig 1.000/1.000/1.000
+PASS  spoiler70: chassis x/y/z + velocities inside the original's envelope from its 10.0 s snapshot (152 samples)  final v lua 74.718 orig 74.726 | z lua 0.4027 orig 0.4028 | factors lua 1.000/1.000/1.000 orig 1.000/1.000/1.000
+PASS  tape100: chassis x/y/z + velocities inside the original's envelope from its 10.0 s snapshot (152 samples)  final v lua 74.768 orig 74.768 | z lua 0.3980 orig 0.3980 | factors lua 1.000/1.000/1.000 orig 1.000/1.000/1.000
+PASS  tape100build: chassis x/y/z + velocities inside the original's envelope from its 10.0 s snapshot (152 samples)  final v lua 1.634 orig 1.633 | z lua 0.4210 orig 0.4210 | factors lua 1.000/1.000/1.000 orig 1.000/1.000/1.000
+PASS  draft: chassis x/y/z + velocities inside the original's envelope from its 10.0 s snapshot (208 samples)  final v lua 74.824 orig 74.825 | z lua 0.4042 orig 0.4042 | factors lua 0.874/0.877/1.000 orig 0.874/0.877/1.000
+PASS  draftside: chassis x/y/z + velocities inside the original's envelope from its 10.0 s snapshot (152 samples)  final v lua 74.811 orig 74.811 | z lua 0.4042 orig 0.4042 | factors lua 0.931/0.936/1.000 orig 0.931/0.936/1.000
+PASS  creep: chassis x/y/z + velocities inside the original's envelope from its 2.5 s snapshot (76 samples)  final v lua 0.026 orig 0.021 | z lua 0.4175 orig 0.4168 | factors lua 1.000/1.000/1.000 orig 1.000/1.000/1.000
+      scenarios: 70992 ticks in 15.51 s (4578 ticks/s)
+PASS  top speed: session air lowers the equilibrium (launch 35-40 s) below the post-build no-air car, and lowers the chassis (downforce)  v 74.72 vs 75.57 m/s, z 0.4041 vs 0.4190 m
+PASS  acceleration at speed: 10->15 s gain smaller with air than without (drag)
+PASS  downforce loads the tyres: total Fz at ~74 m/s exceeds the at-rest total by > 2000 N  19130 vs 16003 N
+PASS  high-speed braking: first second from ~74 m/s decelerates harder than the 4th second (drag + downforce fall with speed)  15.87 vs 13.21 m/s
+PASS  high-speed cornering: lateral displacement develops, car stays planted (no wheel unloads)  y 709.1 m
+PASS  weather: denser air is slower at 20 s (cold 40 F < default < hot 110 F; cloudy < default)  cold 74.717 default 74.725 hot 74.804 cloudy 74.656 m/s
+PASS  wind: headwind slower than tailwind at 20 s; 30 mph crosswind (toward +Y) adds > 500 N of aero side force toward +Y (original and port)  head 74.64 tail 74.80 m/s | Fy cross 1304 (lua 1304) vs still 39 N
+PASS  rear spoiler (from the same 10 s state): 70 deg sits lower, compresses the rear axle more and is slower at 20 s than 45 deg  rear travel 0.0975 vs 0.0835 m, z 0.4027 vs 0.4098, v 74.723 vs 74.771
+PASS  grille tape 100 % (from the same 10 s state): less drag (faster at 20 s), more front tyre load and a lower chassis than 0 %  v 74.755 vs 74.725, front Fz 10278 vs 8884
+PASS  grille tape 100 % from the garage: the original's full-throttle launch departs (spin near 20 m/s) and the port follows it  v at 20 s lua 4.43 orig 4.43 m/s
+PASS  drafting 8 m behind: drag factor < 1 (005afd80) and faster than the single car at 15 s  factors 0.875/0.879/1.000
+PASS  drafting offset 2 m: weaker wake than straight behind
+PASS  single car (no race ring): all three factors exactly 1.0 every frame
+PASS  spin at speed: 00410b50 stall state behaves as the original (rises > 0 only if the original's does)  lua false orig false
+PASS  low speed (Stage 8 creep/stop/hold): |aero force| < 0.1 % of the car weight (10.5 N) at the original snapshots (original and port)  max |F| 1.4 N
+PASS  startSession() defaults (70 F, no wind, conditions 0, daytime): rho 1.08119202 kg/m^3, air 49.11 C for the density  rho 1.08119202
+PASS  reset keeps the session (air re-applied) and the next frame sets factors 1.0
+PASS  first frame of a session: factors = 1.0 before the first physics tick (005637e0 order)
+PASS  aeroState() leaves every simulation cell unchanged (call counter / stall state restored)  0 cells changed
+PASS  aeroState(): drag, downforce, q, ride height plausible at speed  v 48.2 q 1257 Pa drag 1376 N down 1317 N (front 553 rear 764) My -544 rh 0.1579
+PASS  checkpoint/restore bit-identical with session air + drafting
+PASS  endSession() returns to the post-build state (rho 0, factors 0, no track object)
+PASS  draft environment with cars requires trackLength > 0 (00516daa would not terminate)
+PASS  x86/x87 stacks balanced  FT=0 ESP=f7f000
+
+59 passed, 0 failed

@@ -1,0 +1,15 @@
+# Stage 9 batch 2: per-car aero factor writers/readers (drafting), wind/air globals
+005afd80
+0052c640
+005637e0
+00529c70
+0051eca0
+0051e2a0
+00410150
+00410b30
+00583b30
+005835b0
+00587d20
+00551990
+00551980
+00584730

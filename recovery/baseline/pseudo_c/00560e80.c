@@ -1,0 +1,28 @@
+/* Ghidra pseudo-C; not original source. Program: NR2003.exe; address: 00560e80 */
+
+void FUN_00560e80(void)
+
+{
+  (**(code **)(PTR_PTR_0074fe48 + 0xc))(&DAT_00c08508,&PTR_DAT_0074e854,&DAT_00e84484);
+  (**(code **)(PTR_PTR_0074fe48 + 0xc))(&DAT_00c08560,DAT_00c08500 + 0x179,DAT_00c08500 + 0x391);
+  (**(code **)(PTR_PTR_0074fe48 + 0xc))(&DAT_00c0868c,DAT_00c08318 + 0x179,DAT_00c08318 + 0x391);
+  (**(code **)PTR_PTR_0074fe48)(&DAT_00c085c8,DAT_00c08500 + 0x3a9,DAT_00c08318 + 0x3a9);
+  (**(code **)(PTR_PTR_0074fe48 + 0xc))(&DAT_00c085c8,&DAT_00c085c8,&PTR_DAT_0074fd9c);
+  (**(code **)PTR_PTR_0074fe48)(&DAT_00c0868c,&DAT_00c0868c,&DAT_00c085c8);
+  (**(code **)PTR_PTR_0074fe48)(&DAT_00c0868c,&DAT_00c0868c,&DAT_00c08560);
+  (**(code **)(PTR_PTR_0074fe48 + 0xc))(&DAT_00c0868c,&PTR_DAT_0074e858,&DAT_00c0868c);
+  (**(code **)(PTR_PTR_0074fe48 + 8))(&DAT_00c0868c,DAT_00c08500 + 0x391,&DAT_00c0868c);
+  (**(code **)(PTR_PTR_0074fe48 + 0xc))(&DAT_00c08560,DAT_00c08500 + 0x179,&DAT_00c0868c);
+  (**(code **)(PTR_PTR_0074fe48 + 0xc))(&DAT_00c08560,&DAT_00c08560,&PTR_DAT_0074fda0);
+  (**(code **)PTR_PTR_0074fe48)(&DAT_00c08560,&DAT_00c08560,DAT_00c08500 + 0x3a9);
+  FUN_005b7fe0(&DAT_00c08574,&PTR_DAT_006f746c);
+  FUN_0057cbd0(&DAT_00c08580);
+  FUN_0057cba0(&DAT_00c08508);
+  FUN_0057cba0(&DAT_00c08560);
+  FUN_0057cc10(&LAB_00561040);
+  FUN_005b8040(DAT_00c08500 + 0x39d,DAT_00c08500 + 0x39d,&DAT_00c08574);
+  FUN_005b8080(DAT_00c08318 + 0x39d,DAT_00c08318 + 0x39d,&DAT_00c08574);
+  return;
+}
+
+

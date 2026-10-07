@@ -1,0 +1,28 @@
+Continue from the Stage 9 package (3.8.0-stage9). Stages 1-9 are implemented; Stage 9 still needs the manual
+Roblox Studio validation listed in VALIDACAO.md before Stage 10 starts.
+
+Facts to keep:
+- Mode NR2003_CUP runs the ORIGINAL NR2003 Cup vehicle core generated from NR2003.exe (Core/NR2003Cup,
+  recovery/stage6_7). Generated modules were NOT changed in Stages 8 or 9 and still regenerate byte-identically.
+- Stage 9 finding: the original aero (00561a80 + 00561b70 -> 00410280) always ran in the core, but the car build
+  alone leaves rho (e0b84c) = 0 and the aero factors (car+0x59e/0x5a2/0x5a6) = 0. NR2003CupAero ports the session
+  start 005a3c00 (+005a3ba0/005a3be0) and the per-frame 005637e0 subset (+ drafting 005afd80); the host must call
+  car:startSession(weather) (CupChassisAdapter does). Without it the core is the Stage 6/7/8 post-build state, which
+  every Stage 6/7/8 fixture and self-test uses.
+- Setup items already settable at run time with the original garage conversions: 0x28 brake bias (Stage 8),
+  0x3b grille tape and 0x3d rear spoiler (Stage 9). 16 aero damage-table cells missing from the image windows are
+  restored by NR2003CupAero (recovery/stage9/tools/image_coverage.py finds such gaps: run it on any new data range).
+- Validation method: original code in Unicorn (recovery/stage9/orig_aero.py extends the Stage 8 harness), bit-level
+  unit vectors for hand ports, one/two-frame synchronized snapshots, scenario envelopes from a +1 ulp twin, behaviour
+  checks asserted on both the original and the Luau rows.
+- Tooling: recovery/ghidra_tools (Jython Ghidra scripts + runners + setup notes: Java > 21, user.name=TChapman500,
+  short paths, Unicorn translation-cache pitfall). Python/Unicorn DLLs need short paths on Windows.
+- Deferred/mapped: dynamic weather 005a4cc0; multi-car drafting inputs (Stage 14); aero damage evolution, grille tape
+  -> engine thermal (00554520 -> 0051a000/0051a830) and airspeed bf3a00 -> brake/tyre thermal (Stage 11).
+
+Stage 10 - setup-to-runtime parameter conversion: recover the garage/.sto loading path and the setup -> runtime
+conversion (00559950, 00559820 -> 00425ad0/00425900/00425a20/00424860, 00425690, 0055e9b0 / 005b2f20 rebuild) for
+every setup item the Cup car uses (springs, shocks, bump stops, ARBs, ride heights, wedge/cross weight, track bar,
+camber/caster/toe, tyre pressures/stagger, gears, differential, brake bias, tape, spoiler, fuel/ballast), with
+descriptors (min/max/step/default, toInternal/toDisplay) and the exact derived cells, validated against original
+rebuilds in Unicorn. Do not start Stage 11 (thermal/wear/damage/fuel).

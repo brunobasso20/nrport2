@@ -1,0 +1,3 @@
+005b9cd0 MOV EAX,[0x00ebbcec]
+005b9cd5 MOV [0x00ead27c],EAX
+005b9cda JMP 0x005b9c80

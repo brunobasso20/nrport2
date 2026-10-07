@@ -1,0 +1,10 @@
+005b56a0 MOV EAX,[0x00eab1bc]
+005b56a5 TEST EAX,EAX
+005b56a7 JZ 0x005b56bc
+005b56a9 MOV EDX,dword ptr [EAX + 0x3c]
+005b56ac LEA ECX,[EAX + 0x3c]
+005b56af MOV dword ptr [0x00eab1bc],EDX
+005b56b5 MOV dword ptr [ECX],0x0
+005b56bb RET
+005b56bc XOR EAX,EAX
+005b56be RET

@@ -1,0 +1,15 @@
+005b7ac0 PUSH ESI
+005b7ac1 MOV ESI,ECX
+005b7ac3 CALL 0x005b7c40
+005b7ac8 TEST EAX,EAX
+005b7aca JLE 0x005b7adc
+005b7acc MOV EAX,dword ptr [ESI + 0x18]
+005b7acf MOV ECX,dword ptr [ESI + 0x14]
+005b7ad2 MOV EAX,dword ptr [EAX]
+005b7ad4 IMUL EAX,dword ptr [ESI + 0x8]
+005b7ad8 ADD EAX,ECX
+005b7ada POP ESI
+005b7adb RET
+005b7adc XOR EAX,EAX
+005b7ade POP ESI
+005b7adf RET

@@ -1,0 +1,8 @@
+005b7b70 MOV EAX,dword ptr [ECX + 0x20]
+005b7b73 MOV byte ptr [EAX],0x1
+005b7b76 MOV ECX,dword ptr [ECX + 0x10]
+005b7b79 TEST ECX,ECX
+005b7b7b JZ 0x005b7b84
+005b7b7d PUSH ECX
+005b7b7e CALL dword ptr [0x0103b4c8]
+005b7b84 RET

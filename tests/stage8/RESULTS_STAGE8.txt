@@ -1,0 +1,191 @@
+PATCH_STAGE8.lua 246160 chars; 4 modules; selftest 188065 chars; sha256 d772cbd085c4bcf5
+PASS  load core (image parts + lifted natives + JIT modules)  0.651 s
+PASS  raw: ran 2304 ticks  0.842 s (2736 ticks/s)
+PASS  raw: ticks 1-8 match original (rel <= 2e-5)  worst 4.07e-07 (tick 5 state 42: -0.00079000165 vs -0.000790001242)
+PASS  raw: chassis x/y/z + velocities within original sensitivity envelope  111 samples
+      final x: lua 102.8164  orig 102.7992  pert 102.8254
+PASS  drive: ran 2304 ticks  0.913 s (2523 ticks/s)
+PASS  drive: ticks 1-8 match original (rel <= 2e-5)  worst 2.04e-07 (tick 8 state 42: -0.000117246331 vs -0.000117246127)
+PASS  drive: chassis x/y/z + velocities within original sensitivity envelope  111 samples
+      final x: lua 46.3679  orig 46.3356  pert 46.3658
+PASS  drive: gear sequence equals original (00553d70 + 00552450/80)  0 mismatches
+PASS  drive: reached 4th gear (index 5)  max index 5
+PASS  rev limiter engages near 9300 rpm and cuts throttle  max 9385 rpm
+PASS  checkpoint/restore replays bit-identically
+PASS  contact provider(phase) form and state reads are side-effect free
+PASS  chassis record pose (+0x32d/+0x339) == state x,y,z and quaternion (xyzw)
+PASS  wheel centres above 0055e1e0 contact points, loads positive   w0 h=0.356 Fz=3233 w1 h=0.354 Fz=3962 w2 h=0.350 Fz=4480 w3 h=0.349 Fz=4592
+PASS  translate via original import 005b4560  dx 1.0001
+PASS  x86/x87 stacks balanced after ticks  FT=0 ESP=f7f000
+16 passed, 0 failed
+PASS  00553080 pedal chain vs original: 3000 vectors bit-exact or 1 ulp  exact 3000/3000, <=1ulp 3000, worst 0 ulp 
+PASS  00554f50 speed cache (bf6f44) vs original (<= 1 ulp)  0 off
+PASS  00552d00 axis limiter states (bf63a4/bf63a8) bit-exact  0 off
+PASS  005f7570 attitude vs original: 1500 quaternions within 2 ulp  exact 1500, worst 0 ulp
+PASS  sync: 29 snapshots x 2 frames, 45 states vs original (rel <= 1e-3, floor 1e-2)  worst after 1 frame 2.54e-04, after 2 frames 3.18e-04 coast@1872 +16 state 40 lua 0.0001945495 orig 0.0001913706
+PASS  sync: per-wheel brake torque / Fx / Fy / Fz / vx / slip vs original (rel <= 2e-3)  worst 1.07e-03 coast@1872 +16 wheel 1 field 1 lua 18.4669 orig 18.4133
+PASS  sync: processed pedal and core brake cell identical to original  0 mismatches
+PASS  sync: gear index identical to original  0 mismatches
+PASS  coast: braking phase from the original onset state, chassis x/y/z + velocities within envelope (64 samples)  final x lua 200.368 orig 200.367 pert 200.367 | vx lua 27.062 orig 27.062
+PASS  coast: processed pedal + gear sequence equal to original (except where the original's twin itself differs)  pedal 0, gear 0 mismatches
+PASS  light: braking phase from the original onset state, chassis x/y/z + velocities within envelope (64 samples)  final x lua 192.107 orig 192.107 pert 192.106 | vx lua 22.977 orig 22.977
+PASS  light: processed pedal + gear sequence equal to original (except where the original's twin itself differs)  pedal 0, gear 0 mismatches
+PASS  medium: braking phase from the original onset state, chassis x/y/z + velocities within envelope (64 samples)  final x lua 166.924 orig 166.925 pert 166.924 | vx lua 10.658 orig 10.658
+PASS  medium: processed pedal + gear sequence equal to original (except where the original's twin itself differs)  pedal 0, gear 0 mismatches
+PASS  max: braking phase from the original onset state, chassis x/y/z + velocities within envelope (80 samples)  final x lua 122.149 orig 122.149 pert 122.149 | vx lua 0.003 orig 0.003
+PASS  max: processed pedal + gear sequence equal to original (except where the original's twin itself differs)  pedal 0, gear 0 mismatches
+PASS  highspeed: braking phase from the original onset state, chassis x/y/z + velocities within envelope (64 samples)  final x lua 214.504 orig 214.504 pert 214.504 | vx lua 0.003 orig 0.003
+PASS  highspeed: processed pedal + gear sequence equal to original (except where the original's twin itself differs)  pedal 0, gear 0 mismatches
+PASS  keyboard: braking phase from the original onset state, chassis x/y/z + velocities within envelope (112 samples)  final x lua 132.616 orig 132.615 pert 132.616 | vx lua -0.032 orig -0.032
+PASS  keyboard: processed pedal + gear sequence equal to original (except where the original's twin itself differs)  pedal 0, gear 0 mismatches
+PASS  turn: braking phase from the original onset state, chassis x/y/z + velocities within envelope (64 samples)  final x lua 149.573 orig 149.573 pert 149.586 | vx lua 5.949 orig 5.948
+PASS  turn: processed pedal + gear sequence equal to original (except where the original's twin itself differs)  pedal 0, gear 0 mismatches
+PASS  bias60: braking phase from the original onset state, chassis x/y/z + velocities within envelope (64 samples)  final x lua 122.007 orig 122.010 pert 122.007 | vx lua -0.027 orig -0.029
+PASS  bias60: processed pedal + gear sequence equal to original (except where the original's twin itself differs)  pedal 0, gear 0 mismatches
+PASS  bias85: braking phase from the original onset state, chassis x/y/z + velocities within envelope (96 samples)  final x lua 122.279 orig 122.282 pert 122.282 | vx lua 0.003 orig -0.004
+PASS  bias85: processed pedal + gear sequence equal to original (except where the original's twin itself differs)  pedal 0, gear 0 mismatches
+PASS  nearzero: braking phase from the original onset state, chassis x/y/z + velocities within envelope (108 samples)  final x lua 1.977 orig 1.984 pert 1.982 | vx lua -0.026 orig -0.026
+PASS  nearzero: processed pedal + gear sequence equal to original (except where the original's twin itself differs)  pedal 0, gear 0 mismatches
+PASS  nodriver: braking phase from the original onset state, chassis x/y/z + velocities within envelope (56 samples)  final x lua 122.602 orig 122.602 pert 122.601 | vx lua 0.001 orig 0.001
+PASS  nodriver: processed pedal + gear sequence equal to original (except where the original's twin itself differs)  pedal 0, gear 0 mismatches
+      scenarios: 31968 ticks in 5.33 s (5996 ticks/s)
+PASS  zero brake: core brake cell stays 0 and wheel friction torque is drag only (|T| < 120 N*m)
+PASS  light < medium < max braking: speed 1 s after onset ordered
+PASS  74 % bias, full pedal: brake torque saturates (|T| 2780..2815 N*m front, ~1000 rear) and no wheel locks
+PASS  85 % bias: front wheels LOCK - static branch of 00561040 (|T| below the 3214 N*m capacity)
+PASS  60 % bias: a rear wheel slides/locks (tread < 50 % of road speed), fronts keep rolling
+PASS  max braking: weight transfer (front Fz up, rear Fz down vs coasting) and nose-down pitch rate
+PASS  high-speed braking from ~39 m/s decelerates through the tyres (> 6 m/s^2 mean over 1 s)
+PASS  key brake release: front wheel spin returns to road speed within 0.5 s
+PASS  key brake ramps by 1/12 per frame (00553080 digital binding)
+PASS  braking while turning: lateral motion kept, slower than straight-line medium braking path
+PASS  brake bias: 85 % locks the fronts harder and stops later than 60 % (rear help)
+PASS  near-zero speed: car stops on the pedal, stays stopped after release (original auto-hold, pedal > 0)
+PASS  not driven (005524f0): pedal held at exactly 1.0
+PASS  default setup: bias 74 %, max 3800 N*m, Kb 2812 / 987.99994 N*m  b 0.74000001 Kb 2812 987.999939
+PASS  setBrakeBias(60) = original rebuild cells (2279.9998 / 1520.0001)  2279.99976 1520.00012
+PASS  setBrakeBias(74) restores the shipped default bit-exactly
+PASS  brake temperature readable (frozen build value, Stage 11)  295.0005 K
+PASS  checkpoint/restore bit-identical through key braking and lock-up
+PASS  x86/x87 stacks balanced  FT=0 ESP=f7f000
+49 passed, 0 failed
+PASS  adapter constructed, root anchored and non-colliding
+PASS  numeric origin on the ground under the spawn  origin y 0.0000
+PASS  initial root height = core chassis z (0.42 m) in studs  1.4996 studs
+PASS  car settles on the raycast ground (chassis ref 0.41..0.43 m)  0.4181 m
+PASS  contact planes from raycasts: n = (0,0,1), d = 0 on flat ground  n=(0 0 1) d=1.24e-16
+PASS  telemetry: neutral at rest, loads positive  gear 0 loads 4054 3920 4001 4149
+PASS  accelerates forward = Roblox -Z  dz -37.18 studs, 42.2 km/h, gear 2, 6784 rpm
+PASS  upshifts reached 2nd gear  gear 2
+PASS  wheel visual data: compression ~ -0.06 m, spin advancing  comp -0.0705 angle 3.486 rate 31.98
+PASS  render snapshot encodes/decodes  
+PASS  steer right turns toward +X  look (0.890 -0.006 -0.455) steer cell lf -0.4345
+PASS  collision boundary keeps the chassis box out of the wall  front -120.01 wall -120.00 collided true
+PASS  no physics fault  nil
+PASS  reset returns to spawn pose
+PASS  5 % slope: plane normal tilted, car rolls downhill (-Z)  dz -6.39 studs, plane n=(0.0499 0.0000 0.9988)
+PASS  stage 8: at rest without throttle the original auto-hold applies the brake (00553080)  pedal 0.200 core 0.0400 speed 0.22 km/h
+PASS  stage 8: driving: pedal released (0) once moving with throttle  pedal 0.000 102.2 km/h
+PASS  stage 8: key brake ramps up (<= 1/12 per 36 Hz frame) to 1.0 (digital binding)  pedal after 1 host step 0.0833, after 0.5 s 1.0000
+PASS  stage 8: hard key braking at 74 %: front brake torque saturates (~2800 N*m, Kb 2812) without locking (as the original)
+PASS  stage 8: car brakes to a stop through wheel torque + tyres  0.14 km/h (from 102.2)
+PASS  stage 8: brake key released at standstill: original auto-hold keeps the car still  dz 0.004 studs, pedal 0.980
+PASS  stage 8: nobody seated -> 005524f0 'not driven': pedal held at exactly 1.0  pedal 1.0000
+PASS  stage 8: SetupBrakeBias=60 applied at reset (garage item 0x28 -> 0055e9b0 cells)  Kb 2280 / 1520
+PASS  stage 8: default bias 74 % restored on reset without the attribute
+PASS  stage 8: no physics fault  nil
+PASS  load Core.NR2003Cup  0.02 s
+PASS  raw: ticks 1-8 vs original (rel <= 2e-5)  worst 4.07e-07
+PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 2816 ticks/s | x lua 3.086 orig 3.085 pert 3.097
+PASS  drive: ticks 1-8 vs original (rel <= 2e-5)  worst 2.04e-07
+PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 2509 ticks/s | x lua 2.141 orig 2.131 pert 2.136
+PASS  drive: gear sequence (lifted 00553d70)  0 mismatches
+PASS  checkpoint/restore bit-identical
+Stage 6/7 self-test: 7 passed, 0 failed
+PASS  Roblox/Stage67SelfTest.run(false) passes (what PATCH_STAGE6_7 executes)
+PASS  load Core.NR2003Cup (Stage 8 driver layer)  0.01 s
+PASS  00553080 pedal chain vs original (200 vectors)  worst 0 ulp
+PASS  brake bias cells: 74 % -> 2812/988, 60 % -> original rebuild values  2812/987.9999 2280/1520
+PASS  max: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 2574 ticks/s | x lua 122.15 orig 122.15 (twin spread 0.000) | vx lua 0.00 orig 0.00
+PASS  checkpoint/restore bit-identical while braking
+Stage 8 self-test: 5 passed, 0 failed
+PASS  Roblox/Stage8SelfTest.run(false) passes (what PATCH_STAGE8 executes)
+PASS  load Core.NR2003Cup (Stage 8 driver layer)  0.02 s
+PASS  00553080 pedal chain vs original (200 vectors)  worst 0 ulp
+PASS  brake bias cells: 74 % -> 2812/988, 60 % -> original rebuild values  2812/987.9999 2280/1520
+PASS  max: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 2577 ticks/s | x lua 122.15 orig 122.15 (twin spread 0.000) | vx lua 0.00 orig 0.00
+PASS  keyboard: braking phase inside the original envelope (1728 ticks)  0 state / 0 pedal outside | 2554 ticks/s | x lua 132.62 orig 132.62 (twin spread 0.001) | vx lua -0.03 orig -0.03
+PASS  bias85: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 2514 ticks/s | x lua 122.28 orig 122.28 (twin spread 0.000) | vx lua 0.00 orig -0.00
+PASS  nearzero: braking phase inside the original envelope (1584 ticks)  0 state / 0 pedal outside | 2478 ticks/s | x lua 1.98 orig 1.98 (twin spread 0.002) | vx lua -0.03 orig -0.03
+PASS  checkpoint/restore bit-identical while braking
+Stage 8 self-test: 8 passed, 0 failed
+PASS  Roblox/Stage8SelfTest.run(true) passes (full: 4 braking phases)
+adapter mock: 28 passed, 0 failed
+PASS  load Core.NR2003Cup  0.14 s
+PASS  raw: ticks 1-8 vs original (rel <= 2e-5)  worst 4.07e-07
+PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 632 ticks/s | x lua 3.086 orig 3.085 pert 3.097
+PASS  drive: ticks 1-8 vs original (rel <= 2e-5)  worst 2.04e-07
+PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 566 ticks/s | x lua 2.141 orig 2.131 pert 2.136
+PASS  drive: gear sequence (lifted 00553d70)  0 mismatches
+PASS  checkpoint/restore bit-identical
+Stage 6/7 self-test: 7 passed, 0 failed
+Stage 6/7 aplicado. Backup: ServerStorage.NR2003Backup_Stage67_1791339964_0
+PASS  patch runs to completion on a Stage 5 bench (incl. self-test)  nil
+PASS  Core.NR2003Cup installed with 8 modules  8
+PASS  Core.NR2003CupVehicle / CupTune, Roblox.CupChassisAdapter / Stage67SelfTest installed
+PASS  ModeConfig switched to NR2003_CUP
+PASS  Stage 5 modules kept
+PASS  server/client sources replaced
+PASS  backup folder with package + scripts in ServerStorage  1
+PASS  package tagged NR2003Stage = 6-7
+PASS  forced failure reports an error  [string "PATCH_STAGE6_7"]:24855: Patch Stage 6/7 revertido (nada mudou além do backup em ServerStorage.NR2003Backup_Sta
+PASS  revert restores the previous package
+PASS  revert restores server/client sources
+patch mock: 11 passed, 0 failed
+PASS  load Core.NR2003Cup  0.14 s
+PASS  raw: ticks 1-8 vs original (rel <= 2e-5)  worst 4.07e-07
+PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 629 ticks/s | x lua 3.086 orig 3.085 pert 3.097
+PASS  drive: ticks 1-8 vs original (rel <= 2e-5)  worst 2.04e-07
+PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 571 ticks/s | x lua 2.141 orig 2.131 pert 2.136
+PASS  drive: gear sequence (lifted 00553d70)  0 mismatches
+PASS  checkpoint/restore bit-identical
+Stage 6/7 self-test: 7 passed, 0 failed
+Stage 6/7 aplicado. Backup: ServerStorage.NR2003Backup_Stage67_1791339968_0
+PASS  baseline: PATCH_STAGE6_7 installs on the Stage 5 bench  nil
+PASS  load Core.NR2003Cup  0.14 s
+PASS  raw: ticks 1-8 vs original (rel <= 2e-5)  worst 4.07e-07
+PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 628 ticks/s | x lua 3.086 orig 3.085 pert 3.097
+PASS  drive: ticks 1-8 vs original (rel <= 2e-5)  worst 2.04e-07
+PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 572 ticks/s | x lua 2.141 orig 2.131 pert 2.136
+PASS  drive: gear sequence (lifted 00553d70)  0 mismatches
+PASS  checkpoint/restore bit-identical
+Stage 6/7 self-test: 7 passed, 0 failed
+PASS  load Core.NR2003Cup (Stage 8 driver layer)  0.04 s
+PASS  00553080 pedal chain vs original (200 vectors)  worst 0 ulp
+PASS  brake bias cells: 74 % -> 2812/988, 60 % -> original rebuild values  2812/987.9999 2280/1520
+PASS  max: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 559 ticks/s | x lua 122.15 orig 122.15 (twin spread 0.000) | vx lua 0.00 orig 0.00
+PASS  checkpoint/restore bit-identical while braking
+Stage 8 self-test: 5 passed, 0 failed
+Stage 8 aplicado. Backup: ServerStorage.NR2003Backup_Stage8_1791339971_0
+PASS  PATCH_STAGE8 runs to completion on the Stage 6/7 bench (incl. Stage 6/7 + Stage 8 self-tests)  nil
+PASS  Core.NR2003Cup keeps 8 modules; generated Stage 6/7 modules untouched
+PASS  NR2003CupDriver updated (Stage 8 brake chain)
+PASS  NR2003CupVehicle / CupChassisAdapter updated, Stage8SelfTest installed
+PASS  server untouched, client HUD updated
+PASS  Stage 5 / 6-7 modules kept
+PASS  backup folder with package + client in ServerStorage  1
+PASS  package tagged NR2003Stage = 8
+PASS  load Core.NR2003Cup  0.14 s
+PASS  raw: ticks 1-8 vs original (rel <= 2e-5)  worst 4.07e-07
+PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 637 ticks/s | x lua 3.086 orig 3.085 pert 3.097
+PASS  drive: ticks 1-8 vs original (rel <= 2e-5)  worst 2.04e-07
+PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 562 ticks/s | x lua 2.141 orig 2.131 pert 2.136
+PASS  drive: gear sequence (lifted 00553d70)  0 mismatches
+PASS  checkpoint/restore bit-identical
+Stage 6/7 self-test: 7 passed, 0 failed
+PASS  forced failure reports an error  [string "PATCH_STAGE8"]:1184: Patch Stage 8 revertido (nada mudou além do backup em ServerStorage.NR2003Backup_Stage8_1
+PASS  revert restores the previous package
+PASS  revert restores the client source
+PASS  refuses a bench without Stage 6/7  [string "PATCH_STAGE8"]:13: Core.NR2003Cup ausente: aplique PATCH_STAGE6_7 antes
+patch8 mock: 13 passed, 0 failed
+syntax OK

@@ -1,0 +1,17 @@
+0057d3f0 MOV EAX,dword ptr [ESP + 0x8]
+0057d3f4 MOV ECX,dword ptr [EAX]
+0057d3f6 FLD float ptr [ECX]
+0057d3f8 FCOMP float ptr [0x006ea454]
+0057d3fe FNSTSW AX
+0057d400 TEST AH,0x44
+0057d403 JP 0x0057d412
+0057d405 MOV ECX,dword ptr [ESP + 0x4]
+0057d409 MOV EDX,dword ptr [ECX]
+0057d40b MOV dword ptr [EDX],0x3f800000
+0057d411 RET
+0057d412 FLD float ptr [0x006e97d8]
+0057d418 FDIV float ptr [ECX]
+0057d41a MOV EAX,dword ptr [ESP + 0x4]
+0057d41e MOV ECX,dword ptr [EAX]
+0057d420 FSTP float ptr [ECX]
+0057d422 RET
