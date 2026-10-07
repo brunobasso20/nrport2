@@ -356,6 +356,32 @@ car:SetAttribute("SetupGrilleTape", nil); car:SetAttribute("SetupSpoiler", nil);
 ctl:reset()
 check("stage 9: attributes removed -> Cup defaults again", car:GetAttribute("GrilleTapeApplied") == 0 and car:GetAttribute("SpoilerApplied") == 65
 	and math.abs(car:GetAttribute("AirDensityApplied") - 1.08119202) < 1e-6)
+-- ===== Stage 10: garage setup attributes through the ORIGINAL car build =====
+if ctl.core.V.applySetup then
+	car:SetAttribute("Setup_springLF", 1700); car:SetAttribute("Setup_camberLF", -2.96); car:SetAttribute("Setup_trackBarRR", 11)
+	ctl:reset()
+	local S10 = ctl.core:setupModule()
+	local applied = ctl.core:setup()
+	local want = S10.cupGarageDefault()
+	S10.set(want, "springLF", 1700); S10.set(want, "camberLF", -2.96); S10.set(want, "trackBarRR", 11)
+	local d10 = ctl.core:setupDump()
+	check("stage 10: Setup_<item> attributes -> 005581d0 (snap/clamp) -> ORIGINAL build at reset",
+		car:GetAttribute("SetupError") == nil and applied[20] == want[20] and applied[32] == want[32] and applied[46] == want[46]
+		and d10.runtime.springRate[1] == S10.bitsToF(applied[20]),
+		string.format("%s %.2f s, spring LF %g lb/in -> %.0f N/m, camber LF %.2f deg", tostring(car:GetAttribute("SetupStructure")),
+			car:GetAttribute("SetupApplySeconds") or -1, S10.display(applied, "springLF"), d10.runtime.springRate[1], S10.display(applied, "camberLF")))
+	local rep0 = ctl.core:setupReport()
+	ctl:reset()
+	check("stage 10: reset with an unchanged setup does not rebuild (reset image keeps the setup)", ctl.core:setupReport() == rep0
+		and ctl.core:setup()[20] == applied[20])
+	input = {throttle = 0, brake = 0, steer = 0, handbrake = 0, clutch = 0}
+	for f = 1, 60 do ctl:step(dt, input) end
+	check("stage 10: car runs on the rebuilt setup (no fault, loads positive)", ctl.fault == nil and ctl:telemetry().wheels ~= nil, tostring(ctl.fault))
+	car:SetAttribute("Setup_springLF", nil); car:SetAttribute("Setup_camberLF", nil); car:SetAttribute("Setup_trackBarRR", nil)
+	ctl:reset()
+	check("stage 10: attributes removed -> shipped default image (structure 'image')", car:GetAttribute("SetupStructure") == "image"
+		and ctl.core.V.setupStructure() == "image")
+end
 -- the Studio self-test modules themselves (quick mode), as the patches run them after installing
 local ST = mockRequire({ref = "Roblox.Stage67SelfTest"})
 local stOk = ST.run(false)
@@ -370,5 +396,12 @@ local st9Ok = ST9.run(false)
 check("Roblox/Stage9SelfTest.run(false) passes (what PATCH_STAGE9 executes)", st9Ok)
 local st9Full = ST9.run(true)
 check("Roblox/Stage9SelfTest.run(true) passes (full: launch, high-speed braking, drafting)", st9Full)
+if SOURCES["Roblox.Stage10SelfTest"] then
+	local ST10 = mockRequire({ref = "Roblox.Stage10SelfTest"})
+	local st10Ok = ST10.run(false)
+	check("Roblox/Stage10SelfTest.run(false) passes (what PATCH_STAGE10 executes)", st10Ok)
+	local st10Full = ST10.run(true)
+	check("Roblox/Stage10SelfTest.run(true) passes (full: more builds, 8 s drive with a setup)", st10Full)
+end
 print(string.format("\nadapter mock: %d passed, %d failed", passed, failed))
 if failed > 0 then error("adapter mock tests failed") end

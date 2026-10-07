@@ -1,0 +1,3 @@
+00569270 MOV EAX,dword ptr [ESP + 0x4]
+00569274 MOV dword ptr [ECX],EAX
+00569276 RET 0x4

@@ -1,0 +1,5 @@
+005bd200 MOV EAX,dword ptr [ESP + 0x4]
+005bd204 MOV EAX,dword ptr [EAX]
+005bd206 NOT EAX
+005bd208 AND EAX,0x1
+005bd20b RET

@@ -1,0 +1,3 @@
+00557340 MOV EAX,dword ptr [ESP + 0x4]
+00557344 MOV dword ptr [ESP + 0x4],EAX
+00557348 JMP 0x006c4aa0

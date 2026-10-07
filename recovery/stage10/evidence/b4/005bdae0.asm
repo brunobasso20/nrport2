@@ -1,0 +1,4 @@
+005bdae0 PUSH 0xa1
+005bdae5 CALL 0x005bd360
+005bdaea ADD ESP,0x4
+005bdaed JMP 0x005bd910

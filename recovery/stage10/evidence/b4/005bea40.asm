@@ -1,0 +1,42 @@
+005bea40 FLD dword ptr [ESP + 0x8]
+005bea44 FSQRT
+005bea46 FDIVR qword ptr [0x006e9808]   ; [006e9808] f32=0.0 i32=0 f64=1.0
+005bea4c CALL 0x006c72b0
+005bea51 FLD ST0
+005bea53 FPTAN
+005bea55 MOV DL,byte ptr [ESP + 0x14]
+005bea59 MOV ECX,dword ptr [ESP + 0x10]
+005bea5d XOR EAX,EAX
+005bea5f TEST DL,DL
+005bea61 SETNZ AL
+005bea64 SUB ECX,EAX
+005bea66 MOV EAX,0x1
+005bea6b SHL EAX,CL
+005bea6d MOV ECX,dword ptr [ESP + 0x4]
+005bea71 DEC EAX
+005bea72 TEST DL,DL
+005bea74 MOV dword ptr [ESP + 0x14],EAX
+005bea78 MOV dword ptr [ECX + 0x14],EAX
+005bea7b FSTP ST0
+005bea7d JZ 0x005bea83
+005bea7f NEG EAX
+005bea81 JMP 0x005bea85
+005bea83 XOR EAX,EAX
+005bea85 FLD dword ptr [ESP + 0xc]
+005bea89 FDIVR ST0,ST1
+005bea8b MOV dword ptr [ECX + 0x10],EAX
+005bea8e FSTP dword ptr [ECX]
+005bea90 FILD dword ptr [ESP + 0x14]
+005bea94 FLD dword ptr [0x006ea44c]   ; [006ea44c] f32=0.5 i32=1056964608 f64=1.71188778959e-12
+005bea9a FADD ST0,ST1
+005bea9c FDIV ST0,ST3
+005bea9e FSTP dword ptr [ECX + 0x4]
+005beaa1 FXCH ST2
+005beaa3 FDIV ST0,ST2
+005beaa5 FSTP dword ptr [ECX + 0x8]
+005beaa8 FSTP ST1
+005beaaa FLD dword ptr [ESP + 0xc]
+005beaae FDIV ST0,ST1
+005beab0 FSTP dword ptr [ECX + 0xc]
+005beab3 FSTP ST0
+005beab5 RET

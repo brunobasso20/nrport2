@@ -1,0 +1,5 @@
+005bdd00 MOV ECX,dword ptr [ESP + 0x4]
+005bdd04 XOR EAX,EAX
+005bdd06 CMP ECX,0xdac
+005bdd0c SETGE AL
+005bdd0f RET

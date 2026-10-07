@@ -1,0 +1,12 @@
+004ef9e0 MOV EAX,dword ptr [ESP + 0x10]
+004ef9e4 MOV ECX,dword ptr [ESP + 0xc]
+004ef9e8 MOV EDX,dword ptr [ESP + 0x8]
+004ef9ec PUSH EAX
+004ef9ed MOV EAX,dword ptr [ESP + 0x8]
+004ef9f1 PUSH ECX
+004ef9f2 PUSH EDX
+004ef9f3 PUSH EAX
+004ef9f4 CALL 0x004ef940
+004ef9f9 ADD ESP,0x10
+004ef9fc MOV [0x0074842c],EAX   ; [0074842c] f32=nan i32=-1 f64=6.3659873724e-314
+004efa01 RET

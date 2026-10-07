@@ -1,0 +1,9 @@
+005bdd50 MOV ECX,dword ptr [ESP + 0x4]
+005bdd54 XOR EAX,EAX
+005bdd56 TEST ECX,ECX
+005bdd58 JZ 0x005bdd62
+005bdd5a MOV ECX,dword ptr [ECX + 0x8]
+005bdd5d INC EAX
+005bdd5e TEST ECX,ECX
+005bdd60 JNZ 0x005bdd5a
+005bdd62 RET

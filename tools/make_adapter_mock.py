@@ -23,6 +23,8 @@ bundle = {
     'Roblox.Stage8SelfTest': src(root / 'roblox/Stage8SelfTest.lua'),
     'Roblox.Stage9SelfTest': src(root / 'roblox/Stage9SelfTest.lua'),
 }
+if (root / 'roblox/Stage10SelfTest.lua').exists():
+    bundle['Roblox.Stage10SelfTest'] = src(root / 'roblox/Stage10SelfTest.lua')
 def long_string(text):
     eq = '='
     while (']' + eq + ']') in text: eq += '='

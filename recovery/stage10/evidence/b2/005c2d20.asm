@@ -1,0 +1,8 @@
+005c2d20 MOV EAX,dword ptr [ESP + 0x4]
+005c2d24 MOV EAX,dword ptr [EAX + 0x9]
+005c2d27 TEST EAX,EAX
+005c2d29 JZ 0x005c2d2e
+005c2d2b MOV EAX,dword ptr [EAX]
+005c2d2d RET
+005c2d2e XOR EAX,EAX
+005c2d30 RET

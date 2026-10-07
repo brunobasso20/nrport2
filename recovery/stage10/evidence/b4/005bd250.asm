@@ -1,0 +1,7 @@
+005bd250 MOV ECX,dword ptr [ESP + 0x4]
+005bd254 MOV EAX,dword ptr [ECX*0x4 + 0xed7840]
+005bd25b TEST EAX,EAX
+005bd25d JNZ 0x005bd268
+005bd25f MOV dword ptr [ESP + 0x4],ECX
+005bd263 JMP 0x005bd050
+005bd268 RET

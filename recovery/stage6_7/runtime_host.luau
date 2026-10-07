@@ -151,10 +151,23 @@ V.TPF = TPF; V.ENGINE = ENGINE; V.ROOT = ROOT; V.INPUTS = INPUTS; V.STATEBLK = S
 V._fpu = function() return FT, ESP end
 V._jit = function(a) JIT[a]() end
 V.base = BASE
+-- Stage 10: the setup application (NR2003CupBuild) rebuilds the car on M and commits the result as the
+-- new reset image (the original rebuilds the car when a garage setup is applied)
+V._pristine = function() return PRISTINE end
+V.imageSize = Image.size
+-- the translated callback table (005b9d10 targets) and a loader for another callback set built from the
+-- same services (Stage 10 generic structure, NR2003CupJITG*)
+V._jitTable = function() return JIT end
 
 -- install the translated JIT callbacks (NR2003CupJIT* modules)
 local ctx = { M = M, LKF = LKF, LKU = LKU, NB = NB, NC = NC, JIT = JIT }
 for _, install in ipairs(jitModules or {}) do install(ctx) end
+V._jitLoad = function(modules)
+	local t = {}
+	local c = { M = M, LKF = LKF, LKU = LKU, NB = NB, NC = NC, JIT = t }
+	for _, install in ipairs(modules) do install(c) end
+	return t
+end
 V.reset()
 return V
 end

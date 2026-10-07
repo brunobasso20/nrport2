@@ -1,0 +1,3 @@
+00410b30 MOV dword ptr [0x007636e0],0x0
+00410b3a MOV dword ptr [0x007636e4],0x0
+00410b44 RET

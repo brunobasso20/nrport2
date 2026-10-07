@@ -1,3 +1,8 @@
+-- Stage 10: garage setup at initialize/reset (car attributes Setup_<item> in display units, e.g.
+-- Setup_springLF = 1700, Setup_camberLF = -2.5; legacy SetupBrakeBias/SetupGrilleTape/SetupSpoiler map to
+-- items brakeBias/grilleTape/spoilerAngle). Each value goes through the ORIGINAL garage function 005581d0
+-- (snap to the step grid + clamp), and the setup is applied by the ORIGINAL car build (core:applySetup).
+-- Rebuild only when the setup changed; the rebuilt car is the core's reset image.
 -- Stage 9: session air + aero setup at initialize/reset (car attributes), per-frame track normal and
 -- test-only phantom draft (aeroHostInputs), aero telemetry. The aero forces themselves are computed
 -- by the ORIGINAL core (00561a80/00561b70); the host applies no aero force.
@@ -66,19 +71,63 @@ function M:numericPoint(p)
 end
 function M:numericVector(v) local x,y,z=fromLocal(self.origin:VectorToObjectSpace(v));return x,y,z end
 
+-- Stage 10: garage setup from the car attributes (nil when the core has no Stage 10 modules)
+local LEGACY_SETUP={brakeBias="SetupBrakeBias",grilleTape="SetupGrilleTape",spoilerAngle="SetupSpoiler"}
+function M:garageSetup()
+    local Setup=self.core.V.Setup
+    if not Setup then return nil end
+    local s=Setup.cupGarageDefault()
+    for i=0,70 do
+        if Setup.adjustable(i) then
+            local name=Setup.ITEM[i].name
+            local v=self.car:GetAttribute("Setup_"..name)
+            if not U.finite(v) and LEGACY_SETUP[name] then v=self.car:GetAttribute(LEGACY_SETUP[name]) end
+            if U.finite(v) then Setup.set(s,i,v) end
+        end
+    end
+    return s
+end
+function M:applyGarageSetup(s)
+    local key=table.concat(s,",",0,183)
+    if key==self.appliedSetupKey then return end
+    local ok,rep=self.core:applySetup(s)
+    self.car:SetAttribute("SetupStructure",rep.structure);self.car:SetAttribute("SetupApplySeconds",rep.seconds)
+    if ok then
+        self.appliedSetupKey=key;self.car:SetAttribute("SetupError",nil)
+        local d=self.core:setupDump()
+        local r=d.runtime
+        print(string.format("[NR2003 Stage 10] setup aplicado (%s, %.2f s): molas %.0f/%.0f/%.0f/%.0f N/m, freio %.0f/%.0f N*m, marchas %.3f/%.3f/%.3f/%.3f x %.3f",
+            rep.structure,rep.seconds or 0,r.springRate[1],r.springRate[2],r.springRate[3],r.springRate[4],r.brakeTorque[1],r.brakeTorque[3],
+            r.gearRatio[3],r.gearRatio[4],r.gearRatio[5],r.gearRatio[6],r.finalDrive))
+    else
+        self.car:SetAttribute("SetupError",tostring(rep.firstViolation))
+        warn("NR2003 Stage 10: setup não representável, mantido o anterior ("..tostring(rep.firstViolation)..")")
+    end
+end
 function M:initialize()
     self.origin=self:groundOrigin(self.spawn)
     self.core:reset()
-    -- Stage 8: garage brake bias (setup item 0x28, % front, 50..90). Car attribute SetupBrakeBias;
-    -- absent = shipped Cup default (74). Applied at build/reset only, like the original garage.
-    local bias=self.car:GetAttribute("SetupBrakeBias")
-    if U.finite(bias) then self.brakeBias=self.core:setBrakeBias(bias) else self.brakeBias=select(2,self.core:brakeBias()) end
-    self.car:SetAttribute("BrakeBiasApplied",self.brakeBias)
-    -- Stage 9: garage aero items read at run time by the original aero (00410280): grille tape
-    -- (item 0x3b, % 0..100 step 5) and rear spoiler (item 0x3d, deg 45..70). Absent = Cup defaults.
     local function num(name) local v=self.car:GetAttribute(name);return U.finite(v) and v or nil end
-    local tape,spoiler=self.core:setAeroSetup({grilleTape=num("SetupGrilleTape"),spoiler=num("SetupSpoiler")})
-    self.car:SetAttribute("GrilleTapeApplied",tape);self.car:SetAttribute("SpoilerApplied",spoiler)
+    local garage=self:garageSetup()
+    if garage then
+        -- Stage 10: the whole garage setup through the ORIGINAL build (brake bias, tape and spoiler included)
+        self:applyGarageSetup(garage)
+        self.brakeBias=select(2,self.core:brakeBias())
+        self.car:SetAttribute("BrakeBiasApplied",self.brakeBias)
+        local tape,spoiler=self.core:aeroSetup()
+        self.car:SetAttribute("GrilleTapeApplied",tape);self.car:SetAttribute("SpoilerApplied",spoiler)
+    else
+        -- Stage 8: garage brake bias (setup item 0x28, % front, 50..90). Car attribute SetupBrakeBias;
+        -- absent = shipped Cup default (74). Applied at build/reset only, like the original garage.
+        local bias=self.car:GetAttribute("SetupBrakeBias")
+        if U.finite(bias) then self.brakeBias=self.core:setBrakeBias(bias) else self.brakeBias=select(2,self.core:brakeBias()) end
+        self.car:SetAttribute("BrakeBiasApplied",self.brakeBias)
+        -- Stage 9: garage aero items read at run time by the original aero (00410280): grille tape
+        -- (item 0x3b, % 0..100 step 5) and rear spoiler (item 0x3d, deg 45..70). Absent = Cup defaults.
+        local tape,spoiler=self.core:setAeroSetup({grilleTape=num("SetupGrilleTape"),spoiler=num("SetupSpoiler")})
+        self.car:SetAttribute("GrilleTapeApplied",tape);self.car:SetAttribute("SpoilerApplied",spoiler)
+    end
+    local tape,spoiler=self.core:aeroSetup()
     -- Stage 9: session start 005a3c00 = race weather settings (ADAPTER: car attributes standing for
     -- the race options; absent = original defaults 70 F, no wind, conditions 0, daytime). TrackNorth
     -- (rad) stands for the track's north angle (bdbcf8) in the core frame. AeroSession=false keeps the

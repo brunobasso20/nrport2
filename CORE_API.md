@@ -1,3 +1,53 @@
+# Setup — API do Stage 10 (núcleo NR2003 Cup)
+
+O setup da garagem é convertido em parâmetros de tempo de execução **pelo próprio build original do carro**, erguido do
+x86 para Luau (`NR2003CupBuild` + `NR2003CupBuildCode*`): `00559820` (itens derivados) → motor → combustível → pneus →
+árvore → `005b2f20` (`0055e9b0` grava o setup nas células/registros e o emissor gera os callbacks) → `0054d610` ×4.
+Nenhuma fórmula de conversão é escrita à mão fora do port das funções da garagem (`NR2003CupSetup`). Aplicar um setup
+reconstrói o carro e o reinicia (como sair da garagem para a pista); o resultado vira a nova imagem de `reset()`.
+
+```lua
+local car = Vehicle.new()
+local Setup = car:setupModule()            -- NR2003CupSetup (puro, sem Instances)
+local s = car:defaultSetup()               -- setup cru [0..183] = garagem padrão do Cup (00559950)
+Setup.set(s, "springLF", 1700)             -- unidades de exibição -> 005581d0 (grade + limites) -> toInternal
+Setup.step(s, "camberRF", true)            -- 005583e0: +1 passo (false = -1)
+Setup.setIndex(s, 57, 20)                  -- 00558380: diferencial no índice 20 da grade
+local ok, rep = car:applySetup(s)          -- build ORIGINAL; ok=false -> setup anterior mantido
+print(rep.structure, rep.seconds)          -- "image" | "natural" | "generic"
+local d = car:setupDump()                  -- inspeção garagem -> tempo de execução (sem saída por tick)
+print(Setup.display(car:setup(), "cornerWeightLF"), d.runtime.springRate[1], d.runtime.gearRatio[3])
+```
+
+| Método | Contrato |
+|---|---|
+| `setupModule()` | o módulo `NR2003CupSetup` (ver abaixo) |
+| `defaultSetup()` | cópia da garagem padrão do Cup (`c03350` após `00559950`), formato cru `[0..183]` |
+| `applySetup(s, opts?)` | aplica o setup cru `s` (u32 por item: bits float32 ou int32) pelo build original. Padrão → imagem entregue bit a bit (`structure = "image"`); senão tenta a estrutura **natural** (estrito: o resultado do emissor deste setup = o do padrão → exatamente o código original do setup) e cai para a **genérica**. Grava a garagem `c03350` e o ativo `c055c0`, roda a sequência, compara com a referência (eventos, literais, pool `d47d60`, topo de literais `ec02c4`, fim do código `ebbcec`, slots dos callbacks) e só então grava a pegada do build na imagem de reset e chama `reset()` (camadas 8/9 incluídas). `opts.structure` força uma estrutura; `opts.rebuild = true` reconstrói o padrão em vez de restaurar a imagem. Retorna `ok, report` |
+| `setup()` | setup aplicado (`c055c0` após `00559820`, inclui os itens derivados) |
+| `setupReport()` | último relatório: `ok, structure, violations, firstViolation, imposed, events, literals, pool, litTop, codeEnd, seconds, attempts` |
+| `setupDump(out?)` | `items` = itens ajustáveis {índice, nome, unidade, valor exibido, cru}; `runtime` = células gravadas pelo build: `springRate` (`0074e0a0`), `bumpStopRate` (`0074e0d0`), `bumpStopGap` (`0074e0b0`), `bumpRubber` (`0074e0c0`), `shockBump`/`shockRebound` (`0074e0e0`/`0074e0f0`), `antiRollRate` (células var. de `0074e788/c`), `brakeTorque` (Kb, `c0850c..`), `toeHalf` (`c086b0..`), `springPerch` (`c083b0..`), `trackBar` (`c085ac`, `*c085b0`), `aeroRefHeight` (`c084c8/cc`), `aeroPitchOffset` (`c083c4`), `casterTrail` (`c082d4/d8`), `gearCount`/`gearRatio`/`finalDrive` (motor `+0x444/+0x448../+0x468`), `tyrePressure` (pneu `+0`) |
+
+`NR2003CupSetup` (porta à mão, bit a bit nos dois CWs; `mode` = `"nearest"` 0x027f, padrão, ou `"down"` 0x077f):
+`ITEM[i]` (nome, unidade, grupo, status, descritor), `index(nome)`, `adjustable(i)`, `toInternal(i, bitsExibição, mode)`,
+`toDisplay(i, cru, mode)`, `stepCount(i)` (`005582d0`), `stepIndex(s, i)` (`00558320`), `snapped(s, i)` (`00557e40`),
+`setSnapped(s, i, bits)` (`005581d0`), `setClamped(s, i, bits)` (`005580f0`), `step(s, i, up)` (`005583e0`),
+`setIndex(s, i, k)` (`00558380`), `defaults()` (`00557d20`), `validateLoaded(s)` (`00558da0` + `004247e0`, arquivo .sto),
+`copy`, `cupDefault`, `cupGarageDefault`; conveniência (ROBLOX ADAPTER): `display(s, i)` → número, `set(s, i, número)`.
+
+Baixo nível (`car.V`): `applySetup/setup/setupReport/setupDump/setupStructure`, `V.Setup`, `V.Build`
+(`run(items, structure)`, `begin/step/check`, `saveFootprint/loadFootprint/copyFootprint`, `REF`), `V._bindDriverCells`
+(Stage 8, re-liga as células de freio/inércia após um rebuild). Núcleo: `V._pristine()` (imagem de reset), `V.imageSize`,
+`V._jitTable()` / `V._jitLoad(módulos)` (conjunto de callbacks ativo / carregar `NR2003CupJITG*`).
+A relação de direção (item 0x30) é armazenada/convertida como no original; quem a usa é a cadeia de direção (Stage 12,
+provisória). Combustível, temperaturas e desgaste (itens 0x31, 0x47..0x5a) entram no build; a evolução é do Stage 11.
+
+Adaptador Roblox: atributos `Setup_<nomeDoItem>` no carro em unidades da garagem (`Setup_springLF = 1700`,
+`Setup_camberLF = -2.5`, ...; `SetupBrakeBias`, `SetupGrilleTape`, `SetupSpoiler` continuam valendo) aplicados no
+`initialize/reset` só quando o setup muda; saídas `SetupStructure`, `SetupApplySeconds`, `SetupError`.
+
+---
+
 # Aerodinâmica — API do Stage 9 (núcleo NR2003 Cup)
 
 As forças aerodinâmicas são calculadas **pelo código original gerado no build** (`00561a80` + `00561b70` →

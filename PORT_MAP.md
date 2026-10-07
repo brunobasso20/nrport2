@@ -1,3 +1,60 @@
+# Mapa de recuperação — Stage 10 (setup completo → parâmetros de tempo de execução)
+
+Base: Stage 9 (3.8.0-stage9). Evidências: `recovery/stage10/` (pseudo-C limpo em `pseudo/stage10_setup.c`, exportações do
+Ghidra em `evidence/b1..b4`, harness `orig_setup.py`, controle do emissor `emitter_control.py`, geradores). Detalhes:
+`recovery/stage10/README_RECOVERY_STAGE10.md`. Mapa por item (184 itens, endereço/nome/exibição/unidade/faixa/passo/
+conversão/destino/status/confiança/validação): **`SETUP_MAP.md`**.
+Legenda: **EXACT**, **LUA PORTED**, **LUA VALIDATED**, **ROBLOX INTEGRATED**, **ADAPTER**, **PROVISIONAL**, **UNKNOWN**.
+
+**Achado principal:** o NR2003 aplica um setup **reconstruindo o carro**, e o build **gera de novo os callbacks x87**
+com decisões que dependem dos valores (dobras de 0/1, compartilhamento de células constantes, dedup de literais). O
+código traduzido do Stage 6/7 é o do setup padrão. O Stage 10 ergue o build original inteiro para Luau, conduz as
+decisões do emissor por tabela (estrutura natural = código do padrão, verificada; estrutura genérica = mesmo emissor
+sem as dobras que variam entre setups) e reconstrói o carro em Luau para qualquer setup da garagem.
+
+## Lógica original NR2003 — garagem (portada à mão, `Core/NR2003Cup/NR2003CupSetup`)
+
+| Endereço | Papel | Destino Luau | Status | Validação |
+|---|---|---|---|---|
+| `c05150` | 184 × {kind u16, descritor*}; descritor: tipo (3 int / 4 float), mín, máx, passo, padrão, toInternal, toDisplay | `NR2003CupSetupData.items` (gerado do exe) | EXACT | 184/184 = original |
+| `00423dc0..004241f0` | 29 conversores de unidade (identidade, %, graus, molas ×175×MR², pol, toe, lb, gal, K, barras, aerofólio) | `Setup.CONV` | EXACT · LUA VALIDATED | 2346 + 2433 vetores bit a bit em cada CW (0x027f / 0x077f), incl. −0 e NaN |
+| `00557d20` | padrão do setup pelo descritor (CRT) | `Setup.defaults` | EXACT · LUA VALIDATED | = setup CRT |
+| `00559950` (+`004254d0`, `00424490`) | complemento do padrão do Cup (combustível cheio, marchas, batentes) | `cupDefault` / `cupGarageDefault` (gerado) | EXACT | = original |
+| `005582d0`, `00558320`, `00557e40`, `005581d0`, `005580f0`, `005583e0`, `00558380` | garagem: nº de passos, índice, valor na grade, set com grade+limites, set (retorno sem clamp), ±1 passo, set por índice | `Setup.stepCount/stepIndex/snapped/setSnapped/setClamped/step/setIndex` | EXACT · LUA VALIDATED | 62 / 2317 / 2317 / 2314 / 2314 / 4634 / 1823 vetores bit a bit (×2 CWs) |
+| `00558da0` + `004247e0` | validação de arquivo de setup (.sto): limites sem grade; modos 1/5 track bar LR ≤ RR | `Setup.validateLoaded` | EXACT · LUA VALIDATED | 30 setups × 2 CWs |
+| `00559360` | início de sessão: ativo = garagem; rebuild no task de primeiro plano; `00559820`; `00550c60` | `NR2003CupGarage.applySetup` (orquestração) | EXACT (ordem) · ADAPTER (gatilho) | — |
+
+## Lógica original NR2003 — build do carro (erguido do x86, `NR2003CupBuild*`)
+
+| Endereço | Papel | Destino Luau | Status | Validação |
+|---|---|---|---|---|
+| `00559820` → `00425ad0` (`00425690`, `004257a0`, `00425900`, `00425a30`, `00424860`) | itens derivados: relações de marcha, barras, amortecedores, ride RF, pesos de canto, perches, camber estático, alturas aero, deflexões | `XF[0x559820]` (erguido) | EXACT · LUA VALIDATED | passos 1–16 do build: 0 dwords diferentes do Unicorn |
+| `00550c40` (`0051a020`), `00550c60`, `00550bc0` (`0054c1c0` ×4, `0056ed60`), `005b29c0` | motor/limitador, massa de combustível, objetos de pneu, árvore de componentes | idem | EXACT · LUA VALIDATED | idem |
+| `005b2f20` → `0055e9b0` | setup → células/registros (molas, batentes, amortecedores, barras, Kb, toe, track bar, perches, caster/camber nos cubos, lastro, alturas aero, rake) | idem | EXACT · LUA VALIDATED · ROBLOX INTEGRATED | build por setup = original (exato fora das células variáveis) |
+| `005b4060`, `005b4560`, `005b3f50`, `005b2fb0`, `005b9ce0`, `005b3090` (+ IR/back-end `005bd*`, `005b9*`) | emissor dos callbacks x87 e execução do solve gerado | idem; callbacks executados pelo JIT traduzido (`NR2003CupJIT*` / `NR2003CupJITG*`) | EXACT · LUA VALIDATED | código, pool e literais = referência; células variáveis do solve ≤ 2e−4 rel (double × x87) |
+| `0057c8d0`, `0057c900`, `0057ca60`, `005b9970` | decisões dependentes de valor do emissor | ganchos de decisão no código erguido (`G_*`), tabelas natural/genérica em `NR2003CupBuildData*` | EXACT (natural, verificado) · ADAPTER (genérica: resultado "não dobra" imposto nos 181 eventos variáveis) | 121 setups novos sem violação; espelho Unicorn `TableControl` |
+| `0054d610` ×4 | propriedades do pneu (pressão/carga) após o build | idem | EXACT | idem |
+
+## Tempo de execução e caminhos mapeados
+
+| Endereço | Papel | Status |
+|---|---|---|
+| itens 0x29/0x2a (toe via `c086b0`), 0x3b/0x3d (aero `00410280`) | lidos pela física a cada tick do setup ativo | EXACT (Stages 7/9) |
+| item 0x30 relação de direção | lida por `00554fb0` | armazenamento/conversão EXACT; uso = Stage 12 PROVISIONAL |
+| itens 0x31, 0x47..0x5a (combustível, temperaturas, desgaste) | queima/térmica/desgaste em corrida | Stage 11 (congelados nos valores do build) |
+| `005601c0`, `00550f10`, `0040e1c0` | pit stop: track bar/cunha e pressões em corrida sem rebuild | RECOVERED (pseudo-C), não portado |
+| `00558530`, `00480b40`/`00480ba0` | passo de combustível com limites vivos; passos de marcha na UI | RECOVERED (fora do port: UI) |
+
+## Adaptação Roblox (não é lógica NR2003)
+
+| Item | Onde | Observação |
+|---|---|---|
+| `applySetup` (reset → build → nova imagem de reset → `reset()`), escolha natural → genérica, restauração da imagem para o padrão | `NR2003CupGarage` | orquestração; nenhuma conversão |
+| Atributos `Setup_<item>` (unidades da garagem) + `SetupBrakeBias/SetupGrilleTape/SetupSpoiler` | `CupChassisAdapter.garageSetup/applyGarageSetup` | `Setup.set` (= `005581d0`) por atributo; rebuild só quando muda; saídas `SetupStructure/SetupApplySeconds/SetupError`, 1 linha de Output |
+| Divisão em módulos < 200.000 caracteres com registradores compartilhados entre partes | `NR2003CupBuildCode*` | chamadas entre partes salvam/restauram EAX..ESP, FT, FSW |
+
+---
+
 # Mapa de recuperação — Stage 9 (aerodinâmica completa)
 
 Base: Stage 8 (3.7.0-stage8) com Stages 6/7/8 validados no Studio; módulos gerados 6/7 intactos (o gerador os

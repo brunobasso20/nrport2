@@ -1,0 +1,7 @@
+005ba0c0 MOV EAX,[0x00ebbd78]
+005ba0c5 MOV EDX,0x2
+005ba0ca MOV dword ptr [ECX + EAX*0x4 + 0x4],0x0
+005ba0d2 MOV EAX,[0x00ebbd78]
+005ba0d7 SUB EDX,EAX
+005ba0d9 MOV dword ptr [ECX + EDX*0x4],0x0
+005ba0e0 RET

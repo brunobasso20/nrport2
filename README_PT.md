@@ -1,4 +1,38 @@
-# OpenNR2003 para Roblox — Stage 9 (aerodinâmica completa do NR2003 Cup)
+# OpenNR2003 para Roblox — Stage 10 (setup completo da garagem → parâmetros de tempo de execução)
+
+## Aplicar o Stage 10 sobre o Stage 9
+
+1. Studio, **fora do Play**. Recomendado (arquivo grande, ~2,1 MB): *Insert from File* → `NR2003_Patch_Stage10.rbxmx`;
+   depois, na **Command Bar**: `require(workspace.NR2003_Patch_Stage10)()` e apague o ModuleScript inserido.
+   Alternativa: abrir `PATCH_STAGE10.lua`, copiar o arquivo inteiro e colar na Command Bar.
+2. O patch faz backup em `ServerStorage.NR2003Backup_Stage10_*`, instala em `Core.NR2003Cup` os módulos novos
+   (`NR2003CupSetupData`, `NR2003CupSetup`, `NR2003CupBuild`, `NR2003CupBuildCode1..6`, `NR2003CupBuildData1..2`,
+   `NR2003CupJITG1..4`, `NR2003CupGarage`), troca `NR2003CupCore` (só exportações do host), `NR2003CupDriver`,
+   `Core.NR2003CupVehicle`, `Roblox.CupChassisAdapter` e instala `Roblox.Stage10SelfTest`. Roda os auto-testes 6/7, 8, 9 e
+   10 e **reverte tudo** se algo falhar. Imagem e callbacks do 6/7, aero, servidor e cliente não mudam.
+3. Output esperado: `Stage 6/7 self-test: 7 passed`, `Stage 8 self-test: 5 passed`, `Stage 9 self-test: 13 passed`,
+   `Stage 10 self-test: 6 passed`, `Stage 10 aplicado`. No Play, uma linha por setup aplicado:
+   `[NR2003 Stage 10] setup aplicado (image, 0.00 s): molas -71344/-71344/-41092/-41092 N/m, freio 2812/988 N*m, ...`.
+4. **Setup**: atributos numéricos no `Workspace.NR2003LabWorld.TestCar` com o nome do item (`SETUP_MAP.md`) em unidades da
+   garagem do NR2003: `Setup_springLF` (lb/pol), `Setup_shockBumpRF` (1..9), `Setup_camberLF` (graus), `Setup_casterRF`,
+   `Setup_toeFront` (pol), `Setup_rideHeightLR` (pol), `Setup_trackBarRR` (pol), `Setup_wedge` (lb),
+   `Setup_ballastFrontRear` (lb), `Setup_tirePressureRF` (psi), `Setup_swayBarFrontIndex`, `Setup_gearChoice1..4`,
+   `Setup_finalDriveChoice`, `Setup_brakeBias` (%), `Setup_grilleTape` (%), `Setup_spoilerAngle` (graus), `Setup_fuel`
+   (gal)... Valem ao reiniciar (**R**) ou no próximo Play: cada valor passa pela função original da garagem (`005581d0`:
+   grade do passo + limites) e o carro é **reconstruído pelo build original** (~0,2–0,5 s). `SetupStructure`
+   (`image`/`natural`/`generic`), `SetupApplySeconds` e `SetupError` mostram o resultado. Os atributos antigos
+   `SetupBrakeBias`, `SetupGrilleTape`, `SetupSpoiler` continuam valendo.
+5. Auto-teste completo: `require(game.ReplicatedStorage.NR2003Lab.Roblox.Stage10SelfTest).run(true)`.
+
+O que muda no comportamento: sem atributos `Setup_*` nada muda (o padrão restaura a imagem entregue bit a bit). Com um
+setup, todos os parâmetros que o NR2003 deriva dele (taxas de mola na roda, batentes, curvas de amortecimento, barras,
+perches/alturas, camber/caster/toe nos cubos, track bar, lastro, pesos de canto, alturas de referência do aero, relações de
+marcha e diferencial, Kb do freio, pressão dos pneus) vêm do próprio build original. Limites: pit stop em corrida não
+portado; relação de direção armazenada mas a cadeia de direção é do Stage 12; térmica/desgaste/combustível do Stage 11.
+
+---
+
+# Histórico — Stage 9 (aerodinâmica completa do NR2003 Cup)
 
 ## Aplicar o Stage 9 sobre o Stage 8 validado
 

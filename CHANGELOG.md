@@ -1,3 +1,41 @@
+# 3.9.0-stage10 — Stage 10: setup completo da garagem → parâmetros de tempo de execução
+
+- Base: Stage 9 (3.8.0-stage9). Imagem e callbacks gerados do Stage 6/7 (`NR2003CupImage*`, `NR2003CupJIT*`) e o aero
+  do Stage 9 **inalterados**; o gerador continua reproduzindo-os byte a byte.
+- **Achado:** o NR2003 aplica um setup reconstruindo o carro (`00559360` → rebuild no task de primeiro plano), e o build
+  gera de novo os callbacks x87 com decisões dependentes de valor (`0057c8d0` == 0, `0057c900` == 1, `0057ca60`
+  células constantes, `005b9970` dedup de literais que nunca compara o topo). O código do Stage 6/7 é o do setup padrão.
+- Novo `Core/NR2003Cup/NR2003CupSetup` (+ `NR2003CupSetupData` gerado do exe): 184 itens (`c05150`), 29 conversores
+  (`00423dc0..004241f0`), garagem (`005582d0/00558320/00557e40/005581d0/005580f0/005583e0/00558380`), padrões
+  (`00557d20`, `00559950`), validação de arquivo .sto (`00558da0` + `004247e0`) — bit a bit sob CW 0x027f e 0x077f
+  (incl. −0 em somas exatas e NaN).
+- Novo `NR2003CupBuild` + `NR2003CupBuildCode1..6` + `NR2003CupBuildData1..2`: a sequência ORIGINAL do build do carro
+  (`00559820`, `00550c40`, `00550c60`, `00550bc0`, `005b29c0`, `005b2f20` com `0055e9b0`/emissor/back-end, `0054d610`
+  ×4) erguida do x86 (388 funções; lifter do Stage 6/7 + `recovery/stage10/lift10.py`: switches de dois níveis, `rep`,
+  x87 extra, LOCK, sinal de zero, ganchos de decisão), executada na memória do núcleo; módulos < 200.000 caracteres com
+  registradores compartilhados entre partes.
+- Decisões do emissor por tabela: estrutura **natural** (60.358 eventos / 1.690 literais do padrão, verificação estrita
+  → código original exato do setup) e **genérica** (181 eventos forçados "não dobra", 187 classes de literais; callbacks
+  traduzidos `NR2003CupJITG1..4`, `recovery/stage10/gen_runtime10.py`; validada em 121 setups novos). O padrão restaura
+  a imagem entregue bit a bit.
+- Novo `NR2003CupGarage`: `applySetup` (reset → build → pegada do build na imagem de reset → `reset()`), `setup`,
+  `setupReport`, `setupDump` (inspeção garagem → células de tempo de execução), `setupStructure`.
+- `NR2003CupCore` (host): exporta `_pristine`, `imageSize`, `_jitTable`, `_jitLoad`. `NR2003CupDriver`: células de
+  freio/inércia re-ligadas após um rebuild (`_bindDriverCells`; a estrutura genérica aloca constantes em outra posição).
+  `NR2003CupVehicle`: carrega o Stage 10 (opcional) e expõe `setupModule/defaultSetup/setup/applySetup/setupReport/
+  setupDump`.
+- Adaptador Roblox: atributos `Setup_<item>` em unidades da garagem (via `005581d0`), `SetupBrakeBias/SetupGrilleTape/
+  SetupSpoiler` passam pelo build; rebuild no reset só quando o setup muda; `SetupStructure/SetupApplySeconds/
+  SetupError`; uma linha de Output por setup aplicado.
+- Validação contra o original executado: garagem bit a bit nos dois CWs (todos os conversores e funções); build
+  erguido = Unicorn nos passos 1–16 (69 909 dwords); 184 builds de item (mín/máx/±1) e 9 setups nomeados = build
+  original (exato fora das células do solve em double); corridas de 8 s com setup dentro do envelope do build natural
+  original de cada setup; regressões 6/7, 8, 9 inalteradas; mocks do adaptador e dos 4 patches.
+- Ferramentas/evidências: `recovery/stage10/` (pseudo-C, Ghidra, harness, controle do emissor, busca, geradores,
+  fixtures JSON), `SETUP_MAP.md` (mapa dos 184 itens).
+- Entrega: `PATCH_STAGE10.lua` / `NR2003_Patch_Stage10.rbxmx` (backup, auto-testes 6/7 + 8 + 9 + 10, reversão),
+  `Stage10SelfTest`.
+
 # 3.8.0-stage9 — Stage 9: aerodinâmica completa do NR2003 Cup
 
 - Stages 6, 7 e 8 validados manualmente no Studio pelo usuário antes deste estágio. Nenhum módulo gerado 6/7 foi

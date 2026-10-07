@@ -1,0 +1,3 @@
+006c4f81 XLAT EBX
+006c4f82 ARPL word ptr [ECX + 0x51],DX
+006c4f85 INT3

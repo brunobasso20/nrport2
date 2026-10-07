@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+# Stage 10 regenerable intermediates (recovery/stage10/gen_build10.py rebuilds them, ~35 min)
+recovery/stage10/footprint*.pkl
+recovery/stage10/generic_force_fold_only.pkl
+recovery/stage10/out/
+recovery/stage10/out_core/
+tests/stage10/_work/
+recovery/stage10/dev/fixture_steps.lua

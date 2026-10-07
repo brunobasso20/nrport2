@@ -1,0 +1,224 @@
+{
+ "lifted": 388,
+ "code": [
+  [
+   "NR2003CupBuildCode1.lua",
+   161018
+  ],
+  [
+   "NR2003CupBuildCode2.lua",
+   164236
+  ],
+  [
+   "NR2003CupBuildCode3.lua",
+   164713
+  ],
+  [
+   "NR2003CupBuildCode4.lua",
+   164303
+  ],
+  [
+   "NR2003CupBuildCode5.lua",
+   167501
+  ],
+  [
+   "NR2003CupBuildCode6.lua",
+   152476
+  ]
+ ],
+ "data": [
+  [
+   "NR2003CupBuildData1.lua",
+   169926
+  ],
+  [
+   "NR2003CupBuildData2.lua",
+   19080
+  ]
+ ],
+ "zeroRuns": 331,
+ "dataRuns": 594,
+ "touchedDwords": 74165,
+ "events": 60387,
+ "forcedEvents": 181,
+ "literalCalls": 1731,
+ "literals": 187,
+ "ref": {
+  "code": "facb35b5beeace6faf86768ceb730d1b4132fb86",
+  "codeEnd": 15445999,
+  "pool": 4711,
+  "litTop": 15464700,
+  "slots": [
+   15389312,
+   15399962,
+   15418541,
+   15420054,
+   15421566,
+   15423045,
+   15424523,
+   15428294,
+   15440635
+  ]
+ },
+ "naturalEvents": 60358,
+ "naturalLiteralCalls": 1690,
+ "naturalLiterals": 208,
+ "naturalRef": {
+  "code": "61d486b901d2c2866437ef12b937c7bffed1b2ee",
+  "codeEnd": 15445734,
+  "pool": 4660,
+  "litTop": 15464784,
+  "slots": [
+   15389312,
+   15399923,
+   15418265,
+   15419778,
+   15421290,
+   15422769,
+   15424247,
+   15428041,
+   15440344
+  ]
+ },
+ "indirect": [
+  "0x423dd0",
+  "0x55d880",
+  "0x55d8d0",
+  "0x55d920",
+  "0x55d970",
+  "0x55e160",
+  "0x55e180",
+  "0x55e3e0",
+  "0x55e450",
+  "0x55e460",
+  "0x55e470",
+  "0x55e480",
+  "0x55fc50",
+  "0x560120",
+  "0x560140",
+  "0x560160",
+  "0x560180",
+  "0x5601a0",
+  "0x560300",
+  "0x560870",
+  "0x560dd0",
+  "0x561040",
+  "0x5614b0",
+  "0x5618d0",
+  "0x561a80",
+  "0x561b70",
+  "0x561e50",
+  "0x566aa0",
+  "0x57ccc0",
+  "0x57cd70",
+  "0x57cea0",
+  "0x57cf50",
+  "0x57d040",
+  "0x57d070",
+  "0x57d0b0",
+  "0x57d110",
+  "0x57d150",
+  "0x57d190",
+  "0x57d1d0",
+  "0x57d240",
+  "0x57d290",
+  "0x57d500",
+  "0x57d610",
+  "0x57d740",
+  "0x57d850",
+  "0x57d9a0",
+  "0x57d9f0",
+  "0x57da40",
+  "0x57dab0",
+  "0x57db00",
+  "0x57db50",
+  "0x57dba0",
+  "0x57dc10",
+  "0x57dc70",
+  "0x5b2fb0",
+  "0x5b31e0",
+  "0x5b3850",
+  "0x5b3d40",
+  "0x5b3ed0",
+  "0x5b3fd0",
+  "0x5b4060",
+  "0x5b4560"
+ ],
+ "hooks": {
+  "0x57c8d0": [
+   "pre",
+   "G_predEnter(1)"
+  ],
+  "0x57c8f7": [
+   "pre",
+   "EAX = G_predRet(EAX)"
+  ],
+  "0x57c8fa": [
+   "pre",
+   "EAX = G_predRet(EAX)"
+  ],
+  "0x57c900": [
+   "pre",
+   "G_predEnter(2)"
+  ],
+  "0x57c927": [
+   "pre",
+   "EAX = G_predRet(EAX)"
+  ],
+  "0x57c92a": [
+   "pre",
+   "EAX = G_predRet(EAX)"
+  ],
+  "0x57ca71": [
+   "branch",
+   "G_aSite()",
+   5753618
+  ],
+  "0x57cad4": [
+   "pre",
+   "G_aTag(122)"
+  ],
+  "0x57cb08": [
+   "pre",
+   "G_aTag(111)"
+  ],
+  "0x57cb12": [
+   "pre",
+   "G_aTag(110)"
+  ],
+  "0x57cadc": [
+   "pre",
+   "G_aRet()"
+  ],
+  "0x57cb11": [
+   "pre",
+   "G_aRet()"
+  ],
+  "0x57cb24": [
+   "pre",
+   "G_aRet()"
+  ],
+  "0x5b9970": [
+   "pre",
+   "G_litEnter()"
+  ],
+  "0x5b9999": [
+   "branch",
+   "G_litAtAppend()",
+   6003118
+  ],
+  "0x5b99ae": [
+   "branch",
+   "G_litAtFound()",
+   6003097
+  ],
+  "0x5b99ad": [
+   "pre",
+   "G_litRet()"
+  ],
+  "0x5b99b0": [
+   "pre",
+   "G_litRet()"
+  ]
+ }
+}

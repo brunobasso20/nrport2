@@ -1,0 +1,17 @@
+00410a90 FLD dword ptr [ESP + 0x8]
+00410a94 FCOMP dword ptr [0x006ea454]   ; [006ea454] f32=0.0 i32=0 f64=-2048.0
+00410a9a FNSTSW AX
+00410a9c TEST AH,0x5
+00410a9f JP 0x00410aa9
+00410aa1 MOV dword ptr [ESP + 0x8],0x0
+00410aa9 FLD dword ptr [0x006ec748]   ; [006ec748] f32=0.177799999714 i32=1043730740 f64=4.35900646427e-09
+00410aaf FSUB dword ptr [ESP + 0x8]
+00410ab3 FST dword ptr [ESP + 0x8]
+00410ab7 FCOMP dword ptr [0x006ea454]   ; [006ea454] f32=0.0 i32=0 f64=-2048.0
+00410abd FNSTSW AX
+00410abf TEST AH,0x5
+00410ac2 JP 0x00410acc
+00410ac4 MOV dword ptr [ESP + 0x8],0x0
+00410acc MOV EAX,dword ptr [ESP + 0x8]
+00410ad0 MOV dword ptr [ESP + 0x8],EAX
+00410ad4 JMP 0x004108b0

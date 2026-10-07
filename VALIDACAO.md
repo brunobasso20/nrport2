@@ -1,3 +1,94 @@
+# Validação — Stage 10 (setup → parâmetros de tempo de execução)
+
+Executada nesta máquina com Luau CLI (codegen nativo), Python 3 + Unicorn 2.1.4 + Capstone e Ghidra 11.1.2. Saídas:
+`tests/stage10/RESULTS_STAGE10.txt` (`tools/run_stage10_tests.sh` ou `.ps1` roda tudo, incluindo as suítes 6/7, 8 e 9).
+
+## Método
+
+1. **Referência = código original.** `recovery/stage10/orig_setup.py` executa o build original dividido no ponto de
+   aplicação do setup (mesma sequência e CW do Stage 6/7; `apply(m, {})` = imagem do Stage 6/7, 0 dwords diferentes).
+   `gen_setup_vectors.py` executa conversores e funções da garagem nos dois CWs; `gen_fixtures10.py` executa builds e
+   corridas de 8 s por setup (build **natural** original sem controle = o que o jogo roda; e o build controlado por
+   tabela `TableControl`, espelho exato dos ganchos Luau).
+2. **Bit a bit** para a camada da garagem (porta à mão) e para o build erguido: passos 1–16 da aplicação (tudo antes do
+   solve gerado) = Unicorn em todos os 69.909 dwords tocados.
+3. **Células calculadas em double** (o passo de solve que o build executa via JIT traduzido, `0057dcd0(1)` e `0054d610`
+   que leem o resultado): comparação relativa ≤ 2e−4; todo o resto da imagem exato (hash FNV por célula, campos dos
+   objetos de pneu nos próprios endereços desalinhados).
+4. **Dinâmica com setup:** a corrida "drive" do Stage 6/7 com cada setup, comparada ao build **natural original**
+   daquele setup; envelope = 3× a dispersão de dois gêmeos de arredondamento do original (+1 ulp no início e a
+   estrutura genérica) nas amostras vizinhas (±72 ticks) + 2 cm (/s) + 1 %; ticks 1–8 estritos (≤ 2e−5).
+
+## Resultados automáticos
+
+| Verificação | Resultado |
+|---|---|
+| 184 descritores (`c05150`), setup CRT (`00557d20`) e padrão Cup (`00559950`) | PASS — 0 diferenças |
+| Conversores `00423dc0..004241f0` (toInternal / toDisplay), CW 0x027f e 0x077f | PASS — 2346+2344 / 2433+2443 vetores bit a bit |
+| Garagem: passos `005582d0`, índice `00558320`, grade `00557e40`, set `005581d0`, set `005580f0`, ±1 `005583e0`, índice `00558380` | PASS — 62 / 2317+2328 / 2317+2328 / 2314+2313 / 2314+2313 / 4634+4656 / 1823+1826 bit a bit |
+| Validação de arquivo .sto `00558da0` + `004247e0` | PASS — 30 + 30 setups |
+| Build erguido passo a passo (passos 1–16, antes do solve gerado) vs Unicorn | PASS — 69 909/69 909 dwords idênticos |
+| 8 setups nomeados: estrutura, pool, literais, fim do código | PASS — = original (1 natural, 7 genéricos) |
+| 8 setups nomeados: imagem reconstruída vs build original | PASS — 0 diferenças exatas; células do solve ≤ 6,7e−5 |
+| Padrão reconstruído em Luau vs imagem entregue | PASS — 0 diferenças exatas; 528 células do solve ≤ 1,3e−7 |
+| `applySetup(padrão)` restaura a imagem | PASS — bit a bit |
+| 184 builds de item (mín/máx/±1 de cada item ajustável) | PASS — 114 naturais + 70 genéricos = original (hash exato + células do solve ≤ 6,4e−4) |
+| 9 corridas de 8 s (driver) vs build natural ORIGINAL de cada setup | PASS — ticks 1–8 ≤ 4,7e−7; chassi no envelope; marchas idênticas |
+| Resposta ao setup (x, vx após 8 s; z assentado) vs padrão | PASS — 24 sondas com o sinal/tamanho do original |
+| `setBrakeBias` 50/61/74/90 % = células do build original | PASS |
+| `setAeroSetup` (fita/aerofólio) = itens do build | PASS — 3 pares |
+| Setup NaN / array malformado | PASS — rejeitados, setup anterior mantido |
+| `setupDump` (mola LF 1700 → célula `0074e0a0` = item 0x14) | PASS |
+| Estrutura genérica em 121 setups novos (Unicorn, `generic_search.py literals`) | PASS — 0 violações, 1 código |
+| Regressão Stage 6/7 / 8 / 9 | PASS — 16/16, 49/49, 59/59, inalterados |
+| Adaptador sob mock (inclui atributos `Setup_*` e auto-teste 10 rápido/completo) | PASS — 45/45 |
+| `PATCH_STAGE10.lua` em DataModel simulado (6/7 → 8 → 9 → 10, reaplicação, módulos 6/7/9 intactos, backup, reversão, recusa sem 9) | PASS — 14/14 |
+| `PATCH_STAGE6_7` / `8` / `9` (inalterados) | PASS — 11/11, 13/13, 13/13 |
+| Sintaxe (todos os módulos + patch) | PASS |
+
+Tempo de `applySetup` em Luau nativo: mediana 0,17 s, máximo 0,45 s (natural ~0,2 s; genérica inclui a tentativa
+natural). Carga dos módulos do Stage 10: +0,6 s no CLI.
+
+## Validação manual no Roblox Studio — a fazer
+
+1. Aplicar o patch: *Insert from File* → `NR2003_Patch_Stage10.rbxmx` e, na Command Bar (fora do Play),
+   `require(workspace.NR2003_Patch_Stage10)()` (ou colar `PATCH_STAGE10.lua` inteiro na Command Bar). Output:
+   self-tests 6/7 (7), 8 (5), 9 (13), 10 (6) sem falhas e `Stage 10 aplicado`.
+2. Play → F. Uma linha `[NR2003 Stage 10] setup aplicado (image, 0.00 s): molas -71344/-71344/-41092/-41092 N/m,
+   freio 2812/988 N*m, marchas 2.133/1.611/1.261/1.000 x 4.500`. O carro anda **exatamente** como no Stage 9
+   (padrão = imagem). `TestCar` mostra `SetupStructure = image`.
+3. **Molas**: pare o Play; no `Workspace.NR2003LabWorld.TestCar` crie `Setup_springLF = 1700` e `Setup_springRF = 1700`
+   (número). Play (ou R). Output: `setup aplicado (generic, ~0.2-0.5 s): molas -93296/-93296/-41092/-41092 N/m`;
+   atributo `SetupStructure = generic`. Observar no painel T a compressão das rodas dianteiras em repouso e na frenagem
+   comparada ao padrão (molas mais duras: menos compressão).
+4. **Amortecedores**: `Setup_shockBumpLF = 9`, `Setup_shockReboundLF = 9` (1..9) → R, sem erro; observar a roda LF
+   em ondulações/frenagem comparada a `1`.
+5. **Barras**: `Setup_swayBarFrontIndex = 19` → taxa dianteira −199 850 N/m (padrão −48 912; ver passo 12);
+   `Setup_swayBarRearIndex = 20` → −2918 (padrão 6200). Observar a rolagem em curva.
+6. **Pressões**: `Setup_tirePressureRF = 45` (psi, passo 0,5) → linha de setup sem mudança de molas; pressão do pneu RF
+   no `setupDump` (ver passo 12) = 45.
+7. **Geometria**: `Setup_camberLF = -4`, `Setup_camberRF = 2`, `Setup_casterRF = 5`, `Setup_toeFront = 0.1` → R sem erro;
+   observar a trajetória em reta e em curva comparada ao padrão; `Setup_trackBarRR = 12` → `trackBar` 0,07877 (passo 12).
+8. **Peso**: `Setup_wedge = 100` (lb), `Setup_ballastLeftRight = 150`, `Setup_ballastFrontRear = -200` → cargas por roda
+   (painel T, CARGA) em repouso mudam em relação ao padrão; `Setup_rideHeightLF = 4.5`, `Setup_rideHeightRR = 7` →
+   altura/pitch estáticos mudam.
+9. **Marchas**: `Setup_finalDriveChoice = 110` (padrão 127) → a linha mostra `x 3.333` (padrão `x 4.500`): relação final
+   mais longa, rotações menores em cada marcha; `Setup_gearChoice1 = 8` → `marchas 2.412/...` (1ª mais curta).
+10. **Freio/aero**: `Setup_brakeBias = 60` (ou o antigo `SetupBrakeBias = 60`) → `freio 2280/1520`; `Setup_grilleTape = 50`,
+    `Setup_spoilerAngle = 50` → linha AERO do Stage 9 mostra fita 50 % / aerofólio 50°.
+11. **Limites da garagem**: `Setup_springLF = 99999` → aplicado 2500 (máximo do original, `005581d0`); valores fora da
+    grade são arredondados ao passo (ex.: `Setup_camberLF = -2.96` → −3,0).
+12. **Inspeção** (edição ou Play, Command Bar no servidor): 
+    ```lua
+    local V=require(game.ReplicatedStorage.NR2003Lab.Core.NR2003CupVehicle).new()
+    local S=V:setupModule(); local s=V:defaultSetup(); S.set(s,"springLF",1700); print(V:applySetup(s))
+    for k,v in pairs(V:setupDump().runtime) do print(k, type(v)=="table" and table.concat(v," ") or v) end
+    ```
+13. Apagar todos os atributos `Setup_*` → R → `setup aplicado (image, ...)` e comportamento idêntico ao do passo 2.
+14. Regressão: entrada no carro, freio (Stage 8), aero (Stage 9), trocas e suspensão como antes com o padrão.
+
+---
+
 # Validação — Stage 9 (aerodinâmica)
 
 Executada nesta máquina com Luau CLI 0.741 (codegen nativo), Python 3.14 + Unicorn 2.1.4 + Capstone 5.0.6 e Ghidra

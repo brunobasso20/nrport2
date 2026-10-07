@@ -1,0 +1,11 @@
+004ed160 MOV ECX,dword ptr [ECX]
+004ed162 TEST ECX,ECX
+004ed164 JZ 0x004ed175
+004ed166 MOV EAX,dword ptr [ECX + 0x4]
+004ed169 DEC EAX
+004ed16a MOV dword ptr [ECX + 0x4],EAX
+004ed16d JNZ 0x004ed175
+004ed16f MOV EAX,dword ptr [ECX]
+004ed171 PUSH 0x1
+004ed173 CALL dword ptr [EAX]
+004ed175 RET

@@ -1,4 +1,80 @@
-# Stage 9 — aerodinâmica completa do NR2003 Cup
+# Stage 10 — setup completo da garagem → parâmetros de tempo de execução
+
+**Resumo:** o NR2003 aplica um setup de garagem **reconstruindo o carro**: copia a garagem para o setup ativo, recalcula
+os itens derivados (`00559820` → `00425ad0`), reinicializa motor/combustível/pneus/árvore e roda `005b2f20`, onde
+`0055e9b0` grava o setup nas células e registros **e o emissor gera de novo os callbacks x87 do carro**, com decisões que
+dependem dos valores (dobra de 0 e 1, compartilhamento de células constantes, dedup de literais). O Stage 10 recuperou o
+caminho inteiro (tabela de 184 itens, 29 conversores, funções da garagem, validação de arquivo .sto, ordem de aplicação,
+dependências), portou a camada da garagem à mão (bit a bit) e **ergueu o build original inteiro do x86 para Luau** (388
+funções), rodando sobre a memória do núcleo. O resultado do build configura os sistemas dos Stages 6–9 (suspensão,
+drivetrain, freio, aero) — nenhuma física paralela, nenhum parâmetro inventado.
+
+| Escopo | Entregue |
+|---|---|
+| Recuperado (Ghidra + execução original) | armazenamento do setup (0xefd bytes, garagem `c03350`, ativo `c055c0`); descritores `c05150`; conversores `00423dc0..004241f0`; garagem `005582d0/00558320/00557e40/005581d0/005580f0/005583e0/00558380`; padrões `00557d20`/`00559950`; .sto `00558da0`/`004247e0`; aplicação `00559360` → build; cadeia derivada `00425ad0`; destinos de cada item (estático + dinâmico); decisões do emissor `0057c8d0/0057c900/0057ca60/005b9970`; pit stop `005601c0/00550f10` (mapeado) |
+| Portado à mão (bit a bit) | `NR2003CupSetup`: conversores, garagem, padrões, validação de arquivo — nos dois CWs (0x027f / 0x077f) |
+| Erguido do x86 (original) | `NR2003CupBuild*`: `00559820`, `00550c40`, `00550c60`, `00550bc0`, `005b29c0`, `005b2f20` (incl. `0055e9b0`, emissor e back-end), `0054d610` ×4 |
+| Estruturas de callback | **imagem** (padrão: estado entregue, bit a bit) · **natural** (código do padrão; verificação estrita = exatamente o código original do setup) · **genérica** (`NR2003CupJITG*`: mesmo emissor sem as dobras que variam entre setups; validada em 121 setups novos) |
+| Mudanças em estágios anteriores (documentadas) | `NR2003CupCore`: exporta a imagem de reset e a tabela de callbacks (imagem e callbacks 6/7 inalterados); `NR2003CupDriver`: re-liga as células de freio/inércia após um rebuild (a estrutura genérica aloca constantes em outras posições) |
+| Roblox | atributos `Setup_<item>` (unidades da garagem, via `005581d0`), rebuild no reset só quando o setup muda, `SetupStructure/SetupApplySeconds/SetupError`, 1 linha de Output |
+| Entrega | `PATCH_STAGE10.lua` + `NR2003_Patch_Stage10.rbxmx` (backup + auto-testes 6/7, 8, 9, 10 + reversão), `SETUP_MAP.md`, pseudo-C `recovery/stage10/pseudo/stage10_setup.c`, fontes, testes, fixtures do código original, evidências |
+
+## Números do Cup (original)
+
+184 itens no setup; 129 com descritor; **62 ajustáveis** na garagem do Cup (os demais são fixos — passo 0 — ou derivados).
+Padrão do Cup (`00559950`): molas 1300/1300/325/325 lb/pol → **−71 344 / −41 092 N/m** na roda (×175 × 0,56² / 0,85²);
+amortecedores 4/4/4/4; camber −2,0/−2,0/0/0°; caster 2,5/2,5°; toe dianteiro −0,125 pol; ride heights 5,0/RF derivado/
+6,0/6,0 pol; viés de freio 74 % → Kb **2812 / 988 N·m**; barras índice 4 / 0 → −48 912 / 6200 N/m; track bars 10/10 pol;
+combustível 22 gal; marchas 2,133 / 1,611 / 1,261 / 1,000 × **4,500**; direção 18:1; fita 0 %; aerofólio 65°; pesos de
+canto 900/900/900/900 lb.
+
+Exemplos (build original em Luau, `setupDump`): molas LF/RF 1700 lb/pol → −93 296 N/m (genérica, 0,41 s); 1ª marcha índice
+8 → 2,4118 (natural); diferencial índice 110 → 3,3333; viés 60 % → 2280/1520 N·m; barra dianteira índice 19 → −199 850 N/m;
+pressão RF 45 psi → objeto do pneu RF = 45; toe 0,1 pol → `c086b0` −0,001792 rad; track bar RR 12 pol → `c085ac` 0,07877;
+mola LF 99 999 → 2500 lb/pol (limite do original, `005581d0`) → −137 200 N/m; camber −2,96° → grade −3,0°.
+Aplicar um setup leva **0,17–0,45 s** em Luau nativo (mediana 0,17 s) e não acontece por tick.
+
+## Fidelidade e validação (automática)
+
+- Camada da garagem: 184 descritores, padrões CRT/Cup e **todos os conversores e funções da garagem bit a bit** nos dois
+  CWs: toInternal 2346/2344, toDisplay 2433/2443, passos 62, índice 2317/2328, grade 2317/2328, set com grade 2314/2313,
+  set com limite 2314/2313, ±1 passo 4634/4656, set por índice 1823/1826, validação de arquivo 30/30 setups.
+- Build erguido: passos 1–16 da aplicação (tudo antes do solve gerado) = Unicorn em **69 909/69 909 dwords**; imagem
+  reconstruída do padrão = imagem entregue exata fora das 1190 células do passo de solve (+ células variáveis, ≤ 1,3e−7
+  relativo); `applySetup(padrão)` restaura a imagem bit a bit.
+- **Cada item ajustável no mínimo, máximo e ±1 passo (184 builds: 114 naturais, 70 genéricos)**: estrutura, pool de
+  constantes, literais, hash de todas as células exatas = original; células do solve ≤ 6,4e−4 relativo / 2e−5 absoluto.
+- 9 setups nomeados (padrão, molas+amortecedores, geometria, peso, marchas, freio+aero+pneus, aleatório, tudo no mínimo,
+  tudo no máximo): imagem = build original; **corrida de 8 s** com o driver contra o build natural ORIGINAL de cada setup:
+  ticks 1–8 ≤ 4,7e−7 relativo, chassi dentro do envelope dos gêmeos do original, marchas idênticas, resposta ao setup
+  (x, vx, z vs padrão) com o sinal e tamanho do original (24 sondas).
+- Estrutura genérica: 121 setups novos sem violação (código/pool/literais/slots idênticos); com ela 5 dos 9 setups
+  nomeados reproduzem o original na posição final em 4 casas decimais.
+- Stage 8/9: `setBrakeBias` (50/61/74/90 %) e `setAeroSetup` (3 pares) gravam exatamente as células/itens do build original.
+- Setup inválido (NaN) rejeitado pelas duas estruturas, setup anterior mantido; array malformado recusado.
+- Regressão: Stage 6/7 16/16, Stage 8 49/49, Stage 9 59/59 **inalterados**; adaptador sob mock 45/45 (inclui atributos
+  `Setup_*` e o auto-teste 10 rápido/completo); patches 6/7, 8, 9, 10 em DataModel simulado 11/11, 13/13, 13/13, 14/14.
+
+## Limites explícitos
+
+- **Estrutura genérica**: para setups cujo resultado do emissor difere do padrão (ex.: mola LF ≠ RF quebra o literal
+  compartilhado do padrão), o código usado é o do emissor original sem as 181 dobras que variam; ele difere do código que
+  o NR2003 geraria para aquele setup apenas por arredondamento float32 nos pontos em que aquele setup dobraria (ex.:
+  cosseno exatamente 1,0 do eixo traseiro). Validado pelas trajetórias contra o build natural original de cada setup.
+- **Células do passo de solve do build** (`005b3090` executa o callback gerado, depois `0057dcd0(1)` e `0054d610` ×4): 1190
+  células + as células variáveis são calculadas em double (como todo o núcleo desde o Stage 6/7), não em x87 de 80 bits:
+  ≤ 6,7e−5 relativo, exceto a célula `ebc390` (apontada por `c083f8`) que alterna entre dois níveis (0,0945872 /
+  0,0946477: quase-empate do solve) em 4 dos 184 builds de item (6,4e−4).
+- Pit stop (`005601c0`, `00550f10`) recuperado e não portado; relação de direção armazenada/convertida, uso = Stage 12;
+  combustível/térmica/desgaste/dano = Stage 11 (valores do build).
+- Fora do Cup, outros chassis/séries não foram exercitados (a tabela e o build são os mesmos; os padrões vêm de
+  `00559950` com o chassis do carro).
+
+**Validação manual no Studio: pendente** (roteiro em `VALIDACAO.md`). Nada do Stage 11 foi iniciado.
+
+---
+
+# Histórico — Stage 9 (aerodinâmica completa do NR2003 Cup)
 
 **Resumo:** o modelo aerodinâmico original (`00561a80` + `00561b70` → `00410280`, registrado pelo build no callback de
 forças do chassi) já executava dentro do núcleo gerado do Stage 6/7, mas **sem ar**: o build do carro não roda o início
@@ -47,7 +123,7 @@ Clima dinâmico (`005a4cc0`) mapeado e não portado (clima constante da sessão)
 pronta, bancada sem outros carros; `DraftTestGap` é só teste); dano aero e efeitos térmicos da fita/ar são do Stage 11;
 consulta de pista `0051370a` é do host. Mudança de aerofólio "em corrida" usada só nos cenários de teste.
 
-**Validação manual no Studio: pendente** (roteiro em `VALIDACAO.md`). Nada do Stage 10 foi iniciado.
+**Validação manual no Studio: pendente** (roteiro em `VALIDACAO.md`).
 
 ---
 

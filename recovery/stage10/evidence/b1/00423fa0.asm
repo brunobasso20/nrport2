@@ -1,0 +1,5 @@
+00423fa0 FLD dword ptr [0x006ed794]   ; [006ed794] f32=39.3699989319 i32=1109228257 f64=8.9244175528e-16
+00423fa6 FMUL dword ptr [ESP + 0x4]
+00423faa FSTP dword ptr [ESP + 0x4]
+00423fae MOV EAX,dword ptr [ESP + 0x4]
+00423fb2 RET

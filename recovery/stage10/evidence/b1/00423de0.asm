@@ -1,0 +1,5 @@
+00423de0 FILD dword ptr [ESP + 0x4]
+00423de4 FMUL dword ptr [0x006ea4a4]   ; [006ea4a4] f32=0.00999999977648 i32=1008981770 f64=-0.0078125017503
+00423dea FSTP dword ptr [ESP + 0x4]
+00423dee MOV EAX,dword ptr [ESP + 0x4]
+00423df2 RET

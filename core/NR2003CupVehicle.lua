@@ -7,6 +7,11 @@
 --   NR2003CupDriver    : 005b2190 tick order, 00551e80/005539c0 driver layer (hand port)
 --   NR2003CupAero      : Stage 9 session air (005a3c00), per-frame aero factors (005637e0),
 --                        drafting (005afd80), aero setup items, aero telemetry (hand port)
+--   NR2003CupSetup(+Data): Stage 10 garage setup: descriptors c05150, unit converters, garage API (hand port)
+--   NR2003CupBuild, NR2003CupBuildCode1..n, NR2003CupBuildData1..n: Stage 10 ORIGINAL car-build sequence
+--                        (setup -> runtime parameters) lifted from the exe, run on the core memory
+--   NR2003CupGarage    : Stage 10 applySetup / setup inspection (orchestration only)
+--   NR2003CupJITG1..n  : Stage 10 callbacks of the generic (setup-invariant) structure, translated
 -- This module only assembles them and exposes a numeric API (no Instances, no Roblox types).
 -- Axes: NR2003 vehicle-world frame (+X forward, +Y left, +Z up, metres, seconds) fixed at reset.
 local M={};M.__index=M
@@ -39,6 +44,12 @@ function M.fromLoader(get)
     local V=get("NR2003CupDriver")(get("NR2003CupCore")(image,jit))
     local aero=get("NR2003CupAero") -- Stage 9 (absent in a Stage 6/7/8 install)
     if aero then aero(V) end
+    local build=get("NR2003CupBuild") -- Stage 10 (absent in a Stage 6/7/8/9 install)
+    if build then
+        local Setup=get("NR2003CupSetup")(get("NR2003CupSetupData"))
+        local B=build(V,collect(get,"NR2003CupBuildCode"),collect(get,"NR2003CupBuildData"))
+        get("NR2003CupGarage")(V,Setup,B,collect(get,"NR2003CupJITG"))
+    end
     return setmetatable({V=V,state=table.create(45,0),pos={0,0,0},rot={1,0,0,0,1,0,0,0,1}},M)
 end
 function M.new(folder)
@@ -79,6 +90,14 @@ function M:aeroFactors() return self.V.aeroFactors() end
 function M:setAeroSetup(s) return self.V.setAeroSetup(s) end
 function M:aeroSetup() return self.V.aeroSetup() end
 function M:aeroState(out) return self.V.aeroState(out) end
+-- Stage 10 setup API (see CORE_API.md / SETUP_MAP.md). A setup is a raw array [0..183] in the
+-- original c055c0 representation; edit it with M:setupModule() (Setup.set/step/display/...).
+function M:setupModule() return self.V.Setup end
+function M:defaultSetup() return self.V.Setup.cupGarageDefault() end
+function M:setup() return self.V.setup() end
+function M:applySetup(s) return self.V.applySetup(s) end
+function M:setupReport() return self.V.setupReport() end
+function M:setupDump(out) return self.V.setupDump(out) end
 function M:readState() return self.V.state(self.state) end
 function M:componentPose(record,pos,rot) return self.V.componentPose(record,pos,rot) end
 function M:contactOut(i) return self.V.contactOut(i) end

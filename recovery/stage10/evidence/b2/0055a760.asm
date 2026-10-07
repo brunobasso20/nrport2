@@ -1,0 +1,2 @@
+0055a760 FLD qword ptr [0x00c067e4]
+0055a766 RET

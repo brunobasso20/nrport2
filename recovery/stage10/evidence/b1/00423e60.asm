@@ -1,0 +1,5 @@
+00423e60 FLD dword ptr [0x006ed7b4]   ; [006ed7b4] f32=0.0174532998353 i32=1016003129 f64=7.2784661004e+11
+00423e66 FMUL dword ptr [ESP + 0x4]
+00423e6a FSTP dword ptr [ESP + 0x4]
+00423e6e MOV EAX,dword ptr [ESP + 0x4]
+00423e72 RET

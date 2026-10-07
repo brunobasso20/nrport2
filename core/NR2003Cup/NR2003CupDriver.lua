@@ -365,16 +365,24 @@ return function(V)
 	local BIAS_DESC = 0x6edf78 -- setup descriptor of item 0x28: int min/max/step/default (50/90/1/74 %)
 	local KB = {} -- per-wheel brake torque cells (0055e9b0 -> c0850c..c08518, JIT cells)
 	local RR = {} -- per-wheel rolling-resistance torque cells (0054cab0 -> c081f4..c08200)
-	for w = 0, 3 do KB[w] = r32(0xc0850c + 4 * w); RR[w] = r32(0xc081f4 + 4 * w) end
-	local BRAKE_CELL = r32(0xe84480) -- e84474[3]: core brake input written by 005b2b90 from bf636c
-	local DRAG0, DRAG2, RATE = r32(0x74e798), r32(0x74e79c), r32(0x74fda0) -- 10, 1e-4, 288 (005610b0)
+	local BRAKE_CELL, DRAG0, DRAG2, RATE
 	local WHEEL_RECORD = {[0] = 5, 8, 10, 11} -- lfwheel, rfwheel, lrwheel, rrwheel (00561090/1230/1250/1270)
 	local OMEGA, INERTIA = {}, {}
-	for w = 0, 3 do
-		local rec = ROOT + WHEEL_RECORD[w] * 0x505
-		OMEGA[w] = r32(rec + 0x395)   -- spin joint velocity cell (velocity +0x385, axis 4)
-		INERTIA[w] = r32(rec + 0x195) -- articulated spin inertia cell (mass matrix +0x125, [4][4])
+	-- the cell addresses are allocated by the car build (emitter cells); Stage 10 rebuilds the car for a
+	-- garage setup (NR2003CupGarage), possibly with the generic callback structure whose constant cells
+	-- differ: the garage re-binds them after every rebuild (V._bindDriverCells)
+	local function bindCells()
+		for w = 0, 3 do KB[w] = r32(0xc0850c + 4 * w); RR[w] = r32(0xc081f4 + 4 * w) end
+		BRAKE_CELL = r32(0xe84480) -- e84474[3]: core brake input written by 005b2b90 from bf636c
+		DRAG0, DRAG2, RATE = r32(0x74e798), r32(0x74e79c), r32(0x74fda0) -- 10, 1e-4, 288 (005610b0)
+		for w = 0, 3 do
+			local rec = ROOT + WHEEL_RECORD[w] * 0x505
+			OMEGA[w] = r32(rec + 0x395)   -- spin joint velocity cell (velocity +0x385, axis 4)
+			INERTIA[w] = r32(rec + 0x195) -- articulated spin inertia cell (mass matrix +0x125, [4][4])
+		end
 	end
+	bindCells()
+	V._bindDriverCells = bindCells
 	local scratch = buffer.create(4)
 
 	-- garage brake bias (front %, integer 50..90) -> setup item 0x28 -> runtime cells, exactly as

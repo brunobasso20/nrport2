@@ -1,0 +1,6 @@
+00579e80 MOV EAX,dword ptr [ESP + 0x4]
+00579e84 MOV ECX,dword ptr [ESP + 0x8]
+00579e88 LEA EAX,[EAX + EAX*0x4 + -0x55]
+00579e8c LEA EDX,[ECX + EAX*0x4]
+00579e8f FLD dword ptr [EDX*0x4 + 0xd35a18]
+00579e96 RET

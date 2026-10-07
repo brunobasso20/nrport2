@@ -1,0 +1,5 @@
+005be130 MOV EAX,dword ptr [ESP + 0x4]
+005be134 TEST EAX,EAX
+005be136 JZ 0x005be13f
+005be138 INC dword ptr [EAX*0x4 + 0xedf228]
+005be13f RET

@@ -1,0 +1,5 @@
+005bcd70 MOV ECX,dword ptr [0x00edb530]
+005bcd76 MOV EAX,ECX
+005bcd78 INC ECX
+005bcd79 MOV dword ptr [0x00edb530],ECX
+005bcd7f RET

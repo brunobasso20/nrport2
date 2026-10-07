@@ -1,0 +1,8 @@
+00557ee0 MOV EAX,dword ptr [ESP + 0x4]
+00557ee4 LEA EDX,[EAX + EAX*0x2]
+00557ee7 MOV EAX,dword ptr [ECX + EAX*0x4]
+00557eea PUSH EAX
+00557eeb MOV EDX,dword ptr [EDX*0x2 + 0xc05152]
+00557ef2 CALL dword ptr [EDX + 0x16]
+00557ef5 ADD ESP,0x4
+00557ef8 RET 0x4

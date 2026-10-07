@@ -1,0 +1,31 @@
+Continue from the Stage 10 package (3.9.0-stage10). Stages 1-10 are implemented; Stages 9 and 10 still need the
+manual Roblox Studio validation listed in VALIDACAO.md before Stage 11 starts.
+
+Facts to keep:
+- Mode NR2003_CUP runs the ORIGINAL NR2003 Cup vehicle core generated from NR2003.exe (Core/NR2003Cup,
+  recovery/stage6_7). The shipped image and callbacks (NR2003CupImage*, NR2003CupJIT*) are unchanged and still
+  regenerate byte-identically; NR2003CupCore changed only by host exports (_pristine, imageSize, _jitTable, _jitLoad).
+- Stage 10 finding: NR2003 applies a garage setup by REBUILDING the car (00559360 -> foreground rebuild ->
+  00559820/00425ad0 -> 00550c40/00550c60/00550bc0/005b29c0 -> 005b2f20: 0055e9b0 writes the setup into cells and the
+  emitter regenerates the x87 callbacks -> 0054d610 x4). The emitter folds value-dependent decisions (0057c8d0 == 0,
+  0057c900 == 1, 0057ca60 shared constant cells, 005b9970 literal dedup that never compares the top entry).
+- Port: NR2003CupSetup (+Data) = garage functions (bit-exact under CW 0x027f and 0x077f); NR2003CupBuild* = the
+  original build sequence lifted from x86 (recovery/stage10/lift10.py + gen_build10.py) with decision hooks driven by
+  tables: NATURAL structure (the default's 60358 decisions / 1690 literals, strict: the setup's own outcome must be
+  identical -> exactly the original code with the new cells) or GENERIC structure (181 forced no-fold events, 187
+  literal classes, NR2003CupJITG*; differs from a setup's own code only by float32 rounding at fold sites). The
+  default setup restores the shipped image bit for bit. NR2003CupGarage.applySetup orchestrates (reset -> build ->
+  footprint into the reset image -> reset; Stage 8 cells re-bound with V._bindDriverCells).
+- Setup items read at run time: toe (c086b0, Stage 7), grille tape / spoiler (00410280, Stage 9), steering ratio 0x30
+  (00554fb0, Stage 12). Fuel 0x31, hot pressures/temperatures/wear 0x47..0x5a enter the build and are Stage 11.
+- Pit-stop paths recovered (pseudo-C in recovery/stage10/pseudo/stage10_setup.c) but not ported: 005601c0 (track bar
+  / wedge in race), 00550f10 (tyre pressure change + thermal reset), 0040e1c0 (pit menu).
+- Validation method: original code in Unicorn (recovery/stage10/orig_setup.py, emitter_control.TableControl mirrors
+  the Luau hooks), per-item min/max/+-1 builds (hash + JIT variable cells), named setups with 8 s drives vs the
+  ORIGINAL natural build of each setup (+1 ulp twin envelope), Stage 6-9 suites unchanged.
+
+Stage 11 - thermal / wear / damage / fuel: recover and port the tyre thermal and wear model (0054d610 per frame,
+00425c20 live setup values, 0054f260 brake/tyre heat with airspeed bf3a00), engine thermal / fuel burn / misfire of
+0051aac0 (+00554520 -> 0051a000/0051a830 grille tape cooling), fuel mass update (005605c0, 00550c60), aero damage
+zones (car+0x14a3 -> 00410910) and the damage model that feeds them, validated against the original code in Unicorn.
+Keep the Stage 10 setup path as the source of the initial values. Do not start Stage 12 (steering chain).

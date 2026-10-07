@@ -1,0 +1,5 @@
+00557e00 MOV EAX,dword ptr [ESP + 0x4]
+00557e04 LEA EAX,[EAX + EAX*0x2]
+00557e07 MOV ECX,dword ptr [EAX*0x2 + 0xc05152]
+00557e0e FLD dword ptr [ECX + 0xa]
+00557e11 RET 0x4

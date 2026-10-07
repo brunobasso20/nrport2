@@ -1,0 +1,2 @@
+0055a790 MOV byte ptr [0x00c06d2f],0x1
+0055a797 RET

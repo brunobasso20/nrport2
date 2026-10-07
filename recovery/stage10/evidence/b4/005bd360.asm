@@ -1,0 +1,7 @@
+005bd360 MOV EAX,[0x00ebbcec]
+005bd365 MOV CL,byte ptr [ESP + 0x4]
+005bd369 MOV byte ptr [EAX],CL
+005bd36b MOV EAX,[0x00ebbcec]
+005bd370 INC EAX
+005bd371 MOV [0x00ebbcec],EAX
+005bd376 RET
