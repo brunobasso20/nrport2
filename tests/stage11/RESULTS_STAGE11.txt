@@ -1,0 +1,82 @@
+# tests/stage11/run.luau -- 2026-10-08 00:47 -- luau -O2 --codegen (90 s)
+PASS  load core + Stage 11 runtime (NR2003CupFrame*)  2.66 s, supplement 31252 bytes
+PASS  launch: session start footprint (8551 dwords) = original  exact 8551, float 0, protected 0 (worst 0.00e+00 at 00000000), other 0 
+PASS  launch: 5 synchronized frame snapshot(s): original -> Luau, written dwords bit-exact or <= 2e-5 relative  38955 dwords: exact 38953, float 0, protected 2 (worst 1.16e-16 at 00f6f21c), other 0 
+PASS  launch: 9 full-state restarts (frames 90,270,450,630,810,990,1170,1350,1530): one Luau frame from the original state = original (window + row)  4779 differing cells: float 4767, protected 6 (worst rel 6.63e-01 at 00ebcf24), outside tolerance 0, row fields 0 
+PASS  launch: the restart comparison detects small Stage 11 -> physics errors (3 mutations at frame 1530)
+PASS  launch: 45 s closed-loop run (91 rows x 60 fields) within 4x the envelope of the original's 10 twins  8.6 s Luau (1503 ticks/s); outside envelope 0, integer 0 
+      end: fuel 61.419/61.423 kg  water 110.92/110.86 C  oil 51.67/51.49 C  wear LR 0.7863/0.7863  brake LF 296.2/296.2 K
+PASS  overrev: session start footprint (8551 dwords) = original  exact 8551, float 0, protected 0 (worst 0.00e+00 at 00000000), other 0 
+PASS  overrev: 2 synchronized frame snapshot(s): original -> Luau, written dwords bit-exact or <= 2e-5 relative  15582 dwords: exact 15582, float 0, protected 0 (worst 0.00e+00 at 00000000), other 0 
+PASS  overrev: 8 full-state restarts (frames 90,270,450,630,810,990,1170,1350): one Luau frame from the original state = original (window + row)  3940 differing cells: float 3928, protected 6 (worst rel 3.36e-03 at 00ebd7d4), outside tolerance 0, row fields 0 
+PASS  overrev: the restart comparison detects small Stage 11 -> physics errors (3 mutations at frame 1350)
+PASS  overrev: 40 s closed-loop run (7 rows x 60 fields) within 4x the envelope of the original's 10 twins (horizon frame 108)  7.8 s Luau (1486 ticks/s); outside envelope 0, integer 0  | after horizon (not gated): 74 rows, 1 field-rows outside
+      end: fuel 61.842/61.843 kg  water 141.41/141.36 C  oil 33.45/33.41 C  wear LR 0.0000/0.0000  brake LF 294.9/295.0 K
+PASS  brakes: session start footprint (8551 dwords) = original  exact 8551, float 0, protected 0 (worst 0.00e+00 at 00000000), other 0 
+PASS  brakes: 2 synchronized frame snapshot(s): original -> Luau, written dwords bit-exact or <= 2e-5 relative  15582 dwords: exact 15582, float 0, protected 0 (worst 0.00e+00 at 00000000), other 0 
+PASS  brakes: 10 full-state restarts (frames 90,270,450,630,810,990,1170,1350,1530,1710): one Luau frame from the original state = original (window + row)  7001 differing cells: float 6985, protected 8 (worst rel 1.36e-01 at 00ebf3e4), outside tolerance 0, row fields 0 
+PASS  brakes: the restart comparison detects small Stage 11 -> physics errors (3 mutations at frame 1710)
+PASS  brakes: 50 s closed-loop run (101 rows x 60 fields) within 4x the envelope of the original's 10 twins  10.6 s Luau (1360 ticks/s); outside envelope 0, integer 0 
+      end: fuel 61.763/61.760 kg  water 88.44/88.47 C  oil 32.34/32.41 C  wear LR 0.1474/0.1423  brake LF 334.4/334.4 K
+PASS  slide: session start footprint (8551 dwords) = original  exact 8551, float 0, protected 0 (worst 0.00e+00 at 00000000), other 0 
+PASS  slide: 2 synchronized frame snapshot(s): original -> Luau, written dwords bit-exact or <= 2e-5 relative  15582 dwords: exact 15582, float 0, protected 0 (worst 0.00e+00 at 00000000), other 0 
+PASS  slide: 6 full-state restarts (frames 90,270,450,630,810,990): one Luau frame from the original state = original (window + row)  4969 differing cells: float 4957, protected 6 (worst rel 2.73e-01 at 00ebd7d4), outside tolerance 0, row fields 0 
+PASS  slide: the restart comparison detects small Stage 11 -> physics errors (3 mutations at frame 990)
+PASS  slide: 30 s closed-loop run (61 rows x 60 fields) within 4x the envelope of the original's 10 twins  6.6 s Luau (1316 ticks/s); outside envelope 0, integer 0 
+      end: fuel 61.546/61.547 kg  water 116.61/116.57 C  oil 47.39/47.46 C  wear LR 0.5381/0.5369  brake LF 294.9/294.9 K
+PASS  cold: session start footprint (8551 dwords) = original  exact 8551, float 0, protected 0 (worst 0.00e+00 at 00000000), other 0 
+PASS  cold: 1 synchronized frame snapshot(s): original -> Luau, written dwords bit-exact or <= 2e-5 relative  7791 dwords: exact 7789, float 0, protected 2 (worst 1.14e-16 at 00f6f21c), other 0 
+PASS  cold: 5 full-state restarts (frames 90,270,450,630,810): one Luau frame from the original state = original (window + row)  2666 differing cells: float 2656, protected 5 (worst rel 1.07e-01 at 00ebd7d4), outside tolerance 0, row fields 0 
+PASS  cold: the restart comparison detects small Stage 11 -> physics errors (3 mutations at frame 810)
+PASS  cold: 25 s closed-loop run (51 rows x 60 fields) within 4x the envelope of the original's 10 twins  5.8 s Luau (1247 ticks/s); outside envelope 0, integer 0 
+      end: fuel 61.569/61.564 kg  water 107.54/107.53 C  oil 41.77/42.00 C  wear LR 0.7108/0.7080  brake LF 290.3/290.3 K
+PASS  hot: session start footprint (8551 dwords) = original  exact 8551, float 0, protected 0 (worst 0.00e+00 at 00000000), other 0 
+PASS  hot: 1 synchronized frame snapshot(s): original -> Luau, written dwords bit-exact or <= 2e-5 relative  7791 dwords: exact 7789, float 0, protected 2 (worst 1.14e-16 at 00f6f21c), other 0 
+PASS  hot: 5 full-state restarts (frames 90,270,450,630,810): one Luau frame from the original state = original (window + row)  2253 differing cells: float 2251, protected 1 (worst rel 4.03e-02 at 00ebd7d4), outside tolerance 0, row fields 0 
+PASS  hot: the restart comparison detects small Stage 11 -> physics errors (3 mutations at frame 810)
+PASS  hot: 25 s closed-loop run (15 rows x 60 fields) within 4x the envelope of the original's 10 twins (horizon frame 252)  5.4 s Luau (1337 ticks/s); outside envelope 0, integer 0  | after horizon (not gated): 36 rows, 2 field-rows outside
+      end: fuel 61.982/61.657 kg  water 94.48/110.82 C  oil 29.22/46.92 C  wear LR 0.1225/0.5584  brake LF 303.4/301.2 K
+PASS  impacts: session start footprint (8551 dwords) = original  exact 8551, float 0, protected 0 (worst 0.00e+00 at 00000000), other 0 
+PASS  impacts: 8 synchronized collision snapshot(s): original -> Luau, written dwords bit-exact or <= 2e-5 relative  62328 dwords: exact 62328, float 0, protected 0 (worst 0.00e+00 at 00000000), other 0 
+PASS  impacts: 4 synchronized frame snapshot(s): original -> Luau, written dwords bit-exact or <= 2e-5 relative  31164 dwords: exact 31162, float 0, protected 2 (worst 1.14e-16 at 00f6f21c), other 0 
+PASS  impacts: 9 full-state restarts (frames 90,184,270,450,546,630,742,810,990): one Luau frame from the original state = original (window + row)  1874 differing cells: float 1864, protected 5 (worst rel 6.40e-03 at 00ebf3f8), outside tolerance 0, row fields 0 
+PASS  impacts: the restart comparison detects small Stage 11 -> physics errors (3 mutations at frame 990)
+PASS  impacts: 30 s closed-loop run (61 rows x 60 fields) within 4x the envelope of the original's 10 twins  6.1 s Luau (1407 ticks/s); outside envelope 0, integer 0 
+      end: fuel 59.292/59.292 kg  water 87.23/87.24 C  oil 2.69/2.69 C  wear LR 0.0004/0.0006  brake LF 295.4/295.4 K
+PASS  pit: session start footprint (8551 dwords) = original  exact 8551, float 0, protected 0 (worst 0.00e+00 at 00000000), other 0 
+PASS  pit: 1 synchronized pit snapshot(s): original -> Luau, written dwords bit-exact or <= 2e-5 relative  7791 dwords: exact 7791, float 0, protected 0 (worst 0.00e+00 at 00000000), other 0 
+PASS  pit: 2 synchronized frame snapshot(s): original -> Luau, written dwords bit-exact or <= 2e-5 relative  15582 dwords: exact 15580, float 0, protected 2 (worst 1.15e-16 at 00f6f21c), other 0 
+PASS  pit: 6 full-state restarts (frames 90,270,450,545,630,810): one Luau frame from the original state = original (window + row)  4312 differing cells: float 4304, protected 4 (worst rel 1.58e-01 at 00ebdd38), outside tolerance 0, row fields 0 
+PASS  pit: the restart comparison detects small Stage 11 -> physics errors (3 mutations at frame 810)
+PASS  pit: 25 s closed-loop run (51 rows x 60 fields) within 4x the envelope of the original's 10 twins  5.7 s Luau (1271 ticks/s); outside envelope 0, integer 0 
+      end: fuel 61.669/61.685 kg  water 112.29/112.24 C  oil 41.94/41.19 C  wear LR 0.1835/0.1829  brake LF 294.9/294.9 K
+PASS  enter: session start footprint (8551 dwords) = original  exact 8551, float 0, protected 0 (worst 0.00e+00 at 00000000), other 0 
+PASS  enter: 2 synchronized frame snapshot(s): original -> Luau, written dwords bit-exact or <= 2e-5 relative  15582 dwords: exact 15580, float 0, protected 2 (worst 1.14e-16 at 00f6f21c), other 0 
+PASS  enter: 5 full-state restarts (frames 90,270,440,450,630): one Luau frame from the original state = original (window + row)  2382 differing cells: float 2374, protected 4 (worst rel 5.38e-02 at 00ebd7d4), outside tolerance 0, row fields 0 
+PASS  enter: the restart comparison detects small Stage 11 -> physics errors (3 mutations at frame 630)
+PASS  enter: 20 s closed-loop run (41 rows x 60 fields) within 4x the envelope of the original's 10 twins  3.5 s Luau (1627 ticks/s); outside envelope 0, integer 0 
+      end: fuel 62.388/62.387 kg  water 90.97/90.96 C  oil 3.93/3.98 C  wear LR 0.0026/0.0026  brake LF 295.1/295.1 K
+PASS  x4: session start footprint (8551 dwords) = original  exact 8551, float 0, protected 0 (worst 0.00e+00 at 00000000), other 0 
+PASS  x4: 1 synchronized frame snapshot(s): original -> Luau, written dwords bit-exact or <= 2e-5 relative  7791 dwords: exact 7791, float 0, protected 0 (worst 0.00e+00 at 00000000), other 0 
+PASS  x4: 5 full-state restarts (frames 90,270,450,630,810): one Luau frame from the original state = original (window + row)  2751 differing cells: float 2747, protected 2 (worst rel 2.05e-01 at 00ebf3f8), outside tolerance 0, row fields 0 
+PASS  x4: the restart comparison detects small Stage 11 -> physics errors (3 mutations at frame 810)
+PASS  x4: 25 s closed-loop run (51 rows x 60 fields) within 4x the envelope of the original's 10 twins  3.6 s Luau (2005 ticks/s); outside envelope 0, integer 0 
+      end: fuel 59.495/59.495 kg  water 112.41/112.43 C  oil 39.07/39.12 C  wear LR 0.8690/0.8728  brake LF 294.9/294.9 K
+PASS  idle: session start footprint (8551 dwords) = original  exact 8551, float 0, protected 0 (worst 0.00e+00 at 00000000), other 0 
+PASS  idle: 1 synchronized frame snapshot(s): original -> Luau, written dwords bit-exact or <= 2e-5 relative  7791 dwords: exact 7789, float 0, protected 2 (worst 1.14e-16 at 00f6f21c), other 0 
+PASS  idle: 6 full-state restarts (frames 90,270,450,630,810,990): one Luau frame from the original state = original (window + row)  2056 differing cells: float 2044, protected 6 (worst rel 5.51e-03 at 00ebe978), outside tolerance 0, row fields 0 
+PASS  idle: the restart comparison detects small Stage 11 -> physics errors (3 mutations at frame 990)
+PASS  idle: 30 s closed-loop run (61 rows x 60 fields) within 4x the envelope of the original's 10 twins  5.8 s Luau (1483 ticks/s); outside envelope 0, integer 0 
+      end: fuel 62.457/62.457 kg  water 92.50/92.41 C  oil 0.57/0.58 C  wear LR 0.0000/0.0000  brake LF 294.9/294.9 K
+PASS  failure: session start footprint (8551 dwords) = original  exact 8551, float 0, protected 0 (worst 0.00e+00 at 00000000), other 0 
+PASS  failure: 22 synchronized frame snapshot(s): original -> Luau, written dwords bit-exact or <= 2e-5 relative  171402 dwords: exact 171384, float 0, protected 18 (worst 1.14e-16 at 00f6f21c), other 0 
+PASS  failure: 3 full-state restarts (frames 90,150,230): one Luau frame from the original state = original (window + row)  2087 differing cells: float 2085, protected 1 (worst rel 1.07e-01 at 00ebd7d4), outside tolerance 0, row fields 0 
+PASS  failure: the restart comparison detects small Stage 11 -> physics errors (3 mutations at frame 230)
+PASS  failure: 7 s closed-loop run (12 rows x 60 fields) within 4x the envelope of the original's 10 twins (horizon frame 198)  1.1 s Luau (1835 ticks/s); outside envelope 0, integer 0  | after horizon (not gated): 3 rows, 0 field-rows outside
+      end: fuel 62.261/62.277 kg  water 95.93/96.63 C  oil 11.50/10.93 C  wear LR 0.0885/0.0674  brake LF 295.0/295.0 K
+synchronized snapshots total: 420714 dwords, exact 420682 (99.9924%), float 0 (worst 1.16e-16), other 0
+PASS  determinism: two runs of 10 s are bit-identical (all Stage 11 rows)
+PASS  checkpoint at 5 s / restore replays the Stage 11 state bit-identically (fuel, temperatures, wear, damage, RNG)
+PASS  frozen mode (Stage 6-10 comparisons only): fuel / temperatures / wear held at the post-build values
+
+66 passed, 0 failed

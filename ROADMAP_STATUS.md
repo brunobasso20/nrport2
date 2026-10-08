@@ -1,4 +1,4 @@
-# Roadmap status — após Stage 10
+# Roadmap status — após Stage 11
 
 | Stage | Status | O que é verdade agora |
 |---|---|---|
@@ -12,8 +12,8 @@
 | 8. Modelo de freio completo | **DONE + STUDIO VALIDATED** (usuário, antes do Stage 9) | Inalterado; células re-ligadas após um rebuild (Stage 10). |
 | 9. Aero completo | **DONE (automático) — pendente validação manual no Studio** | Aero original (`00561a80`/`00561b70`/`00410280`, curvas, estol, dano) agora com entradas reais: sessão `005a3c00` (ρ, vento), fatores por quadro `005637e0`, vácuo `005afd80` (interface; sem outros carros na bancada), fita/aerofólio. Validado contra o original executado (vetores bit a bit, 44 snapshots, 17 cenários). Clima dinâmico `005a4cc0` mapeado e não portado. |
 | 10. Setup → runtime | **DONE (automático) — pendente validação manual no Studio** | Caminho original completo recuperado (184 itens `c05150`, 29 conversores, garagem, .sto, `00559360` → rebuild, `00425ad0`, `0055e9b0`). Garagem portada bit a bit; build original do carro erguido para Luau (388 funções) com as decisões do emissor por tabela (estrutura natural exata / genérica); padrão = imagem entregue bit a bit. Validado contra o original: 184 builds de item, 9 setups com corrida de 8 s. Pit stop (`005601c0`/`00550f10`) mapeado, não portado. |
-| 11. Térmica/desgaste/dano/combustível | **NOT DONE** | Congelados nos valores de build (agora os do setup aplicado: combustível 0x31, pressões/temperaturas/desgaste 0x47..0x5a). Mapeados no Stage 9: dano aero (`00410910`, exato e validado com dano ≠ 0), fita → térmica do motor (`00554520`→`0051a000`), velocidade do ar `car+0x5aa` → `bf3a00` (térmica de freio/pneu). |
-| 12. Cadeia de direção completa | **NOT DONE** | Alvo de roda provisório do host; toe original já aplicado; relação de direção (item 0x30) armazenada/convertida pelo Stage 10, uso pendente. |
+| 11. Térmica/desgaste/dano/combustível | **DONE (automático) — pendente validação manual no Studio** | Fim de quadro ORIGINAL `00554520` + dano de colisão `00549c40` erguidos do x86 (motor, combustível → massa/inércia, pneus 3 zonas/pressão/desgaste/estouro, freios, falhas aleatórias, dano de colisão com árvore de zonas `00433610`); eventos: registro de colisão `0054a760`, troca de pneus `00550f10`, carro na pista `00550a50`; opções de corrida (dano, consumo). Validado contra o original: início de sessão e snapshots bit a bit, reinícios de estado completo, corridas em malha fechada no envelope dos gêmeos do original, determinismo. Fronteira do host documentada (objeto de colisão do sistema de pista sem deformação, série do roster PROVISIONAL). |
+| 12. Cadeia de direção completa | **NOT DONE** (não iniciado) | Alvo de roda provisório do host; toe original já aplicado; relação de direção (item 0x30) armazenada/convertida pelo Stage 10, uso pendente. |
 | 13. Torque de direção / FFB | **NOT DONE** | |
 | 14. Predição cliente + reconciliação | **NOT DONE** | Servidor autoritativo + interpolação de apresentação (estágio 5). Vácuo multi-carro depende deste estágio (ordem de corrida e posição na pista dos outros carros). |
 | 15. Replay determinístico vs NR2003 | **PARCIAL** | Trajetórias do carro completo comparadas contra o código original executado (Unicorn), agora com aero; captura do jogo real ainda não. |

@@ -1,0 +1,8 @@
+00549be0 MOV EAX,[0x00bf39ec]
+00549be5 CMP EAX,0x4
+00549be8 JGE 0x00549bfb
+00549bea MOV ECX,dword ptr [ESP + 0x4]
+00549bee MOV dword ptr [EAX*0x4 + 0xbef710],ECX
+00549bf5 INC EAX
+00549bf6 MOV [0x00bf39ec],EAX
+00549bfb RET

@@ -45,6 +45,8 @@ function M.run(full)
     end
     local t0=os.clock()
     local car=Vehicle.new(Core.NR2003Cup);local V=car.V
+-- Stage 11: golden data produced by the ORIGINAL code with the Stage 6-10 frame end -> explicit "frozen" runtime mode
+if V.setRuntimeMode then V.setRuntimeMode("frozen") end
     check("load Core.NR2003Cup (Stage 8 driver layer)",V.brakePedalOriginal~=nil and V.setBrakeBias~=nil,string.format("%.2f s",os.clock()-t0))
     local w32,r32=V.w32,V.r32
     -- 00553080 pedal chain, bit level

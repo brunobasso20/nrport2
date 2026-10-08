@@ -1,3 +1,71 @@
+# Validação — Stage 11 (térmico / desgaste / dano / combustível)
+
+Executada nesta máquina com Luau CLI (codegen nativo), Python 3.12 + Unicorn 2.1.4 + Capstone 5.0.6 e Ghidra 11.1.2.
+Saídas: `tests/stage11/RESULTS_STAGE11.txt` (`tools/run_stage11_tests.ps1` / `.sh` roda tudo, incluindo as suítes 6/7, 8,
+9 e 10 e os mocks dos 5 patches). Método e tolerâncias em detalhe: **`STAGE11_VALIDATION.md`**.
+
+## Método
+
+1. **Referência = código original** executado no Unicorn (`recovery/stage11/orig_stage11.py`): fim de quadro `00554520`,
+   dano de colisão `00549c40`, entrada de registro `0054a760`, troca de pneus `00550f10`, carro na pista `00550a50`,
+   opções de corrida, árvore de zonas `00433610` — com a mesma fronteira de host do port.
+2. **Bit a bit** para a lógica do Stage 11: início de sessão e snapshots sincronizados (estado original carregado no Luau
+   logo antes de um fim de quadro / colisão / pit / colocação na pista; todo dword escrito comparado).
+3. **Reinícios de estado completo**: a janela de memória inteira do original no início de um quadro carregada no Luau;
+   um quadro completo (8 ticks + fim de quadro) comparado com o original, dentro de 4× a sensibilidade do próprio
+   original em um quadro (gêmeos de ±1 ulp); 3 erros deliberados de acoplamento (aderência −2 %, rigidez +5 %,
+   combustível +2 kg) precisam ser detectados.
+4. **Corridas de 20–50 s em malha fechada**: 60 campos a cada 0,5 s dentro de 4× o envelope de 10 gêmeos do original
+   (±1 ulp no início; 8 com ±1 ulp na altura do chassi a cada quadro).
+
+## Resultados automáticos
+
+| Verificação | Resultado |
+|---|---|
+| Início de sessão, 12 cenários | PASS — 12 × 8551 dwords bit a bit (motor, combustível, 4 pneus novos, dano reparado, árvore de zonas, opções) |
+| Snapshots sincronizados (45 fins de quadro, 8 colisões, 1 pit) | PASS — 420 714 dwords: 420 682 bit a bit, 32 = double protegido do combustível a 1 ulp (≤ 1,16e−16) |
+| Reinícios de estado completo (77, a cada 5 s e após cada evento) | PASS — 0 células / 0 campos fora do envelope de um quadro dos gêmeos do original |
+| Sensibilidade dos reinícios (aderência −2 %, rigidez +5 %, combustível +2 kg) | PASS — 36 / 36 detectados |
+| Corridas em malha fechada (12 cenários, 20–50 s) | PASS — 603 linhas × 60 campos dentro de 4× o envelope de 10 gêmeos; horizontes `failure` 198, `overrev` 108, `hot` 252 |
+| Determinismo / checkpoint / modo congelado | PASS |
+| Regressão Stage 6/7 / 8 / 9 / 10 (setup + dinâmica), modo congelado | PASS — 16/16, 49/49, 59/59, 23/23 + 61/61 |
+| Adaptador sob mock (inclui atributos do Stage 11 e auto-testes 6/7–11 rápido/completo) | PASS — 55/55 |
+| `PATCH_STAGE11.lua` e instalação em partes (`PART1..3` + `INSTALL`) em DataModel simulado (6/7 → 8 → 9 → 10 → 11, reaplicação, módulos 6/7–10 intactos, backup do pacote e do cliente, reversão, recusa sem 10, INSTALL sem partes recusado, partes = arquivo único) | PASS — 15/15 |
+| `PATCH_STAGE6_7` / `8` / `9` / `10` (inalterados) | PASS — 11/11, 13/13, 13/13, 17/17 |
+| Sintaxe (todos os módulos + `PATCH_STAGE11*`) | PASS — 98 arquivos |
+
+Desempenho (Luau CLI nativo, 4 núcleos ocupados por outros processos): 1200–2400 ticks/s com o fim de quadro original
+(≈ 4–8× o tempo real de 288 Hz); carga do núcleo com o Stage 11: ~3 s no CLI.
+
+## Validação manual no Roblox Studio — a fazer
+
+1. Aplicar o patch na Command Bar (fora do Play) sobre a bancada Stage 10: `PATCH_STAGE11.lua` inteiro, ou as partes
+   `PATCH_STAGE11_PART1..3.lua` em ordem seguidas de `PATCH_STAGE11_INSTALL.lua`, ou `NR2003_Patch_Stage11.rbxmx`
+   (*Insert from File* + `require(workspace.NR2003_Patch_Stage11)()`). Output: self-tests 6/7 (7), 8 (5), 9 (13), 10 (6),
+   11 (4) sem falhas e `Stage 11 aplicado`.
+2. Play → F → T (painel). Linha nova (laranja): `COMB 62.47 kg  água 93.0°C  óleo 0.0°C  pot 0.9xx  dano mot 0.00 ...`
+   e os 4 pneus a ~60 °C (temperatura do ar da sessão com sol, 49 °C a 70 °F, + 11 °C), pressão a frio do setup, 0 %.
+3. **Combustível/motor**: acelerar a fundo por ~30 s. COMB cai continuamente (mais rápido em rotação alta); óleo sobe
+   desde 0 °C; água oscila em torno de 90–100 °C conforme a carga; `pot` acompanha a densidade do ar.
+4. **Pneus**: em arrancada patinando / curva forte as temperaturas traseiras sobem até o limite do original (505 K =
+   232 °C) e o desgaste (%) cresce; parado, esfriam devagar. Não há perda de aderência inventada: a aderência é a do
+   código original (1 − 0,2·desgaste, rigidez pela temperatura).
+5. **Freios**: frenagens fortes repetidas — as temperaturas de freio (linha, `freio a/b/c/d`) sobem e caem; o carro freia
+   igual (o executável não tem fade).
+6. **Consumo ×4**: parar o Play, criar `RaceConsumptionRate = 3` no `Workspace.NR2003LabWorld.TestCar`; Play: COMB e
+   desgaste caem ~4× mais rápido.
+7. **Dano**: em Play, no servidor, `workspace.NR2003LabWorld.TestCar:SetAttribute("DamageTestImpact", 150000)` (teste:
+   um registro de colisão original no para-choque dianteiro). Output `[NR2003 Stage 11] TESTE: registro de colisão
+   original ...`; no painel `carroc` passa de 0 para ~0,07 (zona dianteira). Repetir com 400000: dano do motor e vazamentos
+   podem aparecer (sorteios originais); o radiador perde eficiência (água sobe).
+8. `RaceDamageLevel = 0` → R → o mesmo `DamageTestImpact` não causa dano (escala 0 do original).
+9. **Pit**: `PitTyresTest = true` → pneus voltam a ~60 °C, desgaste 0 %.
+10. **A/B**: `Stage11Runtime = "frozen"` → R → a linha mostra `ESTÁGIO 11 congelado ...`; combustível/temperaturas
+    parados; o carro anda como no Stage 10. Apagar o atributo → R → volta ao runtime original.
+11. Regressão: entrada no carro, freio (Stage 8), aero (Stage 9), setup (Stage 10) e trocas como antes.
+
+---
+
 # Validação — Stage 10 (setup → parâmetros de tempo de execução)
 
 Executada nesta máquina com Luau CLI (codegen nativo), Python 3 + Unicorn 2.1.4 + Capstone e Ghidra 11.1.2. Saídas:

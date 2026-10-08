@@ -1,0 +1,30 @@
+Continue from the Stage 11 package (3.10.0-stage11). Stages 1-11 are implemented; Stages 9, 10 and 11 still need the
+manual Roblox Studio validation listed in VALIDACAO.md before Stage 12 starts.
+
+Facts to keep:
+- Mode NR2003_CUP runs the ORIGINAL NR2003 Cup vehicle core generated from NR2003.exe. Stage 6/7 image and callbacks,
+  Stage 9 aero and the Stage 10 setup/build are unchanged by Stage 11.
+- Stage 11 runs the ORIGINAL frame end 00554520 and collision frame 00549c40 lifted from x86
+  (core/NR2003Cup/NR2003CupFrameCode1..4, host NR2003CupFrame, image supplement NR2003CupFrameData1; recovery/stage11).
+  Production runtime mode = "original"; V.setRuntimeMode("frozen") keeps the Stage 6-10 frame end and is used ONLY by the
+  Stage 6-10 regression suites and self-tests (one line each).
+- Stage 11 states live in the original cells (STAGE11_STATE_MAP.md): fuel (protected double E+0x50c -> fuel record
+  mass/inertia via 005605c0), engine thermal/levels/power/wear (0051aac0), tyres (0054d610: 3-zone surface/carcass,
+  hot pressure, derived stiffness +0x29c/+0x2a4, wear, grip, blow-out), brakes (0054f260, nothing reads them: no fade in
+  the exe), random component failures (0051c3d0 -> c086e0 broken flags read by the drivetrain), collision damage
+  (00549c40 / 0054a760; zone tree 00433610 built at the session start; car in a one-car race order around 00549c40;
+  host collision object c7e75c with zeroed parts). Host inputs: getBGCount / getIntCount +1 per frame, world record
+  synced from the exported state, roster series car+0x596 = 1 (PROVISIONAL).
+- Validation method (STAGE11_VALIDATION.md): original code in Unicorn (orig_stage11.py); session start and
+  synchronized snapshots bit-exact; full-state restarts within 4x the original's own one-frame sensitivity (ulp twins)
+  with 3 deliberate coupling errors detected; 20-50 s closed-loop runs within 4x the envelope of 10 original twins;
+  documented horizons (failure: random threshold; overrev: inherited Stage 6-10 quasi-static creep divergence).
+- Inherited open item (Stage 6/7 runtime, not Stage 11): exact-zero sums are +0 in the per-tick runtime lift where the
+  x87 under RC-down gives -0 (the Stage 10/11 lifters emulate it with ZADD); suspected cause of the quasi-static creep
+  divergence (car in neutral at the rev limiter). Fixing it changes validated Stage 6/7 code: separate task.
+
+Stage 12 - steering chain: recover and port the original steering chain (00554fb0 with the setup steering ratio item
+0x30 stored/converted by Stage 10, steering wheel -> road-wheel angle, rack, toe/Ackermann, the driver input path of
+005539c0 / 00551e80 that today receives a PROVISIONAL road-wheel target from the host), validated against the original
+code in Unicorn with the Stage 11 runtime active. Keep force feedback / steering torque (00554d30, bf6ec4.., the FFB
+block of 00554520) for Stage 13. Do not start Stage 13.

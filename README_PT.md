@@ -1,4 +1,38 @@
-# OpenNR2003 para Roblox — Stage 10 (setup completo da garagem → parâmetros de tempo de execução)
+# OpenNR2003 para Roblox — Stage 11 (térmico / desgaste / dano / combustível)
+
+## Aplicar o Stage 11 sobre o Stage 10
+
+1. Studio, **fora do Play**, na **Command Bar** — escolha UMA das formas (o resultado é o mesmo):
+   - **Um arquivo**: abra `PATCH_STAGE11.lua` (~1,6 MB), copie o arquivo inteiro, cole na Command Bar, Enter.
+   - **Em partes**: cole, um de cada vez e em ordem, `PATCH_STAGE11_PART1.lua`, `PART2`, `PART3` (cada uma imprime
+     `parte k/3 guardada`; só guardam as fontes em `ServerStorage.NR2003Stage11Staging`) e por fim
+     `PATCH_STAGE11_INSTALL.lua`. Se o INSTALL falhar, tudo é revertido e basta repetir só o INSTALL.
+   - **Arquivo de modelo**: *Insert from File* → `NR2003_Patch_Stage11.rbxmx`; depois, na Command Bar:
+     `require(workspace.NR2003_Patch_Stage11)()` e apague o ModuleScript inserido.
+2. O patch faz backup em `ServerStorage.NR2003Backup_Stage11_*` (pacote + `NR2003Client`), instala em `Core.NR2003Cup`
+   `NR2003CupFrame`, `NR2003CupFrameCode1..4`, `NR2003CupFrameData1` (fim de quadro ORIGINAL do NR2003 erguido do x86),
+   troca `NR2003CupDriver`, `Core.NR2003CupVehicle`, `Roblox.CupChassisAdapter`, os self-tests 6/7, 8, 9, 10 (comparam no
+   modo `"frozen"`) e o LocalScript `NR2003Client` (linha de HUD), instala `Roblox.Stage11SelfTest`, roda os auto-testes
+   6/7, 8, 9, 10 e 11 e **reverte tudo** se algo falhar.
+3. Output esperado: `Stage 6/7 self-test: 7 passed`, `Stage 8 self-test: 5 passed`, `Stage 9 self-test: 13 passed`,
+   `Stage 10 self-test: 6 passed`, `Stage 11 self-test: 4 passed`, `Stage 11 aplicado`.
+4. No Play (painel **T**), linha laranja: combustível (kg), água/óleo (°C), potência, dano do motor, vazamentos, dano de
+   carroceria, os 4 pneus (temperatura, psi, desgaste, FURADO) e as temperaturas de freio — tudo lido das células do
+   código original. Atributos do `TestCar` (valem no reset **R**): `RaceDamageLevel` 0..3 (0 = sem dano), 
+   `RaceConsumptionRate` 0..3 (×1..×4), `RosterSeries`, `RandomSeed`, `Stage11Runtime = "frozen"` (A/B com o Stage 10).
+   Testes (a bancada não tem paredes nem pit): `DamageTestImpact = <magnitude>` (registro de colisão original no
+   para-choque), `PitTyresTest = true` (troca dos 4 pneus pelo `00550f10` original).
+5. Auto-teste completo: `require(game.ReplicatedStorage.NR2003Lab.Roblox.Stage11SelfTest).run(true)`. Roteiro manual em
+   `VALIDACAO.md`; o que foi recuperado em `STAGE11_RECOVERY.md`.
+
+O que muda no comportamento: o carro gasta combustível (fica mais leve: a massa do combustível é um componente do
+multibody), aquece água/óleo/pneus/freios, desgasta os pneus (aderência = 1 − 0,2·desgaste; estouro raro acima de 66 %),
+pode ter falhas aleatórias de componentes e sofre dano de colisão — exatamente o fim de quadro do NR2003. O executável não
+tem fade de freio nem geometria de suspensão dependente de dano; esses efeitos não existem no port.
+
+---
+
+# Histórico — Stage 10 (setup completo da garagem → parâmetros de tempo de execução)
 
 ## Aplicar o Stage 10 sobre o Stage 9
 

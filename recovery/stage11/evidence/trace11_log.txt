@@ -1,0 +1,35 @@
+py : Traceback (most recent call last):
+No linha:1 caractere:369
++ ... s1; Set-Location "$REPO\recovery\stage11"; py trace11.py 2>&1 | Out-F ...
++                                                ~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "C:\Users\bd7\AppData\Roaming\Claude\scratch-workspaces\52510148-3e51-4aa2-933c-6bad197a54c0\e0384900-8cf3-45c0-
+80f2-145f0c697df0\scratch-2026-10-07-515009\repo\recovery\stage11\trace11.py", line 119, in <module>
+    acc = run(names, sites)
+          ^^^^^^^^^^^^^^^^^
+  File "C:\Users\bd7\AppData\Roaming\Claude\scratch-workspaces\52510148-3e51-4aa2-933c-6bad197a54c0\e0384900-8cf3-45c0-
+80f2-145f0c697df0\scratch-2026-10-07-515009\repo\recovery\stage11\trace11.py", line 102, in run
+    SC.play(o, script, traced=True)
+  File "C:\Users\bd7\AppData\Local\Packages\Claude_pzs8sxrjxfjjc\LocalCache\Roaming\Claude\scratch-workspaces\52510148-
+3e51-4aa2-933c-6bad197a54c0\e0384900-8cf3-45c0-80f2-145f0c697df0\scratch-2026-10-07-515009\repo\recovery\stage11\scenar
+ios11.py", line 105, in play
+    o.step_driver(c, flat4)
+  File "C:\Users\bd7\AppData\Local\Packages\Claude_pzs8sxrjxfjjc\LocalCache\Roaming\Claude\scratch-workspaces\52510148-
+3e51-4aa2-933c-6bad197a54c0\e0384900-8cf3-45c0-80f2-145f0c697df0\scratch-2026-10-07-515009\repo\recovery\stage11\orig_s
+tage11.py", line 161, in step_driver
+    self.drive_tick(contacts)
+  File "C:\Users\bd7\AppData\Local\Packages\Claude_pzs8sxrjxfjjc\LocalCache\Roaming\Claude\scratch-workspaces\52510148-
+3e51-4aa2-933c-6bad197a54c0\e0384900-8cf3-45c0-80f2-145f0c697df0\scratch-2026-10-07-515009\repo\recovery\stage6_7\orig_
+runtime.py", line 132, in drive_tick
+    m.call(0x5539c0)                                        # ORIGINAL tick input + predictor + export
+    ^^^^^^^^^^^^^^^^
+  File "C:\Users\bd7\AppData\Local\Packages\Claude_pzs8sxrjxfjjc\LocalCache\Roaming\Claude\scratch-workspaces\52510148-
+3e51-4aa2-933c-6bad197a54c0\e0384900-8cf3-45c0-80f2-145f0c697df0\scratch-2026-10-07-515009\repo\recovery\stage6_7\nrx.p
+y", line 218, in call
+    uc.emu_start(address, END, count=limit)
+  File "C:\Users\bd7\nrt\pylib\unicorn\unicorn_py3\unicorn.py", line 763, in emu_start
+    status = uclib.uc_emu_start(self._uch, begin, until, timeout, count)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+OSError: exception: access violation writing 0x000001A6E758F000

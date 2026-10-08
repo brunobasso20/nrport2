@@ -1,0 +1,19 @@
+﻿slide      restarts 6 (12 twins each) 188.1 s
+overrev    restarts 8 (12 twins each) 251.7 s
+launch     restarts 9 (12 twins each) 281.7 s
+brakes     restarts 10 (12 twins each) 318.2 s
+py : Traceback (most recent call last):
+No linha:1 caractere:374
++ ... ry\stage11; py gen_fixtures11.py -j 4 --restarts-only ..\..\tests\sta ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "C:\Users\bd7\AppData\Roaming\Claude\scratch-workspaces\52510148-3e51-4aa2-933c-6bad197a54c0\e0384900-8cf3-45c0-
+80f2-145f0c697df0\scratch-2026-10-07-515009\repo\recovery\stage11\gen_fixtures11.py", line 352, in <module>
+    (restarts_only if only else main)(out, names, workers)
+  File "C:\Users\bd7\AppData\Roaming\Claude\scratch-workspaces\52510148-3e51-4aa2-933c-6bad197a54c0\e0384900-8cf3-45c0-
+80f2-145f0c697df0\scratch-2026-10-07-515009\repo\recovery\stage11\gen_fixtures11.py", line 321, in restarts_only
+    assert doc['rows'] == r['rows'] and doc['sync'] == r['sync'] and doc['start'] == r['start'], name
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: impacts

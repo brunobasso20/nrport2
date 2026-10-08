@@ -1,3 +1,9 @@
+-- Stage 11: the ORIGINAL per-frame runtime systems run inside the core (fuel burn and fuel mass, tyre thermal /
+-- hot pressure / wear / failure, brake temperature, engine thermal / damage / failure, random failures, collision
+-- damage). The adapter only starts the Stage 11 session with the race options (car attributes RaceDamageLevel 0..3,
+-- RaceConsumptionRate 0..3, RosterSeries, RandomSeed; Stage11Runtime="frozen" = Stage 6-10 frame end for A/B),
+-- offers TEST-ONLY event injection (DamageTestImpact = magnitude of one ORIGINAL collision record at the front
+-- bumper, PitTyresTest = ORIGINAL 00550f10 x4) and reads telemetry from the original cells. No state is kept here.
 -- Stage 10: garage setup at initialize/reset (car attributes Setup_<item> in display units, e.g.
 -- Setup_springLF = 1700, Setup_camberLF = -2.5; legacy SetupBrakeBias/SetupGrilleTape/SetupSpoiler map to
 -- items brakeBias/grilleTape/spoilerAngle). Each value goes through the ORIGINAL garage function 005581d0
@@ -133,13 +139,22 @@ function M:initialize()
     -- (rad) stands for the track's north angle (bdbcf8) in the core frame. AeroSession=false keeps the
     -- Stage 6/7/8 post-build state (no air) for A/B comparison.
     self.core:setDraftEnvironment(nil);self.core:setTrackNormal(nil)
+    -- Stage 11: production = "original" runtime; Stage11Runtime="frozen" keeps the Stage 6-10 frame end (A/B only)
+    local frozen=self.car:GetAttribute("Stage11Runtime")=="frozen"
+    if self.core.V.setRuntimeMode then self.core:setRuntimeMode(frozen and "frozen" or "original") end
     if self.car:GetAttribute("AeroSession")==false then
         self.core:endSession();self.weather=nil
     else
+        -- Stage 11 session options (race options of the original; absent = post-build values: damage scale 1.0,
+        -- consumption x1, random stream state of the build). RosterSeries stands for the roster series field
+        -- car+0x596 (PROVISIONAL host input, 1 = collision damage evaluated). The car is then placed on the
+        -- track by the ORIGINAL 00550a50 subset (repair, engine and fuel init, four new tyres).
         self.weather=self.core:startSession({temperatureF=num("WeatherTemperatureF"),windSpeedMph=num("WeatherWindMph"),
             windDirection=num("WeatherWindDirection"),conditions=num("WeatherConditions"),night=self.car:GetAttribute("WeatherNight")==true,
-            trackNorth=num("TrackNorth")})
+            trackNorth=num("TrackNorth")},{damageLevel=num("RaceDamageLevel"),consumptionRate=num("RaceConsumptionRate"),
+            series=num("RosterSeries"),seed=num("RandomSeed")})
     end
+    self.stage11Out={}
     self.car:SetAttribute("AirDensityApplied",self.weather and self.weather.density or 0)
     self.aeroOut={};self.trackNormal=nil;self.draftTest=false
     local w=self.weather
@@ -242,7 +257,31 @@ function M:tickCore(input)
     end
     if frame and self.weather then self:aeroHostInputs() end
     self.core:step(controls,self.contactFn)
+    if self.core:tick()%8==0 and self.weather then self:stage11TestEvents() end
     self:pose(false)
+end
+
+-- Stage 11 TEST ADAPTER (not an NR2003 feature): one-shot attributes to exercise the ORIGINAL event paths on the
+-- bench, which has no walls / other cars / pit lane. Applied after a frame end (where the original track contact code
+-- would have entered the record during the frame).
+--   DamageTestImpact = magnitude -> ORIGINAL 0054a760 record: front bumper point (car frame +2.4 m x), wall
+--                      normal against the car's heading, wall material 1; evaluated by 00549c40 at the next frame end
+--   PitTyresTest = true          -> ORIGINAL 00550f10 for the four wheels (pit tyre change)
+function M:stage11TestEvents()
+    local impact=self.car:GetAttribute("DamageTestImpact")
+    if U.finite(impact) and impact>0 then
+        self.car:SetAttribute("DamageTestImpact",nil)
+        local st=self.core:readState()
+        local p,r=self.core:componentPose(0,self.scratchPos,self.scratchRot)
+        self.core:collision({magnitude=impact,material=0x10,surface=1,point={p[1]+2.4*r[1],p[2]+2.4*r[4],p[3]+2.4*r[7]},
+            localPoint={2.4,0,0.3},velocity={st[2],st[4],st[6]},normal={-r[1],-r[4],-r[7]},speed=math.abs(st[2]*r[1]+st[4]*r[4]+st[6]*r[7])})
+        print(string.format("[NR2003 Stage 11] TESTE: registro de colisão original (magnitude %.0f) na frente do carro",impact))
+    end
+    if self.car:GetAttribute("PitTyresTest")==true then
+        self.car:SetAttribute("PitTyresTest",nil)
+        self.core:pitTyres({0,1,2,3})
+        print("[NR2003 Stage 11] TESTE: troca dos 4 pneus pelo 00550f10 original")
+    end
 end
 
 -- Stage 9 per-frame host inputs of the aero, set before the frame's first tick (005637e0 order):
@@ -382,15 +421,20 @@ function M:telemetry()
     local forward=st[2]*r[1]+st[4]*r[4]+st[6]*r[7]
     local lf,rf,thr,brk,clu,gearIn=self.core:inputs()
     local wheels={}
+    -- Stage 11: ORIGINAL runtime state (read-only view of the core cells)
+    local s11=self.core.V.stage11State and self.core:stage11State(self.stage11Out) or nil
     for j,c in ipairs(self.tune.corners) do
         local fx,fy,fz=self.core:contactOut(j-1)
         local travel=st[c.state.travel+1]
         local w=self.wheelPose[j]
         -- Stage 8: original per-wheel brake/tire cells (no side effects on the core)
         local b=self.core:wheelBrake(j-1)
+        local ty=s11 and s11.tyres[j]
         wheels[j]={name=c.name,load=self.inContact[j] and fz or 0,compression=travel,
             slip=b.vslip/math.max(math.abs(b.vx),2),
-            omega=w.rate,temperature=self.tune.environment.ambientC,grounded=self.inContact[j],
+            omega=w.rate,temperature=ty and ty.surface[2]-273.15 or self.tune.environment.ambientC,grounded=self.inContact[j],
+            tyreSurfaceK=ty and ty.surface,tyreCarcassK=ty and ty.carcass,tyrePressure=ty and ty.pressure,
+            tyreWear=ty and ty.wear,tyreGrip=ty and ty.gripWear,tyreState=ty and ty.state,
             surface=self.planes[j][8],out1={fx,fy,fz},
             brakeTorque=b.torque,brakeCapacity=b.brakeCap,dragCapacity=b.dragCap,locked=b.locked,
             fx=b.fx,fy=b.fy,fz=b.fz,slipVelocity=b.vslip,brakeTemperatureK=b.temperature}
@@ -413,6 +457,11 @@ function M:telemetry()
         droppedTime=0,fault=self.fault,mode="NR2003_CUP",tick=self.core:tick(),backlog=self.runner.accumulator,
         chassisStateCount=45,chassisIntegration="NR2003 original JIT (005b39a0/005b3180/005b3e50/005b2fb0)",
         collision=self.collision==true,aero=aero,
+        stage11=s11 and {mode=s11.mode,fuelKg=s11.fuel.kg,fuelRecordKg=s11.fuel.massRecord,water=s11.engine.water,oil=s11.engine.oil,
+            coolantLevel=s11.engine.coolantLevel,oilLevel=s11.engine.oilLevel,power=s11.engine.power,life=s11.engine.life,
+            overRev=s11.engine.overRev,damageScale=s11.damage.scale,engineDamage=s11.damage.engine,leakRadiator=s11.damage.radiator,
+            leakOil=s11.damage.oil,leakFuel=s11.damage.fuel,zones=s11.damage.zones,failures=s11.damage.failures,
+            broken=s11.damage.brokenFlags,airspeed=s11.airspeed,ambientK=s11.ambient} or nil,
         roadWheelAngle=self.steerAngle,steeringWheelAngle=Cockpit.angle(self.steerAngle,self.tune)}
 end
 function M:reset()

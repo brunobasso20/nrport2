@@ -1,0 +1,7 @@
+﻿zonetree       4.5 s  touched 134  outside 0
+outside pages {}
+indirect {}
+impacts        394.8 s  touched 1937  outside 0
+outside pages {}
+indirect {}
+merged ['footprint11_brakes.pkl', 'footprint11_cold.pkl', 'footprint11_enter.pkl', 'footprint11_impacts.pkl', 'footprint11_launch.pkl', 'footprint11_overrev.pkl', 'footprint11_pit.pkl', 'footprint11_slide.pkl', 'footprint11_x4.pkl', 'footprint11_zonetree.pkl'] touched 7911 outside {} indirect {}

@@ -1,0 +1,5 @@
+00541080 MOV EAX,0xc3fa0000
+00541085 MOV dword ptr [ECX + 0x42c],EAX
+0054108b MOV dword ptr [ECX + 0x430],EAX
+00541091 MOV EAX,dword ptr [ECX]
+00541093 JMP dword ptr [EAX + 0x44]

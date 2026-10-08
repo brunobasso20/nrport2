@@ -13,7 +13,8 @@
 --   shift FSM + auto clutch 005542f0, gear, rev limiter engine+0x438 with 006f5a3c hysteresis),
 --   005b2b90 predictor+solve, 005b2cb0 export, tires (00578da0 -> 0055e1e0 x4), 005b2bd0 forces,
 --   005b2be0 corrector+solve, export, tires (00578de0), forces, 005b2c00 commit.
--- Per frame end (00554520): 0051aac0 cut-timer subset (in the core: V._frameEnd).
+-- Per frame end (00554520): V._frameEnd. Stages 6-10: 0051aac0 cut-timer subset (core); Stage 11:
+-- the ORIGINAL 00554520 + 00549c40 lifted (NR2003CupFrame, "frozen" runtime mode = the subset).
 -- Stage 8 (brake input chain, per frame, 005524f0 player branch):
 --   raw brake control (0057af30 control table) -> 00552d00 axis limiter -> 00553080 pedal
 --   processing (auto-hold below 0.8 m/s, key ramp, braking help 00550130) -> bf6eac; the
@@ -312,8 +313,12 @@ return function(V)
 	-- Stage 9: the per-frame car update 005637e0 (aero factors, airspeed, drafting) runs in
 	-- 0055bfd0 before 005b2190 starts the frame; V._aeroFrame is installed by NR2003CupAero and
 	-- does nothing until a session is started (post-build state of Stages 6-8).
+	-- Stage 11 (integration point): the task loop increments getBGCount before the frame
+	-- (V._frameStart11) and the frame end is looked up at run time (V._frameEnd): NR2003CupFrame
+	-- replaces the Stage 6-10 subset by the ORIGINAL 00554520 + 00549c40.
 	function V.drive(controls, contacts)
 		if V.tick % TPF == 0 then
+			if V._frameStart11 then V._frameStart11() end
 			if V._aeroFrame then V._aeroFrame() end
 			frameStart(controls)
 		end
@@ -327,7 +332,7 @@ return function(V)
 		tires(contacts, 2); callx(0x5b2bd0)
 		callx(0x5b2c00)
 		V.tick += 1
-		if V.tick % TPF == 0 then frameEnd() end
+		if V.tick % TPF == 0 then V._frameEnd() end
 	end
 
 	-- component world transforms (vehicle-world axes) through the record pointer fields

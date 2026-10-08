@@ -1,0 +1,3 @@
+00539840 MOV EAX,dword ptr [ESP + 0x4]
+00539844 MOV AL,byte ptr [EAX + ECX*0x1 + 0x1274]
+0053984b RET 0x4

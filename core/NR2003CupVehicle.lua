@@ -44,6 +44,12 @@ function M.fromLoader(get)
     local V=get("NR2003CupDriver")(get("NR2003CupCore")(image,jit))
     local aero=get("NR2003CupAero") -- Stage 9 (absent in a Stage 6/7/8 install)
     if aero then aero(V) end
+    -- Stage 11 (absent in a Stage 6..10 install). Installed before the garage: its image supplement becomes part
+    -- of the reset image that the garage snapshots (applySetup of the default setup restores that image)
+    local frame=get("NR2003CupFrame")
+    if frame then
+        frame(V,collect(get,"NR2003CupFrameCode"),collect(get,"NR2003CupFrameData"))
+    end
     local build=get("NR2003CupBuild") -- Stage 10 (absent in a Stage 6/7/8/9 install)
     if build then
         local Setup=get("NR2003CupSetup")(get("NR2003CupSetupData"))
@@ -80,7 +86,8 @@ function M:brakeTemperature(i) return self.V.brakeTemperature(i) end
 -- post-build state (no air: rho = 0), the condition of every Stage 6/7/8 fixture.
 --   weather = {temperatureF, windSpeedMph, windDirection 0..7, conditions 0..3, night, trackNorth,
 --              humidity, pressureInHg}  (nil fields = original defaults)
-function M:startSession(weather) return self.V.startSession(weather) end
+-- Stage 11: opts = {damageLevel 0..3, consumptionRate 0..3, series (car+0x596), seed} (see CORE_API.md)
+function M:startSession(weather,opts) return self.V.startSession(weather,opts) end
 function M:endSession() self.V.endSession() end
 function M:sessionActive() return self.V.sessionActive() end
 function M:weather() return self.V.weather() end
@@ -98,6 +105,18 @@ function M:setup() return self.V.setup() end
 function M:applySetup(s) return self.V.applySetup(s) end
 function M:setupReport() return self.V.setupReport() end
 function M:setupDump(out) return self.V.setupDump(out) end
+-- Stage 11 runtime systems (ORIGINAL frame end; see CORE_API.md). Mode "original" (default, production) or
+-- "frozen" (the Stage 6-10 frame end, only for comparisons with the Stage 6-10 golden data).
+function M:setRuntimeMode(m) self.V.setRuntimeMode(m) end
+function M:runtimeMode() return self.V.runtimeMode() end
+function M:stage11State(out) return self.V.stage11State(out) end
+function M:collision(rec) self.V.collision(rec) end
+function M:pitTyres(wheels) self.V.pitTyres(wheels) end
+function M:enterTrack() self.V.enterTrack() end
+function M:setDamageLevel(level) return self.V.setDamageLevel(level) end
+function M:setConsumptionRate(rate) return self.V.setConsumptionRate(rate) end
+function M:setRandomSeed(seed) self.V.setRandomSeed(seed) end
+function M:randomState() return self.V.randomState() end
 function M:readState() return self.V.state(self.state) end
 function M:componentPose(record,pos,rot) return self.V.componentPose(record,pos,rot) end
 function M:contactOut(i) return self.V.contactOut(i) end

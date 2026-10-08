@@ -1,0 +1,6 @@
+0054b550 TEST dword ptr [ECX + 0xc],0x2000000
+0054b557 JZ 0x0054b563
+0054b559 MOV EAX,dword ptr [ESP + 0x4]
+0054b55d MOV EDX,dword ptr [EAX + 0x64]
+0054b560 MOV dword ptr [ECX + 0x64],EDX
+0054b563 RET 0x4

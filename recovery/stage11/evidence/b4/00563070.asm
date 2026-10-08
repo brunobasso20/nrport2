@@ -1,0 +1,3 @@
+00563070 MOV EAX,dword ptr [ESP + 0x4]
+00563074 MOV dword ptr [EAX + 0x15b4],0x0
+0056307e RET

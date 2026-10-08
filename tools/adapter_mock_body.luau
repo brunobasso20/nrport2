@@ -382,6 +382,62 @@ if ctl.core.V.applySetup then
 	check("stage 10: attributes removed -> shipped default image (structure 'image')", car:GetAttribute("SetupStructure") == "image"
 		and ctl.core.V.setupStructure() == "image")
 end
+-- ===== Stage 11: ORIGINAL per-frame runtime (fuel, thermal, wear, damage) through the adapter =====
+if ctl.core.V.stage11State then
+	local S11KEYS = {"RaceDamageLevel", "RaceConsumptionRate", "RosterSeries", "RandomSeed", "Stage11Runtime", "DamageTestImpact", "PitTyresTest"}
+	for _, k in ipairs(S11KEYS) do car:SetAttribute(k, nil) end
+	ctl:reset()
+	local t0 = ctl:telemetry()
+	local s0 = t0.stage11
+	-- new tyres (00550f10): session temperature of 005a3c00 (weather +0x108: 49.1 C at 70 F) + 11 C
+	local tyreNew = ctl.core.V.weather().densityTemperatureC + 11
+	check("stage 11: reset starts the original runtime (fuel 62.4698 kg, water 93 C, oil 0 C, new tyres at session temperature + 11 C)",
+		s0 ~= nil and s0.mode == "original" and math.abs(s0.fuelKg - 62.4698) < 1e-3 and math.abs(s0.water - 93) < 1e-3 and s0.oil == 0
+		and math.abs(t0.wheels[1].temperature - tyreNew) < 0.05 and t0.wheels[3].tyreWear == 0,
+		s0 and string.format("%s fuel %.4f kg water %.2f oil %.2f tyre LF %.2f C (new %.2f)", s0.mode, s0.fuelKg, s0.water, s0.oil, t0.wheels[1].temperature, tyreNew) or "no stage11")
+	input = {throttle = 0, brake = 0, steer = 0, handbrake = 0, clutch = 0}
+	for f = 1, 30 do ctl:step(dt, input) end
+	ctl:shift(1)
+	input.throttle = 1
+	for f = 1, 600 do ctl:step(dt, input); if f == 70 or f == 150 then ctl:shift(1) end end
+	local t1 = ctl:telemetry()
+	local s1 = t1.stage11
+	check("stage 11: driving burns fuel (mass record follows), heats the oil, evolves water / tyre temperatures, wears the tyres (ORIGINAL 0051aac0 / 005605c0 / 0054d610 / 0054e9f0)",
+		s1.fuelKg < s0.fuelKg and s1.water ~= s0.water and s1.oil > s0.oil and t1.wheels[3].temperature ~= t0.wheels[3].temperature
+		and t1.wheels[3].tyreWear > 0 and math.abs(s1.fuelRecordKg - s1.fuelKg) < 1e-3,
+		string.format("fuel %.4f kg (record %.4f) water %.2f oil %.2f LR %.1f C wear %.5f", s1.fuelKg, s1.fuelRecordKg, s1.water, s1.oil, t1.wheels[3].temperature, t1.wheels[3].tyreWear))
+	local zones0 = table.clone(s1.zones)
+	car:SetAttribute("DamageTestImpact", 150000)
+	for f = 1, 10 do ctl:step(dt, input) end
+	local s2 = ctl:telemetry().stage11
+	local hit = false
+	for k = 1, #zones0 do if s2.zones[k] ~= zones0[k] then hit = true end end
+	check("stage 11: DamageTestImpact (TEST ADAPTER) -> ORIGINAL 0054a760 record -> 00549c40 damages a body zone", car:GetAttribute("DamageTestImpact") == nil and hit
+		and s2.damageScale == 1, string.format("scale %.2f zones %s", s2.damageScale, table.concat(s2.zones, " ", 1, math.min(#s2.zones, 6))))
+	car:SetAttribute("PitTyresTest", true)
+	for f = 1, 2 do ctl:step(dt, input) end
+	local t3 = ctl:telemetry()
+	check("stage 11: PitTyresTest (TEST ADAPTER) -> ORIGINAL 00550f10 x4: new tyres (wear 0, session temperature + 11 C)", car:GetAttribute("PitTyresTest") == nil
+		and t3.wheels[3].tyreWear < t1.wheels[3].tyreWear and math.abs(t3.wheels[3].temperature - tyreNew) < 1,
+		string.format("LR wear %.6f temperature %.2f C", t3.wheels[3].tyreWear, t3.wheels[3].temperature))
+	check("stage 11: no physics fault", ctl.fault == nil, tostring(ctl.fault))
+	car:SetAttribute("RaceDamageLevel", 0); car:SetAttribute("RaceConsumptionRate", 3)
+	ctl:reset()
+	local s4 = ctl:telemetry().stage11
+	check("stage 11: RaceDamageLevel=0 -> 00547e90 damage scale 0; RaceConsumptionRate applied at reset", s4.damageScale == 0 and s4.mode == "original",
+		string.format("scale %.2f", s4.damageScale))
+	car:SetAttribute("RaceDamageLevel", nil); car:SetAttribute("RaceConsumptionRate", nil)
+	car:SetAttribute("Stage11Runtime", "frozen")
+	ctl:reset()
+	local f0 = ctl:telemetry().stage11
+	for f = 1, 120 do ctl:step(dt, input) end
+	local f1 = ctl:telemetry().stage11
+	check("stage 11: Stage11Runtime=\"frozen\" (A/B) keeps the Stage 6-10 frame end: fuel / water held", f0.mode == "frozen" and f1.fuelKg == f0.fuelKg
+		and f1.water == f0.water, string.format("%s fuel %.4f -> %.4f", f0.mode, f0.fuelKg, f1.fuelKg))
+	for _, k in ipairs(S11KEYS) do car:SetAttribute(k, nil) end
+	ctl:reset()
+	check("stage 11: attributes removed -> original runtime again", ctl:telemetry().stage11.mode == "original")
+end
 -- the Studio self-test modules themselves (quick mode), as the patches run them after installing
 local ST = mockRequire({ref = "Roblox.Stage67SelfTest"})
 local stOk = ST.run(false)
@@ -402,6 +458,11 @@ if SOURCES["Roblox.Stage10SelfTest"] then
 	check("Roblox/Stage10SelfTest.run(false) passes (what PATCH_STAGE10 executes)", st10Ok)
 	local st10Full = ST10.run(true)
 	check("Roblox/Stage10SelfTest.run(true) passes (full: more builds, 8 s drive with a setup)", st10Full)
+end
+if SOURCES["Roblox.Stage11SelfTest"] then
+	local ST11 = mockRequire({ref = "Roblox.Stage11SelfTest"})
+	check("Roblox/Stage11SelfTest.run(false) passes (what PATCH_STAGE11 executes)", (ST11.run(false)))
+	check("Roblox/Stage11SelfTest.run(true) passes (full: 10 s drives, determinism, frozen A/B)", (ST11.run(true)))
 end
 print(string.format("\nadapter mock: %d passed, %d failed", passed, failed))
 if failed > 0 then error("adapter mock tests failed") end

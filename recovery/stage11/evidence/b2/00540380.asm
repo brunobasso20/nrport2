@@ -1,0 +1,2 @@
+00540380 MOV AL,byte ptr [ECX + 0x452]
+00540386 RET

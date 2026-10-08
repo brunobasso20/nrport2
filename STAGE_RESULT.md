@@ -1,4 +1,72 @@
-# Stage 10 — setup completo da garagem → parâmetros de tempo de execução
+# Stage 11 — térmico / desgaste / dano / combustível
+
+**Resumo:** o fim de quadro do carro no NR2003 (`00554520`, depois dos 8 ticks de 288 Hz) e o dano de colisão
+(`00549c40`) foram recuperados inteiros e **erguidos do x86 para Luau** (216 funções), rodando sobre a memória do núcleo:
+motor (combustível, água/óleo, níveis, vazamentos, desgaste/vida, falha aleatória, potência × ρ), combustível → massa e
+inércia do registro de componente (o solve gerado recompõe massa/CG/inércia), pneus (3 zonas de superfície e carcaça,
+pressão quente, rigidez, desgaste, aderência, estouro), freios, falhas aleatórias de componentes (flags lidas pelo
+drivetrain) e dano de colisão. Os estados ficam nas células originais e são lidos pelos ticks dos Stages 6–10 sem
+mudança. Nenhuma curva, fade, perda de aderência ou dano foi inventado.
+
+| Escopo | Entregue |
+|---|---|
+| Recuperado (Ghidra + execução original) | ordem do quadro (`005f78f0` → `005637e0` → `005b2190` → `00554520` → `00549c40`), 216 funções (`STAGE11_RECOVERY.md` §3), mapa de estados (`STAGE11_STATE_MAP.md`), achados: combustível só pela massa; sem fade/falha de freio; sem geometria de suspensão dependente de dano (`0055e610/670/6c0/780` = `ret`); dano de colisão depende da árvore de zonas `00433610`, da ordem de corrida (`car+4`) e do objeto de colisão do sistema de pista (`c7e75c`) |
+| Erguido do x86 (original) | `NR2003CupFrameCode1..4`: `00554520` (`0051aac0`, `0051a830`, `0051c3d0`, `005605c0`, `00551990` → `0054d610` ×4 → `0054e9f0`/`0054f260`), `00549c40`, `0054a760`, `00550f10`, `00550a50` (subconjunto), `00547e90`, `00433610`, partículas (fluxo aleatório da física) |
+| Host (ADAPTER, igual no port e na referência) | contadores de quadro/interrupção, registro de mundo sincronizado do estado exportado, ordem de corrida de um carro durante `00549c40`, objeto de colisão com partes zeradas (PROVISIONAL), série do roster = 1 (PROVISIONAL), replay/som/FFB = `ret` |
+| Mudanças em estágios anteriores (documentadas) | `NR2003CupDriver` (início de quadro do Stage 11 + fim de quadro trocável), `NR2003CupVehicle` (carrega o Stage 11 antes da garagem), suítes e self-tests 6/7–10 (uma linha: modo `"frozen"`) |
+| Roblox | `RaceDamageLevel`, `RaceConsumptionRate`, `RosterSeries`, `RandomSeed`, `Stage11Runtime`; teste `DamageTestImpact` / `PitTyresTest`; telemetria dos pneus pelas células originais; linha de HUD |
+| Entrega | `PATCH_STAGE11.lua` (ou `PATCH_STAGE11_PART1..3` + `INSTALL`) + `NR2003_Patch_Stage11.rbxmx` (backup + auto-testes 6/7, 8, 9, 10, 11 + reversão), relatórios `STAGE11_*.md`, pseudo-C, fontes, testes, fixtures do código original, evidências |
+
+## Números do Cup (original, sessão 70 °F)
+
+Combustível cheio 62,4698 kg (célula da spec), inércia 0,1 kg·m² por kg no registro de componente. Motor ao entrar na
+pista: água 93 °C, óleo 0 °C, refrigerante 19, óleo 12 (unidades da spec), potência 0,901 (ρ 1,0812 / 1,2). Pneus novos:
+temperatura do ar da sessão com sol (49,1 °C) + 11 °C = 60,1 °C, pressão fria 36 psi; capacidades térmicas 650 (superfície)
+/ 4500 (carcaça), ótimo 388 K, máximo 505 K; desgaste k 6,67e−6 / 1,82e−4, aderência 1 − 0,2·desgaste, estouro acima de
+0,66. Freio: 9200 / 0,0036 (sem fade). Escala de dano {0; 0,15; 0,6; 1,0}. Zonas: frente 4, traseira 9, laterais 7/8,
+cantos 0–3, 5, 6, 10.
+
+## Fidelidade e validação (automática)
+
+Referência: o código original executado no Unicorn com a mesma fronteira de host (`recovery/stage11/orig_stage11.py`).
+Suíte `tests/stage11/run.luau`: **66/66 PASS** (`tests/stage11/RESULTS_STAGE11.txt`; método e tolerâncias em
+`STAGE11_VALIDATION.md`).
+
+- **Lógica do Stage 11 bit a bit**: início de sessão em 12 cenários (8551 dwords cada) e 54 snapshots sincronizados (45
+  fins de quadro, 8 colisões, 1 pit): 420 714 dwords, 420 682 idênticos; os 32 restantes são o double protegido do
+  combustível a 1 ulp (x87 80 bits RC-baixo × double, ≤ 1,16e−16).
+- **Acoplamento com a física por tick** (Stages 6–10, sem mudança): 77 reinícios de estado completo (janela de memória
+  inteira do original carregada, um quadro em Luau) dentro de 4× a sensibilidade de um quadro do próprio original
+  (12 gêmeos de ±1 ulp); 3 erros deliberados de acoplamento detectados em cada um dos 12 cenários (36/36).
+- **Malha fechada 20–50 s**: 12 cenários dentro de 4× o envelope de 10 gêmeos do original (603 linhas × 60 campos);
+  horizontes documentados: `failure` 198 (falha aleatória a seguir), `overrev` 108 (divergência quase-estática herdada,
+  presente com o Stage 11 congelado), `hot` 252 (os próprios gêmeos do original mudam de regime; temperaturas no teto
+  de 505 K). Fins de corrida, Luau / original: combustível 61,419 / 61,423 kg (`launch`), água 141,41 / 141,36 °C
+  (`overrev`), freio 334,4 / 334,4 K (`brakes`), desgaste LR 0,7863 / 0,7863 (`launch`), vazamento de combustível após
+  colisões 59,292 / 59,292 kg (`impacts`).
+- Determinismo, checkpoint/restauração e modo congelado: bit a bit.
+- Regressão: Stage 6/7 16/16, Stage 8 49/49, Stage 9 59/59, Stage 10 23/23 + 61/61 (modo congelado, com o núcleo do
+  Stage 11 carregado); adaptador sob mock 55/55; patches 6/7, 8, 9, 10, 11 em DataModel simulado 11/11, 13/13, 13/13,
+  17/17, 15/15; sintaxe 98 arquivos.
+
+## Limites explícitos
+
+- **Produtores de colisão**: a física de contato de carroceria (carro–parede/carro–carro) que cria os registros com a
+  magnitude não foi recuperada (`005762f6`/`00576c1b`); a avaliação do dano é exata a partir do registro (`collision`).
+- **Objeto de colisão do sistema de pista** (`c7e75c`): geometria do host; partes zeradas (sem deformação de malha) —
+  as zonas de canto 0–3 e 5 só mudam quando destruídas (PROVISIONAL).
+- **Série do roster** `car+0x596` = 1 (PROVISIONAL; só habilita o dano de colisão).
+- **Numérica herdada (Stages 6/7)**: o tempo de execução por tick avalia intermediários x87 em double e soma zeros exatos
+  como +0; em regime quase-estático (`overrev`: ponto morto no limitador) a fluência do carro diverge do original após
+  ~2,5 s também com o Stage 11 congelado. Validado com horizonte documentado + reinícios; item aberto para uma tarefa
+  própria (muda código validado do Stage 6/7).
+- Clima dinâmico `005a4cc0`, menu de pit/reabastecimento, pacotes de dano multiplayer e replay: não portados.
+
+**Validação manual no Studio: pendente** (roteiro em `VALIDACAO.md`). **O Stage 12 não foi iniciado.**
+
+---
+
+# Histórico — Stage 10 (setup completo da garagem → parâmetros de tempo de execução)
 
 **Resumo:** o NR2003 aplica um setup de garagem **reconstruindo o carro**: copia a garagem para o setup ativo, recalcula
 os itens derivados (`00559820` → `00425ad0`), reinicializa motor/combustível/pneus/árvore e roda `005b2f20`, onde

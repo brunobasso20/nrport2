@@ -50,9 +50,11 @@ local header=label(panel,"Header",80,18,13);header.Text="RODA   CARGA N  CURSO m
 local rows={};for j=1,4 do rows[j]=label(panel,"Wheel"..j,98+(j-1)*20,20,13) end
 -- Stage 9: aero line (ORIGINAL 00561b70 evaluated by the server adapter at telemetry rate)
 local aeroLine=label(panel,"Aero",180,30,11);aeroLine.Text="";aeroLine.TextColor3=Color3.fromRGB(150,214,160)
-local hint=label(panel,"Controls",215,50,11)
+-- Stage 11: runtime systems line (ORIGINAL cells read by the server adapter at telemetry rate; display only)
+local s11Line=label(panel,"Stage11",212,30,11);s11Line.Text="";s11Line.TextColor3=Color3.fromRGB(236,200,140)
+local hint=label(panel,"Controls",247,50,11)
 hint.Text="W/S acelerar/frear   A/D direção   E/Q marchas\nShift embreagem   Espaço freio de mão   X sair\nT painel   G contatos   H render diag   V câmera   R reposicionar"
-local status=label(panel,"Status",264,16,11);status.Text="Tune de teste | contato por raycast"
+local status=label(panel,"Status",296,16,11);status.Text="Tune de teste | contato por raycast"
 local renderInfo=Instance.new("TextLabel");renderInfo.Name="RenderDiagnostics";renderInfo.AnchorPoint=Vector2.new(1,0)
 renderInfo.Position=UDim2.new(1,-16,0,20);renderInfo.Size=UDim2.fromOffset(390,142);renderInfo.BackgroundColor3=Color3.fromRGB(17,24,34)
 renderInfo.BackgroundTransparency=0.08;renderInfo.BorderSizePixel=0;renderInfo.TextColor3=Color3.fromRGB(225,232,240)
@@ -124,6 +126,21 @@ telemetry.OnClientEvent:Connect(function(data)
             aeroLine.Text="AERO sem sessão (AeroSession=false): estado pós-build, rho = 0, sem forças aero"
         end
     else aeroLine.Text="" end
+    local s=data.stage11
+    if s and s.mode=="original" then
+        local t={}
+        for j,w in ipairs(data.wheels) do
+            t[j]=string.format("%s %3.0f°C %4.1fpsi %3.0f%%%s",w.name,(w.temperature or 0),w.tyrePressure or 0,100*(w.tyreWear or 0),
+                (w.tyreState or 0)>=2 and " FURADO" or "")
+        end
+        local zmax=0;for _,z in ipairs(s.zones or {}) do zmax=math.max(zmax,z) end
+        s11Line.Text=string.format("COMB %.2f kg  água %.1f°C  óleo %.1f°C  pot %.3f  dano mot %.2f vaz %.2f/%.2f/%.2f carroc %.2f\n%s | freio %.0f/%.0f/%.0f/%.0f°C",
+            s.fuelKg,s.water,s.oil,s.power,s.engineDamage,s.leakRadiator,s.leakOil,s.leakFuel,zmax,table.concat(t,"  "),
+            (data.wheels[1].brakeTemperatureK or 273.15)-273.15,(data.wheels[2].brakeTemperatureK or 273.15)-273.15,
+            (data.wheels[3].brakeTemperatureK or 273.15)-273.15,(data.wheels[4].brakeTemperatureK or 273.15)-273.15)
+    elseif s then
+        s11Line.Text="ESTÁGIO 11 congelado (Stage11Runtime=frozen): combustível/térmica/desgaste/dano nos valores pós-build"
+    else s11Line.Text="" end
     if data.mode=="NR2003_CUP" then
         status.Text=data.fault and "Física pausada; veja Output. R reinicia." or string.format("acel %.2f | pedal freio %.2f -> núcleo %.2f | viés %d%% | embr %.2f | lim %s%s",
             data.throttleIn or 0,data.brakePedal or 0,data.brakeCore or data.brakeIn or 0,data.brakeBias or 74,data.clutchIn or 0,data.limiter and "ON" or "off",data.collision and " | colisão" or "")
@@ -160,8 +177,8 @@ local function frame(dt)
     updateRenderDiag(dt)
     if not driving then return end
     header.Visible=expanded;for _,r in ipairs(rows) do r.Visible=expanded end
-    aeroLine.Visible=expanded
-    hint.Visible=expanded;status.Visible=expanded;panel.Size=UDim2.fromOffset(560,expanded and 284 or 76)
+    aeroLine.Visible=expanded;s11Line.Visible=expanded
+    hint.Visible=expanded;status.Visible=expanded;panel.Size=UDim2.fromOffset(600,expanded and 316 or 76)
     local camera=workspace.CurrentCamera
     if cameraMode==1 then
         camera.CameraType=Enum.CameraType.Scriptable;camera.FieldOfView=savedFieldOfView or 70

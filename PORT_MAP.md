@@ -1,3 +1,69 @@
+# Mapa de recuperação — Stage 11 (térmico / desgaste / dano / combustível)
+
+Base: Stage 10 (3.9.0-stage10). Evidências: `recovery/stage11/` (Ghidra `evidence/b1..b4` com `index.tsv` de
+chamadores/chamados, varreduras de xref, grafo do lift `evidence/lift_callgraph.txt`, pseudo-C limpo
+`pseudo/stage11_runtime.c`, harness `orig_stage11.py`, lifter `lift11.py`, gerador `gen_stage11.py`, rastreio
+`trace11.py`, fixtures `gen_fixtures11.py`). Relatórios: **`STAGE11_RECOVERY.md`** (auditoria, ordem, achados, fronteira
+do host), **`STAGE11_STATE_MAP.md`** (cada estado: endereço, unidade, inicialização, escritores/leitores),
+**`STAGE11_VALIDATION.md`**. Legenda: **EXACT**, **LUA PORTED**, **LUA VALIDATED**, **ROBLOX INTEGRATED**, **ADAPTER**,
+**PROVISIONAL**, **UNKNOWN**. Arquivo de destino de todo o código original abaixo: `core/NR2003Cup/NR2003CupFrameCode1..4.lua`
+(erguido do x86, 216 funções: o fecho das raízes de `lift11.ROOTS`), orquestrado por `NR2003CupFrame.lua`.
+
+**Achados principais:** (1) o fim de quadro inteiro do NR2003 roda em Luau a partir do x86 — combustível só age pela
+massa/inércia do registro de componente (o solve gerado recompõe massa, CG e inércia); (2) não existe fade nem falha de
+freio no executável (`0054f3d0`/`0054f610` sem referência); (3) não existe geometria de suspensão dependente de dano
+(`0055e610/670/6c0/780` = `ret`); componentes quebrados chegam ao drivetrain; (4) o dano de colisão depende de três
+estados que a bancada só-física nunca criou: a **árvore de zonas** (`00433610`, carga do modelo do carro), a **ordem de
+corrida** (`car+4`) e o **objeto de colisão** do sistema de pista (`c7e75c`) — sem eles nenhuma colisão danificava o carro,
+nem no original executado.
+
+## Lógica original NR2003 — fim de quadro e eventos (erguido do x86)
+
+| Endereço | Papel | Chamadores | Chamados principais | Globais / offsets | Destino Luau | Status | Confiança | Validação |
+|---|---|---|---|---|---|---|---|---|
+| `00554520` | fim de quadro do carro do jogador | `005b2190` | `00551ce0`, `0051a830`, `0051aac0`, `0051c3d0`, `005605c0`, `005f74c0`, `00551990`, `005547a0` (host), `005d08d0` (FFB, host) | `bf3a00` (velocidade do ar), `car+0x5aa`, `bf6ebb` (FFB) | `XF[0x554520]` via `V._frameEnd` | EXACT · LUA VALIDATED · ROBLOX INTEGRATED | alta | snapshots sincronizados bit a bit; reinícios de estado completo |
+| `0051aac0` (+`0051a9c0`, `0051be00`, `0040bde0`, `0051c850`) | motor por quadro: ignição/falha, combustível (BSFC 275 − 115·rpm/max), água/óleo, níveis, vazamentos, `x4d0`, sobre-giro, desgaste/vida, falha aleatória, potência × ρ/1,2 | `00554520`, `0052c640` | `0051a000`, `0054b610`, `005f56b0/e0` (rnd), `006c5c40` (pow) | motor `E=car+0xc`: `+0x4a4` água, `+0x4d4` óleo, `+0x50c` combustível (protegidos), `+0x49c/0x4a0` níveis, `+0x554` potência, `+0x558` desgaste | idem | EXACT · LUA VALIDATED | alta | idem + corridas `launch/overrev/idle/cold/hot` |
+| `0051a830`, `0051a000`, `0051a020` | entradas do radiador (1,1, ρ, ar, velocidade do ar, fita); objeto motor; init do motor | `00554520`, `00550c40` | — | `E+0x470..0x480` | idem | EXACT · LUA VALIDATED | alta | idem |
+| `0051c3d0` (`0051c300`, `0051c380`, `00548a00/aa0`, `0054b940`, `0055e7e0`) | falhas aleatórias de componentes (tensão³ × escala de dano) → flags `c086e0` | `00554520` | rnd fluxo 0 | `c086e0[9]`, acumulador de tensão por tick (Stages 6/7) | idem | EXACT · LUA VALIDATED | alta | cenário `failure` (22 snapshots através da falha no quadro 207) |
+| `005605c0` (+`005b4840`) | combustível → massa/inércia do registro de componente | `00554520` | `00562f70` | `*c08234 +0x125/+0x141/+0x15d` (massa), `+0x179/...` (inércia = kg·0,1) | idem | EXACT · LUA VALIDATED | alta | reinícios (mutação +2 kg detectada) |
+| `00551990` (+`00551890/920/950`, `00556e30`, `00565840/b70/c30`, `00562f50`) | instantâneo do carro + pneu visual (apresentação, mantido pela ordem dos sorteios) | `00554520`, `005637e0` | `0054d610` ×4 | — | idem | EXACT | alta | idem |
+| `0054d610` | pneu por quadro: ambiente, resistência ao rolamento, pressão quente (gás amortecido), rigidez, calor, 3 zonas superfície/carcaça, resfriamento, fumaça/derrapagem | `00551990`, `00550f10` | `0054e9f0`, `0054f260`, `0054fb50`, `005100e0`, `00583590` | pneu `T=bf3a20+0xa39·w`: `+0x160/18c/1b8` superfície, `+0x1e4/210/23c` carcaça (protegidos), `+0x2a0` pressão quente, `+0x29c/+0x2a4` derivados lidos por `0054cab0` | idem | EXACT · LUA VALIDATED | alta | idem (mutação de `+0x29c` detectada) |
+| `0054e9f0`, `0054ef10` | desgaste a cada 0,2 s (termo cúbico de sobretemperatura), aderência = 1 − 0,2·desgaste, estouro (> 0,66) | `0054d610` | rnd | `T+0x74` desgaste, `+0x134` relógio, `+0xcc` aderência | idem | EXACT · LUA VALIDATED | alta | idem (mutação de `+0xcc` detectada) |
+| `0054f260` | temperatura do freio (sem fade/falha no executável) | `0054d610` | — | `T+0x26c` (protegido) | idem | EXACT · LUA VALIDATED | alta | cenário `brakes` |
+| `00549c40` (`0054a330`, `00549290`, `00549860`, `00549ab0`, `0054a2a0`, `00549c00`, `00548740/760`) | dano de colisão do quadro: eventos de roda/pneu, dano de carroceria por zona, motor, vazamentos, fogo, peças soltas | `0055bfd0` | `0054a710` (zona), `00547e20`, `00577cb0`, `00592dc0` (host) | lista de registros `bf39f0`, pool `bf09c0`, zonas `006f5500`, escala `bef700`, `car+4` (ordem de corrida), `c7e75c` (objeto de colisão) | `XF[0x549c40]` via `V._frameEnd` | EXACT · LUA VALIDATED | alta | cenário `impacts` (snapshots + reinícios após cada impacto) |
+| `0054a760`, `0054a8d0`, `0054aa20`, `00567660` | entrada de registro de colisão (máximo por chave), impactos de pneu/roda | código de contato da pista `00576e00` | `0054a710`, `005f6a70` | idem + `car+0x1323` (`getIntCount`) | `V.collision(rec)` | EXACT · LUA VALIDATED | alta | idem |
+| `00433610`, `00433660`, `00547e60` | árvore de zonas de dano (planos de corte constantes do executável; pool estático `*bf39d4`) | carga do modelo `00432d90` | — | `00890490[6]`, pool `bef728..` | `V.buildDamageZones()` (sessão) | EXACT · LUA VALIDATED | alta | início de sessão bit a bit |
+| `00563080` (`0054b3c0`, `0054b410`, `00547ee0`, `0054b0d0`), `00550c40`, `00550c60`, `005512d0`, `00550f10` | carro colocado na pista (`00550a50`, subconjunto): reparo, motor, combustível, pneus novos; troca de pneus | `00550a50`, `00559360`, ... | `0051a020`, `0054d610` | — | `V.enterTrack()`, `V.pitTyres()` | EXACT · LUA VALIDATED | alta | cenários `enter`, `pit` (snapshots de evento) |
+| `00547e90` | opção de corrida 'dano' → `bef700` | `0055be60` | — | `c0692a+0x4c` bits 22–23 | `V.setDamageLevel` | EXACT | alta | início de sessão |
+| `005486a0`, `0054b6c0/5a0/610/4c0/7d0/800/8c0/900/970/9b0/ba50` | objeto de dano (palavras empacotadas + floats decodificados) | dano / telemetria | — | `car+0x1493` (empacotado, layout `006f56b8`) | idem + `V.damageComponentOriginal` | EXACT | alta | idem |
+| `00583250` ... `005b4e60` (partículas) | faíscas, fumaça, derrapagem, detritos — **mantidos**: sorteiam do fluxo aleatório 0 da física | `0054d610`, `00549c40` | rnd | listas de partículas | idem | EXACT | alta | RNG idêntico em todos os snapshots |
+
+## Fronteira do host (ADAPTER) — idêntica no port e na referência Unicorn
+
+| Item | Onde | Observação |
+|---|---|---|
+| contador de quadros `7559bc` e relógio de interrupção `7559c4` (+1 por quadro) | `NR2003CupFrame.frameStart11` | o laço de tarefas `005f78f0` e o relógio de interrupção do jogo; mesma convenção do harness do Stage 8 |
+| registro de mundo do carro (`car+0x5ae`, pose de `005543f0`) | `syncWorldRecord` | pose/velocidades do estado exportado pelos `005f5a60`/`005f5ac0` originais (sem pista carregada) |
+| ordem de corrida (`car+4/car+8`) | `frameEnd11` | anel de um carro só durante `00549c40` (habilitaria a cópia de render `005543f0` por tick) |
+| objeto de colisão do sistema de pista (`c7e75c`, 9 partes) | `hostBlocks` | partes zeradas: o host não simula deformação de malha (PROVISIONAL) — zonas de canto 0–3 e 5 só mudam quando destruídas |
+| campo de série `car+0x596` | `V.setSeriesField` | PROVISIONAL = 1 (valor real do roster não recuperado; só habilita dano de colisão) |
+| `005547a0` (registro de replay), `00592dc0` (sincronização de dano), `00557650` (som), `005d08d0` (FFB), `005f58d0` (ponto de pista) | builtins do lift | sem pista/áudio/replay/FFB na bancada |
+| `00554d30` (estatísticas de FFB por tick, Stage 7 não portado) | — | só o bloco de FFB de `00554520` lê as saídas, desligado (`bf6ebb` = 0) |
+| eventos de teste `DamageTestImpact` / `PitTyresTest` | `CupChassisAdapter.stage11TestEvents` | só teste (a bancada não tem paredes nem pit) |
+
+## Mapeado / pendente (fora do Stage 11)
+
+| Item | Status |
+|---|---|
+| produtores de registros de contato de carroceria (física de contato carro–parede/carro–carro, `005762f6`/`00576c1b`) | UNKNOWN (não analisado); avaliação do dano pronta a partir do registro |
+| deformação da malha de colisão do sistema de pista (`00577xxx`) | UNKNOWN (host) |
+| clima dinâmico `005a4cc0` | mapeado (Stage 9), não portado |
+| menu de pit / ajustes em corrida / reabastecimento (`0040e1c0`, `005601c0`) | mapeado, não portado (só a troca de pneus `00550f10`) |
+| zeros com sinal das somas exatas no lift do tempo de execução 6/7 (+0 onde o x87 dá −0) | herdado; candidato à divergência quase-estática do `overrev` (ver `STAGE11_RECOVERY.md` §6, §8) |
+| Stage 12 (cadeia de direção) | **não iniciado** |
+
+---
+
 # Mapa de recuperação — Stage 10 (setup completo → parâmetros de tempo de execução)
 
 Base: Stage 9 (3.8.0-stage9). Evidências: `recovery/stage10/` (pseudo-C limpo em `pseudo/stage10_setup.c`, exportações do

@@ -1,0 +1,9 @@
+﻿cold       restarts 5 (12 twins each) 94.5 s
+hot        restarts 5 (12 twins each) 95.0 s
+idle       restarts 6 (12 twins each) 109.5 s
+impacts    restarts 9 (12 twins each) 122.8 s
+failure    restarts 3 (12 twins each) 33.4 s
+x4         restarts 5 (12 twins each) 80.9 s
+enter      restarts 5 (12 twins each) 68.1 s
+pit        restarts 6 (12 twins each) 85.2 s
+total 181.6 s

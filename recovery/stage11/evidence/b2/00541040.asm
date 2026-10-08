@@ -1,0 +1,2 @@
+00541040 MOV EAX,dword ptr [ECX + 0x438]
+00541046 RET
