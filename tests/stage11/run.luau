@@ -134,6 +134,7 @@ local function session(fx)
 		conditions = s.conditions, night = s.night == 1}
 	local o = fx.law.options or {}
 	V.setRuntimeMode("original")
+	if V.setSteeringMode then V.setSteeringMode("provisional") end
 	V.endSession()
 	V.reset()
 	V.startSession(weather, {damageLevel = o.damage_level, consumptionRate = o.consumption, series = o.series or 1, seed = o.seed})

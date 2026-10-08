@@ -30,7 +30,7 @@ function M.run(full)
     local t0=os.clock()
     local car=Vehicle.new(Core.NR2003Cup);local V=car.V
 -- Stage 11: golden data produced by the ORIGINAL code with the Stage 6-10 frame end -> explicit "frozen" runtime mode
-if V.setRuntimeMode then V.setRuntimeMode("frozen") end
+if V.setRuntimeMode then V.setRuntimeMode("frozen") end if V.setSteeringMode then V.setSteeringMode("provisional") end
     check("load Core.NR2003Cup",true,string.format("%.2f s",os.clock()-t0))
     local horizon=full and 2304 or 576
     for _,kind in ipairs({"raw","drive"}) do

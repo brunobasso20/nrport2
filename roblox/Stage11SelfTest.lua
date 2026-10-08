@@ -76,7 +76,7 @@ function M.run(full)
         for k=0,frames-1 do local c=launch(k);for _=1,8 do V.drive(c,FLAT) end end
     end
     -- session start (weather 40 F, race option damage 0) + car placed on the track (00550a50 subset)
-    V.setRuntimeMode("original");V.endSession();V.reset()
+    V.setRuntimeMode("original");if V.setSteeringMode then V.setSteeringMode("provisional") end;V.endSession();V.reset()
     V.startSession({temperatureF=40},{damageLevel=0})
     local n,bad,first=compare(G.touchRuns,G.start)
     check(string.format("session start = original (%d dwords: engine, fuel, 4 new tyres, damage repaired, options)",n),bad==0,bad>0 and (bad.." differ, first "..first) or nil)

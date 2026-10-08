@@ -24,7 +24,7 @@ local car = Vehicle.fromLoader(get)
 check("load core (image parts + lifted natives + JIT modules)", car ~= nil, string.format("%.3f s", os.clock() - t0))
 local V = car.V
 -- Stage 11: the golden data of this suite were produced by the ORIGINAL code with the Stage 6-10 frame end (0051aac0 cut-timer subset); compare in the explicit "frozen" runtime mode (production = "original", see tests/stage11)
-if V.setRuntimeMode then V.setRuntimeMode("frozen") end
+if V.setRuntimeMode then V.setRuntimeMode("frozen") end if V.setSteeringMode then V.setSteeringMode("provisional") end
 
 local FLAT = {}
 for i = 1, 4 do FLAT[i] = {0, 0, 1, 0, 0, 0, 0, 1, 1} end
