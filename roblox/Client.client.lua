@@ -194,8 +194,24 @@ local function frame(dt)
     sendTimer=sendTimer+dt
     if sendTimer>=1/30 then
         sendTimer=sendTimer%(1/30)
+        -- Stage 12: raw steering controls (the NR2003 device layer 0057abc0 on the server side splits them into
+        -- controls 7 / 8): keys A/D or arrows = key bindings (digital); a gamepad thumbstick (last input from a
+        -- gamepad) = one analog axis, already normalised -1..1 by Roblox (deadzone: DriverConfig, 0 = none)
+        local axis,analog=nil,false
+        local last=UIS:GetLastInputType()
+        if last.Name:sub(1,7)=="Gamepad" and UIS:GetGamepadConnected(last) then
+            for _,o in ipairs(UIS:GetGamepadState(last)) do
+                if o.KeyCode==Enum.KeyCode.Thumbstick1 then
+                    axis=o.Position.X
+                    if math.abs(axis)<(Config.gamepadSteerDeadzone or 0) then axis=0 end
+                    analog=true
+                end
+            end
+        end
+        local left,right=keys.Left and 1 or 0,keys.Right and 1 or 0
         remote:FireServer({kind="input",throttle=keys.Gas and 1 or 0,brake=keys.Brake and 1 or 0,
-            steer=(keys.Right and 1 or 0)-(keys.Left and 1 or 0),handbrake=keys.Handbrake and 1 or 0,clutch=keys.Clutch and 1 or 0})
+            steer=analog and axis or (right-left),handbrake=keys.Handbrake and 1 or 0,clutch=keys.Clutch and 1 or 0,
+            steerLeft=left,steerRight=right,steerAxis=axis,steerAnalog=analog})
     end
 end
 local renderName="NR2003_Presentation"

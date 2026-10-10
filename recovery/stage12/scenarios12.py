@@ -64,12 +64,16 @@ def law_linear(k):
 
 
 def law_brakesteer(k):
+    # Stable launch (throttle 0.8 as 'keys'; a full-throttle launch spins the ORIGINAL car with zero steering input,
+    # chaotic for the original itself -- STAGE12_VALIDATION.md), then: lift + steer 0.05 at 27 m/s, braking while
+    # steering through 17.88 and 8.94 m/s, release, power while steering (-0.12) back through 8.94 and 17.88 m/s,
+    # coast straight through 17.88 m/s again.
     t = k / FPS
-    c = _base(k, throttle=1.0 if t < 13.0 or _within(t, 22.0, 26.0) else 0.0, shifts=(40, 110, 220))
-    c['brakeControl'] = 1.0 if _within(t, 14.0, 20.0) else 0.0
+    c = _base(k, throttle=0.8 if t < 9.0 else (0.7 if _within(t, 15.0, 24.0) else 0.0))
+    c['brakeControl'] = 0.6 if _within(t, 10.0, 14.0) else 0.0
     s = 0.0
-    if _within(t, 13.0, 21.0): s = 0.05
-    if _within(t, 21.0, 26.0): s = -0.12                            # power while steering (partial saturation)
+    if _within(t, 9.0, 14.0): s = 0.05
+    if _within(t, 15.0, 24.0): s = -0.12
     c.update(steerAxis=s)
     return c
 

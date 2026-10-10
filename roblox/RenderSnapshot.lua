@@ -4,6 +4,7 @@ local M={}
 M.VERSION=1
 M.WHEELS=4
 M.FLAG_TELEPORT=1
+M.FLAG_WHEEL_ANGLE=2 -- Stage 12 (NR2003_CUP): 'steer' carries the ORIGINAL steering-wheel angle (005662d0), not a road angle
 M.HEADER=76
 M.WHEEL_BYTES=32
 M.SIZE=M.HEADER+M.WHEELS*M.WHEEL_BYTES -- 204 bytes

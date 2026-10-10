@@ -1,3 +1,10 @@
+-- Stage 12: the ORIGINAL steering chain runs inside the core (00552720 device processing, linearity, x pi,
+-- 00554fb0 setup ratio item 0x30 with the low-speed override, per-tick ramp + toe -> prescribed hub coordinates).
+-- The adapter is only the device layer (0057abc0 equivalent): keys -> digital steering controls 7 / 8, an analog
+-- axis (gamepad / wheel, normalised -1..1 by Roblox) -> both controls split by sign. Driver options from car
+-- attributes: SteeringLinearity (controls.cfg value 0..100), SteeringMomentum (0..100, 0 = no slew),
+-- SteeringLowSpeedOverride (bool), SteeringYawLimiter (race setting bit 25); absent = the original values when no
+-- controls.cfg was loaded. The cockpit wheel draws the ORIGINAL 005662d0 angle; front wheels use the solver poses.
 -- Stage 11: the ORIGINAL per-frame runtime systems run inside the core (fuel burn and fuel mass, tyre thermal /
 -- hot pressure / wear / failure, brake temperature, engine thermal / damage / failure, random failures, collision
 -- damage). The adapter only starts the Stage 11 session with the race options (car attributes RaceDamageLevel 0..3,
@@ -42,7 +49,7 @@ end
 function M.new(car,tune,remote)
     local cup=CupTune.new()
     local self=setmetatable({car=car,root=car.Chassis,tune=cup,benchTune=tune,telemetryTimer=0,debugVisible=false,
-        fault=nil,renderSpin={},lastRenderSnapshotTime=nil,renderTeleport=true,pendingShift=0,steerAngle=0,
+        fault=nil,renderSpin={},lastRenderSnapshotTime=nil,renderTeleport=true,pendingShift=0,steeringOut={},
         planes={},inContact={},wheelPose={},contactPoints={},scratchPos={0,0,0},scratchRot={1,0,0,0,1,0,0,0,1}},M)
     for j=1,4 do
         self.planes[j]={0,0,1,0,0,0,0,1,1};self.inContact[j]=false
@@ -52,6 +59,7 @@ function M.new(car,tune,remote)
     self.spawn=car:GetPivot();self.oldAnchored=self.root.Anchored;self.oldCollide=self.root.CanCollide
     car:SetAttribute("NR2003CorePoseOwner",true);car:SetAttribute("PhysicsMode","NR2003_CUP")
     car:SetAttribute("NR2003Tune","CupTune")
+    car:SetAttribute("CockpitWheelAngle",true) -- Stage 12: render snapshots carry the ORIGINAL steering-wheel angle
     self.root.Anchored=true;self.root.CanCollide=false
     self.root.AssemblyLinearVelocity=Vector3.zero;self.root.AssemblyAngularVelocity=Vector3.zero
     local params=RaycastParams.new();params.FilterType=Enum.RaycastFilterType.Exclude
@@ -112,6 +120,8 @@ function M:applyGarageSetup(s)
 end
 function M:initialize()
     self.origin=self:groundOrigin(self.spawn)
+    -- Stage 12: the steering options are re-read from the attributes at every initialize/reset
+    if self.core.V.clearSteeringOptions then self.core.V.clearSteeringOptions() end
     self.core:reset()
     local function num(name) local v=self.car:GetAttribute(name);return U.finite(v) and v or nil end
     local garage=self:garageSetup()
@@ -142,6 +152,17 @@ function M:initialize()
     -- Stage 11: production = "original" runtime; Stage11Runtime="frozen" keeps the Stage 6-10 frame end (A/B only)
     local frozen=self.car:GetAttribute("Stage11Runtime")=="frozen"
     if self.core.V.setRuntimeMode then self.core:setRuntimeMode(frozen and "frozen" or "original") end
+    -- Stage 12: ORIGINAL steering chain + driver options (ORIGINAL setters 005502f0 / 005500c0 / 00550110)
+    if self.core.V.setSteeringMode then
+        self.core:setSteeringMode("original")
+        local function flag(name) local v=self.car:GetAttribute(name);if type(v)=="boolean" then return v end;return nil end
+        local o=self.core:setSteeringOptions({linearity=num("SteeringLinearity"),momentum=num("SteeringMomentum"),
+            lowSpeedOverride=flag("SteeringLowSpeedOverride"),yawLimiter=flag("SteeringYawLimiter")})
+        self.car:SetAttribute("SteeringLinearityApplied",o.linearity);self.car:SetAttribute("SteeringRateApplied",o.steerRate)
+        self.car:SetAttribute("SteeringRatioApplied",o.setupRatio)
+        print(string.format("[NR2003 Stage 12] direção original: relação %g:1 (item 0x30), override baixa velocidade %s, linearidade %.2f, taxa %.4f/quadro",
+            o.setupRatio,o.lowSpeedOverride and "on" or "off",o.linearity,o.steerRate))
+    end
     if self.car:GetAttribute("AeroSession")==false then
         self.core:endSession();self.weather=nil
     else
@@ -166,7 +187,7 @@ function M:initialize()
     end
     self.renderSpin={};self.lastRenderSnapshotTime=nil;self.renderTeleport=true
     for j=1,4 do self.inContact[j]=false end
-    self.pendingShift=0;self.steerAngle=0
+    self.pendingShift=0
     local controller=self
     local stepper={state={tick=0}}
     function stepper:step(input) controller:tickCore(input);self.state.tick=controller.core:tick() end
@@ -224,18 +245,24 @@ function M:contacts(phase)
     return self.planes
 end
 
--- PROVISIONAL steering (Stage 12 pending): Stage 5 slew/speed law -> one road-wheel target;
--- the original 005539c0 adds the setup toe per side (lf = s - toe, rf = s + toe).
-function M:steer(input,dt)
-    local s=self.tune.steering
-    local st=self.core:readState()
-    local _,rot=self.core:componentPose(0,self.scratchPos,self.scratchRot)
-    local speed=st[2]*rot[1]+st[4]*rot[4]+st[6]*rot[7]
-    local fraction=math.max(s.minimumFraction,1/(1+math.abs(speed)*s.speedReduction))
-    local command=U.clamp(input.steer or 0,-1,1)
-    local target=command*s.maximum*fraction
-    self.steerAngle=U.approach(self.steerAngle,target,(command==0 and s.returnRate or s.rate)*dt) -- + = right
+-- Stage 12 host device layer (0057abc0 equivalent, ADAPTER): the raw steering controls of the frame. Keys -> steer
+-- left / right key bindings (digital controls 7 / 8 = 1.0 while held); an analog axis (input.steerAnalog) -> one axis
+-- bound to both controls (negative half -> 7, positive half -> 8). A legacy client (input.steer only) = keys.
+local function steerControls(controls,input)
+    local axis=input.steerAxis
+    if input.steerAnalog==true and U.finite(axis) then
+        controls.steerAxis=U.clamp(axis,-1,1)
+        return
+    end
+    local left,right=input.steerLeft,input.steerRight
+    if not U.finite(left) and not U.finite(right) and U.finite(input.steer) then
+        left=input.steer<0 and 1 or 0;right=input.steer>0 and 1 or 0
+    end
+    controls.steerLeft=U.finite(left) and U.clamp(left,0,1) or 0
+    controls.steerRight=U.finite(right) and U.clamp(right,0,1) or 0
+    controls.steerDigital=true
 end
+M.steerControls=steerControls
 
 function M:tickCore(input)
     local frame=self.core:tick()%8==0
@@ -245,12 +272,13 @@ function M:tickCore(input)
     -- No driver seated = 005524f0 'car not driven' branch (pedal held at 1.0).
     local controls
     if self:driver()==nil then
-        controls={driver=false,throttle=0,clutch=0,steer=0}
+        controls={driver=false,throttle=0,clutch=0}
     else
         local throttle=U.clamp(input.throttle or 0,0,1)
         controls={throttle=throttle,throttleControl=throttle,throttleDigital=input.throttleAxis~=true,
             brakeControl=U.clamp(input.brake or 0,0,1),brakeDigital=input.brakeAxis~=true,
-            clutch=1-U.clamp(input.clutch or 0,0,1),steer=-self.steerAngle}
+            clutch=1-U.clamp(input.clutch or 0,0,1)}
+        steerControls(controls,input)
     end
     if frame and self.pendingShift~=0 and controls.driver~=false then
         controls.shiftUp=self.pendingShift>0;controls.shiftDown=self.pendingShift<0;self.pendingShift=0
@@ -368,7 +396,6 @@ function M:step(elapsed,input)
     self.access:step();self.telemetryTimer=self.telemetryTimer+elapsed
     if self.fault then return end
     local ok,reason=pcall(function()
-        self:steer(input,elapsed)
         self.runner:advance(elapsed,input,nil)
         self.car:PivotTo(self.rootCF)
         self.car:SetAttribute("CoreTick",self.core:tick());self.car:SetAttribute("CoreCollision",self.collision==true)
@@ -378,9 +405,16 @@ function M:step(elapsed,input)
             self.contactPoints[j].point=self:worldPoint(px,py,pz);self.contactPoints[j].grounded=self.inContact[j]
         end
         self.visual:update({wheels=wheels},self.contactPoints,self.debugVisible)
-        Cockpit.update(self.car,self.tune,self.steerAngle)
+        Cockpit.updateAngle(self.car,self:steeringWheelAngle())
     end)
     if not ok then self.fault=tostring(reason);self.car:SetAttribute("PhysicsFault",self.fault);warn("NR2003 Cup core paused: "..self.fault) end
+end
+
+-- Stage 12 presentation: the ORIGINAL steering-wheel angle of the car model (005662d0: clamp(-(00554fb0() *
+-- car[0x1554]), +-2.79 rad), + = clockwise seen by the driver (right turn)); 0 without the Stage 12 core
+function M:steeringWheelAngle()
+    if self.core.V.steeringWheelAngle then return self.core:steeringWheelAngle() end
+    return 0
 end
 
 function M:kinematics()
@@ -406,12 +440,12 @@ function M:renderSnapshot(seq,time,vehicleId)
         wheels[j]={comp=w.compression,steer=w.steer,spin=spin,cx=localPoint.X,cy=localPoint.Y,cz=localPoint.Z,
             grounded=self.contactPoints[j].grounded}
     end
-    local flags=self.renderTeleport and RenderSnapshot.FLAG_TELEPORT or 0
+    local flags=(self.renderTeleport and RenderSnapshot.FLAG_TELEPORT or 0)+RenderSnapshot.FLAG_WHEEL_ANGLE
     self.renderTeleport=false;self.lastRenderSnapshotTime=time
     return {vehicleId=vehicleId or 1,seq=seq,flags=flags,tick=self.core:tick(),time=time,
         px=px,py=py,pz=pz,qx=qx,qy=qy,qz=qz,qw=qw,
         lx=linear.X,ly=linear.Y,lz=linear.Z,ax=angular.X,ay=angular.Y,az=angular.Z,
-        steer=self.steerAngle,wheels=wheels}
+        steer=self:steeringWheelAngle(),wheels=wheels}
 end
 
 function M:telemetry()
@@ -462,7 +496,15 @@ function M:telemetry()
             overRev=s11.engine.overRev,damageScale=s11.damage.scale,engineDamage=s11.damage.engine,leakRadiator=s11.damage.radiator,
             leakOil=s11.damage.oil,leakFuel=s11.damage.fuel,zones=s11.damage.zones,failures=s11.damage.failures,
             broken=s11.damage.brokenFlags,airspeed=s11.airspeed,ambientK=s11.ambient} or nil,
-        roadWheelAngle=self.steerAngle,steeringWheelAngle=Cockpit.angle(self.steerAngle,self.tune)}
+        roadWheelAngle=st[16]*0.5+st[22]*0.5,steeringWheelAngle=self:steeringWheelAngle(),steering=self:steeringTelemetry()}
+end
+-- Stage 12 steering telemetry (original cells, see STAGE12_STEERING_STATE_MAP.md); nil without the Stage 12 core
+function M:steeringTelemetry()
+    if not self.core.V.steeringState then return nil end
+    local s=self.core:steeringState(self.steeringOut)
+    return {left=s.left,right=s.right,digital=s.digital,input=s.input,shaped=s.shaped,ratio=s.ratio,ratioNow=s.ratioNow,
+        target=s.target,current=s.current,lf=s.lf,rf=s.rf,hubLF=s.hubLF,hubRF=s.hubRF,wheelAngle=s.wheelAngle,
+        sensitivity=s.sensitivity,mode=s.mode}
 end
 function M:reset()
     self.car:PivotTo(self.spawn);self.fault=nil;self.car:SetAttribute("PhysicsFault",nil)

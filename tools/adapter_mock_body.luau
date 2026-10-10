@@ -128,7 +128,8 @@ local stubs = {
 	["Roblox.VisualRig"] = {new = function() return {update = function(_, dyn, contacts) _G_lastVisual = {dyn = dyn, contacts = contacts} end} end},
 	["Roblox.SeatAccess"] = {new = function() return {step = function() end, driver = function() return "player" end, request = function() end,
 		exit = function() end, destroy = function() end} end},
-	["Roblox.Cockpit"] = {ensure = function() end, update = function(_, _, a) _G_lastSteer = a end, angle = function(a) return a * 12 end},
+	["Roblox.Cockpit"] = {ensure = function() end, update = function(_, _, a) _G_lastSteer = a end, angle = function(a) return a * 12 end,
+		updateAngle = function(_, a) _G_lastWheelAngle = a end},
 }
 function mockRequire(ref)
 	local name = ref.ref
@@ -438,6 +439,69 @@ if ctl.core.V.stage11State then
 	ctl:reset()
 	check("stage 11: attributes removed -> original runtime again", ctl:telemetry().stage11.mode == "original")
 end
+-- ===== Stage 12: ORIGINAL steering chain through the adapter (device layer -> core 00552720 / 00554fb0 / 005539c0) =====
+if ctl.core.V.steeringState then
+	local RS = mockRequire({ref = "Roblox.RenderSnapshot"})
+	local S12KEYS = {"SteeringLinearity", "SteeringMomentum", "SteeringLowSpeedOverride", "SteeringYawLimiter", "Setup_steeringRatio"}
+	for _, k in ipairs(S12KEYS) do car:SetAttribute(k, nil) end
+	ctl:reset()
+	local s0 = ctl:telemetry().steering
+	check("stage 12: reset applies the original steering defaults (mode original, setup ratio 18:1 item 0x30, linearity 0, rate 0.033 / frame, cockpit angle flag)",
+		s0 ~= nil and s0.mode == "original" and car:GetAttribute("SteeringRatioApplied") == 18 and car:GetAttribute("SteeringLinearityApplied") == 0
+		and math.abs(car:GetAttribute("SteeringRateApplied") - 0.033) < 1e-6 and car:GetAttribute("CockpitWheelAngle") == true,
+		s0 and string.format("%s ratio %s linearity %s rate %s", s0.mode, tostring(car:GetAttribute("SteeringRatioApplied")),
+			tostring(car:GetAttribute("SteeringLinearityApplied")), tostring(car:GetAttribute("SteeringRateApplied"))) or "no steering telemetry")
+	-- analog axis full left at rest (gamepad / wheel): both controls bound to one axis, 7:1 override -> pi / 7
+	input = {throttle = 0, brake = 0, handbrake = 0, clutch = 0, steerAnalog = true, steerAxis = -1}
+	for f = 1, 120 do ctl:step(dt, input) end
+	local s1 = ctl:telemetry().steering
+	local snap = ctl:renderSnapshot(1, 0, 1)
+	local okEnc, dec = pcall(function() return RS.decode(RS.encode(snap)) end)
+	check("stage 12: analog axis -1 at rest -> road-wheel target pi / 7 (18:1 -> 7:1 below 8.94 m/s), cockpit wheel -2.79 rad (005662d0 clamp) in Cockpit + render snapshot",
+		math.abs(s1.target - math.pi / 7) < 1e-6 and s1.ratioNow == 7 and not s1.digital and math.abs(s1.wheelAngle + 2.79) < 1e-6
+		and _G_lastWheelAngle == s1.wheelAngle and snap.steer == s1.wheelAngle and RS.hasFlag(snap.flags, RS.FLAG_WHEEL_ANGLE)
+		and okEnc and math.abs(dec.steer - s1.wheelAngle) < 1e-3,
+		string.format("target %.6f ratio %.3f wheel %.4f (cockpit %s, snapshot %.4f) digital %s", s1.target, s1.ratioNow, s1.wheelAngle,
+			tostring(_G_lastWheelAngle), snap.steer, tostring(s1.digital)))
+	check("stage 12: the front road wheels follow the solver (prescribed hub states 15 / 21 = target -+ toe)",
+		math.abs(s1.hubLF - (s1.current - ctl.core.V.rf32(0xc086b0))) < 1e-6 and math.abs(s1.hubRF - (s1.current + ctl.core.V.rf32(0xc086b4))) < 1e-6
+		and math.abs(ctl:telemetry().roadWheelAngle - (s1.hubLF + s1.hubRF) * 0.5) < 1e-6,
+		string.format("hub LF %.5f RF %.5f current %.5f", s1.hubLF, s1.hubRF, s1.current))
+	-- keys: right key held -> digital control 8 (slew 0.033 / frame + sine) -> negative target (right turn)
+	input = {throttle = 0, brake = 0, handbrake = 0, clutch = 0, steerLeft = 0, steerRight = 1}
+	for f = 1, 120 do ctl:step(dt, input) end
+	local s2 = ctl:telemetry().steering
+	check("stage 12: steer-right key -> digital control 8 = 1.0 -> road-wheel target -pi / 7 at rest", s2.digital and s2.right == 1 and s2.left == 0
+		and math.abs(s2.target + math.pi / 7) < 1e-6, string.format("target %.6f right %s digital %s", s2.target, tostring(s2.right), tostring(s2.digital)))
+	-- legacy client (input.steer only) = keys
+	input = {throttle = 0, brake = 0, handbrake = 0, clutch = 0, steer = -1}
+	for f = 1, 120 do ctl:step(dt, input) end
+	local s3 = ctl:telemetry().steering
+	check("stage 12: legacy input.steer = -1 -> steer-left key (digital control 7)", s3.digital and s3.left == 1 and s3.right == 0
+		and math.abs(s3.target - math.pi / 7) < 1e-6, string.format("target %.6f", s3.target))
+	-- driver options + garage ratio from attributes (ORIGINAL setters at reset)
+	car:SetAttribute("SteeringLinearity", 80); car:SetAttribute("SteeringMomentum", 0); car:SetAttribute("SteeringLowSpeedOverride", false)
+	car:SetAttribute("Setup_steeringRatio", 25)
+	ctl:reset()
+	input = {throttle = 0, brake = 0, handbrake = 0, clutch = 0, steerAnalog = true, steerAxis = 0.5}
+	for f = 1, 30 do ctl:step(dt, input) end
+	local s4 = ctl:telemetry().steering
+	local o4 = ctl.core.V.steeringOptions()
+	-- linearity 0.8 (UI 80): x = 0.5 -> 0.5^1.8; momentum 0 -> rate 1 (no slew, no sine); override off -> 25:1 at rest
+	local want = -(math.pi * 0.5 ^ 1.8) / 25
+	check("stage 12: SteeringLinearity=80, SteeringMomentum=0, SteeringLowSpeedOverride=false, Setup_steeringRatio=25 -> ORIGINAL setters / garage at reset",
+		math.abs(car:GetAttribute("SteeringLinearityApplied") - 0.8) < 1e-6 and car:GetAttribute("SteeringRateApplied") == 1
+		and car:GetAttribute("SteeringRatioApplied") == 25 and not o4.lowSpeedOverride and s4.ratioNow == 25 and math.abs(s4.target - want) < 2e-6,
+		string.format("linearity %s rate %s ratio %s target %.6f (pi * 0.5^1.8 / 25 = %.6f)", tostring(car:GetAttribute("SteeringLinearityApplied")),
+			tostring(car:GetAttribute("SteeringRateApplied")), tostring(car:GetAttribute("SteeringRatioApplied")), s4.target, want))
+	check("stage 12: no physics fault", ctl.fault == nil, tostring(ctl.fault))
+	for _, k in ipairs(S12KEYS) do car:SetAttribute(k, nil) end
+	ctl:reset()
+	local o5 = ctl.core.V.steeringOptions()
+	check("stage 12: attributes removed -> original defaults again (linearity 0, rate 0.033, override on, ratio 18)", o5.linearity == 0
+		and math.abs(o5.steerRate - 0.033) < 1e-6 and o5.lowSpeedOverride and o5.setupRatio == 18)
+	input = {throttle = 0, brake = 0, steer = 0, handbrake = 0, clutch = 0}
+end
 -- the Studio self-test modules themselves (quick mode), as the patches run them after installing
 local ST = mockRequire({ref = "Roblox.Stage67SelfTest"})
 local stOk = ST.run(false)
@@ -463,6 +527,11 @@ if SOURCES["Roblox.Stage11SelfTest"] then
 	local ST11 = mockRequire({ref = "Roblox.Stage11SelfTest"})
 	check("Roblox/Stage11SelfTest.run(false) passes (what PATCH_STAGE11 executes)", (ST11.run(false)))
 	check("Roblox/Stage11SelfTest.run(true) passes (full: 10 s drives, determinism, frozen A/B)", (ST11.run(true)))
+end
+if SOURCES["Roblox.Stage12SelfTest"] then
+	local ST12 = mockRequire({ref = "Roblox.Stage12SelfTest"})
+	check("Roblox/Stage12SelfTest.run(false) passes (what PATCH_STAGE12 executes)", (ST12.run(false)))
+	check("Roblox/Stage12SelfTest.run(true) passes (full: all embedded snapshots, determinism)", (ST12.run(true)))
 end
 print(string.format("\nadapter mock: %d passed, %d failed", passed, failed))
 if failed > 0 then error("adapter mock tests failed") end

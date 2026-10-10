@@ -4,7 +4,7 @@
 --   fixtures/units.lua            level 1: ORIGINAL 00552d00 / 00552720 / 00554fb0 / 00551e80 tail / setters, vector by vector
 --   fixtures/scenario_<name>.lua  level 2: frame-start snapshots (traced footprint of 005524f0 + 00551e80) bit for bit
 --                                 level 3: full-state restarts (one frame from the original's state, twins envelope)
---                                 level 4: closed-loop rows vs the envelope of the original's 10 twins
+--                                 level 4: closed-loop rows vs the envelope of the original's 14 twins (law.horizon)
 --                                 level 5: deliberate steering-mapping errors must be detected (levels 2 and 3)
 local Vehicle = require("../../core/NR2003CupVehicle")
 
@@ -237,6 +237,7 @@ local function session(fx)
 	V.reset()
 	if fx.law.steer then V.setSteeringOptions(fx.law.steer) end
 	V.startSession(weather, {damageLevel = o.damage_level, consumptionRate = o.consumption, series = o.series or 1, seed = o.seed})
+	buildProtected()
 end
 
 local T_ROOT = V.ROOT
@@ -289,7 +290,31 @@ local function hostOnly(a)
 end
 local BLK = 0xf7f100 + 0xc0
 local INTCOUNT = 0x7559c4
-local PROTECTED = {}  -- protected (XOR-coded) cells: compared as raw dwords here (the steering chain writes none)
+-- protected (XOR-coded) Stage 11 values (fuel double, engine / tyre values): compared by their decoded value, as in
+-- tests/stage11 (the fuel double differs by 1 ulp: x87 80-bit rounded down vs double, STAGE11_RECOVERY.md section 6)
+local PROTECTED = {}   -- data cell address -> {base = triple address, kind = 4 | 8, slot}
+local function buildProtected()
+	table.clear(PROTECTED)
+	local E = 0xc12030 + 0xc
+	local list = {{E + 0x4a4, 4}, {E + 0x4d4, 4}, {E + 0x50c, 8}}
+	for w = 0, 3 do
+		local t = 0xbf3a20 + w * 0xa39
+		for _, off in ipairs({0x74, 0x134, 0x160, 0x18c, 0x1b8, 0x1e4, 0x210, 0x23c, 0x26c}) do table.insert(list, {t + off, 4}) end
+	end
+	for _, e in ipairs(list) do
+		local base, kind = e[1], e[2]
+		for word = 0, kind // 4 - 1 do
+			for slot = 0, 1 do PROTECTED[r32(base + 4 * slot) + 4 * word] = {base = base, kind = kind, slot = slot} end
+		end
+	end
+end
+local function decodeFrom(read, base, kind)
+	local p0, p2 = r32(base), r32(base + 8)
+	if kind == 4 then return fb(bit32.bxor(read(p0), read(p2))) end
+	local lo, hi = bit32.bxor(read(p0), read(p2)), bit32.bxor(read(p0 + 4), read(p2 + 4))
+	local d = buffer.create(8); buffer.writeu32(d, 0, lo); buffer.writeu32(d, 4, hi)
+	return buffer.readf64(d, 0)
+end
 
 -- level 2: one Luau frame start from the original's traced inputs
 local function frameStartSnap(sn, mutate)
@@ -367,11 +392,27 @@ local function restartFrame(fx, rs, S0, mutate)
 		local d = math.abs(x - y)
 		return d <= math.max(4 * env, floorOf(x, y)), d / math.max(math.abs(x), math.abs(y), 1e-6)
 	end
+	local readE = function(a) return ru(E, a - BASE) end
+	local seenProt = {}
 	for o = 0, SIZE - 4, 4 do
 		if ru(M, o) ~= ru(E, o) then
 			local a = BASE + o
 			if not hostOnly(a) then
 				st.cells += 1
+				local p = PROTECTED[a]
+				if p then
+					if not seenProt[p.base] then
+						seenProt[p.base] = true
+						local u, v = decodeFrom(readE, p.base, p.kind), decodeFrom(r32, p.base, p.kind)
+						local env = 0
+						for k = 1, #T do env = math.max(env, math.abs(decodeFrom(function(q) return ru(T[k], q - BASE) end, p.base, p.kind) - u)) end
+						st.prot = (st.prot or 0) + 1
+						if math.abs(u - v) > math.max(4 * env, floorOf(u, v)) then
+							st.int += 1; st.firstInt = st.firstInt or string.format("%08x protected %.17g / %.17g", a, u, v)
+						end
+					end
+					continue
+				end
 				local cellOk, cellRel = true, 0
 				for j = 0, 3 do
 					if rb(M, o + j) ~= rb(E, o + j) then
@@ -471,7 +512,7 @@ for _, name in ipairs(NAMES) do
 		local first, frames = nil, {}
 		for _, rs in ipairs(fx.restart) do
 			local st, rowBad, rowFirst = restartFrame(fx, rs, S0)
-			tot.cells += st.cells; tot.float += st.float; tot.int += st.int; tot.rowBad += rowBad
+			tot.cells += st.cells; tot.float += st.float; tot.int += st.int; tot.rowBad += rowBad; tot.prot = (tot.prot or 0) + (st.prot or 0)
 			if st.worst > tot.worst then tot.worst = st.worst; tot.at = st.at end
 			if (st.int > 0 or rowBad > 0) and not first then
 				first = string.format("frame %d: %s%s", rs.frame, st.firstInt or "", rowFirst and (" row " .. rowFirst) or "")
@@ -480,8 +521,8 @@ for _, name in ipairs(NAMES) do
 		end
 		check(string.format("%s: L3 %d full-state restarts (frames %s): one Luau frame from the original state = original within 4x its twins",
 			name, #fx.restart, table.concat(frames, ",")), tot.int == 0 and tot.rowBad == 0,
-			string.format("%d differing cells: float %d (worst rel %.2e at %08x), outside tolerance %d, row fields %d %s",
-				tot.cells, tot.float, tot.worst, tot.at, tot.int, tot.rowBad, first or ""))
+			string.format("%d differing cells: float %d, protected %d (worst rel %.2e at %08x), outside tolerance %d, row fields %d %s",
+				tot.cells, tot.float, tot.prot, tot.worst, tot.at, tot.int, tot.rowBad, first or ""))
 		-- mutations at the restart point with the largest steering input
 		local best, bestV = fx.restart[#fx.restart], -1
 		for _, rs in ipairs(fx.restart) do
@@ -499,16 +540,22 @@ for _, name in ipairs(NAMES) do
 		end
 	end
 
-	-- (4) closed loop vs the original's twins (4x envelope over the row and its neighbours)
+	-- (4) closed loop vs the original's twins (4x envelope over the row and its neighbours): ten Stage 11 twins (chassis
+	-- height +-1 ulp) + four 'all' twins (+-1 ulp on the 45-state vector every frame). Rows after law.horizon are
+	-- reported, not gated (Stage 11 method; per scenario in gen_fixtures12.HORIZON with the evidence in
+	-- STAGE12_VALIDATION.md: the original's own branch choice, shown by the original continued from the port's state).
 	local t1 = os.clock()
 	local rows = play(fx)
 	local dt = os.clock() - t1
 	local envBad, intBad, compared, firstBad = 0, 0, 0, nil
+	local afterBad, afterRows = 0, 0
+	local horizon = fx.law.horizon or math.huge
 	local nRows = #fx.rows
 	for i, want in ipairs(fx.rows) do
 		local mine = rows[i]
 		if not mine then break end
-		compared += 1
+		local after = want[1] > horizon
+		if after then afterRows += 1 else compared += 1 end
 		for j = 2, #want do
 			local f = FIELDS[j - 1]
 			local a, b = mine[j], want[j]
@@ -521,20 +568,22 @@ for _, name in ipairs(NAMES) do
 					if p ~= om then twinDiffers = true end
 				end
 			end
-			if INT_FIELDS[f] then
-				if a ~= b and not twinDiffers then intBad += 1; firstBad = firstBad or string.format("frame %d %s lua %s orig %s", want[1], f, tostring(a), tostring(b)) end
-			else
-				local d = math.abs(a - b)
-				if d > math.max(4 * env, 2e-5 * math.abs(b), 1e-6) then
-					envBad += 1
-					firstBad = firstBad or string.format("frame %d %s lua %.9g orig %.9g envelope %.3g", want[1], f, a, b, env)
-				end
+			local out
+			if INT_FIELDS[f] then out = a ~= b and not twinDiffers
+			else out = math.abs(a - b) > math.max(4 * env, 2e-5 * math.abs(b), 1e-6) end
+			if out and after then afterBad += 1
+			elseif out then
+				if INT_FIELDS[f] then intBad += 1 else envBad += 1 end
+				firstBad = firstBad or (INT_FIELDS[f] and string.format("frame %d %s lua %s orig %s", want[1], f, tostring(a), tostring(b))
+					or string.format("frame %d %s lua %.9g orig %.9g envelope %.3g", want[1], f, a, b, env))
 			end
 		end
 	end
-	check(string.format("%s: L4 %d s closed loop (%d rows x %d fields) within 4x the envelope of the original's %d twins",
-		name, fx.law.frames // 36, compared, #FIELDS, #fx.pert), envBad == 0 and intBad == 0,
-		string.format("%.1f s Luau (%.0f ticks/s); outside envelope %d, integer %d %s", dt, fx.law.frames * 8 / dt, envBad, intBad, firstBad or ""))
+	check(string.format("%s: L4 %d s closed loop (%d rows x %d fields) within 4x the envelope of the original's %d twins%s",
+		name, fx.law.frames // 36, compared, #FIELDS, #fx.pert, fx.law.horizon and string.format(" (horizon frame %d)", horizon) or ""),
+		envBad == 0 and intBad == 0,
+		string.format("%.1f s Luau (%.0f ticks/s); outside envelope %d, integer %d %s%s", dt, fx.law.frames * 8 / dt, envBad, intBad, firstBad or "",
+			afterRows > 0 and string.format(" | after horizon (not gated): %d rows, %d field-rows outside", afterRows, afterBad) or ""))
 	local last, lastO = rows[#rows], fx.rows[#fx.rows]
 	print(string.format("      end: x %.3f/%.3f m  y %.3f/%.3f m  yaw rate %.4f/%.4f  hub LF %.5f/%.5f  wheel yaw LF %.5f/%.5f",
 		last[2], lastO[2], last[4], lastO[4], last[14], lastO[14], last[21], lastO[21], last[25], lastO[25]))
