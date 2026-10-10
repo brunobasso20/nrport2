@@ -16,7 +16,7 @@
    `Core.NR2003Cup.NR2003CupSteering` e `Roblox.Stage12SelfTest`; muda uma linha em cada self-test 6/7..11; roda os
    auto-testes 6/7..12 e **reverte tudo** se algo falhar. Re-executar é seguro (sem duplicatas). **O place não é salvo**:
    salve você mesmo depois de conferir. Reversão manual verificada: `PATCH_STAGE12_ROLLBACK.lua`.
-3. Output esperado: os auto-testes 6/7, 8, 9, 10, 11 e `Stage 12 self-test: 13 passed, 0 failed`, depois `Stage 12 aplicado`.
+3. Output esperado: os auto-testes 6/7, 8, 9, 10, 11 e `[NR2003 Stage 12 self-test] 13 passed, 0 failed (… s)`, depois `Stage 12 aplicado`.
 4. No Play (painel **T**), linha lilás `DIREÇÃO`: tipo do controle (teclas / eixo), entrada processada (`bf63c8`),
    relação atual (`00554fb0`: 18:1 do setup, 7:1 abaixo de 32 km/h com o override, rampa até 64 km/h), alvo da roda,
    ângulos dos cubos (com toe), guinada medida das rodas e ângulo do volante do cockpit (`005662d0`, limite ±160°).

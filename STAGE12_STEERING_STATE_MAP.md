@@ -20,7 +20,7 @@ control 8 = steer right.** Sign convention of the simulation: road-wheel target 
 |---|---|---|---|---|---|---|
 | steer-left control raw | `0xd35b5e` (control 7) | 0..1 | `0057abc0` device poll (host) | `00552d00(7)` via `0057af30` | 0 | ADAPTER (`CupChassisAdapter.steerControls` → `NR2003CupSteering.hostDevices`); L2 host-write cells |
 | steer-right control raw | `0xd35b68` (control 8) | 0..1 | idem | `00552d00(8)` | 0 | ADAPTER; L2 |
-| binding type 7 / 8 | `0xd37d93` / `0xd37db0` | 1 = analog axis, other = key / button | controls binding (front end) | `0057af60(n)` = type ≠ 1 ("digital"): `00552d00` slew, `00551e80` linearity | — | ADAPTER: keys → 0, analog axis → 1 (both controls) |
+| binding type 7 / 8 | `0xd37d93` / `0xd37db0` | 1 = analog axis, other = key / button | controls binding (front end) | `0057af60(n)` = type ≠ 1 ("digital"): `00551e80` linearity (both controls must be analog) and the `00552720` assistance branch; `00552d00` (the slew) does not read it | — | ADAPTER: keys → 0, analog axis → 1 (both controls) |
 | analog axis value | `f5d418[]` after calibration `005d04d0` (min / centre / max quadratic → −1..1, clamp, **no dead zone**) | −1..1 | DirectInput poll | `0057abc0` splits by sign: negative half → control 7, positive half → control 8 | — | ADAPTER: Roblox already normalises the gamepad axis to −1..1; the calibration curve is the Windows device's, not ported |
 
 ## 2. Driver processing (`005524f0` player branch → `00552720`, every 36 Hz frame)
@@ -65,7 +65,7 @@ Not steering, documented: the head of `00551e80` (`bf6f28` / `bf6f2c`) is an off
 | hub coordinate `q` LF / RF | states **15 / 21** (exported `bf6d7c` / `bf6d94`; core cells `ebdd40` / `ebdd44`) | rad | **prescribed** rotation (flags 0x300: code 6, local z axis) about the inclined steering axis | multibody (wheel orientation → tyres) | — | EXACT (Stage 6 solver) |
 | hub velocity | states 16 / 22 | rad/s | never written (cells read by the solve, always 0) | — | 0 | EXACT: the original models no steering rate |
 | steering axis | hub record base angles (0, −10.407°, ±10.604°) on the suspension (0, 7.907°, ∓1.420°), wheel roll ∓8° | — | build `0055e9b0` (caster item 0x43/0x44 → hub pitch, camber 0x20/0x21 → hub roll) | — | caster 2.455°, inclination 9.215°, through the wheel centre | EXACT (Stage 6 / 10); research report `recovery/stage12/evidence/reports/hubgeometry.md` |
-| road-wheel yaw | wheel record pose (`componentPose`) | rad | `≈ 0.9895 · q` + static toe-out 0.0038 rad per side; LF−RF 0.0076 → 0.0069 rad at q = 0.3 (slight anti-Ackermann); **no Ackermann term, no bump steer** (prismatic suspension; bump-steer coefficient spec `+0x88` = 0) | tyres | measured in the adapter mock: 0.9888 q at q = 0.449 | EXACT (geometry is the original multibody) |
+| road-wheel yaw | wheel record pose (`componentPose`) | rad | `≈ 0.9895 · q` + static toe-out ≈ 0.0032 rad per side in the multibody pose (`componentPose`; the suite measures 0.00317); at the tyre (tyre path, camber-gain coupling) 0.0038 rad per side and LF−RF 0.0076 → 0.0069 rad at q = 0.3 (slight anti-Ackermann); **no Ackermann term, no bump steer** (prismatic suspension; bump-steer coefficient spec `+0x88` = 0) | tyres | measured in the adapter mock: 0.9888 q at q = 0.449 | EXACT (geometry is the original multibody) |
 
 ## 5. Presentation (draw side, no feedback into the simulation)
 
@@ -97,4 +97,4 @@ is 0 in the port and in the reference. Stage 12 leaves all FFB cells untouched (
   covers the same cells.
 - **Garage**: setup item 0x30 goes through the Stage 10 pipeline (`applySetup`); it changes no build cell, only `U+0xc0`.
 - **Checkpoint / restore**: all steering states are memory cells → `V.checkpoint()` / `V.restore()` replay bit-identically
-  (L5 determinism check).
+  (determinism test of the Stage 12 suite).

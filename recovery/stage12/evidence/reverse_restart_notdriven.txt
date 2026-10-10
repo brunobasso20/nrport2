@@ -10,7 +10,7 @@ Columns: frame, port fyLF/fyRF (N), original-from-port fyLF/fyRF, four original 
   frame 379  |dvx| 4.76e-07 (twins 2.86e-06)  |dfyLF| 0.00915 N (twins 0.0298)
   frame 380  |dvx| 4.82e-09 (twins 4.77e-06)  |dfyLF| 0.00909 N (twins 0.106)
   frame 381  |dvx| 1.2e-09 (twins 1.07e-05)  |dfyLF| 0.00812 N (twins 0.0602)
-== frame 288 (steering released at ~1.3 m/s), 144 frames: original continued from the port state
+== frame 288 (steering released at ~2.4 m/s), 144 frames: original continued from the port state
   288 port (-968,-323) orig<-port (-968,-323) twins (-968,-323) (-968,-323) (-968,-323) (-968,-323) own (-251,196) |dvx| 1.7e-10
   289 port (1448,1482) orig<-port (1448,1482) twins (1448,1482) (1448,1482) (1448,1482) (1448,1482) |dvx| 6e-08
   290 port (1490,1525) orig<-port (1490,1525) twins (1490,1525) (1490,1525) (1490,1525) (1490,1525) |dvx| 6e-08

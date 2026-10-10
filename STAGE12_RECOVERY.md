@@ -4,8 +4,9 @@ Scope: the complete NR2003 steering chain of the player car, from the driver's c
 coordinates of the multibody, plus the cockpit steering-wheel presentation. Recovered with Ghidra 11.1.2 (headless,
 read-only project of NR2003.exe), the exe memory image (`NR2003_MEM`) and Unicorn 2.1.4 executing the original code;
 the port is `core/NR2003Cup/NR2003CupSteering.lua` (+ Stage 12 lines in `NR2003CupDriver.lua`). Evidence:
-`recovery/stage12/evidence/` (`ev1..ev14`: pseudo-C + asm with constants of every function below, `FUNCS.txt` per
-export; `funcs_*.tsv` function lists; `reports/` four research reports with their own evidence lists). State map:
+`recovery/stage12/evidence/` (`ev1..ev14`: pseudo-C + asm with constants of the recovered steering functions, `FUNCS.txt` per
+export; the message dispatcher / handlers, `004233a0`, `005beac0` and the FFB functions are documented in the `reports/`
+evidence lists or in earlier stages' evidence; `funcs_*.tsv` function lists; `reports/` five research reports — bit25, ffbinterface, hubgeometry, setupitems, uiconv — with their own evidence lists). State map:
 `STAGE12_STEERING_STATE_MAP.md`. Validation: `STAGE12_VALIDATION.md`.
 
 Force feedback / steering torque is **Stage 13**: `00554d30`, `bf6ec4..bf6ef0` and the FFB block of `00554520` were
@@ -14,7 +15,8 @@ analysed only to define the interface (§ 8); nothing of it is implemented.
 ## 1. Audit of the Stage 11 baseline
 
 - Baseline `OpenNR2003_Roblox_TestBench_STAGE11.zip` imported as commit `626eabe` (3.10.0-stage11) with
-  `tests_stage11.zip`; all 72 files listed in `MANIFEST.json` matched their sha256.
+  `tests_stage11.zip`; the 72 test files restored from it matched their `MANIFEST.json` sha256, and the whole working
+  tree matched the manifest (5202 files, 0 mismatches).
 - Regression on this machine before any change: Stage 6/7 16/16, Stage 8 49/49, Stage 9 59/59, Stage 10 23/23 + 61/61,
   Stage 11 66/66, adapter mock 55/55, patch mocks 11 / 13 / 13 / 17 / 15 — all PASS.
 - Steering before Stage 12 (PROVISIONAL since Stage 5): the adapter computed a road-wheel target with a Stage 5
@@ -48,7 +50,7 @@ draw (005662d0 / 00565cc0): steering wheel = clamp(-(00554fb0() * car[0x1554]), 
 |---|---|---|---|
 | `0057abc0` | device poll: DirectInput axes / keys → control table (`0057af30` raw f32, `0057af40`, `0057af60` digital = type ≠ 1); an axis bound to both steering controls is split by sign | `NR2003CupSteering.hostDevices` + adapter `steerControls` | ADAPTER |
 | `005d04d0` | joystick calibration: min / centre / max → −1..1 (quadratic, clamp, no dead zone) | Roblox normalises the axis | ADAPTER (documented) |
-| `005524f0` | per-frame driver devices (player / not-driven branches) | `NR2003CupDriver.frameStart` (Stage 7/8) + `V._steerDevices` | EXACT |
+| `005524f0` | per-frame driver devices (player / not-driven branches) | `NR2003CupDriver.frameStart` (Stage 7/8) + `V._steerDevices` | EXACT for the steering input (`bf63c8 = 00552720()`), the Stage 8 brake path and the not-driven cells; throttle / clutch device processing (`00552df0` / `005534f0`) still host values (PROVISIONAL since Stage 7); the low-speed `00568e00` / `bf6f18` block, `0057af40(3)` / `bf6f36` / `car+0x1518`, the ignition key and the game-state / `bf6eb8` gate are not ported (the gate is replaced by `controls.driver = false`) |
 | `00552d00` | per-control slew limiter + `sin(x·π/2)` shaping (steering indices) | Stage 8 `V.axisOriginal` (reused) | EXACT |
 | `00552720` | processed steering input (speed sensitivity, arcade yaw limiter, assistance) | `steerInput` | EXACT (assistance > 0 NOT PORTED) |
 | `00552410` | linearity value (arcade / assistance remap 0.66 L + 0.34) | `linearity` | EXACT |
@@ -60,7 +62,7 @@ draw (005662d0 / 00565cc0): steering wheel = clamp(-(00554fb0() * car[0x1554]), 
 | `00554fb0` | steering ratio (setup item 0x30) + low-speed override | `ratio` | EXACT |
 | `006c5c40` | `_CIpow` (SecuROM-encrypted in the image) | Luau `x ^ y`; reference `POW_X87` (FYL2X / F2XM1 / FSCALE) | EXACT on all vectors (§ 6) |
 | `005502f0` / `005500c0` / `00550110` / `00550210` | option setters (linearity, momentum, low-speed override, steering assistance; `00550120` = braking help `bf6f04`, not steering) reached through the front-end messages 0x48 linearity, 0x49 steering momentum, 0x4c low-speed override ("BoostSteering"), 0x51 steering help (table `00752370`, dispatcher `005bad80` drained by `005f8ec0` on the simulation task under CW 0x077f; handlers `005bb010..005bb130`) | `setLinearityRaw`, `setMomentum`, `applyOptions` | EXACT (assistance > 0 refused) |
-| `0043f1d0` | controls.cfg load: linearity int `72c5f0` (0..100, slider shows 100 − value) → (float)·0.01f; momentum ints (steering / throttle / brake) → `005500c0` | `setSteeringOptions{linearity, momentum}` (UI-thread f32 rounding to nearest) | EXACT |
+| `0043f1d0` | controls.cfg load (front-end task): linearity = `FILD [894d40]` (file field) `· 0.01f` (f32 `0x3c23d70a`) → `00570f20` (message 0x48); momentum ints (steering / throttle / brake) → (float)int → messages 0x49..0x4b → `005500c0`; override byte → message 0x4c. UI variables: linearity slider `72c5f0` (shows 100 − value, default 80), momentum sliders `894e18 / 1c / 20` | `setSteeringOptions{linearity, momentum}` (UI-thread f32 rounding to nearest) | EXACT |
 | `00550530` | steering state reset (callers `00550490`, `00550a10`, `00551520`) | image restore in `V.reset` | EXACT (same cells) |
 | `005662d0` / `00565cc0` | cockpit / car-model steering-wheel angle | `V.steeringWheelAngle` | EXACT formula |
 | `00551990` | car snapshot (`car[0x1554]` mean front steer) | Stage 11 lift (frame end) | EXACT |
@@ -86,7 +88,7 @@ draw (005662d0 / 00565cc0): steering wheel = clamp(-(00554fb0() * car[0x1554]), 
    bump-steer coefficient (spec `+0x88`) is 0 in all 21 car specs; the hub velocity states (16 / 22) are never written.
    (`reports/hubgeometry.md`.)
 6. **Race settings bit 25 is the ARCADE driving mode** (player.ini `DrivingMode`, default Simulation): it enables the
-   yaw-rate limiter in `00552720` (`limiter = min(12.25 / v, |r|) / max(|r|, 0.01) · 0.9 + 0.1`), remaps L to
+   yaw-rate limiter in `00552720` (`limiter = min(12.25 / v, f) / f · 0.9 + 0.1`, `f = max(|r|, 0.01)`, v ≥ 0.01), remaps L to
    `0.66 L + 0.34` and makes `004233a0` select car chassis spec 0 at build time. Bit 29 is the multiplayer
    "hardcore driving aids" flag (aids → 0). (`reports/bit25.md`.)
 7. **Steering assistance** (`bf6f08 > 0`) blends a racing-line steering command from the track system (car world
@@ -114,13 +116,14 @@ draw (005662d0 / 00565cc0): steering wheel = clamp(-(00554fb0() * car[0x1554]), 
 | device calibration | `005d04d0` | not ported: Roblox's gamepad axis is already −1..1 |
 | driver present | `005524f0` branch by "car driven" | adapter: seated driver → driven; none → `controls.driver = false` |
 | options | front-end messages (table `00752370`) | `V.setSteeringOptions` calls the ORIGINAL setters' logic; the reference calls the original setters |
-| arcade / assistance | race settings / options | refused in production (§ 7) |
+| arcade / assistance | race settings / options | refused in production (§ 8) |
 
 ## 6. Numeric notes
 
 - Simulation task CW `0x077f`: every f32 store rounds toward −∞ (`fd` / `wf32d`); x87 intermediates are evaluated in
-  IEEE double (Stage 6/7 convention). Values compared bit for bit are the f32 cells; x87 values handed to the next
-  function (`00552d00(7)`, `00554fb0`, the target) are compared within ≤ 4 double ulp — observed worst 0.99 ulp.
+  IEEE double (Stage 6/7 convention). Values compared bit for bit are the f32 cells; the x87 value of `00552d00(7 / 8)` is
+  compared within ≤ 4 double ulp (observed worst 0.99 ulp), that of `00554fb0` within ≤ 2 double ulp (observed 0.00); the
+  target is compared bit for bit through its f32 stores (`bf63b8` / `bf6e80` / ramp `bf6e88`).
 - Exact-zero sums under RC-down are −0 (`x − x = −0`). The tail ramps and the per-tick composition sums sign zeros
   the same way (`zadd` / `zsub`); see change record C1 in `STAGE12_RESULT.md`.
 - `exp(−0.000493827 v²)` is `FLDL2E / FMUL / FRNDINT (RC down = floor) / F2XM1 / FSCALE`; the port uses the lifter

@@ -49,7 +49,7 @@ EXCLUDE = [(0x74c9ac, 4), (INTCOUNT, 4), (0x7559c4, 4), (SKIP[0], SKIP[1] - SKIP
 # L4 twins: Stage 11 PERTURB (1, 2 kick; 3..10 chassis-height noise) + 11..14 'all' (seeds 101..104, as dev/allframe.py)
 PERTURB = dict(G11.PERTURB)
 PERTURB.update({10 + s: ('all', 100 + s) for s in range(1, 5)})
-# documented horizons (STAGE12_VALIDATION.md): 'notdriven' frame 297 -- after the steering release at ~1.3 m/s the
+# documented horizons (STAGE12_VALIDATION.md): 'notdriven' frame 297 -- after the steering release at ~2.4 m/s the
 # front tyre pair selects one of two quasi-static stick-slip branches; the ORIGINAL code continued from the PORT's own
 # state at frame 288 (dev/reverse.py) takes the port's branch for the whole remaining 4 s, and one of its four +-1 ulp
 # twins takes the other one (the original's own run): a branch choice of the original's rounding, not of the logic.

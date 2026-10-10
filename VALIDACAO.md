@@ -6,9 +6,11 @@ o mock do adaptador e os mocks dos 6 patches). Método e tolerâncias: **`STAGE1
 
 ## Método
 
-1. **Referência = código original** executado no Unicorn (`recovery/stage12/orig_stage12.py`): início de quadro do
-   jogador `005524f0` → `00552720` e a cauda de `00551e80` executados do exe, com a física por tick e o fim de quadro do
-   Stage 11 — mesma fronteira de host do port (células brutas dos controles 7/8 e tipo de vínculo).
+1. **Referência = código original** executado no Unicorn (`recovery/stage12/orig_stage12.py`): `00552720` original
+   (chamado por um stub no lugar do call de `005524f0` @`005525c8`; o resto do ramo do jogador / "não dirigido" de
+   `005524f0` é código host do harness, com o `00553080` original) e a cauda de `00551e80` (`00552082..00552336`)
+   executados do exe, com a física por tick e o fim de quadro do Stage 11 — mesma fronteira de host do port (células
+   brutas dos controles 7/8 e tipo de vínculo).
 2. **L1 funções** vetor a vetor (bit a bit em todo f32 gravado). **L2** início de quadro com o estado rastreado do
    original, bit a bit. **L3** reinícios de estado completo (um quadro) dentro de 4× a sensibilidade de um quadro do
    original. **L4** malha fechada dentro de 4× o envelope de 14 gêmeos do original. **L5** 5 erros deliberados de
@@ -34,11 +36,12 @@ o mock do adaptador e os mocks dos 6 patches). Método e tolerâncias: **`STAGE1
 Valores esperados entre parênteses (relação 18:1, override ligado, sem atributos).
 
 1. **Instalação**: fora do Play, aplicar `PATCH_STAGE12.lua` (ou `PART1`, `PART2` + `INSTALL`, ou o `.rbxmx`) sobre a
-   bancada Stage 11. Output: auto-testes 6/7, 8, 9, 10, 11 e `Stage 12 self-test: 13 passed, 0 failed`, depois
+   bancada Stage 11. Output: auto-testes 6/7, 8, 9, 10, 11 e `[NR2003 Stage 12 self-test] 13 passed, 0 failed (… s)`, depois
    `Stage 12 aplicado (backup: ServerStorage.NR2003Backup_Stage12)`. O place **não** é salvo pelo patch.
 2. **Re-execução**: aplicar de novo → `re-execução: backup anterior mantido`; no Explorer só um `NR2003CupSteering`, um
    `Stage12SelfTest` e um `NR2003Backup_Stage12`.
-3. Play → entrar no carro → **T**: linha lilás `DIREÇÃO teclas entrada +0.000 relação 7.0:1 alvo +0.00° …`; volante do
+3. Play → entrar no carro (o painel já abre expandido; **T** recolhe / expande): linha lilás
+   `DIREÇÃO teclas  entrada -0.000  relação 7.0:1  alvo +0.00° …` (o original grava −0 em repouso); volante do
    cockpit centrado.
 4. **Teclas paradas**: segurar **A** → a entrada vai a −1 em ~0,85 s (taxa 0,033/quadro com seno), alvo **+25,71°**
    (π/7), cubos **+25,59° / +25,84°** (toe), volante **−160°** (limite 2,79 rad). Soltar → volta ao centro.
@@ -66,7 +69,7 @@ Valores esperados entre parênteses (relação 18:1, override ligado, sem atribu
     `PATCH_STAGE12.lua` em seguida.
 15. **Regressão + auto-teste completo**: freio (Stage 8), linha aero (Stage 9), atributos de setup (Stage 10) e linha do
     Stage 11 como antes; na Command Bar (fora do Play):
-    `require(game.ReplicatedStorage.NR2003Lab.Roblox.Stage12SelfTest).run(true)` → `14 passed, 0 failed`.
+    `require(game.ReplicatedStorage.NR2003Lab.Roblox.Stage12SelfTest).run(true)` → `[NR2003 Stage 12 self-test] 14 passed, 0 failed (… s)`.
 
 ---
 
