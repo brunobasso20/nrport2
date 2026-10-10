@@ -237,7 +237,7 @@ return function(V)
 	V.steerAssistOriginal = assist      -- 00550230
 
 	---------------------------------------------------------------------------------------------------------
-	-- driver options (simulation-side setters reached through the front-end messages, table 00752540)
+	-- driver options (simulation-side setters reached through the front-end messages: table 00752370, dispatcher 005bad80 drained on the simulation task)
 	---------------------------------------------------------------------------------------------------------
 	-- 005502f0: linearity bf6f00 = clamp(x, 0, 1)
 	local function setLinearityRaw(x)

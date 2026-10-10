@@ -59,7 +59,7 @@ draw (005662d0 / 00565cc0): steering wheel = clamp(-(00554fb0() * car[0x1554]), 
 | `005524b0` | ignition-sequence timer (in the tail) | `ignitionTimer` | EXACT |
 | `00554fb0` | steering ratio (setup item 0x30) + low-speed override | `ratio` | EXACT |
 | `006c5c40` | `_CIpow` (SecuROM-encrypted in the image) | Luau `x ^ y`; reference `POW_X87` (FYL2X / F2XM1 / FSCALE) | EXACT on all vectors (§ 6) |
-| `005502f0` / `005500c0` / `00550110` / `00550210` | option setters (linearity, momentum, low-speed override, steering assistance; `00550120` = braking help `bf6f04`, not steering) reached through the front-end message table `00752540` (thunks `005bb010..005bb130`) | `setLinearityRaw`, `setMomentum`, `applyOptions` | EXACT (assistance > 0 refused) |
+| `005502f0` / `005500c0` / `00550110` / `00550210` | option setters (linearity, momentum, low-speed override, steering assistance; `00550120` = braking help `bf6f04`, not steering) reached through the front-end messages 0x48 linearity, 0x49 steering momentum, 0x4c low-speed override ("BoostSteering"), 0x51 steering help (table `00752370`, dispatcher `005bad80` drained by `005f8ec0` on the simulation task under CW 0x077f; handlers `005bb010..005bb130`) | `setLinearityRaw`, `setMomentum`, `applyOptions` | EXACT (assistance > 0 refused) |
 | `0043f1d0` | controls.cfg load: linearity int `72c5f0` (0..100, slider shows 100 − value) → (float)·0.01f; momentum ints (steering / throttle / brake) → `005500c0` | `setSteeringOptions{linearity, momentum}` (UI-thread f32 rounding to nearest) | EXACT |
 | `00550530` | steering state reset (callers `00550490`, `00550a10`, `00551520`) | image restore in `V.reset` | EXACT (same cells) |
 | `005662d0` / `00565cc0` | cockpit / car-model steering-wheel angle | `V.steeringWheelAngle` | EXACT formula |
@@ -91,9 +91,14 @@ draw (005662d0 / 00565cc0): steering wheel = clamp(-(00554fb0() * car[0x1554]), 
    "hardcore driving aids" flag (aids → 0). (`reports/bit25.md`.)
 7. **Steering assistance** (`bf6f08 > 0`) blends a racing-line steering command from the track system (car world
    record `C+0x5ae`, racing line `bd7960`, `00527580 / 00536180 / 00536260 / 00535530`) — it needs the NR2003 track.
-8. **Option values come only from the front end.** Linearity and momentum are sent by the controls.cfg load
-   (`0043f1d0`); without a controls.cfg the simulation keeps the image values (linearity 0, rate 0.033). The
+8. **Option values come only from the front end.** Linearity, momentum and the override are sent by the controls.cfg
+   load (`0043f1d0`, front-end task, round to nearest: linearity = (float)int · 0.01f with the f32 constant
+   `0x3c23d70a` — a double 0.01 would differ for 30 of 0..100); without a controls.cfg nothing is sent and the
+   simulation keeps the image values (linearity 0, rate 0.033, override 1 or the ini `steer_ratio`). The front-end
+   defaults (linearity int 80 → `0x3f4ccccc`, momentum 0 → rate 1.0) reach the simulation only after the controls dialog
+   saves and re-reads controls.cfg. The messages are applied only in game states 0 / 3 / 4 / 5 (flags 0x9201). The
    simulation keeps option values across sessions; setup item 0x30 is read at run time and changes no build cell.
+   (`reports/uiconv.md`.)
 9. **Cockpit wheel** = `−(ratio_now · mean hub angle)`, clamped to ±2.79 rad: the drawn wheel turns ratio × the hub
    angle (7:1 at low speed with the override, so full lock at rest hits the clamp).
 10. **SETUP_MAP correction**: items 0x3a and 0x9f..0xa4 ("steeringGeometry*") are **not steering**: they are the rear
@@ -108,7 +113,7 @@ draw (005662d0 / 00565cc0): steering wheel = clamp(-(00554fb0() * car[0x1554]), 
 | raw controls | `0057abc0` polls DirectInput into `d35b18 + 10n`, types `d37cc8 + 29n` | `hostDevices(c)`: `steerAxis` (−1..1, + right) → split by sign, type 1; or `steerLeft` / `steerRight` 0..1 with `steerDigital` (type 0). The Unicorn harness `orig_stage12.host_steer_devices` writes the same cells |
 | device calibration | `005d04d0` | not ported: Roblox's gamepad axis is already −1..1 |
 | driver present | `005524f0` branch by "car driven" | adapter: seated driver → driven; none → `controls.driver = false` |
-| options | front-end messages (`00752540`) | `V.setSteeringOptions` calls the ORIGINAL setters' logic; the reference calls the original setters |
+| options | front-end messages (table `00752370`) | `V.setSteeringOptions` calls the ORIGINAL setters' logic; the reference calls the original setters |
 | arcade / assistance | race settings / options | refused in production (§ 7) |
 
 ## 6. Numeric notes

@@ -1,4 +1,16 @@
-# Stage 11 — térmico / desgaste / dano / combustível
+# Stage 12 — cadeia de direção original (detalhes em `STAGE12_RESULT.md`)
+
+**Resumo:** a cadeia de direção do NR2003 (controles 7/8 → `00552d00` → `00552720` → cauda de `00551e80` com linearidade,
+× π, ÷ relação `00554fb0` do item 0x30 com override 7:1 → rampa por tick + toe → cubos prescritos) foi recuperada e
+portada à mão do x86; o volante do cockpit é a fórmula original `005662d0`. Validação contra o original executado:
+`tests/stage12/run.luau` **47/47 PASS** (L1 funções e L2 1481 snapshots de início de quadro bit a bit, L3 47 reinícios,
+L4 10 cenários no envelope de 14 gêmeos com horizonte documentado `notdriven`, L5 5 mutações detectadas); regressões
+6/7–11, adaptador 65/65 e patch 12 19/19. Recusados em produção: assistência de direção e modo arcade. Validação manual
+no Studio pendente (15 itens em `VALIDACAO.md`).
+
+---
+
+# Histórico — Stage 11 — térmico / desgaste / dano / combustível
 
 **Resumo:** o fim de quadro do carro no NR2003 (`00554520`, depois dos 8 ticks de 288 Hz) e o dano de colisão
 (`00549c40`) foram recuperados inteiros e **erguidos do x86 para Luau** (216 funções), rodando sobre a memória do núcleo:

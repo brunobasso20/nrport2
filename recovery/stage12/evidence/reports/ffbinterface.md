@@ -1,77 +1,144 @@
-# FFB interface of the original steering chain: what Stage 13 needs (label: ffbinterface)
+# FFB interface of the original steering chain: what Stage 13 needs (label: ffbinterface, revision 2)
 
 Scope: `00554d30` (per-tick FFB statistics), the force-feedback block of the frame end `00554520`, `005d08d0`
-(device output), `00550070` (FFB setup / controls gate) and their producers. This is an investigation for Stage 13.
-It does not propose an implementation.
+(device output) and `00550070` (FFB setup / controls gate), plus their producers and consumers. This is an
+investigation for Stage 13. It does not propose an implementation.
 
-Scratch and evidence: `/opt/s12/work_ffbinterface/`
-* Ghidra exports (project `/opt/nrproj_4`, read-only): `ev1/` (00554d30, 00554520, 005d08d0, 00550070, 0054fed0,
-  00550030 + depth 1, `index.tsv`), `ev2/` (005d3010, 005d2210, 005d2ee0, 005d2370, 005d0840, 005d0870, 005d2170,
-  005d21c0, 005d2130, 00550490, 00550a10, 00550a50, 00550b30, 00550680, 00550530, 005548d0, 005f7c50, 00557d60),
-  `ev3/` (005d2bb0, 005d2b90, 006c5018).
-* Xrefs: `xr1.tsv` (74c960+12, 74c9a4, bf6eb8+60, bf6f20+8, bf3a00) and `xr2.tsv` (telemetry record bf63f0+248,
-  74c95c, bf6f1c, bf6f08, c085dc, c081ec, c08250). Operand scan: `scan1.tsv`. Function lists: `lf_*.tsv`.
-* Capstone helpers: `tools/nrdis.py` (disassembler on `/opt/nrmem`, with constant values), `tools/findcall.py`
-  (every E8/E9 rel32 to a target, whole `.text`). Raw pointers: `recovery/stage9/tools/findptr.py`.
-* Dynamic checks on the ORIGINAL code (Unicorn, Stage 12 harness `recovery/stage12/orig_stage12.py`, run with
-  `python3 -B`, so nothing was written under `/home/user/nrport`):
-  `dyn/dyn_ffb.py` (00554d30 patched to RET, compared with an unpatched run), `dyn/dyn_ffb2.py` (FFB block enabled,
-  compared with the bench default), `dyn/dyn_ffb3x.py` (bit-exact formula model), `dyn/dyn_ffb4.py` (identity of the
-  0055e180 parameters). Outputs are in `dyn/out*.txt`.
+Revision 2 continues revision 1 (same label). It re-verifies the core claims independently, corrects one claim
+(`bf6ebc` is a global **axis** index, not a device index) and resolves the four items left open in revision 1. The
+changes are listed in section 0.
 
-Nothing under `/home/user/nrport` was modified.
+Evidence (all under `/opt/s12/work_ffbinterface/`; Ghidra project `/opt/nrproj_4`, read-only):
+* Revision 1:
+  * `ev1/`, `ev2/`, `ev3/`: Ghidra pseudo-C/asm exports with `index.tsv`.
+  * `xr1.tsv`, `xr2.tsv`: data xrefs.
+  * `scan1.tsv`, `lf_*.tsv`.
+  * `dyn/`: Unicorn runs of the ORIGINAL code through the Stage 12 harness, with outputs in `dyn/out*.txt`.
+  * `tools/nrdis.py` (capstone on `/opt/nrmem`, constants annotated) and `tools/findcall.py` (every E8/E9 to a
+    target).
+* Revision 2 (`v2/`):
+  * `rawscan.py` + `raw_ffb.txt`: every raw 32-bit value in every initialised block of the image that falls in
+    `74c958..74c9b0` or `bf6eb0..bf6f30`.
+  * `census.txt`: raw hits per cell, mapped to the containing function, next to the Ghidra xref count.
+  * `allfuncs.tsv`: the full Ghidra function list of `.text`.
+  * `xr.tsv`, `xr_ui.tsv`: fresh xrefs.
+  * `scan_eff.tsv`: an operand scan for the DirectInput effect slots `+0x162/+0x1a2/+0x1e2/+0x222`.
+  * `ev/`, `ev2/`: exports of `0057aff0`, `0057b1e0`, `0057ab00`, `0057ab90`, `005d2ee0`, `005d2bb0`, `005d0910/30`
+    and `005baf80`.
+  * `operands.txt`: every absolute operand and every call of each analysed routine.
+  * `dis/*.txt`: capstone listings of all routines quoted here.
+  * `rerun_slalom200.txt`: a re-run of the revision-1 dynamic proof.
+
+Nothing under `/home/user/nrport` was modified: scripts only read it, and the harness ran with `python3 -B`.
+
+---------------------------------------------------------------------------------------------------------------------
+
+## 0. What changed in revision 2
+
+**Re-verified independently (capstone):**
+* the instruction-level semantics of `00554d30` and of the FFB block `0055464c..0055479d`;
+* `00557d60` is `ret 4`, so the FFB output uses `ecc`, not `q` (see §5);
+* the `DIEFFECT` layout in `005d3010`;
+* the telemetry-only use of `bf6ed0`;
+* the `bf6eb8` gate in `005524f0`.
+
+**New census:** the raw-pointer count equals the Ghidra xref count for every cell written by the FFB code
+(`v2/census.txt`). So there is no hidden table, pointer or protected-section reference.
+
+**New gates:**
+* The whole frame end, including the FFB block, is skipped unless `00551880()` (= byte `bf6e04`, "player vehicle
+  simulated") is set: `0055452a je 00554778`.
+* `00554d30` is called unconditionally on every tick that passes the same `bf6e04` gate in `005539c0`
+  (`00553a28 jz 00553d67`).
+
+**Correction:** `bf6ebc` holds `rec+0x14` of the control-7 binding record. For an axis binding this is a **global
+axis number**. `005d2370` maps it to (device, local axis), and the constant force is created on that one axis
+(`rgdwAxes = [dev+0xb2+4·axis]`). Revision 1 called it a device index.
+
+**Resolved (open in revision 1):**
+1. **Condition effects.** `+0x162`/`+0x1a2` are never created. `005d2bb0 @005d2cbf` is the only `CreateEffect`
+   in the DirectInput module, and its target is `GUID_ConstantForce` → slot `+0x1e2`. `005d2ee0` therefore returns
+   at its NULL check, and `00550030`'s `005d08a0(dev, 0, 0, 0.75)` has no effect.
+2. **`0057aff0` internals.** The binding-record fields it returns are listed in §7.
+3. **Callers of `0057ab00`/`0057ab90`:**
+   * message 6 (id 0x40) `fgmsgSelectActiveControls`, handler `005baf80`;
+   * the sim-task init `0055d0e0`, which calls `0057ab90(-1)`.
+4. **controls.cfg defaults.** There is no code default: `0043f1d0` aborts on a short read. The front-end ranges
+   are strength 0..100, damping 0..100 and latency 0..250 ms (§8).
 
 ---------------------------------------------------------------------------------------------------------------------
 
 ## 1. Short answer
 
 * **The original FFB reads no steering-chain cell.** None of `00554d30`, the FFB block of `00554520`, `005d08d0`
-  or `00550070` reads `bf63c0`, `bf6360/64`, `bf63c8`, `bf6e80/88`, the hub states 15/16/21/22, or the yaw rate.
-  The only physics input is a set of **front-tyre force statistics**. The JIT tyre callback of the two front wheels
-  (`0055e180` → `00554e70`) accumulates them twice per tick (predictor and corrector passes) into
-  `bf6ed4..bf6ef0` and `74c964/68`, as follows:
-  * `A` = `c085dc`: the tyre's relaxed lateral-slip state, `fVar14` of `0054cab0`.
-  * `B` = |Fz| + 0.01: the tyre normal load.
-  * `C` = Fy: the tyre lateral force.
-  * `D` = 0.1·(r×F)z + `c081ec`: the contact-force moment about the wheel centre in the frame of the
-    T+0x309 rotation register, plus the tyre aligning moment of `0054cab0`.
-* Each tick, `00554d30` turns the accumulators into three values: `bf6ec4` (load-weighted mean of the front
-  slip states), `bf6ec8` (sum of the mean front Fy) and `bf6ed0` (sum of the mean front moments). It also writes
-  `74c960` (mean front loads, clamped to 1500). Then it clears the accumulators.
-* Once per 36 Hz frame, the FFB block of `00554520` runs. It is gated by `bf6ebb` (FF device acquired) and
-  `bf6eb8 == 0` (controls not suspended), and it computes:
-  * `d = (ec4 − ec0)·rate` (rate = 36)
-  * `q = ec4 + d·lat·0.001·v/(v+20)`
-  * `m = ed0·q/ec4` (just `ed0` when |ec4| ≤ 1e‑5)
-  * `ecc = (m − damp·d + ecc)·0.5`
-  * `out = clamp(ecc·strength/(ratio·1600), −1, 1)` → `005d08d0(dev, out)` → DirectInput constant force
-    `trunc(out·10000)`.
+  (+ `005d2260`/`005d3010`) or `00550070` (+ `00550030`/`0054fed0`) references any of these
+  (`v2/operands.txt`, §2):
+  * `bf63c0`, `bf6360/64`, `bf63c8`, `bf6e80/88`, `bf639c..a8`;
+  * the options `bf6f00`, `bf6f08`, `74c990..a0`;
+  * the hub states 15/16/21/22, the yaw rate `bf6d70`, or the cockpit cell `car+0x1554`.
 
-  `v` = airspeed `bf3a00`, ratio = raw setup item 0x30, and `lat` / `damp` / `strength` = the FFLatency /
-  FFDamping / FFStrength options.
-* **No output feeds back into the physics or the steering chain.**
-  * `74c960` and `bf6ec8` have no reader in the image.
+  The only physics input is a set of **front-tyre force statistics**. The JIT tyre callback of the two front
+  wheels (`0055e180` → `00554e70`) accumulates them twice per tick (predictor and corrector passes):
+  * `A` = `c085dc`: the relaxed lateral-slip state (`fVar14` of `0054cab0`).
+  * `B` = |Fz| + 0.01: the wheel load.
+  * `C` = Fy: the lateral force.
+  * `D` = 0.1·(r×F)z + `c081ec`: the contact-force moment about the wheel centre plus the tyre aligning moment.
+
+  Per tick, `00554d30` produces:
+  * `bf6ec4`: the load-weighted mean front slip state;
+  * `bf6ec8`: Σ mean front Fy;
+  * `bf6ed0`: Σ mean front moment;
+  * `74c960`: Σ mean front load, clamped to 1500.
+
+  It then clears the accumulators. Once per 36 Hz frame, the FFB block turns `bf6ec4`, `bf6ed0`, the airspeed
+  `bf3a00` and the raw ratio setup item 0x30 into a constant force −1..1 on the steering axis.
+* **No FFB output feeds back into the physics or the steering chain.**
+  * `74c960` and `bf6ec8` have no reader.
   * `bf6ec4` and `bf6ed0` are read only by the FFB block. `bf6ed0` is also copied into the telemetry record
-    (`bf643e`, data logging only).
+    `bf643e` when `bf63d8` is set; that record has no reader in the sim.
   * `bf6ec0` and `bf6ecc` are FFB-private.
-  * `005d08d0` writes only to the device.
+  * `005d08d0` writes only DirectInput state (`f5d…`/device objects).
 
-  Dynamic proof on the original code: with `00554d30` disabled (RET), the whole window `0x6e9000..0xf80000` stays
-  bit-identical for 8640 / 8064 / 6912 / 5184 ticks (`slalom`, `brakesteer`, `keys`, `yawlimit`), except the
-  14 FFB dwords. With the FFB block enabled (latency 50, damping 0.5), the window stays bit-identical except
-  `bf6ec0` / `bf6ecc` and the option cells written by the test.
-* **One output of the "FFB setup" path does gate the steering chain.** `00550070(flag)` writes
-  **`bf6eb8`**, which is the "player controls suspended" flag. `005524f0` @`00552549` tests it, and when it is
-  non-zero it takes the not-driven branch (`bf63c8 = 0`, steering states zeroed). This is input-session state,
-  not FFB arithmetic.
+  Dynamic proof: with `00554d30` = RET, the whole window `0x6e9000..0xf80000` stays identical except the 14 FFB
+  dwords, over 8640 / 8064 / 6912 / 5184 ticks (re-run in revision 2: 1600 ticks, same result).
+* **One cell written by the "FFB setup" function does gate the steering chain: `bf6eb8`.** `00550070(flag)` stores
+  `bf6eb8 = flag`. This is the "player controls suspended" flag. `005524f0 @00552549` takes the not-driven branch
+  when it is set (`bf6e04`-gated path; `bf63c8 = 0` and the steering states are zeroed). It is an input-session
+  state, not FFB arithmetic.
 * **`00554d30` does not need to run for the steering chain to be exact.** Nothing in `005539c0` (apart from the
-  telemetry copy `bf643e = bf6ed0·0.0254`, gated by `bf63d8`), `00551e80`, `00552720`, `005524f0`, `00552d00`,
-  `00552410`, `00554fb0` or `00550230` reads what it writes. It is a leaf function: no calls, the x87 stack is
-  balanced, and the control word is unchanged. It is required only for FFB, which needs `bf6ec4` and `bf6ed0`.
+  `bf63d8`-gated telemetry copy), `00551e80`, `00552720`, `005524f0`, `00552d00`, `00552410`, `00554fb0` or
+  `00550230` reads what it writes. It is a leaf (no calls). The x87 stack is empty at its call site and balanced
+  inside it, and it executes no FLDCW. It is needed only for FFB.
 
 ---------------------------------------------------------------------------------------------------------------------
 
-## 2. Data flow (verified addresses)
+## 2. Every input and output, per routine (from `v2/operands.txt` and the listings in `v2/dis/`)
+
+| routine | reads (sim data) | reads (constants / options / host) | writes | calls |
+|---|---|---|---|---|
+| `0055e180` (JIT native, front wheels only) | `p[0]`=Fy, `p[1]`=Fz, `p[2]`=(r×F)z (JIT records `c083a4`, `c082b4`, `c0861c`), `c085dc` slip state, `c081ec` aligning moment, `c08250` wheel index | `006ea4cc`=0.1, `006ea4a4`=0.01 | stack only | `00554e70` |
+| `00554e70(i,a,b,c,d)` | accumulators | — | `bf6ed4[i]+=a`, `74c964[i]++`, `bf6edc[i]+=b`, `bf6ee4[i]+=c`, `bf6eec[i]+=d` | — |
+| `00554d30` | `74c964/68` (n), `bf6ed4/d8` (ΣA), `bf6edc/e0` (ΣB), `bf6ee4/e8` (ΣC), `bf6eec/f0` (ΣD) | `006ea454`=0, `006e97d8`=1, `006f5878`=1500 | `74c960`, `bf6ec4`, `bf6ec8`, `bf6ed0`; clears `74c964 74c968 bf6ed4..bf6ef0` | none |
+| FFB block `0055464c..0055479d` | `bf6ec4`, `bf6ed0`, `bf6ec0`, `bf6ecc`, `bf3a00` (airspeed), `c05680` (setup item 0x30 via `00557d60`, ECX `c055c0`) | `bf6ebb`, `bf6eb8` (gates), `bf6f20` latency, `bf6f24` damping, `74c9a4` strength, `bf6ebc` axis; `005f7c50` rate; `006ecfc8`=20, `006ea67c`=0.001, `006ea480`=1e‑5, `006ea44c`=0.5, `006f5a44`=1600, `006ea4a8`=−1 | `bf6ec0`, `bf6ecc` | `005f7c50`, `00557d60`, `005d08d0` |
+| `005d08d0(axis, force)` | — | `f5d4f0` (DI up), `f5d414` (FF acquired) | — | tail `005d2260` → `005d2370`, `005d3010` |
+| `005d3010(local axis, force)` | — | device object `+0xae` (axis count), `+0x1e2+4·axis` (effect), `006f5214`=10000 | DirectInput only (`SetParameters`) | `006c5018` (`_ftol`) |
+| `00550070(flag)` | — | `bf6ebb` | **`bf6eb8 = flag`** | `0054fed0` (if flag = 0), `00550030` (if `bf6ebb` && flag) |
+| `00550030` | — | `bf6ebc` | DirectInput only | `005d08a0(axis,0,0,0.75)` (no-op, §6), `005d08d0(axis,0.0)` |
+| `0054fed0` | control-7 binding record `d37d83` (= `d37cb8+29·7`) via `0057b1e0` | `bf6ebb`, `bf6f1c` (via `00550280`) | `bf6ebc`, `bf6ebb`, `74c95c` | `0057b1e0`, `00550280`, `005d0820`, `005f79a0` (FG request of `00550000`/`00550060`), `00501b30` |
+
+Physical meaning of the inputs:
+* `bf3a00` is the airspeed |v − wind| (`car+0x5aa`), copied at `0055455f` earlier in the same frame end.
+* `c05680` is the active setup's steering ratio as the raw cell (`c055c0+0xc0`). This is the same cell `00554fb0`
+  reads, but the FFB block does not apply the low-speed override `74c9a0`.
+* Wheel loads enter only through `B` (Σ|Fz| + 0.01), which is used as the LF/RF weighting of the slip state and as
+  `74c960`.
+* The **tyre aligning moment** enters only through `D` (`c081ec`), together with 0.1·(r×F)z.
+* **No hub or steering angle or rate is read directly.** The steering acts on the FFB only through the front tyre
+  forces it produces.
+
+---------------------------------------------------------------------------------------------------------------------
+
+## 3. Data flow (verified addresses)
 
 ```
 per tyre pass (2 / tick: e843fc=1 predictor, e843fc=0 corrector), front wheels only (0055d9c0 @0055e110 cmp esi,2)
@@ -82,71 +149,48 @@ per tyre pass (2 / tick: e843fc=1 predictor, e843fc=0 corrector), front wheels o
       outputs *param_2 = Fx (T+0x2d8), *param_3 = Fy (T+0x2dc), *param_4 = Fz (T+0x2e0)
   JIT -> 0055e180(p = [Fy (rec c083a4), Fz (rec c082b4), (r x F).z (rec c0861c)])
       -> 00554e70(i = c08250, a = c085dc, b = |Fz| + 0.01, c = Fy, d = 0.1*(rxF).z + c081ec)
-           ed4[i] += a ; 74c964[i] += 1 ; edc[i] += b ; ee4[i] += c ; eec[i] += d
-per tick, 005539c0 @00553a64 (after bf63c0 += bf6e88, before bf6360 = bf63c0 - c086b0)
-  00554d30: 74c960, bf6ec4, bf6ec8, bf6ed0 <- accumulators ; accumulators, counters <- 0
-  (005539c0 @00553ca7, only if bf63d8 telemetry: bf643e = bf6ed0 * 0.0254 -> 005548d0 channel 1, 0x4c bytes @bf63f6)
-per 36 Hz frame, 00554520 frame end @0055464c..00554775 (bf6ebb != 0 && bf6eb8 == 0)
-  bf6ec0, bf6ecc state ; reads bf6ec4, bf6ed0, bf3a00, bf6f20, bf6f24, 74c9a4, setup item 0x30 (c05680)
-  -> 005d08d0(bf6ebc, out) -> 005d2260 -> 005d3010: IDirectInputEffect::SetParameters (constant force)
+per tick, 005539c0 (only when 00551880() = bf6e04 != 0: 00553a21 call, 00553a28 jz 00553d67)
+  00553a52..5e  bf63c0 += bf6e88
+  00553a64      call 00554d30   (x87 stack empty; unconditional inside the bf6e04 branch)
+  00553a69..91  bf6360 = bf63c0 - c086b0 ; bf6364 = c086b4 + bf63c0
+  00553b57      if bf63d8 (telemetry on, set @00553a13): ... 00553ca7 bf643e = bf6ed0 * 0.0254 ... -> 005548d0
+per 36 Hz frame, 00554520 frame end (whole function gated by 00551880 = bf6e04 @0055452a)
+  0055464c..00554775 (bf6ebb != 0 && bf6eb8 == 0): FFB block -> 005d08d0(bf6ebc, out)
+      -> 005d2260 -> 005d2370 (global axis -> device, local axis) -> 005d3010: IDirectInputEffect::SetParameters
 ```
 
 ---------------------------------------------------------------------------------------------------------------------
 
-## 3. Producers: `0055e180` / `00554e70` (already in the Luau port as JIT natives)
+## 4. Producers `0055e180` / `00554e70` (already in the Luau port as JIT natives)
 
-### 3.1 Where they are emitted
+### Where they are emitted
 
-The tyre-callback builder is `0055d9c0(w)` (`recovery/stage10/evidence/b1/0055d9c0.c`). Its tail is at
-`0055e110..0055e13d`:
+The tail of the tyre-callback builder `0055d9c0(w)` (`recovery/stage10/evidence/b1/0055d9c0.c`) emits:
 
 ```
-0055e110 cmp esi, 2 ; jge 0055e140                  ; front wheels only (pseudo-C: if (param_1 < 2))
-0055e115 push 0xc083a4 ; call 0057cba0              ; arg p[0]
-0055e11f push 0xc082b4 ; call 0057cba0              ; arg p[1]
-0055e129 push 0xc0861c ; call 0057cba0              ; arg p[2]
-0055e133 push 0x55e180 ; call 0057cc10              ; native call
+0055e110 cmp esi,2 ; jge 0055e140                     ; front wheels only
+0055e115 push 0xc083a4 / 0055e11f push 0xc082b4 / 0055e129 push 0xc0861c ; args p[0..2] (0057cba0)
+0055e133 push 0x55e180 ; call 0057cc10                ; native call
 ```
 
-The records come from the same builder:
-* `c083a4` and `c082b4` are outputs 3 and 4 of the tyre native `(&PTR_LAB_0074df10)[w]` = `0055d880/8d0/920/970`.
-  These wrappers call `0054cab0` with ECX = `bf3a20`, and the param block's first 4 entries are the output
-  pointers: param_1..4 = `c081e4`, `c08684`, `c083a4`, `c082b4`.
-* The force vector is `c085cc = c08684·c085b0 + c083a4·c083c8 + c082b4·c08628`, that is longitudinal, lateral
-  and normal directions.
-* `c0861c` is the third component of `c08614 = c08670 × c08608` (`005b7e90` = cross product). Here `c08670` is
-  the contact offset and `c08608` the contact force, both transformed by `005b87c0` with the rotation register
-  `T+0x309`.
+### Dynamic identity check
 
-The Luau JIT (`PATCH_STAGE6_7.lua:16856`) confirms that `p[2]` is a cross-product component:
-`f1 = rf(8210280)*rf(8207500) − rf(8210484)*rf(8207496); wfd(8210280, f1); p1 = ru(8210280)`.
-
-**Dynamic identity check** (`dyn/dyn_ffb4.py`, slalom, 200 frames, hook at `0055e180`): 6400 calls.
-* `w` = 0 for 3200 calls and 1 for 3200 calls.
-* `e843fc` = 1 for 3200 calls and 0 for 3200 calls, so it runs in both passes, twice per tick per front wheel.
+`dyn/dyn_ffb4.py`, slalom, 200 frames, 6400 calls of `0055e180`:
+* `w` = 0 in 3200 calls and 1 in 3200 calls.
+* `e843fc` = 1 in 3200 calls and 0 in 3200 calls, so the callback runs in both passes.
 * `p[0] == T(w)+0x2dc` (Fy) in 6400/6400 calls.
 * `p[1] == T(w)+0x2e0` (Fz) in 6400/6400 calls.
 
-`p[0]` equals Fx in only 96 calls (coincidences, at 0).
-
-### 3.2 `0055e180` (asm `recovery/vehicle_core/0055e180.asm`)
+### `0055e180` asm (`v2/dis/0055e180.txt`)
 
 ```
-FLD [p+4] ; FSTP [arg] ; EAX = [arg] & 0x7fffffff         ; |p[1]|  (|Fz|)
-FLD [p+8] ; FMUL [006ea4cc]=0.1 ; FADD [c081ec] -> push   ; d = 0.1*p[2] + c081ec
-FLD |p[1]| ; FADD [006ea4a4]=0.01 -> push                 ; b = |Fz| + 0.01
-push p[0] (c) ; push [c085dc] (a) ; push [c08250] (i) ; call 00554e70
+0055e187 fld [ecx+4] ; 0055e18c fstp [esp+0xc] ; and eax,0x7fffffff        ; |p[1]|
+0055e1a1 fld [ecx+8] ; fmul [6ea4cc]=0.1 ; 0055e1ba fadd [c081ec]           ; d
+0055e1c3 fld |p[1]| ; fadd [6ea4a4]=0.01                                     ; b
+push p[0] (c), [c085dc] (a), [c08250] (i) ; call 00554e70
 ```
 
-### 3.3 `00554e70(i, a, b, c, d)` (capstone, `tools/nrdis.py 554e70`)
-
-```
-00554e78 fadd [eax*4+0xbf6ed4] / 00554e8e fstp [eax*4+0xbf6ed4]     ; A[i] += a
-00554e7f mov ecx,[eax*4+0x74c964] ; inc ecx ; mov [..],ecx           ; n[i]  += 1
-00554e99/ea0 bf6edc[i] += b ; 00554eab/eb2 bf6ee4[i] += c ; 00554ebd/ec4 bf6eec[i] += d
-```
-
-Arrays (slot 0 = LF, slot 1 = RF):
+### `00554e70` arrays (slot 0 = LF, slot 1 = RF)
 
 | array | slot 0 (LF) | slot 1 (RF) |
 |---|---|---|
@@ -156,251 +200,238 @@ Arrays (slot 0 = LF, slot 1 = RF):
 | `C` | `bf6ee4` | `bf6ee8` |
 | `D` | `bf6eec` | `bf6ef0` |
 
-w = T+0x6c: `00550bc0` calls `0054c1c0(this = bf3a20 + w·0xa39, w, …)`, and `0054c1c0` writes
-`param_1_00[0x1b]` (+0x6c) = w. STAGE11_STATE_MAP gives w = 0 LF, 1 RF, 2 LR, 3 RR.
+The operands are `[eax*4 + base]`, for example `00554e78 fadd [eax*4+0xbf6ed4]`.
 
-### 3.4 What `c085dc` and `c081ec` are (`0054cab0`, `recovery/stage8/evidence/0054cab0.c`)
+### Meaning of `c085dc`
 
-`fVar14 = (T+0x2e8 − c08620·T+0x2cc)·k + c08620`.
-* `T+0x2e8` = −param_6 (lateral contact velocity).
-* `T+0x2cc` = |param_8|.
-* `k` is a protected constant.
-* `c08620 ← fVar14` only when `e843fc` is set.
+`0054cab0` (`recovery/stage8/evidence/0054cab0.c`) computes `fVar14 = (T+0x2e8 − c08620·T+0x2cc)·k + c08620`,
+and `c08620 ← fVar14` only when `e843fc` is set. So `c085dc` is a first-order relaxed lateral slip state.
 
-So `fVar14` is a first-order relaxed lateral slip state. The `00554d30` output `bf6ec4` is its front, load-weighted
-mean. Observed magnitudes: ~1e‑4..1e‑2 in normal driving, up to ~3.5 in a spin (yawlimit).
+### Meaning of `c081ec`
 
 ```
 c081ec = (0.2/fVar1)·Fy·Fx + fVar13·fVar11·(p14 − fVar2·fVar3·0.8) + fVar20·fVar11·(p14 − (fVar3+1)·0.5·fVar2)
-         p14 = sqrt(Fz·T+0x2a4)·0.5 + (Fx/fVar15)·0.2 + c082d4[w] + param_14 (JIT record c082ac)
 ```
 
-This is the tyre aligning (pneumatic-trail) moment, with Fx·Fy coupling and per-wheel offsets. Its physical
-meaning is inferred from its structure; the address facts are verified.
+This is the tyre pneumatic-trail aligning moment. The meaning is inferred from the structure; the addresses are
+verified.
+
+### Port status
+
+The JIT natives `XF[0x55e180]` → `XF[0x554e70]` are ported (`PATCH_STAGE6_7.lua:3619..3634` writes
+`74c964+4i`, `bf6edc+4i`, …). `00554d30` is not ported (`PORT_MAP.md:51`), so in the current port the
+accumulators grow without bound. This is harmless: it is exactly machine B of the dynamic proof.
+
+The static exe image has `74c960` = 1500, `74c964` = `74c968` = 1 and the sums at 0. The Luau image (post-build)
+has `74c964` = `74c968` = 4 and `bf6edc` = `bf6ee0` = 0.03 (revision 1). This is consistent: 1 plus 3 build
+passes with no load, and 3 × 0.01.
 
 ---------------------------------------------------------------------------------------------------------------------
 
-## 4. `00554d30`: per-tick FFB statistics (validated bit-exact)
+## 5. `00554d30` (validated bit-exact) and the FFB block (validated bit-exact)
 
-Call site: `005539c0 @00553a64`, after `00553a52 FLD [bf6e88] ; FADD [bf63c0] ; FSTP [bf63c0]` and before
-`00553a69 FLD [bf63c0] ; FSUB [c086b0] … FSTP [bf6360]`. It is the only caller (`findcall.py`: one E8 at 00553a64).
-
-### Inputs (all reads, capstone listing `tools/nrdis.py 554d30 13b`)
-
-| address | meaning | read at |
-|---|---|---|
-| `74c964` / `74c968` | n_LF / n_RF: number of tyre passes accumulated (2 per tick; post-build image = 4) | 00554d31, 00554d59 / 00554d83, 00554d8c |
-| `bf6ed4` / `bf6ed8` | Σ relaxed lateral slip state `c085dc`, LF / RF | 00554dfd / 00554de6 |
-| `bf6edc` / `bf6ee0` | Σ (\|Fz\| + 0.01), LF / RF (N) | 00554d40, 00554d65, 00554da8 / 00554d3a, 00554da0 |
-| `bf6ee4` / `bf6ee8` | Σ Fy, LF / RF (N) | 00554e19 / 00554e11 |
-| `bf6eec` / `bf6ef0` | Σ (0.1·(r×F)z + Mz), LF / RF (N·m) | 00554e3d / 00554e35 |
-| `006ea454`=0.0, `006e97d8`=1.0, `006f5878`=1500.0 | constants | |
-
-### Computation
-
-x87, CW `0x077f` (64-bit, round toward −∞); `[ESP]` holds an f32 local.
+### `00554d30` (`v2/dis/00554d30.txt`; x87 CW `0x077f`, 64-bit precision, round down; `[ESP]` is an f32 local)
 
 ```
 sx = B_LF + B_RF ; [ESP] = f32(sx)                              00554d3a..46
 if n_LF >= 1 && sx > 0:  a = 1/n_LF ; l = f32(B_LF / f32(sx))   00554d59..6f
 else:                    a = 0      ; l = 0                     00554d75..7b
 b = (n_RF > 0) ? 1/n_RF : 0                                     00554d83..9a
-74c960 = f32(B_RF*b + B_LF*a) ; if (that > 1500) 74c960 = 1500  00554da0..dc7
-bf6ec4 = f32( ((1-l)*A_RF)*b + (A_LF*l)*a )                     00554dd1..e0b  (load-weighted mean slip state)
-bf6ec8 = f32( C_RF*b + C_LF*a )                                 00554e11..e2f  (Σ mean front Fy)
-bf6ed0 = f32( D_RF*b + D_LF*a )                                 00554e35..e5f  (Σ mean front moment)
-74c964 = 74c968 = 0 ; bf6edc = bf6ee0 = bf6ee4 = bf6ee8 = bf6eec = bf6ef0 = bf6ed4 = bf6ed8 = 0
+74c960 = f32(B_RF*b + B_LF*a) ; if > 1500 (or unordered): 1500  00554da0..dc7
+bf6ec4 = f32( ((1-l)*A_RF)*b + (A_LF*l)*a )                     00554dd1..e0b
+bf6ec8 = f32( C_RF*b + C_LF*a )                                 00554e11..e2f
+bf6ed0 = f32( D_RF*b + D_LF*a )                                 00554e35..e5f
+n, ΣA, ΣB, ΣC, ΣD <- 0 (integer MOVs, 00554ddf..00554e59) ; fstp st0 x2 ; pop ecx ; ret
 ```
 
-Note the asymmetry when `n_LF < 1` or `sx ≤ 0`: then `a = l = 0` and `ec4` becomes the RF mean alone. `74c960`
-saturates in practice: front loads are about 4000 N per tyre, and `dyn` shows 1500 after the first frames.
+### FFB block (`v2/dis/00554520.txt`)
 
-### Writes
+```
+0055464c/5b  gate: [bf6ebb] != 0 && [bf6eb8] == 0
+d    = f32((ec4 − ec0)·rate) ; ec0 = ec4 (MOV)                       00554668..00554695   rate = 005f7c50() = 36
+q    = f32(ec4 + d·(lat·0.001)·(1 − 20/(v+20)))                        00554699..005546c9   v = bf3a00
+m    = (|ec4| > 1e-5) ? (q/ec4)·ed0 : ed0                              005546cd..005546ff
+ecc  = f32((m − damp·d + ecc)·0.5)                                     00554705..00554728   (fst [esp+0x10] after push 0x30)
+out  = f32(ecc · strength/(ratio·1600))                                0055472e..00554745
+out  = 1 if out > 1 ; −1 if out < −1                                   00554749..0055479d
+005d08d0(bf6ebc, out)                                                  00554768..00554770
+```
 
-`74c960` (FST 00554db2, MOV 00554dc7), `74c964` (00554ddf), `74c968` (00554dec), `bf6ec4` (00554e0b),
-`bf6ec8` (00554e2f), `bf6ed0` (00554e5f), and zeroes `bf6edc` (00554df1), `bf6ee0` (00554df6), `bf6ee4`
-(00554e21), `bf6ee8` (00554e27), `bf6eec` (00554e45), `bf6ef0` (00554e4b), `bf6ed4` (00554e51), `bf6ed8`
-(00554e59).
+`00557d60` is `mov eax,[esp+4] ; lea eax,[ecx+eax*4] ; ret 4`. So after the call, `[esp+0xc]` (read at
+`00554741`) is the slot written by `00554724 fst [esp+0x10]` while `push 0x30` was still on the stack. That slot
+holds **`ecc`**.
 
-It has no calls. `PUSH ECX … POP ECX` balances the stack, two `FSTP ST0` leave the x87 stack empty, and there is
-no FLDCW.
+The bit-exact models reproduce every call:
+* `00554d30`: 3200/3200 calls in each scenario;
+* the FFB block: 400/400 frames, slalom and brakesteer.
 
-**Bit-exact validation** (`dyn/dyn_ffb3x.py`): an exact model in Python `Fraction`s, with every x87 result rounded
-to a 64-bit mantissa toward −∞ and every FST dword rounded to f32 toward −∞, reproduces all four outputs and the
-clears of 3200 / 3200 calls (slalom, 400 frames). A round-to-nearest double model fails in 2517 / 3200 calls by
-1..few ulp, so the port needs the existing round-down arithmetic.
+`dyn/dyn_ffb3x.py` uses rational arithmetic rounded like the x87 (64-bit mantissa, round down, f32 stores round
+down). A round-to-nearest double model misses 2517/3200 calls by 1..few ulp.
+
+**Timing.** At the frame end, `ec4` and `ed0` hold the averages that `00554d30` built at the start of tick 8, from
+tick 7's passes. Tick 8's own passes stay in the accumulators until the next frame's first `00554d30`. In the dyn
+runs, `n` = 2 at every frame end.
 
 ---------------------------------------------------------------------------------------------------------------------
 
-## 5. FFB block of `00554520` (frame end, `0055464c..00554775`)
+## 6. Device layer (host; writes no simulation memory)
 
-Gate: `0055464c MOV AL,[bf6ebb] ; TEST ; JZ 00554778` and `0055465b MOV AL,[bf6eb8] ; TEST ; JNZ 00554778`.
-The block runs after `00551990` and after `0055455f MOV [bf3a00],EAX` (= car+0x5aa airspeed, written earlier in
-the same function).
+* **`005d08d0(axis, force)`**: if `[f5d4f0]` and `[f5d414]` are set, it tail-jumps to `005d2260`. `005d2260`
+  checks `[f5e844]`, maps the global axis through `005d2370`, then calls `005d3010(local axis, force)`.
+* **`005d2370`**: walks the device records at `this+4+i·0x262`, each with its axis count at `+0xae`, until the
+  global index falls inside a record. It returns that device record and `local = global − Σ previous counts`.
+* **`005d3010`**: on `slot = [dev+0x1e2+4·axis]` (after `axis < [dev+0xae]` and `slot != 0`), it builds a
+  `DIEFFECT`:
+  * dwSize 0x38, dwFlags 2 = DIEFF_OBJECTOFFSETS;
+  * cbTypeSpecificParams = 4 at +0x2c;
+  * lpvTypeSpecificParams = &arg1 at +0x30;
+  * arg1 is overwritten with `_ftol(force·10000)` (`006f5214` = 10000.0; `006c5018` is the CRT `_ftol`, which
+    truncates).
 
-### Inputs
+  It then calls `vtbl+0x18` = `IDirectInputEffect::SetParameters(…, 0x20000100)`
+  (DIEP_TYPESPECIFICPARAMS | DIEP_START).
+* **The effect** is created only in `005d2bb0` (`v2/dis/005d2bb0.txt`):
+  * `SetProperty(9 = DIPROP_AUTOCENTER, 0)` and `Acquire`;
+  * `CreateEffect(GUID_ConstantForce @006fb590 = {13541C20-8E33-11D0-9AD0-00A0C9A06E35}, …, &[dev+0x1e2+4·axis])`
+    @`005d2cbf`, with dwFlags 0x12 (CARTESIAN | OBJECTOFFSETS), 1 axis (`rgdwAxes = [dev+0xb2+4·axis]`, the axis
+    object offset stored at enumeration `005d289c`), duration −1, gain 10000;
+  * then `Download` (vt+0x28) and `Start(1, 0)` (vt+0x1c).
+* **No other effect exists:**
+  * A raw scan of the whole image finds `006fb590` as the only DirectInput-effect GUID referenced (once, at
+    `005d2cba`). The Spring, Damper, Friction and other GUIDs at `006fb4e0..006fb580` are never referenced.
+  * The only other `call [reg+0x48]` in `005d0000..005d6000` (`005d415b`) is on an unrelated object `[f5e874]`.
+  * The slots `+0x162`, `+0x1a2` and `+0x222` are only zeroed (`005d28c1..d6` at enumeration, `005d2d95..dad`),
+    released (vt+8, `005d2d20`), stopped (vt+0x20, `005d2e10`) or started (vt+0x1c, `005d2e70`).
+  * So `005d2ee0` (the condition-effect setter) returns at `005d2f00 test ebx,ebx; je` / `005d2f0f`, and
+    `00550030`'s `005d08a0(axis, 0, 0, 0.75)` does nothing. **The original FFB is a single constant force.**
+    There is no spring, damper or centring effect, and autocentre is disabled while the effect exists.
+  * On release, `005d2d20` releases all four slots, zeroes them (`005d2d95..dad`), and calls
+    `SetProperty(9, dwData = 1)` (autocentre back on, `005d2de3`) and device vt+0x1c (`005d2df7`).
+* **`74c95c`** = (axis name ends in `'>'`) ? −1 : +1 (`0054ff26..0054ff32`, stored at `0054ff74`). Its only raw
+  reference is that store, so the force is **not** sign-corrected by the binding direction.
 
-| address | meaning | read at |
+---------------------------------------------------------------------------------------------------------------------
+
+## 7. `00550070(flag)`, the control-7 binding and the `bf6eb8` lifecycle
+
+```
+00550075 test bl,bl ; jnz ; call 0054fed0          ; flag == 0: (re)configure the FF axis
+0055007e if (bf6ebb && flag) 00550030(0,0)          ; suspend: zero the constant force
+00550097 mov byte [bf6eb8], bl                     ; bf6eb8 = flag
+```
+
+**`0054fed0`** calls `0057b1e0(&type, &name, &dirstr, &rec8, &rec14, &flag, 7)`. Stack accounting at
+`0054fedf..0054fef2`:
+
+* `a1 = S+4`, `a2 = S+8`, `a3 = S+0x18`, `a4 = S+0x14`, `a5 = S+0xc`, `a6 = S+3`.
+* `0057b1e0` turns arg 7 into the record address `d37cb8 + 29·7 = d37d83` (`lea edx,[eax+ecx*4+0xd37cb8]`) and
+  jumps to `0057aff0`.
+
+`0057aff0` returns these fields of the 29-byte binding record:
+
+| out | field | meaning |
 |---|---|---|
-| `005f7c50` taskGetRate | frame rate: 36 (`0x24`) if `[755a18]` ≠ 0, else `[7559b4]` | call 00554668 |
-| `bf6ec4` | slip state, from `00554d30` | 00554671, 0055467b, 005546c3, 005546f1 |
-| `bf6ec0` | previous `bf6ec4` (FFB state) | 00554681 |
-| `bf3a00` | airspeed \|v − wind\| (car+0x5aa, m/s) | 00554699 |
-| `006ecfc8` = 20.0, `006e97d8` = 1.0 | v/(v+20) | |
-| `bf6f20` | **FF latency** (msg FFLatency, ms) | 005546b1 |
-| `006ea67c` = 0.001 | ms → s | |
-| `006ea480` = 1e‑5 | \|ec4\| threshold | 005546de |
-| `bf6ed0` | Σ front moment, from `00554d30` | 005546f7, 005546ff |
-| `bf6f24` | **FF damping** (msg FFDamping) | 00554705 |
-| `bf6ecc` | filter state (FFB state) | 00554718 |
-| `006ea44c` = 0.5 | | |
-| `00557d60(0x30)` → `c05680` | **raw** setup item 0x30, steering ratio (active setup c055c0+0xc0) | 0055470f..00554733 |
-| `006f5a44` = 1600.0 | | |
-| `74c9a4` | **FF strength** (msg FFStrength; image 80.0) | 0055473b |
-| `006ea4a8` = −1.0 | clamp | |
-| `bf6ebc` | FF device index | 00554768 |
+| `*a1` | `rec+0x10` | type: 1 axis, 2 key bits, 4 button |
+| `*a6` | `rec+0xc != 0` | flag |
+| `*a4` | `rec+8` | control-group mask |
+| `*a5` | `rec+0x14` | axis or button number |
+| `*a2` | name | for an axis, `0074fc68 + ((byte rec+0x1c != 0) + 2·rec+0x14)·4`, i.e. `"<n><"` or `"<n>>"` |
 
-The ratio is the raw setup cell, **not** `00554fb0()`, so the low-speed override `74c9a0` does not apply to FFB.
+`rec+8` is the mask that `0057ab00` tests against `d3b028`.
 
-### Computation (validated bit-exact, 400 / 400 frames, `dyn/dyn_ffb3x.py`)
+If the type is 1 (axis):
+* `bf6ebc = rec+0x14` (`0054ff2d mov esi,[esp+0x10]` = `S+0xc`; `0054ff7a`), the global axis number of the
+  steer-left axis;
+* `74c95c` is set from the direction character;
+* the effect is released if FF is off (`bf6f1c` via `00550280`) or the axis changed;
+* it is acquired (`00550000` → `005d0840` → `005d2170` → `005d2bb0`) if `bf6f1c` is set and `005d0820` reports FF
+  support.
 
-```
-d    = f32((ec4 − ec0)·rate)            ; ec0 = ec4                                00554677..00554695
-q    = f32(ec4 + d·(lat·0.001)·(1 − 20/(v+20)))                                    00554699..005546c9
-m    = (|ec4| > 1e-5) ? (q/ec4)·ed0 : ed0                                          005546cd..005546ff
-ecc  = f32((m − damp·d + ecc)·0.5)       ; FST [ESP+0x10], FSTP [bf6ecc]           00554705..00554728
-out  = f32(ecc · strength/(ratio·1600))                                            0055472e..00554745
-out  = 1.0 if 1.0 < out ; −1.0 if out < −1.0                                       00554749..0055479d
-005d08d0(bf6ebc, out)                                                              0055476e..00554770
-```
+If the type is not 1, the effect is released.
 
-Writes: `bf6ec0` (00554689) and `bf6ecc` (00554728) only, then the device call. `bf6ec0` and `bf6ecc` are reset to
-0 by `00550530` @`005505b3` / `005505b8` (XOR EAX,EAX at 005505a0), the same reset that zeroes the steering states.
-
-Timing: at the frame end, `ec4` and `ed0` hold the averages of tick 7 of the frame. Tick 8's passes are consumed by
-the next frame's first `00554d30`. In the dyn runs `n` = 2 at every frame end.
-
-Dynamic sample (slalom, defaults strength 80, ratio 18, latency 50, damping 0.5): `ecc` ≈ ±290 N·m in the
-0.5 Hz, 0.08-amplitude slalom, giving `out` ≈ ±0.8. Saturation is at |ecc| ≥ 360 N·m (`dyn/out2_slalom.txt`).
-
----------------------------------------------------------------------------------------------------------------------
-
-## 6. `005d08d0` and the device layer (host; no simulation memory written)
-
-* `005d08d0(dev, force)`: if `[f5d4f0]` (DI layer up) and `[f5d414]` (FF device acquired, set by `005d0840`),
-  it tail-jumps to `005d2260`. That function checks `[f5e844]`, maps the global device index through `005d2370`
-  (on the device table `f5d508`, entries 0x262 bytes) and calls `005d3010(local index, force)`.
-* `005d3010`:
-  * Uses the effect at `obj+0x1e2+4·idx`.
-  * Builds a `DIEFFECT` with dwSize 0x38, dwFlags 2 (DIEFF_OBJECTOFFSETS) and cbTypeSpecificParams 4, pointing
-    to `{lMagnitude = _ftol(force·10000.0)}` (`006f5214` = 10000.0; `006c5018` = encrypted CRT `_ftol`, which
-    truncates, per `recovery/stage6_7/orig_vehicle.py:31`).
-  * Calls `IDirectInputEffect::SetParameters(…, 0x20000100)` = DIEP_TYPESPECIFICPARAMS | DIEP_START.
-  * The effect is created in `005d2bb0` with `CreateEffect(GUID_ConstantForce {13541C20-8E33-11D0-9AD0-00A0C9A06E35}
-    @006fb590, …)` (vtable +0x48), DIEFF_CARTESIAN|OBJECTOFFSETS (0x12), 1 axis, duration −1, gain 10000.
-    Autocenter is turned off first (SetProperty(9 = DIPROP_AUTOCENTER, DIPROPDWORD 0)), followed by
-    Acquire, Download and Start(1,0).
-* `005d08a0(dev, offset, coef1, coef2)` → `005d2210` → `005d2ee0` sets two condition effects:
-  * `+0x162`: lOffset = offset·10000, lPos = lNeg = coef1·10000, gain 10000, flags 0x20000104.
-  * `+0x1a2`: lOffset 0, lPos = lNeg = coef2·10000.
-
-  Their creators and GUIDs are not in the FFB acquire path (unresolved).
-  `00550030` calls `005d08a0(dev, 0, 0, 0.75)` and then `005d08d0(dev, 0.0)`.
-* `005d0910` / `005d0930` (from `0055c4b0`, `0055c750`, `00437260`) Stop / Start all effects (+0x162/+0x1a2/+0x1e2/
-  +0x222). They carry no simulation data.
-* The axis sign `74c95c = (axis string after the digits == '>') ? −1 : +1` is written by `0054fed0` @`0054ff74`
-  and **never read**: findptr finds only that write. The constant force is not sign-corrected by the binding
-  direction.
-
----------------------------------------------------------------------------------------------------------------------
-
-## 7. `00550070(flag)`: FFB setup and the controls gate
-
-```
-00550075 test bl,bl ; jnz ; call 0054fed0         ; flag == 0: (re)configure the FF device
-0055007e if (bf6ebb && flag) 00550030(0,0)         ; suspend: zero constant force + condition effects
-00550097 mov byte [bf6eb8], bl                    ; bf6eb8 = flag
-```
-
-`0054fed0` reads the binding of **control 7** (steer left) through `0057b1e0(…, 7)` → `0057aff0` (not analysed).
-If the binding is an axis (type 1), it does the following:
-* sets `bf6ebc` = its device index;
-* releases the device (`00550060` → `005d0870`, `bf6ebb = 0`) if FF is disabled (`bf6f1c`, through `00550280`) or
-  the device changed;
-* acquires it (`00550000` → `005d0840` → `005d2170` → `005d2bb0`, then `00550030`, `bf6ebb = 1`) if `bf6f1c` is set
-  and `005d0820(dev)` reports FF support.
-
-If control 7 is not an axis, the device is released.
-
-So **the FF device is the device of the steer-left axis binding**, which is the same control table the Stage 12
-device layer reads.
-
-**`bf6eb8`** ("player controls suspended"):
-
-Readers:
-* `005524f0 @00552549 CMP byte [bf6eb8],BL ; JNZ 0055269a`: the player branch requires `bf6eb8 == 0`. Otherwise
-  `0055269a..00552715` zero `bf63c8 bf6f14 74c98c bf6388 bf6e84 bf63bc bf638c bf6390`, set `bf6eac = 1.0`,
-  `bf6eb0 = 0`, and clear `bf6e20..22`.
+**`bf6eb8` readers** (census: 5 raw hits = 4 xrefs plus the dead getter `005500a0`, which has no caller or
+pointer):
+* `005524f0 @00552549 cmp [bf6eb8],bl ; jne 0055269a`: the not-driven branch. At `0055269a..00552715` it zeroes
+  `bf63c8 bf6f14 74c98c bf6388 bf6e84 bf63bc bf638c bf6390`, sets `bf6eac = 1.0` and `bf6eb0 = 0`, and clears
+  `bf6e20..22`.
 * `00554520 @0055465b`: the FFB gate.
 
-Writers:
-* `00550490 @00550501`: 1 at session/car init. It also sets `bf6ebb = 0` (005504c4) and calls `0054fed0`.
-* `00550070 @00550097`. Its callers are:
-  * `00550930 @005509dc`, `00550a50 @00550b07`, `00550b30 @00550b9e`: `(0)`, after car placement `005512f0`.
+**`bf6eb8` writers:**
+* Image value 0 (uninitialised `.data`).
+* `00550490 @00550501` = 1 at car init.
+* `00550070 @00550097`. Its callers:
+  * `00550930 @005509dc`, `00550a50 @00550b07`, `00550b30 @00550b9e`: `(0)` after car placement.
   * `00550a10 @00550a12`: `(1)`, followed by the `00550530` reset.
-  * `0057ab00 @0057ab0e`: `(0)` when flags & 3.
-  * `0057ab90 @0057ab9c`: `(1)` when flags & 1 (input-manager entry points; their callers were not traced).
+  * `0057ab00 @0057ab0e`: `(0)` when `mask & 3`.
+  * `0057ab90 @0057ab9c`: `(1)` when `mask & 1`.
+
+**Callers of `0057ab00`/`0057ab90`** (resolved):
+* **`005baf80`**, the handler of sim message **6 (id 0x40) `fgmsgSelectActiveControls`**:
+  * table entry `00752570/74` = (0x49249, `005baf80`); the name getter `005baab0` returns `752aa0`;
+  * it calls `0057ab90(m0 & ~m1)` (`005baf91`), then `0057ab00(m1)` (`005bafa1`), where `m0 = [esi]` and
+    `m1 = [esi+4]`.
+
+  So activating control group bits 0/1 un-suspends the controls (`bf6eb8 = 0`) and reconfigures the FF axis.
+  Deactivating bit 0 suspends them (`bf6eb8 = 1`) and zeroes the force.
+* **`0055d0e0 @0055d1c3`** `0057ab90(-1)`:
+  * `0055d0e0` is the init of the background sim task `0055cef0` (called at `0055ceff`), registered at
+    `0043e839 call 005f8560(0x57e070, 0x55cef0, 0x546f80, 0x24, 0)` with rate 0x24 = 36.
+  * So every sim session starts with all control groups inactive and `bf6eb8 = 1`.
+
+`0057ab00`/`0057ab90` also maintain `d3b028`, the active-group mask, and (de)activate the devices of key/button
+bindings (`005d0070`, `005d06c0`, `005d0140`).
 
 The Stage 12 harness bypasses this gate: it calls `00552720` directly and uses `driver=false` for the not-driven
-branch. Release at session end: `00550680` (from `00572cb0`, `00573bc0`).
+branch. Release at session end goes through `00550680` (from `00572cb0` and `00573bc0`).
 
 ---------------------------------------------------------------------------------------------------------------------
 
-## 8. FFB options (message table `752540`, names `005baabc..`, mailbox ids `0056f7b2..`)
+## 8. FFB options
 
-| msg idx (id) | name (`752ad8..`) | thunk → setter | cell | image value | front end (`0043f1d0` controls.cfg) |
+Sim messages: table `752540`, names at `752ad8..`, mailbox ids `0x3a+idx`.
+
+| msg idx (id) | name | thunk → setter | sim cell | image | front end |
 |---|---|---|---|---|---|
-| 8 (0x42) | fgmsgCarSetForceFeedbackOnOff | `005bb010` → `00550270` | `bf6f1c` (byte) | 0 | `00570e00(byte [894d80])` |
-| 9 (0x43) | fgmsgCarSetFFStrength | `005bb020` → `00550290` | `74c9a4` (f32) | 80.0 | `00570e30(float(int [894de0]))` → also `72c5ec` (image 50) |
-| 10 (0x44) | fgmsgCarSetFFDamping | `005bb030` → `005502d0` | `bf6f24` (f32) | 0.0 | `00570e60(float(int [894dac]))` |
-| 11 (0x45) | fgmsgCarSetFFLatency | `005bb040` → `005502b0` | `bf6f20` (f32) | 0.0 | `00570e90(float(int [894d78]))` |
+| 8 (0x42) | fgmsgCarSetForceFeedbackOnOff | `005bb010` → `00550270` | `bf6f1c` (byte) | 0 | `894d80` from cfg → shadow `894d49` → `00570e00` |
+| 9 (0x43) | fgmsgCarSetFFStrength | `005bb020` → `00550290` | `74c9a4` (f32) | 80.0 | int `894de0` from cfg → `72c5ec` (UI shadow, image **50**, clamped 0..100 by `0043ef90`/`0043efc0`) → `00570e30(float)` |
+| 10 (0x44) | fgmsgCarSetFFDamping | `005bb030` → `005502d0` | `bf6f24` (f32) | 0.0 | int `894dac` from cfg → `894e10` (clamped **0..100**, `0043efe0`/`0043f010`) → `00570e60(float)` |
+| 11 (0x45) | fgmsgCarSetFFLatency | `005bb040` → `005502b0` | `bf6f20` (f32) | 0.0 | int `894d78` from cfg → `894e14` (clamped **0..250**, `0043f030`/`0043f060`) → `00570e90(float)` |
 
-How the mapping was established:
-* Table entry `752540 + 8·idx` = (flags, thunk): idx 8..11 = `5bb010/020/030/040`.
-* The name getters `005baabc/ac2/ac8/ace` return `752ad8/af8/b10/b28` in the same order.
-* The mailbox ids are id = 0x3a + idx: `0056f7b2` registers c6f70c → 0x42, c691ac → 0x43, c69034 → 0x44,
-  c6a40c → 0x45.
-* Cross-check: linearity sender `00570f20` uses mailbox c70b2c → id 0x48 = idx 14 → `005bb070` → `005502f0`
-  (the known linearity setter).
-* The getters `005502a0/c0/e0` have no caller and no pointer in the image.
-* Without a controls.cfg, the sim keeps the image values: FF off, strength 80, damping 0, latency 0.
-* UI strings: `chkForceFeedback`, `sliFFStrength`, `sliFFDamping`.
+`0043f1d0` reads controls.cfg field by field with `005cfdb6(file, &cell, size)` (sizes 1/1/1/4/4/4 at
+`0043f30a..0043f3a8`). Any short read jumps to `0043f5c2`, which calls `005cfd08(file)` (inferred: close) and
+returns before the senders at `0043f510..0043f57a`, so no message is sent. There is no code default for these
+fields: without a valid controls.cfg the sim keeps its image values (FF off, strength 80, damping 0, latency 0).
+The front-end strength shadow `72c5ec` has image 50, which differs from the sim's 80.
+
+The values reaching the sim are integers converted to float: damping 0..100 (physical unit unresolved) and latency
+0..250 (ms, inferred from the 0.001 factor). The dynamic test value damping = 0.5 is therefore not a UI value, but
+it exercises the same arithmetic.
 
 ---------------------------------------------------------------------------------------------------------------------
 
-## 9. Reader / writer census of every cell written (Ghidra xrefs `xr1.tsv`, operand scan, findptr on the whole image)
+## 9. Reader/writer census of every cell written (`v2/census.txt`: raw hits over the whole image = Ghidra xrefs)
 
-| cell | writers | readers | feeds physics / steering? |
-|---|---|---|---|
-| `74c960` | 00554d30 (00554db2, 00554dc7) | **none** (findptr: only those 2 sites) | no |
-| `74c964/68` | 00554d30 (clear), 00554e70 (++) | 00554d30, 00554e70 | no (FFB accumulator) |
-| `bf6ec4` | 00554d30 @00554e0b | 00554520 FFB block only | no |
-| `bf6ec8` | 00554d30 @00554e2f | **none** (findptr: 00554e31 only) | no |
-| `bf6ed0` | 00554d30 @00554e5f | 00554520 FFB block; 005539c0 @00553ca7 → `bf643e` (telemetry, gated by `bf63d8`) | no |
-| `bf6ed4..bf6ef0` | 00554e70 (+=), 00554d30 (clear) | 00554e70, 00554d30 | no |
-| `bf643e` | 005539c0 @00553cee | 005548d0 (`005b0980(1, 0x4c, &bf63f6)` telemetry channel; gated by `bf63d8`) | no (not in the 9-dword solver input block `bf6360..bf6380` copied by `005b2b90`) |
-| `bf6ec0`, `bf6ecc` | 00554520 FFB, 00550530 (reset) | 00554520 FFB | no |
-| `bf6eb8` | 00550070, 00550490 | **005524f0** @00552549, 00554520 | **yes**: player-branch gate |
-| `bf6ebb` | 0054fed0, 00550490, 00550680 | 00554520, 00550070, 0054fed0, 00550680 | no (FFB gate) |
-| `bf6ebc` | 0054fed0 | 00554520, 00550000/30/60, 0054fed0 | no |
-| `74c95c` | 0054fed0 | **none** | no |
+| cell | raw hits / xrefs | writers | readers | feeds physics / steering? |
+|---|---|---|---|---|
+| `74c960` | 2 / 2 | 00554d30 (00554db2, 00554dc7) | **none** | no |
+| `74c964/68` | 6 / 6, 3 / 3 | 00554d30 (clear), 00554e70 (++) | 00554d30, 00554e70 | no |
+| `bf6ec4` | 5 / 5 | 00554d30 @00554e0b | FFB block only | no |
+| `bf6ec8` | 1 / 1 | 00554d30 @00554e2f | **none** | no |
+| `bf6ed0` | 4 / 4 | 00554d30 @00554e5f | FFB block; 005539c0 @00553ca7 (telemetry, gated by `bf63d8`) | no |
+| `bf6ed4..bf6ef0` | 4,2,6,3,4,2,4,2 = xrefs | 00554e70 (+=), 00554d30 (clear) | 00554e70, 00554d30 | no |
+| `bf643e` | 1 (writer only) | 005539c0 @00553cee | none direct; record base `bf63f6` used only by the telemetry block of 005539c0 and `0055495b` (005548d0 sender) | no |
+| `bf6ec0`, `bf6ecc` | 3 / 3 each | FFB block, 00550530 (reset @005505b3/b8) | FFB block | no |
+| `bf6eb8` | 5 / 4 (+ dead getter 005500a0) | 00550070, 00550490 | **005524f0** @00552549, FFB block | **yes**: player-branch gate (input-session state) |
+| `bf6ebb` | 11 / 11 | 0054fed0, 00550490, 00550680 | FFB block, 00550070, 0054fed0, 00550680 | no |
+| `bf6ebc` | 8 / 8 | 0054fed0 | FFB block, 00550000/30/60, 0054fed0 | no |
+| `74c95c` | 1 / 1 | 0054fed0 | **none** | no |
 
 ---------------------------------------------------------------------------------------------------------------------
 
 ## 10. Dynamic proof on the original code (Unicorn, Stage 12 harness)
 
-`dyn/dyn_ffb.py`: two machines run in lockstep, A unmodified and B with `00554d30` = RET (block cache flushed).
-After every frame the whole `0x6e9000..0xf80000` window is compared.
+`dyn/dyn_ffb.py` runs two machines in lockstep: A unmodified, B with `00554d30` = RET (block cache flushed). After
+every frame it compares the whole `0x6e9000..0xf80000` window.
 
 | scenario | ticks | differing dwords | which |
 |---|---|---|---|
@@ -408,65 +439,65 @@ After every frame the whole `0x6e9000..0xf80000` window is compared.
 | brakesteer | 8064 | 14 | same |
 | keys | 6912 | 14 | same |
 | yawlimit | 5184 | 14 | same |
+| slalom (revision 2 re-run, `v2/rerun_slalom200.txt`) | 1600 | 14 | same; `bf63c0 bf63c8 bf6360 bf6364 bf6e80 bf6e88 bf6d70` identical |
 
-The steering cells (`bf63c0 bf63c8 bf6360 bf6364 bf6e80 bf6e88`), the yaw rate `bf6d70` and every other cell of
-the window are identical at every frame. In B the counters grow to e.g. 0x4384 and the sums to ~7e7, with no effect.
+`dyn/dyn_ffb2.py` compares the bench default (A) with B = `bf6ebb = 1`, `bf6eb8 = 0`, latency 50, damping 0.5. The
+only differing dwords are `bf6ec0`, `bf6ecc` and the option cells written by the test (`bf6eb8`, `bf6f20`,
+`bf6f24`), over 1080 (slalom) and 1008 (brakesteer) FFB calls.
 
-`dyn/dyn_ffb2.py`: A is the bench default; B has `bf6ebb = 1`, `bf6eb8 = 0`, latency 50 and damping 0.5. 1080
-(slalom) and 1008 (brakesteer) FFB calls; the only differing dwords are `bf6ec0`, `bf6ecc` and the option bytes
-written by the test (`bf6eb8` dword, `bf6f20`, `bf6f24`).
+Sample, slalom with defaults (strength 80, ratio 18): `ecc` ≈ ±290, giving `out` ≈ ±0.8. The output saturates at
+|ecc| ≥ 360.
 
 ---------------------------------------------------------------------------------------------------------------------
 
 ## 11. What Stage 13 needs from the Stage 12 steering chain
 
-1. **No steering-chain state is an FFB input.** The original torque is built from front-tyre forces, so what
-   Stage 13 needs from Stage 12 is the physics those forces come from: the steered hub states drive the front
-   contact frames. The accumulation itself is already ported (JIT `XF[0x55e180]` → `XF[0x554e70]`). The
-   accumulator cells exist in the Luau image with the original post-build values `74c964 = 74c968 = 4`,
-   `bf6edc = bf6ee0 = 0.03` (3 build passes with no load), `74c960 = 1500`, and the rest 0.
-2. **The per-tick slot of `00554d30` in `005539c0`** (@00553a64; independent of the surrounding steering
-   arithmetic). It must run every tick, before the tick's tyre passes, to give `n = 2` averages.
-3. **Setup item 0x30 (raw ratio cell `c05680`)**: the same cell `00554fb0` reads, but without the low-speed
-   override.
-4. **`bf6eb8`, the controls-suspended flag**, shared with the `005524f0` player-branch gate. It must be one state
-   in the port.
-5. **The FF device binding = the control-7 (steer left) axis binding** of the Stage 12 device layer
-   (`0054fed0`).
-6. **Frame-end inputs already in the port (Stage 11)**: `bf3a00` airspeed (`0055455f`), taskGetRate = 36. Also
-   the `00550530` reset, which zeroes `bf6ec0` / `bf6ecc` together with the steering states.
-7. **Options**: `74c9a4` (strength), `bf6f24` (damping), `bf6f20` (latency), `bf6f1c` (on/off). These are
-   messages 9/10/11/8, int values from controls.cfg passed as floats.
-8. **Arithmetic**: x87 64-bit with RC = down, f32 stores rounded down. A round-to-nearest double model is off by
-   1..few ulp in about 80% of calls; the exact model matches 100%.
+1. **No steering-chain cell is an FFB input.** The torque is built from front-tyre force statistics. What Stage 13
+   needs from Stage 12 is the steered physics itself: the hub states 15/21 set the front contact frames, and those
+   produce Fy, Fz, (r×F)z, `c081ec` and `c085dc`. The accumulation (`0055e180` → `00554e70`) is already ported.
+2. **The per-tick slot of `00554d30` in `005539c0`** (@00553a64), inside the `bf6e04` branch, every tick, after
+   `bf63c0 += bf6e88` and before `bf6360`. Its position relative to the steering arithmetic does not matter: the
+   two share no cells. What matters is that it runs before the tick's tyre passes, so that `n = 2`.
+3. **Setup item 0x30 (raw `c05680`)**: the same cell `00554fb0` reads, without the `74c9a0` low-speed override.
+4. **`bf6eb8`**, the controls-suspended flag. It is shared with the `005524f0` player-branch gate, so it must be
+   one state in the port. It is driven by `00550070` from `fgmsgSelectActiveControls` and from session/car init.
+5. **The FF axis = the control-7 (steer left) axis binding** (`rec+0x14` of record `d37d83`) from the Stage 12
+   device layer. The original never sign-corrects the force for the binding direction (`74c95c` is unused).
+6. **Frame-end inputs already in the port (Stage 11)**: `bf3a00` airspeed (`0055455f`), taskGetRate = 36, and the
+   `00550530` reset, which zeroes `bf6ec0`/`bf6ecc` together with the steering states.
+7. **Options**: `74c9a4` strength, `bf6f24` damping, `bf6f20` latency, `bf6f1c` on/off.
+8. **Arithmetic**: x87 64-bit precision with RC = down, and f32 stores rounded down.
+9. **Device model**: a single constant force, `trunc(out·10000)`, on one axis, with autocentre off. There is no
+   spring or damper effect.
 
 ---------------------------------------------------------------------------------------------------------------------
 
-## 12. Verified vs inferred vs unresolved
+## 12. Verified / inferred / unresolved
 
-**Verified**
-* All formulas: static asm plus the bit-exact dynamic model.
-* Every reader and writer: Ghidra xrefs, operand scan, and findptr over the whole image.
-* Which `0055e180` parameter is Fy and which is Fz (dynamic).
-* LF/RF slot mapping and 2 passes per tick (dynamic).
-* No physics or steering effect of `00554d30` or of the FFB block (dynamic, whole window).
-* `bf6eb8` gating `005524f0`.
-* Option message mapping (table, names, mailbox ids, linearity cross-check).
-* GUID_ConstantForce.
+**Verified** (static asm plus the census; dynamic where stated):
+* all formulas and their bit-exactness (dynamic);
+* every reader and writer (raw-pointer census = xrefs);
+* the `0055e180` parameter identities, the LF/RF slots and the 2 passes per tick (dynamic);
+* no physics or steering effect of `00554d30` or of the FFB block (dynamic, whole window, 5 runs);
+* the `bf6eb8` gate in `005524f0`, the `bf6e04` gate of both `00554d30` and the frame end;
+* `00557d60` is `ret 4`;
+* the DIEFFECT layout, the single ConstantForce effect and the no-op condition setter;
+* `bf6ebc` = global axis of the control-7 binding;
+* the callers of `0057ab00`/`0057ab90` (message 6 `fgmsgSelectActiveControls`, sim-task init `0055d0e0`);
+* the controls.cfg read without defaults, and the front-end clamps;
+* the option message mapping.
 
-**Inferred**
-* `c085dc` (`fVar14`) is a relaxed lateral slip / deflection state. It is verified as the `fVar14` value of
-  `0054cab0`; the physical meaning is read from its structure.
-* `c081ec` is the tyre pneumatic-trail aligning moment.
-* `c0861c` is the contact-force moment about the hub (steering) z-axis. It is verified as the z of
-  `c08670 × c08608` in the `T+0x309` register frame; that this frame is the hub frame is inferred.
-* `74c960` is the total front load.
-* `bf6f20` / `bf6f24` units: ms and N·m·s per unit slip rate.
-* The meaning of `0057ab00` / `0057ab90` flags (input focus / menu).
+**Inferred:**
+* the physical meanings: `c085dc` relaxed lateral slip state; `c081ec` pneumatic-trail aligning moment; `c0861c`
+  moment about the hub z-axis (the `T+0x309` register frame being the hub frame); `74c960` total front load;
+* the units of `bf6f20` (ms; supported by the 0.001 factor and the 0..250 UI clamp); `bf6f24` has no established
+  unit;
+* `005cfdb6`/`005cfd08` are the file read and close helpers of the controls.cfg loader;
+* the meaning of the control groups `d3b028` (bit 0 = driving controls).
 
-**Unresolved**
-* What creates the condition effects at `+0x162` / `+0x1a2` (GUIDs). They are set only by `00550030`
-  (0, 0, 0.75).
-* The internals of `0057aff0` (control-7 binding query).
-* The controls.cfg defaults of damping and latency (`894dac`, `894d78`) when the file has no value.
-* The callers of `0057ab00` / `0057ab90`.
+**Unresolved:**
+* What `005f79a0` (`bgRequestFGAction`) does with its arguments: it runs `00550000`/`00550060` on the foreground
+  thread (from its name and use; not traced).
+* What `005d2b90` checks before `005d2bb0` (FF capability of the axis); not needed for the sim.
+* Which front-end paths, other than controls.cfg load, send messages 8..11 when the user moves the sliders (the
+  `00570e00..00570e90` senders' other callers were not traced).
