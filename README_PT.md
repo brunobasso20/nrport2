@@ -1,4 +1,41 @@
-# OpenNR2003 para Roblox — Stage 11 (térmico / desgaste / dano / combustível)
+# OpenNR2003 para Roblox — Stage 12 (cadeia de direção original)
+
+## Aplicar o Stage 12 sobre o Stage 11
+
+1. Studio, **fora do Play**, na **Command Bar** — escolha UMA das formas (o resultado é o mesmo):
+   - **Um arquivo**: abra `PATCH_STAGE12.lua` (~320 KB), copie o arquivo inteiro, cole na Command Bar, Enter.
+   - **Em partes**: cole, em ordem, `PATCH_STAGE12_PART1.lua` e `PATCH_STAGE12_PART2.lua` (cada uma imprime
+     `PATCH_STAGE12 parte k/2 guardada`; só guardam as fontes em `ServerStorage.NR2003Stage12Staging`) e por fim
+     `PATCH_STAGE12_INSTALL.lua`.
+   - **Arquivo de modelo**: *Insert from File* → `NR2003_Patch_Stage12.rbxmx`; depois, na Command Bar:
+     `require(workspace.NR2003_Patch_Stage12)()` e apague o ModuleScript inserido.
+2. Segurança do instalador: confere a bancada Stage 11 **módulo por módulo** (tamanho + hash da fonte publicada) e recusa
+   uma base diferente ou um módulo editado localmente (forçar só com `_G.NR2003_PATCH12_FORCE = true`, por sua conta);
+   faz backup **só do que muda** em `ServerStorage.NR2003Backup_Stage12` (criado uma vez, nunca sobrescrito); atualiza a
+   fonte **na mesma instância** (nenhuma pasta é substituída, nada fora do pacote é apagado); adiciona
+   `Core.NR2003Cup.NR2003CupSteering` e `Roblox.Stage12SelfTest`; muda uma linha em cada self-test 6/7..11; roda os
+   auto-testes 6/7..12 e **reverte tudo** se algo falhar. Re-executar é seguro (sem duplicatas). **O place não é salvo**:
+   salve você mesmo depois de conferir. Reversão manual verificada: `PATCH_STAGE12_ROLLBACK.lua`.
+3. Output esperado: os auto-testes 6/7, 8, 9, 10, 11 e `Stage 12 self-test: 13 passed, 0 failed`, depois `Stage 12 aplicado`.
+4. No Play (painel **T**), linha lilás `DIREÇÃO`: tipo do controle (teclas / eixo), entrada processada (`bf63c8`),
+   relação atual (`00554fb0`: 18:1 do setup, 7:1 abaixo de 32 km/h com o override, rampa até 64 km/h), alvo da roda,
+   ângulos dos cubos (com toe), guinada medida das rodas e ângulo do volante do cockpit (`005662d0`, limite ±160°).
+   Teclado A/D = controles digitais 7/8 (taxa 0,033/quadro + seno); gamepad (analógico esquerdo) = eixo analógico.
+   Atributos do `TestCar` (valem no reset **R**): `Setup_steeringRatio` 12..32 (garagem), `SteeringLinearity` 0..100
+   (valor do controls.cfg), `SteeringMomentum` 0..100 (0 = sem taxa), `SteeringLowSpeedOverride` true/false. Sem
+   atributos = valores da imagem do jogo sem controls.cfg (linearidade 0, taxa 0,033, override ligado).
+5. Auto-teste completo: `require(game.ReplicatedStorage.NR2003Lab.Roblox.Stage12SelfTest).run(true)`. Roteiro manual em
+   `VALIDACAO.md` (15 itens); o que foi recuperado em `STAGE12_RECOVERY.md`; cada estado em `STAGE12_STEERING_STATE_MAP.md`.
+
+O que muda no comportamento: o volante virtual e as rodas dianteiras seguem a cadeia ORIGINAL do NR2003 — batente de
+±10° na relação 18:1 em velocidade (π / relação), ±25,7° parado (7:1), sensibilidade por velocidade só com linearidade,
+expoente de linearidade só com eixo analógico, mesma rampa por tick e toe do original, sem Ackermann nem bump steer
+(geometria do multicorpo original). Não portados (recusados): assistência de direção (precisa da linha de corrida da
+pista) e o modo de condução arcade. Torque de direção / force feedback é o Stage 13.
+
+---
+
+# Histórico — Stage 11 (térmico / desgaste / dano / combustível)
 
 ## Aplicar o Stage 11 sobre o Stage 10
 

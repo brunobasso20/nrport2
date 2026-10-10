@@ -1,3 +1,48 @@
+# Direção — API do Stage 12 (núcleo NR2003 Cup)
+
+A cadeia de direção é o **código original** portado à mão do x86 (`NR2003CupSteering` + linhas do Stage 12 em
+`NR2003CupDriver`): controles 7 (esquerda) / 8 (direita) → `00552d00` (taxa por quadro + `sin(x·π/2)`) → `00552720`
+(sensibilidade à velocidade pela linearidade) → cauda de `00551e80` (expoente de linearidade só com eixos analógicos,
+× π, ÷ relação `00554fb0` = item de setup 0x30 com override de baixa velocidade 7:1 abaixo de 8,94 m/s e rampa até
+17,88 m/s) → rampa por tick (`005539c0`) + toe → coordenadas prescritas dos cubos (estados 15 / 21) → multicorpo. O
+volante do cockpit é a fórmula original `005662d0`. Nenhum estado é duplicado em Luau (`STAGE12_STEERING_STATE_MAP.md`).
+
+```lua
+local car = Vehicle.new()
+-- controles por quadro (V.drive / car:step), além de throttle / clutch / brake do Stage 8:
+--   teclado:  {steerLeft = 0..1, steerRight = 0..1, steerDigital = true}    (vínculo digital: tipo 0)
+--   analógico: {steerAxis = -1..1}  (+ = direita; um eixo vinculado aos dois controles, separado pelo sinal; tipo 1)
+--   sem motorista: {driver = false} -> ramo "carro não dirigido" de 005524f0 (entrada de direção 0)
+car:setSteeringOptions({linearity = 80, momentum = 0, lowSpeedOverride = false})   -- setters ORIGINAIS
+local o = car:steeringOptions()      -- {linearity, steerRate, releaseFactor, lowSpeedOverride, assist, yawLimiter,
+                                     --  drivingMode = "simulation" | "arcade", aidsDisabled, setupRatio}
+local s = car:steeringState()        -- leitura das células originais (sem efeito colateral)
+print(s.input, s.target, s.current, s.hubLF, s.hubRF, s.ratioNow, s.wheelAngle)
+local a = car:steeringWheelAngle()   -- 005662d0: clamp(-(relação · car[0x1554]), ±2,79 rad), + = horário (direita)
+```
+
+| Método | Contrato |
+|---|---|
+| `setSteeringOptions(opts)` | opções do piloto pelos setters ORIGINAIS: `linearity` (inteiro do controls.cfg 0..100 → `(float)v·0,01f`, `005502f0`), `linearityRaw` (valor 0..1 de `bf6f00`), `momentum` (0..100; 0 = sem limite de taxa → 1,0; senão `(1/(m·0,01))·0,016663333999866692`, `005500c0`), `lowSpeedOverride` (bool, `00550110`, ini `steer_ratio`). `nil` = valor da imagem (sem controls.cfg: linearidade 0, taxa 0,033/quadro, override ligado). Os valores sobrevivem a `reset()` e a `applySetup()`. **Recusados (erro)**: `assist ≠ 0` (assistência de direção precisa da linha de corrida da pista do NR2003, não portada) e `yawLimiter = true` (modo de condução ARCADE, bit 25 das opções de corrida: também troca a especificação do chassi do carro no build, `004233a0`, não portado) |
+| `clearSteeringOptions()` | volta aos valores da imagem no próximo `reset()` |
+| `steeringOptions()` | leitura das opções e da relação de setup ativa (`c055c0+0xc0`) |
+| `steeringState(out?)` | `mode`, `left` / `right` (controles brutos 7 / 8), `digital`, `slewLeft` / `slewRight` (`bf639c` / `bf63a0`), `input` (`bf63c8`), `shaped` (após a linearidade), `sensitivity`, `yawLimiter` (fator do limitador arcade; 1 em simulação), `ratio` (relação do último quadro), `ratioNow` (`00554fb0` na velocidade atual, sem tocar no cache), `target` (`bf63b8`, rad, + = esquerda), `frameTarget` / `ramp` (`bf6e80` / `bf6e88`), `current` (`bf63c0`, rampa por tick), `lf` / `rf` (`bf6360` / `bf6364`, com toe), `toeLeft` / `toeRight` (`c086b0` / `c086b4`), `hubLF` / `hubRF` (estados 15 / 21 exportados), `drawSteer` (`car+0x1554`), `wheelAngle` |
+| `steeringWheelAngle()` | ângulo do volante do cockpit (`005662d0`); em runtime `"frozen"` usa a média dos estados 15 / 21 em vez de `car+0x1554` |
+| `setSteeringMode("original" | "provisional")`, `steeringMode()` | produção = `"original"`; `"provisional"` = contrato dos Stages 6–11 (`controls.steer` = alvo da roda em rad, + = esquerda) **só** para as suítes de regressão / self-tests 6–11 |
+
+Fronteira do host (ADAPTER): a camada de dispositivos `0057abc0` (DirectInput, calibração `005d04d0`) é substituída
+pelo adaptador Roblox, que escreve os dois controles brutos e o tipo de vínculo; o Roblox já normaliza o eixo do
+gamepad em −1..1. Adaptador: entradas `steerLeft` / `steerRight` (teclas), `steerAxis` + `steerAnalog = true`
+(gamepad `Thumbstick1`), `steer` legado (= teclas); atributos do carro `SteeringLinearity` (0..100),
+`SteeringMomentum` (0..100), `SteeringLowSpeedOverride` (bool), lidos a cada reset; aplicados:
+`SteeringLinearityApplied`, `SteeringRateApplied`, `SteeringRatioApplied`. Relação de direção pela garagem:
+`Setup_steeringRatio` (12..32, Stage 10). Telemetria: `hubSteerAngle` (média dos estados 15 / 21, + = esquerda),
+`roadWheelAngle` (guinada média das rodas dianteiras medida nas poses do solver, + = direita, ≈ −0,99·q),
+`steeringWheelAngle`, `steering {…}` (subconjunto de `steeringState`). Render snapshot: `steer` = ângulo do volante
+(flag `FLAG_WHEEL_ANGLE`).
+
+---
+
 # Térmico / desgaste / dano / combustível — API do Stage 11 (núcleo NR2003 Cup)
 
 O fim de quadro do carro é o **código original** `00554520` (+ dano de colisão `00549c40`), erguido do x86 para Luau

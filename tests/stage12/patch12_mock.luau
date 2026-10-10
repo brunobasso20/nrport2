@@ -119102,14 +119102,14 @@ function M:inputs() return self.V.inputs() end
 function M.displayGear(index) return index-1 end
 return M
 ]=])
-item("Roblox","CupChassisAdapter","ModuleScript",28501,1352800795,31749,2139380016,[=[
+item("Roblox","CupChassisAdapter","ModuleScript",28501,1352800795,32198,4136930264,[=[
 -- Stage 12: the ORIGINAL steering chain runs inside the core (00552720 device processing, linearity, x pi,
 -- 00554fb0 setup ratio item 0x30 with the low-speed override, per-tick ramp + toe -> prescribed hub coordinates).
 -- The adapter is only the device layer (0057abc0 equivalent): keys -> digital steering controls 7 / 8, an analog
 -- axis (gamepad / wheel, normalised -1..1 by Roblox) -> both controls split by sign. Driver options from car
 -- attributes: SteeringLinearity (controls.cfg value 0..100), SteeringMomentum (0..100, 0 = no slew),
--- SteeringLowSpeedOverride (bool), SteeringYawLimiter (race setting bit 25); absent = the original values when no
--- controls.cfg was loaded. The cockpit wheel draws the ORIGINAL 005662d0 angle; front wheels use the solver poses.
+-- SteeringLowSpeedOverride (bool); absent = the original values when no controls.cfg was loaded. (The arcade
+-- driving mode and steering assistance are not ported: the core refuses them.) The cockpit wheel draws the ORIGINAL 005662d0 angle; front wheels use the solver poses.
 -- Stage 11: the ORIGINAL per-frame runtime systems run inside the core (fuel burn and fuel mass, tyre thermal /
 -- hot pressure / wear / failure, brake temperature, engine thermal / damage / failure, random failures, collision
 -- damage). The adapter only starts the Stage 11 session with the race options (car attributes RaceDamageLevel 0..3,
@@ -119262,7 +119262,7 @@ function M:initialize()
         self.core:setSteeringMode("original")
         local function flag(name) local v=self.car:GetAttribute(name);if type(v)=="boolean" then return v end;return nil end
         local o=self.core:setSteeringOptions({linearity=num("SteeringLinearity"),momentum=num("SteeringMomentum"),
-            lowSpeedOverride=flag("SteeringLowSpeedOverride"),yawLimiter=flag("SteeringYawLimiter")})
+            lowSpeedOverride=flag("SteeringLowSpeedOverride")})
         self.car:SetAttribute("SteeringLinearityApplied",o.linearity);self.car:SetAttribute("SteeringRateApplied",o.steerRate)
         self.car:SetAttribute("SteeringRatioApplied",o.setupRatio)
         print(string.format("[NR2003 Stage 12] direção original: relação %g:1 (item 0x30), override baixa velocidade %s, linearidade %.2f, taxa %.4f/quadro",
@@ -119601,7 +119601,11 @@ function M:telemetry()
             overRev=s11.engine.overRev,damageScale=s11.damage.scale,engineDamage=s11.damage.engine,leakRadiator=s11.damage.radiator,
             leakOil=s11.damage.oil,leakFuel=s11.damage.fuel,zones=s11.damage.zones,failures=s11.damage.failures,
             broken=s11.damage.brokenFlags,airspeed=s11.airspeed,ambientK=s11.ambient} or nil,
-        roadWheelAngle=st[16]*0.5+st[22]*0.5,steeringWheelAngle=self:steeringWheelAngle(),steering=self:steeringTelemetry()}
+        -- Stage 12: hubSteerAngle = mean prescribed hub coordinate q (states 15 / 21, + = left; the original car[0x1554]),
+        -- a rotation about the inclined steering axis (caster 2.455 deg, inclination 9.215 deg); roadWheelAngle = mean
+        -- front wheel yaw measured from the solver wheel poses (+ = right, Stage 5 sign; about -0.99 q, no Ackermann)
+        hubSteerAngle=st[16]*0.5+st[22]*0.5,roadWheelAngle=(self.wheelPose[1].steer+self.wheelPose[2].steer)*0.5,
+        steeringWheelAngle=self:steeringWheelAngle(),steering=self:steeringTelemetry()}
 end
 -- Stage 12 steering telemetry (original cells, see STAGE12_STEERING_STATE_MAP.md); nil without the Stage 12 core
 function M:steeringTelemetry()
@@ -119966,7 +119970,7 @@ RunService.PreSimulation:Connect(function(dt)
 end)
 script.Destroying:Connect(function() controller:destroy() end)
 ]=])
-item("Client","NR2003Client","LocalScript",14210,2653526811,15162,3085570735,[=[
+item("Client","NR2003Client","LocalScript",14210,2653526811,15936,3687068143,[=[
 local Players=game:GetService("Players")
 local RunService=game:GetService("RunService")
 local CAS=game:GetService("ContextActionService")
@@ -120021,9 +120025,11 @@ local rows={};for j=1,4 do rows[j]=label(panel,"Wheel"..j,98+(j-1)*20,20,13) end
 local aeroLine=label(panel,"Aero",180,30,11);aeroLine.Text="";aeroLine.TextColor3=Color3.fromRGB(150,214,160)
 -- Stage 11: runtime systems line (ORIGINAL cells read by the server adapter at telemetry rate; display only)
 local s11Line=label(panel,"Stage11",212,30,11);s11Line.Text="";s11Line.TextColor3=Color3.fromRGB(236,200,140)
-local hint=label(panel,"Controls",247,50,11)
-hint.Text="W/S acelerar/frear   A/D direção   E/Q marchas\nShift embreagem   Espaço freio de mão   X sair\nT painel   G contatos   H render diag   V câmera   R reposicionar"
-local status=label(panel,"Status",296,16,11);status.Text="Tune de teste | contato por raycast"
+-- Stage 12: steering line (ORIGINAL steering cells read by the server adapter at telemetry rate; display only)
+local steerLine=label(panel,"Stage12",246,16,11);steerLine.Text="";steerLine.TextColor3=Color3.fromRGB(190,172,244)
+local hint=label(panel,"Controls",265,50,11)
+hint.Text="W/S acelerar/frear   A/D direção (gamepad: analógico esquerdo)   E/Q marchas\nShift embreagem   Espaço freio de mão   X sair\nT painel   G contatos   H render diag   V câmera   R reposicionar"
+local status=label(panel,"Status",314,16,11);status.Text="Tune de teste | contato por raycast"
 local renderInfo=Instance.new("TextLabel");renderInfo.Name="RenderDiagnostics";renderInfo.AnchorPoint=Vector2.new(1,0)
 renderInfo.Position=UDim2.new(1,-16,0,20);renderInfo.Size=UDim2.fromOffset(390,142);renderInfo.BackgroundColor3=Color3.fromRGB(17,24,34)
 renderInfo.BackgroundTransparency=0.08;renderInfo.BorderSizePixel=0;renderInfo.TextColor3=Color3.fromRGB(225,232,240)
@@ -120110,6 +120116,12 @@ telemetry.OnClientEvent:Connect(function(data)
     elseif s then
         s11Line.Text="ESTÁGIO 11 congelado (Stage11Runtime=frozen): combustível/térmica/desgaste/dano nos valores pós-build"
     else s11Line.Text="" end
+    local sd=data.steering
+    if sd and sd.mode=="original" then
+        steerLine.Text=string.format("DIREÇÃO %s  entrada %+.3f  relação %.1f:1  alvo %+.2f°  cubos %+.2f/%+.2f°  rodas %+.2f°  volante %+.0f°",
+            sd.digital and "teclas" or "eixo",sd.input or 0,sd.ratioNow or 0,math.deg(sd.target or 0),math.deg(sd.hubLF or 0),math.deg(sd.hubRF or 0),
+            math.deg(data.roadWheelAngle or 0),math.deg(data.steeringWheelAngle or 0))
+    else steerLine.Text="" end
     if data.mode=="NR2003_CUP" then
         status.Text=data.fault and "Física pausada; veja Output. R reinicia." or string.format("acel %.2f | pedal freio %.2f -> núcleo %.2f | viés %d%% | embr %.2f | lim %s%s",
             data.throttleIn or 0,data.brakePedal or 0,data.brakeCore or data.brakeIn or 0,data.brakeBias or 74,data.clutchIn or 0,data.limiter and "ON" or "off",data.collision and " | colisão" or "")
@@ -120146,8 +120158,8 @@ local function frame(dt)
     updateRenderDiag(dt)
     if not driving then return end
     header.Visible=expanded;for _,r in ipairs(rows) do r.Visible=expanded end
-    aeroLine.Visible=expanded;s11Line.Visible=expanded
-    hint.Visible=expanded;status.Visible=expanded;panel.Size=UDim2.fromOffset(600,expanded and 316 or 76)
+    aeroLine.Visible=expanded;s11Line.Visible=expanded;steerLine.Visible=expanded
+    hint.Visible=expanded;status.Visible=expanded;panel.Size=UDim2.fromOffset(600,expanded and 334 or 76)
     local camera=workspace.CurrentCamera
     if cameraMode==1 then
         camera.CameraType=Enum.CameraType.Scriptable;camera.FieldOfView=savedFieldOfView or 70
@@ -120189,7 +120201,7 @@ script.Destroying:Connect(function()
     RunService:UnbindFromRenderStep(renderName);presentation:destroy();unbind()
 end)
 ]=])
-item("NR2003Cup","NR2003CupSteering","ModuleScript",nil,nil,17974,3924890501,[=[
+item("NR2003Cup","NR2003CupSteering","ModuleScript",nil,nil,19023,260751823,[=[
 --!native
 --!optimize 2
 -- Stage 12: the ORIGINAL NR2003 steering chain of the player car (hand port of the x86, float32 stores round
@@ -120204,7 +120216,9 @@ item("NR2003Cup","NR2003CupSteering","ModuleScript",nil,nil,17974,3924890501,[=[
 --     00552d00(8) / 00552d00(7): per-control slew limit 74c990 (steering 'momentum') and sin(x * pi/2) shaping
 --       (only while the rate is < 1; Stage 8 hand port V.axisOriginal)
 --     speed sensitivity  k = L * 0.15 * exp(-0.000493827 * v^2) + (1 - L * 0.15),  L = 00552410()
---     yaw-rate limiter (race settings +0x4c bit 25, 0055a770): (min(12.25 / v, |r|) / max(|r|, 0.01)) * 0.9 + 0.1
+--     yaw-rate limiter (race settings +0x4c bit 25 = driving mode ARCADE, player.ini DrivingMode, 0055a770):
+--       (min(12.25 / v, |r|) / max(|r|, 0.01)) * 0.9 + 0.1 ; arcade also remaps L (00552410) and selects car chassis
+--       spec 0 at build time (004233a0) -> NOT PORTED as a production option (validation only, see setSteeringOptions)
 --     steering assistance (bf6f08 > 0, 00550230): needs the track racing line -> NOT PORTED (refused)
 --   00551e80 tail: bf63c0 = -bf63c8 ; 005524b0 ; linearity  x = sign * |x|^(L + 1)  (00552410() != 0 and both
 --     steering controls analog) ; road-wheel target = f32(x * pi) / 00554fb0() ; bf63b8 / bf6e80 / ramp bf6e88
@@ -120458,12 +120472,20 @@ return function(V)
 		end
 	end
 	-- opts: linearity (controls.cfg integer 0..100; nil = keep), linearityRaw (bf6f00 value 0..1), momentum (steering
-	-- momentum 0..100, 0 = no slew limit), lowSpeedOverride (bool), yawLimiter (race settings bit 25), assist (0..100:
-	-- only 0 is accepted, see steerInput). Values survive reset(); nil options = the image values (no message).
-	function V.setSteeringOptions(opts)
+	-- momentum 0..100, 0 = no slew limit), lowSpeedOverride (bool), assist (0..100: only 0 is accepted, see
+	-- steerInput). Values survive reset(); nil options = the image values (no message).
+	-- yawLimiter = race settings +0x4c bit 25, the session option DrivingMode = ARCADE (player.ini, default Simulation):
+	-- besides the 00552720 limiter and the 00552410 remap, arcade makes 004233a0 select car chassis spec 0 (8945b8)
+	-- instead of the Cup spec (7238e0) when the car is built -- not recovered / not ported. Bit 25 on the Cup spec is a
+	-- combination the original never runs, so yawLimiter = true is refused unless `validation` is true (the tests use
+	-- it to compare the 00552720 / 00552410 bit-25 branch with the Unicorn reference, which sets the same bit).
+	function V.setSteeringOptions(opts, validation)
 		opts = opts or {}
 		if opts.assist ~= nil and (tonumber(opts.assist) or 0) ~= 0 then
 			error("NR2003 Stage 12: steering assistance > 0 needs the NR2003 track racing line: not ported")
+		end
+		if opts.yawLimiter == true and validation ~= true then
+			error("NR2003 Stage 12: arcade driving mode (race settings bit 25) also selects car chassis spec 0 at build (004233a0): not ported")
 		end
 		options = table.clone(opts)
 		options.assist = nil
@@ -120474,6 +120496,7 @@ return function(V)
 	function V.steeringOptions()
 		return {linearity = rf32(0xbf6f00), steerRate = rf32(0x74c990), releaseFactor = rf32(0x74c99c),
 			lowSpeedOverride = r8(0x74c9a0) ~= 0, assist = rf32(0xbf6f08), yawLimiter = settingsBit25(),
+			drivingMode = settingsBit25() and "arcade" or "simulation",
 			aidsDisabled = band(r32(SETTINGS + 0x4c), 0x20000000) ~= 0, setupRatio = rf32(SETUP_RATIO)}
 	end
 	local baseReset = V.reset
@@ -120526,7 +120549,7 @@ return function(V)
 	return V
 end
 ]=])
-item("Roblox","Stage12SelfTest","ModuleScript",nil,nil,190846,1567202851,[=[
+item("Roblox","Stage12SelfTest","ModuleScript",nil,nil,191054,3549153851,[=[
 -- Stage 12 Studio self-test (edit mode or Play, server side). Golden values embedded below were produced by the
 -- ORIGINAL NR2003.exe code executed in Unicorn (recovery/stage12: gen_units12.py / gen_fixtures12.py):
 --   require(game.ReplicatedStorage.NR2003Lab.Roblox.Stage12SelfTest).run()      -- quick (~2-4 s)
@@ -120659,7 +120682,7 @@ function M.run(full)
             local st=V.Setup.cupGarageDefault();V.Setup.set(st,"steeringRatio",sc.ratio);V.applySetup(st)
         else V.applySetup(V.Setup.cupGarageDefault()) end
         V.reset()
-        if sc.steer then V.setSteeringOptions(sc.steer) end
+        if sc.steer then V.setSteeringOptions(sc.steer,true) end
         V.startSession({temperatureF=70,windSpeedMph=0,windDirection=0,conditions=0,night=false},{damageLevel=0,series=1})
         local nn,dd,cnt=0,0,0
         for i,sn in ipairs(sc.start) do
@@ -120684,6 +120707,8 @@ function M.run(full)
         and math.abs(o.linearity-0.8)<1e-6 and V.steerRatioOriginal()==25)
     V.clearSteeringOptions();V.applySetup(V.Setup.cupGarageDefault());V.reset()
     check("steering assistance > 0 refused (needs the NR2003 track racing line)",not pcall(V.setSteeringOptions,{assist=50}))
+    check("arcade driving mode (race bit 25: also chassis spec 0 at build, 004233a0) refused",not pcall(V.setSteeringOptions,{yawLimiter=true})
+        and V.steeringOptions().drivingMode=="simulation")
     if full then
         local function run(n,k0)
             local out={}
@@ -120808,7 +120833,7 @@ print("Stage 12 aplicado ("..(firstInstall and "backup: ServerStorage.NR2003Back
 print("Direção ORIGINAL do NR2003: dispositivo (A/D = teclas, analógico do gamepad = eixo) -> 00552720 (taxa + seno, sensibilidade")
 print("  por velocidade) -> linearidade -> x pi / relação do setup (item 0x30, 18:1; 7:1 abaixo de 20 mph) -> rampa + toe -> cubos.")
 print("Atributos do TestCar (no reset, R): Setup_steeringRatio 12..32, SteeringLinearity 0..100 (controls.cfg), SteeringMomentum")
-print("  0..100 (0 = sem taxa), SteeringLowSpeedOverride true/false, SteeringYawLimiter. O volante do cockpit é o ângulo original.")
+print("  0..100 (0 = sem taxa), SteeringLowSpeedOverride true/false (modo arcade e assistência: não portados, recusados). O volante do cockpit é o ângulo original.")
 print("O place NÃO foi salvo. Reverter: PATCH_STAGE12_ROLLBACK.lua. Auto-teste completo: require(...Roblox.Stage12SelfTest).run(true)")
 ]==]
 local INSTALL12 = [==[
@@ -120868,8 +120893,8 @@ do local s=assert(staging:FindFirstChild("Core.NR2003CupVehicle"),"fonte Core.NR
     assert(#s.Source==9070,"fonte Core.NR2003CupVehicle incompleta: cole de novo as partes")
     item("Core","NR2003CupVehicle","ModuleScript",7925,3736862230,9070,588044759,s.Source) end
 do local s=assert(staging:FindFirstChild("Roblox.CupChassisAdapter"),"fonte Roblox.CupChassisAdapter ausente: cole de novo as partes")
-    assert(#s.Source==31749,"fonte Roblox.CupChassisAdapter incompleta: cole de novo as partes")
-    item("Roblox","CupChassisAdapter","ModuleScript",28501,1352800795,31749,2139380016,s.Source) end
+    assert(#s.Source==32198,"fonte Roblox.CupChassisAdapter incompleta: cole de novo as partes")
+    item("Roblox","CupChassisAdapter","ModuleScript",28501,1352800795,32198,4136930264,s.Source) end
 do local s=assert(staging:FindFirstChild("Roblox.Cockpit"),"fonte Roblox.Cockpit ausente: cole de novo as partes")
     assert(#s.Source==4459,"fonte Roblox.Cockpit incompleta: cole de novo as partes")
     item("Roblox","Cockpit","ModuleScript",3958,2216434014,4459,1431653166,s.Source) end
@@ -120883,14 +120908,14 @@ do local s=assert(staging:FindFirstChild("Server.NR2003Server"),"fonte Server.NR
     assert(#s.Source==4742,"fonte Server.NR2003Server incompleta: cole de novo as partes")
     item("Server","NR2003Server","Script",4009,1117744807,4742,3952310422,s.Source) end
 do local s=assert(staging:FindFirstChild("Client.NR2003Client"),"fonte Client.NR2003Client ausente: cole de novo as partes")
-    assert(#s.Source==15162,"fonte Client.NR2003Client incompleta: cole de novo as partes")
-    item("Client","NR2003Client","LocalScript",14210,2653526811,15162,3085570735,s.Source) end
+    assert(#s.Source==15936,"fonte Client.NR2003Client incompleta: cole de novo as partes")
+    item("Client","NR2003Client","LocalScript",14210,2653526811,15936,3687068143,s.Source) end
 do local s=assert(staging:FindFirstChild("NR2003Cup.NR2003CupSteering"),"fonte NR2003Cup.NR2003CupSteering ausente: cole de novo as partes")
-    assert(#s.Source==17974,"fonte NR2003Cup.NR2003CupSteering incompleta: cole de novo as partes")
-    item("NR2003Cup","NR2003CupSteering","ModuleScript",nil,nil,17974,3924890501,s.Source) end
+    assert(#s.Source==19023,"fonte NR2003Cup.NR2003CupSteering incompleta: cole de novo as partes")
+    item("NR2003Cup","NR2003CupSteering","ModuleScript",nil,nil,19023,260751823,s.Source) end
 do local s=assert(staging:FindFirstChild("Roblox.Stage12SelfTest"),"fonte Roblox.Stage12SelfTest ausente: cole de novo as partes")
-    assert(#s.Source==190846,"fonte Roblox.Stage12SelfTest incompleta: cole de novo as partes")
-    item("Roblox","Stage12SelfTest","ModuleScript",nil,nil,190846,1567202851,s.Source) end
+    assert(#s.Source==191054,"fonte Roblox.Stage12SelfTest incompleta: cole de novo as partes")
+    item("Roblox","Stage12SelfTest","ModuleScript",nil,nil,191054,3549153851,s.Source) end
 edit("Roblox","Stage67SelfTest",[=[
 if V.setRuntimeMode then V.setRuntimeMode("frozen") end]=],[=[
 if V.setRuntimeMode then V.setRuntimeMode("frozen") end if V.setSteeringMode then V.setSteeringMode("provisional") end]=],60457,511586509,60520,2889733461)
@@ -120993,7 +121018,7 @@ print("Stage 12 aplicado ("..(firstInstall and "backup: ServerStorage.NR2003Back
 print("Direção ORIGINAL do NR2003: dispositivo (A/D = teclas, analógico do gamepad = eixo) -> 00552720 (taxa + seno, sensibilidade")
 print("  por velocidade) -> linearidade -> x pi / relação do setup (item 0x30, 18:1; 7:1 abaixo de 20 mph) -> rampa + toe -> cubos.")
 print("Atributos do TestCar (no reset, R): Setup_steeringRatio 12..32, SteeringLinearity 0..100 (controls.cfg), SteeringMomentum")
-print("  0..100 (0 = sem taxa), SteeringLowSpeedOverride true/false, SteeringYawLimiter. O volante do cockpit é o ângulo original.")
+print("  0..100 (0 = sem taxa), SteeringLowSpeedOverride true/false (modo arcade e assistência: não portados, recusados). O volante do cockpit é o ângulo original.")
 print("O place NÃO foi salvo. Reverter: PATCH_STAGE12_ROLLBACK.lua. Auto-teste completo: require(...Roblox.Stage12SelfTest).run(true)")
 ]==]
 local ROLLBACK12 = [=[
@@ -121706,8 +121731,8 @@ stage("Roblox.CupChassisAdapter",[=[
 -- The adapter is only the device layer (0057abc0 equivalent): keys -> digital steering controls 7 / 8, an analog
 -- axis (gamepad / wheel, normalised -1..1 by Roblox) -> both controls split by sign. Driver options from car
 -- attributes: SteeringLinearity (controls.cfg value 0..100), SteeringMomentum (0..100, 0 = no slew),
--- SteeringLowSpeedOverride (bool), SteeringYawLimiter (race setting bit 25); absent = the original values when no
--- controls.cfg was loaded. The cockpit wheel draws the ORIGINAL 005662d0 angle; front wheels use the solver poses.
+-- SteeringLowSpeedOverride (bool); absent = the original values when no controls.cfg was loaded. (The arcade
+-- driving mode and steering assistance are not ported: the core refuses them.) The cockpit wheel draws the ORIGINAL 005662d0 angle; front wheels use the solver poses.
 -- Stage 11: the ORIGINAL per-frame runtime systems run inside the core (fuel burn and fuel mass, tyre thermal /
 -- hot pressure / wear / failure, brake temperature, engine thermal / damage / failure, random failures, collision
 -- damage). The adapter only starts the Stage 11 session with the race options (car attributes RaceDamageLevel 0..3,
@@ -121860,7 +121885,7 @@ function M:initialize()
         self.core:setSteeringMode("original")
         local function flag(name) local v=self.car:GetAttribute(name);if type(v)=="boolean" then return v end;return nil end
         local o=self.core:setSteeringOptions({linearity=num("SteeringLinearity"),momentum=num("SteeringMomentum"),
-            lowSpeedOverride=flag("SteeringLowSpeedOverride"),yawLimiter=flag("SteeringYawLimiter")})
+            lowSpeedOverride=flag("SteeringLowSpeedOverride")})
         self.car:SetAttribute("SteeringLinearityApplied",o.linearity);self.car:SetAttribute("SteeringRateApplied",o.steerRate)
         self.car:SetAttribute("SteeringRatioApplied",o.setupRatio)
         print(string.format("[NR2003 Stage 12] direção original: relação %g:1 (item 0x30), override baixa velocidade %s, linearidade %.2f, taxa %.4f/quadro",
@@ -122199,7 +122224,11 @@ function M:telemetry()
             overRev=s11.engine.overRev,damageScale=s11.damage.scale,engineDamage=s11.damage.engine,leakRadiator=s11.damage.radiator,
             leakOil=s11.damage.oil,leakFuel=s11.damage.fuel,zones=s11.damage.zones,failures=s11.damage.failures,
             broken=s11.damage.brokenFlags,airspeed=s11.airspeed,ambientK=s11.ambient} or nil,
-        roadWheelAngle=st[16]*0.5+st[22]*0.5,steeringWheelAngle=self:steeringWheelAngle(),steering=self:steeringTelemetry()}
+        -- Stage 12: hubSteerAngle = mean prescribed hub coordinate q (states 15 / 21, + = left; the original car[0x1554]),
+        -- a rotation about the inclined steering axis (caster 2.455 deg, inclination 9.215 deg); roadWheelAngle = mean
+        -- front wheel yaw measured from the solver wheel poses (+ = right, Stage 5 sign; about -0.99 q, no Ackermann)
+        hubSteerAngle=st[16]*0.5+st[22]*0.5,roadWheelAngle=(self.wheelPose[1].steer+self.wheelPose[2].steer)*0.5,
+        steeringWheelAngle=self:steeringWheelAngle(),steering=self:steeringTelemetry()}
 end
 -- Stage 12 steering telemetry (original cells, see STAGE12_STEERING_STATE_MAP.md); nil without the Stage 12 core
 function M:steeringTelemetry()
@@ -122619,9 +122648,11 @@ local rows={};for j=1,4 do rows[j]=label(panel,"Wheel"..j,98+(j-1)*20,20,13) end
 local aeroLine=label(panel,"Aero",180,30,11);aeroLine.Text="";aeroLine.TextColor3=Color3.fromRGB(150,214,160)
 -- Stage 11: runtime systems line (ORIGINAL cells read by the server adapter at telemetry rate; display only)
 local s11Line=label(panel,"Stage11",212,30,11);s11Line.Text="";s11Line.TextColor3=Color3.fromRGB(236,200,140)
-local hint=label(panel,"Controls",247,50,11)
-hint.Text="W/S acelerar/frear   A/D direção   E/Q marchas\nShift embreagem   Espaço freio de mão   X sair\nT painel   G contatos   H render diag   V câmera   R reposicionar"
-local status=label(panel,"Status",296,16,11);status.Text="Tune de teste | contato por raycast"
+-- Stage 12: steering line (ORIGINAL steering cells read by the server adapter at telemetry rate; display only)
+local steerLine=label(panel,"Stage12",246,16,11);steerLine.Text="";steerLine.TextColor3=Color3.fromRGB(190,172,244)
+local hint=label(panel,"Controls",265,50,11)
+hint.Text="W/S acelerar/frear   A/D direção (gamepad: analógico esquerdo)   E/Q marchas\nShift embreagem   Espaço freio de mão   X sair\nT painel   G contatos   H render diag   V câmera   R reposicionar"
+local status=label(panel,"Status",314,16,11);status.Text="Tune de teste | contato por raycast"
 local renderInfo=Instance.new("TextLabel");renderInfo.Name="RenderDiagnostics";renderInfo.AnchorPoint=Vector2.new(1,0)
 renderInfo.Position=UDim2.new(1,-16,0,20);renderInfo.Size=UDim2.fromOffset(390,142);renderInfo.BackgroundColor3=Color3.fromRGB(17,24,34)
 renderInfo.BackgroundTransparency=0.08;renderInfo.BorderSizePixel=0;renderInfo.TextColor3=Color3.fromRGB(225,232,240)
@@ -122708,6 +122739,12 @@ telemetry.OnClientEvent:Connect(function(data)
     elseif s then
         s11Line.Text="ESTÁGIO 11 congelado (Stage11Runtime=frozen): combustível/térmica/desgaste/dano nos valores pós-build"
     else s11Line.Text="" end
+    local sd=data.steering
+    if sd and sd.mode=="original" then
+        steerLine.Text=string.format("DIREÇÃO %s  entrada %+.3f  relação %.1f:1  alvo %+.2f°  cubos %+.2f/%+.2f°  rodas %+.2f°  volante %+.0f°",
+            sd.digital and "teclas" or "eixo",sd.input or 0,sd.ratioNow or 0,math.deg(sd.target or 0),math.deg(sd.hubLF or 0),math.deg(sd.hubRF or 0),
+            math.deg(data.roadWheelAngle or 0),math.deg(data.steeringWheelAngle or 0))
+    else steerLine.Text="" end
     if data.mode=="NR2003_CUP" then
         status.Text=data.fault and "Física pausada; veja Output. R reinicia." or string.format("acel %.2f | pedal freio %.2f -> núcleo %.2f | viés %d%% | embr %.2f | lim %s%s",
             data.throttleIn or 0,data.brakePedal or 0,data.brakeCore or data.brakeIn or 0,data.brakeBias or 74,data.clutchIn or 0,data.limiter and "ON" or "off",data.collision and " | colisão" or "")
@@ -122744,8 +122781,8 @@ local function frame(dt)
     updateRenderDiag(dt)
     if not driving then return end
     header.Visible=expanded;for _,r in ipairs(rows) do r.Visible=expanded end
-    aeroLine.Visible=expanded;s11Line.Visible=expanded
-    hint.Visible=expanded;status.Visible=expanded;panel.Size=UDim2.fromOffset(600,expanded and 316 or 76)
+    aeroLine.Visible=expanded;s11Line.Visible=expanded;steerLine.Visible=expanded
+    hint.Visible=expanded;status.Visible=expanded;panel.Size=UDim2.fromOffset(600,expanded and 334 or 76)
     local camera=workspace.CurrentCamera
     if cameraMode==1 then
         camera.CameraType=Enum.CameraType.Scriptable;camera.FieldOfView=savedFieldOfView or 70
@@ -122802,7 +122839,9 @@ stage("NR2003Cup.NR2003CupSteering",[=[
 --     00552d00(8) / 00552d00(7): per-control slew limit 74c990 (steering 'momentum') and sin(x * pi/2) shaping
 --       (only while the rate is < 1; Stage 8 hand port V.axisOriginal)
 --     speed sensitivity  k = L * 0.15 * exp(-0.000493827 * v^2) + (1 - L * 0.15),  L = 00552410()
---     yaw-rate limiter (race settings +0x4c bit 25, 0055a770): (min(12.25 / v, |r|) / max(|r|, 0.01)) * 0.9 + 0.1
+--     yaw-rate limiter (race settings +0x4c bit 25 = driving mode ARCADE, player.ini DrivingMode, 0055a770):
+--       (min(12.25 / v, |r|) / max(|r|, 0.01)) * 0.9 + 0.1 ; arcade also remaps L (00552410) and selects car chassis
+--       spec 0 at build time (004233a0) -> NOT PORTED as a production option (validation only, see setSteeringOptions)
 --     steering assistance (bf6f08 > 0, 00550230): needs the track racing line -> NOT PORTED (refused)
 --   00551e80 tail: bf63c0 = -bf63c8 ; 005524b0 ; linearity  x = sign * |x|^(L + 1)  (00552410() != 0 and both
 --     steering controls analog) ; road-wheel target = f32(x * pi) / 00554fb0() ; bf63b8 / bf6e80 / ramp bf6e88
@@ -123056,12 +123095,20 @@ return function(V)
 		end
 	end
 	-- opts: linearity (controls.cfg integer 0..100; nil = keep), linearityRaw (bf6f00 value 0..1), momentum (steering
-	-- momentum 0..100, 0 = no slew limit), lowSpeedOverride (bool), yawLimiter (race settings bit 25), assist (0..100:
-	-- only 0 is accepted, see steerInput). Values survive reset(); nil options = the image values (no message).
-	function V.setSteeringOptions(opts)
+	-- momentum 0..100, 0 = no slew limit), lowSpeedOverride (bool), assist (0..100: only 0 is accepted, see
+	-- steerInput). Values survive reset(); nil options = the image values (no message).
+	-- yawLimiter = race settings +0x4c bit 25, the session option DrivingMode = ARCADE (player.ini, default Simulation):
+	-- besides the 00552720 limiter and the 00552410 remap, arcade makes 004233a0 select car chassis spec 0 (8945b8)
+	-- instead of the Cup spec (7238e0) when the car is built -- not recovered / not ported. Bit 25 on the Cup spec is a
+	-- combination the original never runs, so yawLimiter = true is refused unless `validation` is true (the tests use
+	-- it to compare the 00552720 / 00552410 bit-25 branch with the Unicorn reference, which sets the same bit).
+	function V.setSteeringOptions(opts, validation)
 		opts = opts or {}
 		if opts.assist ~= nil and (tonumber(opts.assist) or 0) ~= 0 then
 			error("NR2003 Stage 12: steering assistance > 0 needs the NR2003 track racing line: not ported")
+		end
+		if opts.yawLimiter == true and validation ~= true then
+			error("NR2003 Stage 12: arcade driving mode (race settings bit 25) also selects car chassis spec 0 at build (004233a0): not ported")
 		end
 		options = table.clone(opts)
 		options.assist = nil
@@ -123072,6 +123119,7 @@ return function(V)
 	function V.steeringOptions()
 		return {linearity = rf32(0xbf6f00), steerRate = rf32(0x74c990), releaseFactor = rf32(0x74c99c),
 			lowSpeedOverride = r8(0x74c9a0) ~= 0, assist = rf32(0xbf6f08), yawLimiter = settingsBit25(),
+			drivingMode = settingsBit25() and "arcade" or "simulation",
 			aidsDisabled = band(r32(SETTINGS + 0x4c), 0x20000000) ~= 0, setupRatio = rf32(SETUP_RATIO)}
 	end
 	local baseReset = V.reset
@@ -123277,7 +123325,7 @@ function M.run(full)
             local st=V.Setup.cupGarageDefault();V.Setup.set(st,"steeringRatio",sc.ratio);V.applySetup(st)
         else V.applySetup(V.Setup.cupGarageDefault()) end
         V.reset()
-        if sc.steer then V.setSteeringOptions(sc.steer) end
+        if sc.steer then V.setSteeringOptions(sc.steer,true) end
         V.startSession({temperatureF=70,windSpeedMph=0,windDirection=0,conditions=0,night=false},{damageLevel=0,series=1})
         local nn,dd,cnt=0,0,0
         for i,sn in ipairs(sc.start) do
@@ -123302,6 +123350,8 @@ function M.run(full)
         and math.abs(o.linearity-0.8)<1e-6 and V.steerRatioOriginal()==25)
     V.clearSteeringOptions();V.applySetup(V.Setup.cupGarageDefault());V.reset()
     check("steering assistance > 0 refused (needs the NR2003 track racing line)",not pcall(V.setSteeringOptions,{assist=50}))
+    check("arcade driving mode (race bit 25: also chassis spec 0 at build, 004233a0) refused",not pcall(V.setSteeringOptions,{yawLimiter=true})
+        and V.steeringOptions().drivingMode=="simulation")
     if full then
         local function run(n,k0)
             local out={}

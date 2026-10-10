@@ -52,9 +52,11 @@ local rows={};for j=1,4 do rows[j]=label(panel,"Wheel"..j,98+(j-1)*20,20,13) end
 local aeroLine=label(panel,"Aero",180,30,11);aeroLine.Text="";aeroLine.TextColor3=Color3.fromRGB(150,214,160)
 -- Stage 11: runtime systems line (ORIGINAL cells read by the server adapter at telemetry rate; display only)
 local s11Line=label(panel,"Stage11",212,30,11);s11Line.Text="";s11Line.TextColor3=Color3.fromRGB(236,200,140)
-local hint=label(panel,"Controls",247,50,11)
-hint.Text="W/S acelerar/frear   A/D direção   E/Q marchas\nShift embreagem   Espaço freio de mão   X sair\nT painel   G contatos   H render diag   V câmera   R reposicionar"
-local status=label(panel,"Status",296,16,11);status.Text="Tune de teste | contato por raycast"
+-- Stage 12: steering line (ORIGINAL steering cells read by the server adapter at telemetry rate; display only)
+local steerLine=label(panel,"Stage12",246,16,11);steerLine.Text="";steerLine.TextColor3=Color3.fromRGB(190,172,244)
+local hint=label(panel,"Controls",265,50,11)
+hint.Text="W/S acelerar/frear   A/D direção (gamepad: analógico esquerdo)   E/Q marchas\nShift embreagem   Espaço freio de mão   X sair\nT painel   G contatos   H render diag   V câmera   R reposicionar"
+local status=label(panel,"Status",314,16,11);status.Text="Tune de teste | contato por raycast"
 local renderInfo=Instance.new("TextLabel");renderInfo.Name="RenderDiagnostics";renderInfo.AnchorPoint=Vector2.new(1,0)
 renderInfo.Position=UDim2.new(1,-16,0,20);renderInfo.Size=UDim2.fromOffset(390,142);renderInfo.BackgroundColor3=Color3.fromRGB(17,24,34)
 renderInfo.BackgroundTransparency=0.08;renderInfo.BorderSizePixel=0;renderInfo.TextColor3=Color3.fromRGB(225,232,240)
@@ -141,6 +143,12 @@ telemetry.OnClientEvent:Connect(function(data)
     elseif s then
         s11Line.Text="ESTÁGIO 11 congelado (Stage11Runtime=frozen): combustível/térmica/desgaste/dano nos valores pós-build"
     else s11Line.Text="" end
+    local sd=data.steering
+    if sd and sd.mode=="original" then
+        steerLine.Text=string.format("DIREÇÃO %s  entrada %+.3f  relação %.1f:1  alvo %+.2f°  cubos %+.2f/%+.2f°  rodas %+.2f°  volante %+.0f°",
+            sd.digital and "teclas" or "eixo",sd.input or 0,sd.ratioNow or 0,math.deg(sd.target or 0),math.deg(sd.hubLF or 0),math.deg(sd.hubRF or 0),
+            math.deg(data.roadWheelAngle or 0),math.deg(data.steeringWheelAngle or 0))
+    else steerLine.Text="" end
     if data.mode=="NR2003_CUP" then
         status.Text=data.fault and "Física pausada; veja Output. R reinicia." or string.format("acel %.2f | pedal freio %.2f -> núcleo %.2f | viés %d%% | embr %.2f | lim %s%s",
             data.throttleIn or 0,data.brakePedal or 0,data.brakeCore or data.brakeIn or 0,data.brakeBias or 74,data.clutchIn or 0,data.limiter and "ON" or "off",data.collision and " | colisão" or "")
@@ -177,8 +185,8 @@ local function frame(dt)
     updateRenderDiag(dt)
     if not driving then return end
     header.Visible=expanded;for _,r in ipairs(rows) do r.Visible=expanded end
-    aeroLine.Visible=expanded;s11Line.Visible=expanded
-    hint.Visible=expanded;status.Visible=expanded;panel.Size=UDim2.fromOffset(600,expanded and 316 or 76)
+    aeroLine.Visible=expanded;s11Line.Visible=expanded;steerLine.Visible=expanded
+    hint.Visible=expanded;status.Visible=expanded;panel.Size=UDim2.fromOffset(600,expanded and 334 or 76)
     local camera=workspace.CurrentCamera
     if cameraMode==1 then
         camera.CameraType=Enum.CameraType.Scriptable;camera.FieldOfView=savedFieldOfView or 70

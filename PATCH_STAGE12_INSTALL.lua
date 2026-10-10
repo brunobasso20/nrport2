@@ -54,8 +54,8 @@ do local s=assert(staging:FindFirstChild("Core.NR2003CupVehicle"),"fonte Core.NR
     assert(#s.Source==9070,"fonte Core.NR2003CupVehicle incompleta: cole de novo as partes")
     item("Core","NR2003CupVehicle","ModuleScript",7925,3736862230,9070,588044759,s.Source) end
 do local s=assert(staging:FindFirstChild("Roblox.CupChassisAdapter"),"fonte Roblox.CupChassisAdapter ausente: cole de novo as partes")
-    assert(#s.Source==31749,"fonte Roblox.CupChassisAdapter incompleta: cole de novo as partes")
-    item("Roblox","CupChassisAdapter","ModuleScript",28501,1352800795,31749,2139380016,s.Source) end
+    assert(#s.Source==32198,"fonte Roblox.CupChassisAdapter incompleta: cole de novo as partes")
+    item("Roblox","CupChassisAdapter","ModuleScript",28501,1352800795,32198,4136930264,s.Source) end
 do local s=assert(staging:FindFirstChild("Roblox.Cockpit"),"fonte Roblox.Cockpit ausente: cole de novo as partes")
     assert(#s.Source==4459,"fonte Roblox.Cockpit incompleta: cole de novo as partes")
     item("Roblox","Cockpit","ModuleScript",3958,2216434014,4459,1431653166,s.Source) end
@@ -69,14 +69,14 @@ do local s=assert(staging:FindFirstChild("Server.NR2003Server"),"fonte Server.NR
     assert(#s.Source==4742,"fonte Server.NR2003Server incompleta: cole de novo as partes")
     item("Server","NR2003Server","Script",4009,1117744807,4742,3952310422,s.Source) end
 do local s=assert(staging:FindFirstChild("Client.NR2003Client"),"fonte Client.NR2003Client ausente: cole de novo as partes")
-    assert(#s.Source==15162,"fonte Client.NR2003Client incompleta: cole de novo as partes")
-    item("Client","NR2003Client","LocalScript",14210,2653526811,15162,3085570735,s.Source) end
+    assert(#s.Source==15936,"fonte Client.NR2003Client incompleta: cole de novo as partes")
+    item("Client","NR2003Client","LocalScript",14210,2653526811,15936,3687068143,s.Source) end
 do local s=assert(staging:FindFirstChild("NR2003Cup.NR2003CupSteering"),"fonte NR2003Cup.NR2003CupSteering ausente: cole de novo as partes")
-    assert(#s.Source==17974,"fonte NR2003Cup.NR2003CupSteering incompleta: cole de novo as partes")
-    item("NR2003Cup","NR2003CupSteering","ModuleScript",nil,nil,17974,3924890501,s.Source) end
+    assert(#s.Source==19023,"fonte NR2003Cup.NR2003CupSteering incompleta: cole de novo as partes")
+    item("NR2003Cup","NR2003CupSteering","ModuleScript",nil,nil,19023,260751823,s.Source) end
 do local s=assert(staging:FindFirstChild("Roblox.Stage12SelfTest"),"fonte Roblox.Stage12SelfTest ausente: cole de novo as partes")
-    assert(#s.Source==190846,"fonte Roblox.Stage12SelfTest incompleta: cole de novo as partes")
-    item("Roblox","Stage12SelfTest","ModuleScript",nil,nil,190846,1567202851,s.Source) end
+    assert(#s.Source==191054,"fonte Roblox.Stage12SelfTest incompleta: cole de novo as partes")
+    item("Roblox","Stage12SelfTest","ModuleScript",nil,nil,191054,3549153851,s.Source) end
 edit("Roblox","Stage67SelfTest",[=[
 if V.setRuntimeMode then V.setRuntimeMode("frozen") end]=],[=[
 if V.setRuntimeMode then V.setRuntimeMode("frozen") end if V.setSteeringMode then V.setSteeringMode("provisional") end]=],60457,511586509,60520,2889733461)
@@ -179,5 +179,5 @@ print("Stage 12 aplicado ("..(firstInstall and "backup: ServerStorage.NR2003Back
 print("Direção ORIGINAL do NR2003: dispositivo (A/D = teclas, analógico do gamepad = eixo) -> 00552720 (taxa + seno, sensibilidade")
 print("  por velocidade) -> linearidade -> x pi / relação do setup (item 0x30, 18:1; 7:1 abaixo de 20 mph) -> rampa + toe -> cubos.")
 print("Atributos do TestCar (no reset, R): Setup_steeringRatio 12..32, SteeringLinearity 0..100 (controls.cfg), SteeringMomentum")
-print("  0..100 (0 = sem taxa), SteeringLowSpeedOverride true/false, SteeringYawLimiter. O volante do cockpit é o ângulo original.")
+print("  0..100 (0 = sem taxa), SteeringLowSpeedOverride true/false (modo arcade e assistência: não portados, recusados). O volante do cockpit é o ângulo original.")
 print("O place NÃO foi salvo. Reverter: PATCH_STAGE12_ROLLBACK.lua. Auto-teste completo: require(...Roblox.Stage12SelfTest).run(true)")

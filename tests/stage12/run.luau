@@ -218,6 +218,8 @@ local function controlsOf(row)
 	return c
 end
 
+local PROTECTED = {}   -- data cell address -> {base = triple address, kind = 4 | 8, slot} (built per session)
+local buildProtected
 local function session(fx)
 	local s = fx.law.session
 	local weather = {temperatureF = s.temperature, windSpeedMph = s.wind_mph, windDirection = s.wind_dir,
@@ -235,7 +237,7 @@ local function session(fx)
 		V.applySetup(V.Setup.cupGarageDefault())
 	end
 	V.reset()
-	if fx.law.steer then V.setSteeringOptions(fx.law.steer) end
+	if fx.law.steer then V.setSteeringOptions(fx.law.steer, true) end -- validation: may set race bit 25 as the reference
 	V.startSession(weather, {damageLevel = o.damage_level, consumptionRate = o.consumption, series = o.series or 1, seed = o.seed})
 	buildProtected()
 end
@@ -292,8 +294,7 @@ local BLK = 0xf7f100 + 0xc0
 local INTCOUNT = 0x7559c4
 -- protected (XOR-coded) Stage 11 values (fuel double, engine / tyre values): compared by their decoded value, as in
 -- tests/stage11 (the fuel double differs by 1 ulp: x87 80-bit rounded down vs double, STAGE11_RECOVERY.md section 6)
-local PROTECTED = {}   -- data cell address -> {base = triple address, kind = 4 | 8, slot}
-local function buildProtected()
+function buildProtected()
 	table.clear(PROTECTED)
 	local E = 0xc12030 + 0xc
 	local list = {{E + 0x4a4, 4}, {E + 0x4d4, 4}, {E + 0x50c, 8}}
@@ -625,6 +626,14 @@ do
 	-- steering assistance needs the track racing line: refused
 	local okA = pcall(V.setSteeringOptions, {assist = 50})
 	check("steering assistance > 0 refused (needs the NR2003 track racing line; not ported)", not okA)
+	-- arcade driving mode (race bit 25) also selects car chassis spec 0 at build (004233a0): refused in production
+	local okArc = pcall(V.setSteeringOptions, {yawLimiter = true})
+	local simulation = V.steeringOptions().drivingMode == "simulation"
+	V.setSteeringOptions({yawLimiter = true}, true)
+	local arcadeValidation = V.steeringOptions().drivingMode == "arcade"
+	V.clearSteeringOptions(); V.reset()
+	check("arcade driving mode (race settings bit 25) refused in production; settable only for validation against the reference",
+		not okArc and simulation and arcadeValidation and V.steeringOptions().drivingMode == "simulation")
 	-- provisional mode = Stage 6-11 contract (regression suites)
 	V.setSteeringMode("provisional")
 	for _ = 1, 8 do V.drive({throttle = 0, clutch = 1, steer = 0.1}, FLAT) end

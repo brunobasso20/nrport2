@@ -1,3 +1,75 @@
+# Validação — Stage 12 (cadeia de direção)
+
+Executada nesta máquina com Luau CLI 0.741 (codegen nativo), Python 3 + Unicorn 2.1.4 + Capstone e Ghidra 11.1.2.
+Saídas: `tests/stage12/RESULTS_STAGE12.txt` (`tools/run_stage12_tests.sh` / `.ps1` roda tudo, incluindo as suítes 6/7–11,
+o mock do adaptador e os mocks dos 6 patches). Método e tolerâncias: **`STAGE12_VALIDATION.md`**.
+
+## Método
+
+1. **Referência = código original** executado no Unicorn (`recovery/stage12/orig_stage12.py`): início de quadro do
+   jogador `005524f0` → `00552720` e a cauda de `00551e80` executados do exe, com a física por tick e o fim de quadro do
+   Stage 11 — mesma fronteira de host do port (células brutas dos controles 7/8 e tipo de vínculo).
+2. **L1 funções** vetor a vetor (bit a bit em todo f32 gravado). **L2** início de quadro com o estado rastreado do
+   original, bit a bit. **L3** reinícios de estado completo (um quadro) dentro de 4× a sensibilidade de um quadro do
+   original. **L4** malha fechada dentro de 4× o envelope de 14 gêmeos do original. **L5** 5 erros deliberados de
+   mapeamento precisam ser detectados.
+
+## Resultados automáticos
+
+| Verificação | Resultado |
+|---|---|
+| L1: `00552d00` (1200), `00552720` (3872 + sequência de 120 quadros), `00554fb0` (192), cauda `00551e80` (2100), setters (215) | PASS — bit a bit |
+| L2: 1481 snapshots de início de quadro em 10 cenários | PASS — 174 384 / 174 384 dwords bit a bit, 0 escritas extras |
+| L3: 47 reinícios de estado completo | PASS — 0 células / 0 campos fora do envelope de um quadro |
+| L4: 10 cenários, 194 s, 771 linhas × 35 campos | PASS — no envelope de 14 gêmeos; horizonte documentado `notdriven` 297 (reinício reverso) |
+| L5: 5 mutações (entrada ×1,001, expoente +5 %, relação +0,1, override ignorado, alvo +1e−4) | PASS — detectadas por L2 (10/10/10/8/10 cenários) e por L3 (8/8/8/6/7) |
+| Opções sobrevivem a reset/garagem, assistência e arcade recusados, modo provisional, batente π/7, determinismo | PASS |
+| Regressão Stage 6/7 / 8 / 9 / 10 / 11 (direção `"provisional"`) | PASS — 16/16, 49/49, 59/59, 23/23 + 61/61, 66/66 |
+| Adaptador sob mock (inclui 8 verificações do Stage 12 e o `Stage12SelfTest` rápido/completo) | PASS — 65/65 |
+| `PATCH_STAGE12` em DataModel simulado (recusas, instalação na mesma instância, edições de uma linha, backup só do que muda, re-execução, reversão, reversão automática, partes + INSTALL, sem SavePlace) | PASS — 19/19 |
+| `PATCH_STAGE6_7` / `8` / `9` / `10` / `11` (inalterados) | PASS — 11/11, 13/13, 13/13, 17/17, 15/15 |
+
+## Validação manual no Roblox Studio — a fazer (15 itens)
+
+Valores esperados entre parênteses (relação 18:1, override ligado, sem atributos).
+
+1. **Instalação**: fora do Play, aplicar `PATCH_STAGE12.lua` (ou `PART1`, `PART2` + `INSTALL`, ou o `.rbxmx`) sobre a
+   bancada Stage 11. Output: auto-testes 6/7, 8, 9, 10, 11 e `Stage 12 self-test: 13 passed, 0 failed`, depois
+   `Stage 12 aplicado (backup: ServerStorage.NR2003Backup_Stage12)`. O place **não** é salvo pelo patch.
+2. **Re-execução**: aplicar de novo → `re-execução: backup anterior mantido`; no Explorer só um `NR2003CupSteering`, um
+   `Stage12SelfTest` e um `NR2003Backup_Stage12`.
+3. Play → entrar no carro → **T**: linha lilás `DIREÇÃO teclas entrada +0.000 relação 7.0:1 alvo +0.00° …`; volante do
+   cockpit centrado.
+4. **Teclas paradas**: segurar **A** → a entrada vai a −1 em ~0,85 s (taxa 0,033/quadro com seno), alvo **+25,71°**
+   (π/7), cubos **+25,59° / +25,84°** (toe), volante **−160°** (limite 2,79 rad). Soltar → volta ao centro.
+5. Segurar **D** → espelho: alvo **−25,71°**, volante **+160°**; as duas teclas juntas → 0.
+6. **Em velocidade** (> 64 km/h): batente com A/D = **±10,00°**, relação **18.0:1**; entre 32 e 64 km/h a relação sobe
+   continuamente (≈ 12,4:1 a 48 km/h).
+7. **Transição**: acelerando com uma tecla segurada, a relação fica em 7.0 até ~32 km/h e chega a 18.0 em ~64 km/h; o
+   carro não dá trancos (rampa por tick do original).
+8. **Gamepad** (analógico esquerdo): a linha mostra `eixo`; meio curso parado → alvo ≈ **±18,2°** (sin(0,5·π/2)·π/7);
+   curso total → ±25,71°.
+9. **Linearidade**: parar o Play; no `Workspace.NR2003LabWorld.TestCar` criar `SteeringLinearity = 80`,
+   `SteeringMomentum = 0`; Play → Output `[NR2003 Stage 12] direção original: relação 18:1 …, linearidade 0.80, taxa
+   1.0000/quadro`; gamepad em meio curso parado → alvo ≈ **±7,38°** (π·0,5^1,8/7, sem seno); com teclas o alvo
+   continua ±25,71° (linearidade só vale para eixo analógico).
+10. **Override**: `SteeringLowSpeedOverride = false` → R → parado, batente **±10,00°** (18:1 em qualquer velocidade).
+11. **Relação do setup**: `Setup_steeringRatio = 12` → R → atributo `SteeringRatioApplied = 12`; acima de 64 km/h o
+    batente é **±15,00°** (π/12); com 32 → **±5,63°** (π/32). Parado (override ligado) continua ±25,71°.
+12. **Rodas dianteiras**: com H (diagnóstico de render) / visual, as duas rodas dianteiras viram juntas
+    (≈ 0,99 × ângulo do cubo; sem Ackermann), as traseiras não esterçam; o volante do cockpit gira 7× (parado) ou
+    18× (em velocidade) o ângulo do cubo até o limite de ±160°.
+13. **Sem motorista**: sair do carro (X) com a direção virada → a direção volta ao centro (ramo "não dirigido" do
+    `005524f0`); o carro para como no Stage 11.
+14. **Reversão**: fora do Play, `PATCH_STAGE12_ROLLBACK.lua` → `Rollback Stage 12 -> Stage 11: N fontes restauradas,
+    2 módulos removidos; auto-teste Stage 11 OK.`; a direção volta ao comportamento do Stage 11; reaplicar
+    `PATCH_STAGE12.lua` em seguida.
+15. **Regressão + auto-teste completo**: freio (Stage 8), linha aero (Stage 9), atributos de setup (Stage 10) e linha do
+    Stage 11 como antes; na Command Bar (fora do Play):
+    `require(game.ReplicatedStorage.NR2003Lab.Roblox.Stage12SelfTest).run(true)` → `14 passed, 0 failed`.
+
+---
+
 # Validação — Stage 11 (térmico / desgaste / dano / combustível)
 
 Executada nesta máquina com Luau CLI (codegen nativo), Python 3.12 + Unicorn 2.1.4 + Capstone 5.0.6 e Ghidra 11.1.2.

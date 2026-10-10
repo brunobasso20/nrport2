@@ -442,7 +442,7 @@ end
 -- ===== Stage 12: ORIGINAL steering chain through the adapter (device layer -> core 00552720 / 00554fb0 / 005539c0) =====
 if ctl.core.V.steeringState then
 	local RS = mockRequire({ref = "Roblox.RenderSnapshot"})
-	local S12KEYS = {"SteeringLinearity", "SteeringMomentum", "SteeringLowSpeedOverride", "SteeringYawLimiter", "Setup_steeringRatio"}
+	local S12KEYS = {"SteeringLinearity", "SteeringMomentum", "SteeringLowSpeedOverride", "Setup_steeringRatio"}
 	for _, k in ipairs(S12KEYS) do car:SetAttribute(k, nil) end
 	ctl:reset()
 	local s0 = ctl:telemetry().steering
@@ -463,10 +463,15 @@ if ctl.core.V.steeringState then
 		and okEnc and math.abs(dec.steer - s1.wheelAngle) < 1e-3,
 		string.format("target %.6f ratio %.3f wheel %.4f (cockpit %s, snapshot %.4f) digital %s", s1.target, s1.ratioNow, s1.wheelAngle,
 			tostring(_G_lastWheelAngle), snap.steer, tostring(s1.digital)))
-	check("stage 12: the front road wheels follow the solver (prescribed hub states 15 / 21 = target -+ toe)",
+	local tw = ctl:telemetry()
+	-- hub coordinates q (+ left) rotate the wheels about the inclined steering axis: measured road-wheel yaw of the
+	-- solver poses (+ right) = -(about 0.99 q) (STAGE12_STEERING_STATE_MAP.md: no Ackermann, mirrored LF / RF)
+	check("stage 12: the front wheels follow the solver (prescribed hub states 15 / 21 = target -+ toe; measured wheel yaw ~ -0.99 q)",
 		math.abs(s1.hubLF - (s1.current - ctl.core.V.rf32(0xc086b0))) < 1e-6 and math.abs(s1.hubRF - (s1.current + ctl.core.V.rf32(0xc086b4))) < 1e-6
-		and math.abs(ctl:telemetry().roadWheelAngle - (s1.hubLF + s1.hubRF) * 0.5) < 1e-6,
-		string.format("hub LF %.5f RF %.5f current %.5f", s1.hubLF, s1.hubRF, s1.current))
+		and math.abs(tw.hubSteerAngle - (s1.hubLF + s1.hubRF) * 0.5) < 1e-6 and tw.roadWheelAngle < 0
+		and math.abs(-tw.roadWheelAngle / tw.hubSteerAngle - 0.99) < 0.01,
+		string.format("hub LF %.5f RF %.5f current %.5f; wheel yaw LF %.5f RF %.5f mean %.5f (%.4f q)", s1.hubLF, s1.hubRF, s1.current,
+			ctl.wheelPose[1].steer, ctl.wheelPose[2].steer, tw.roadWheelAngle, -tw.roadWheelAngle / tw.hubSteerAngle))
 	-- keys: right key held -> digital control 8 (slew 0.033 / frame + sine) -> negative target (right turn)
 	input = {throttle = 0, brake = 0, handbrake = 0, clutch = 0, steerLeft = 0, steerRight = 1}
 	for f = 1, 120 do ctl:step(dt, input) end

@@ -1,3 +1,48 @@
+# Mapa de recuperação — Stage 12 (cadeia de direção)
+
+Base: Stage 11 (3.10.0-stage11). Evidências: `recovery/stage12/` (Ghidra `evidence/ev1..ev14` com `FUNCS.txt`, listas
+`funcs_*.tsv`, relatórios de pesquisa `evidence/reports/` — bit 25, itens de setup, geometria dos cubos, interface de
+FFB —, harness `orig_stage12.py`, cenários `scenarios12.py`, fixtures `gen_units12.py` / `gen_fixtures12.py`, ferramentas
+`dev/`). Relatórios: **`STAGE12_RECOVERY.md`**, **`STAGE12_STEERING_STATE_MAP.md`**, **`STAGE12_VALIDATION.md`**.
+Legenda: **EXACT**, **LUA PORTED**, **LUA VALIDATED**, **ROBLOX INTEGRATED**, **ADAPTER**, **NOT PORTED**. Destino:
+`core/NR2003Cup/NR2003CupSteering.lua` (portado à mão do x86) + linhas do Stage 12 em `NR2003CupDriver.lua`.
+
+**Achados principais:** (1) direção = dois controles (7 esquerda / 8 direita, 0..1), um eixo analógico é separado pelo
+sinal; (2) a única dependência de velocidade da entrada é a sensibilidade pela linearidade
+(`(1 − 0,15 L) + 0,15 L·exp(−0,000493827 v²)`, nula com L = 0); (3) batente = π / relação (item 0x30, 18:1 → ±10°), com
+override de baixa velocidade 7:1 até 8,94 m/s e rampa até 17,88 m/s; (4) sem Ackermann, sem bump steer, sem taxa de
+esterço: os cubos são rotações prescritas sobre um eixo inclinado (caster 2,455°, inclinação 9,215°); (5) o bit 25 das
+opções de corrida é o modo ARCADE (também troca a especificação do chassi no build) e a assistência de direção usa a linha
+de corrida da pista — ambos recusados em produção; (6) os itens 0x3a / 0x9f..0xa4 ("steeringGeometry*") são do
+diferencial traseiro, não da direção (correção no `SETUP_MAP.md`).
+
+## Lógica original NR2003 — direção (portada à mão)
+
+| Endereço | Papel | Chamadores | Chamados | Globais / offsets | Destino Luau | Status | Confiança | Validação |
+|---|---|---|---|---|---|---|---|---|
+| `005524f0` (ramo do jogador / não dirigido) | dispositivos do piloto por quadro | `00551e80` | `00553080`, `00552720`, `00552df0` | `bf63c8`, `bf6eac`, `bf6390`, células zeradas sem motorista | `frameStart` + `V._steerDevices` | EXACT · LUA VALIDATED · ROBLOX INTEGRATED | alta | L2 1481 snapshots bit a bit; cenário `notdriven` |
+| `00552d00` | limite de taxa por controle + `sin(x·π/2)` (rate < 1) | `00552720`, `00552df0` | — | `74c990[i]`, `74c99c`, `bf639c[i]` | Stage 8 `V.axisOriginal` | EXACT · LUA VALIDATED | alta | L1 1200 vetores |
+| `00552720` | entrada processada: velocidade, sensibilidade, limitador arcade, assistência | `005524f0` | `00554f50`, `00552410`, `00552d00`, `0055a770`, `00550230` | `bf6d70` (taxa de guinada), `bf6f44` | `steerInput` | EXACT · LUA VALIDATED (assistência > 0 NOT PORTED) | alta | L1 3872 vetores + sequência de 120 quadros |
+| `00552410`, `00550230`, `0055a770`, `0055a680` | linearidade (remapeamento arcade/assistência), assistência, bit 25 | `00552720`, `00551e80` | — | `bf6f00`, `bf6f08`, `c0692a+0x4c` | `linearity`, `assist`, `settingsBit25` | EXACT | alta | L1 |
+| `00551e80` cauda `@00552082..00552336` | `−bf63c8`, linearidade (`_CIpow`, só eixos analógicos), × π, ÷ relação, alvo, rampas | `005b2190` | `005524b0`, `00552410`, `006c5c40`, `00554fb0` | `bf63c0`, `bf63b8`, `bf6e80`, `bf6e88` | `V._steerTail` + `frameStart` | EXACT · LUA VALIDATED | alta | L1 2100 vetores; L2; L3 |
+| `00554fb0` | relação de direção (item 0x30) + override de baixa velocidade | `00551e80`, `005662d0`, `00565cc0`, FFB `00554520` | `00557d60`, `00554f50` | `c055c0+0xc0`, `74c9a0` | `ratio` | EXACT · LUA VALIDATED | alta | L1 192 vetores (limiares ±1 ulp); cenários `ratio12` / `ratio32` / `parking` |
+| `005502f0`, `005500c0`, `00550110`, `00550210`; `0043f1d0` | setters das opções (tabela de mensagens `00752540`); carga do controls.cfg | front end | — | `bf6f00`, `74c990..998`, `74c9a0`, `bf6f08`, `72c5f0` | `V.setSteeringOptions` | EXACT · LUA VALIDATED | alta | L1 215 vetores |
+| `005662d0`, `00565cc0` | ângulo do volante (cockpit / modelo) | desenho `00587aa5` | `00554fb0`, `005ba130` | `car+0x1554` (`00551990`), limite 2,79 rad `006f5e6c` | `V.steeringWheelAngle` → `Cockpit.updateAngle` | EXACT (fórmula) · ROBLOX INTEGRATED | alta | testes de comportamento / adaptador |
+| `005539c0` (linhas de direção) | rampa por tick + toe → entradas dos cubos | `005b2190` | `005b2b90` | `bf6360/64`, `c086b0/b4` | `tickInputs` (Stage 7 + C1) | EXACT · LUA VALIDATED | alta | L2 / L3 / L4 |
+
+## Fronteira do host (ADAPTER) e itens não portados
+
+| Item | Onde | Observação |
+|---|---|---|
+| poll de dispositivos `0057abc0` (controles 7 / 8, tipo de vínculo) | `NR2003CupSteering.hostDevices`, `CupChassisAdapter.steerControls` | teclado → digital (tipo 0); `Thumbstick1` / eixo → analógico (tipo 1, separado pelo sinal); `steer` legado = teclas. Mesmas células no harness Unicorn |
+| calibração do joystick `005d04d0` (quadrática, sem zona morta) | — | o Roblox já entrega o eixo normalizado; zona morta do cliente `Config.gamepadSteerDeadzone` (padrão 0) |
+| assistência de direção > 0 (linha de corrida `bd7960` via `car+0x5ae`) | `setSteeringOptions` → erro | NOT PORTED (sistema de pista) |
+| modo ARCADE (bit 25: limitador + remapeamento + chassi 0 no build `004233a0`) | `setSteeringOptions{yawLimiter = true}` → erro (só validação) | NOT PORTED como opção de produção; o ramo da direção é EXACT (cenário `yawlimit`) |
+| replay / rede (`005beac0`, quantização de `bf6360`) | — | NOT PORTED (sem replay) |
+| FFB / torque de direção (`00554d30`, `bf6ec4..bf6ef0`, bloco FFB de `00554520`) | — | **Stage 13** (interface em `STAGE12_RECOVERY.md` §8) |
+
+---
+
 # Mapa de recuperação — Stage 11 (térmico / desgaste / dano / combustível)
 
 Base: Stage 10 (3.9.0-stage10). Evidências: `recovery/stage11/` (Ghidra `evidence/b1..b4` com `index.tsv` de
@@ -60,7 +105,7 @@ nem no original executado.
 | clima dinâmico `005a4cc0` | mapeado (Stage 9), não portado |
 | menu de pit / ajustes em corrida / reabastecimento (`0040e1c0`, `005601c0`) | mapeado, não portado (só a troca de pneus `00550f10`) |
 | zeros com sinal das somas exatas no lift do tempo de execução 6/7 (+0 onde o x87 dá −0) | herdado; candidato à divergência quase-estática do `overrev` (ver `STAGE11_RECOVERY.md` §6, §8) |
-| Stage 12 (cadeia de direção) | **não iniciado** |
+| Stage 12 (cadeia de direção) | concluído no Stage 12 (seção do topo) |
 
 ---
 
@@ -271,7 +316,7 @@ Os 45 estados do layout 005b2cd0 estão vivos no carro em Play (índices C a par
 |---|---|---|
 | chassis (0) | 0–12: x,vx,y,vy,z,vz, quaternion xyzw, taxas de corpo | massa pós-setup 1074,50 kg; I=(471,0; 2455,5; 2695,7) |
 | lfsusp (3) / rfsusp (6) | 13–14 / 19–20: curso e velocidade | eixo inclinado (0; 7,907°; ∓1,420°), offset (1,207; ±0,7684; −0,0982) |
-| lfhub (4) / rfhub (7) | 15–16 / 21–22: ângulo prescrito de esterço | 73,03 kg; entrada `lfSteer/rfSteer` |
+| lfhub (4) / rfhub (7) | 15–16 / 21–22: ângulo prescrito de esterço | 73,03 kg; entrada `lfSteer/rfSteer`; rotação prescrita (flags 0x300: código 6, eixo z local) com ângulos-base (0; −10,407°; ±10,604°) sobre a suspensão — eixo de esterço com caster 2,455° e inclinação 9,215° passando pelo centro da roda; roda ∓8° (KPI); ordem dos ângulos Rz·Ry·Rx (`005b8c40`); velocidade 16/22 nunca escrita (sem taxa de esterço); sem Ackermann nem bump steer (Stage 12, `recovery/stage12/evidence/reports/hubgeometry.md`) |
 | lfwheel (5) / rfwheel (8) | 17–18 / 23–24: ângulo e taxa de giro | Iyy = 1,71 |
 | raxle (9) | 25–28: curso, velocidade, rolagem, taxa | 67,3 kg; eixo rígido (−1,587; 0; −0,2577), pitch −7,522° |
 | lrwheel (10) / rrwheel (11) | 29–30 / 31–32 | 73,03 kg; (0; ±0,7684; 0,1042) no eixo |

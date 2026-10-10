@@ -30,7 +30,7 @@ local function controlsOf(row)
 	return c
 end
 V.setRuntimeMode("original"); V.endSession(); V.reset()
-if fx.law.steer then V.setSteeringOptions(fx.law.steer) end
+if fx.law.steer then V.setSteeringOptions(fx.law.steer, true) end -- validation: may set race bit 25 as the reference
 V.startSession({temperatureF = 70, windSpeedMph = 0, windDirection = 0, conditions = 0, night = false}, {damageLevel = 0, series = 1})
 local count, zeroSign = {}, {}
 for _, sn in ipairs(fx.start) do

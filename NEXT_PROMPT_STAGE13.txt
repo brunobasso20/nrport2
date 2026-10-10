@@ -1,0 +1,38 @@
+Continue from the Stage 12 package (3.11.0-stage12). Stages 1-12 are implemented; Stages 9, 10, 11 and 12 still need the
+manual Roblox Studio validation listed in VALIDACAO.md (Stage 12: 15 items) before Stage 13 starts.
+
+Facts to keep:
+- Mode NR2003_CUP runs the ORIGINAL NR2003 Cup vehicle core generated from NR2003.exe. Stage 6/7 image and callbacks,
+  Stage 9 aero, the Stage 10 setup/build and the Stage 11 runtime (frame end 00554520 + collision frame 00549c40 lifted
+  from x86) are unchanged by Stage 12 except the scoped sign-of-zero correction C1 (STAGE12_RESULT.md).
+- Stage 12 runs the ORIGINAL steering chain, hand-ported from x86 (core/NR2003Cup/NR2003CupSteering.lua + the Stage 12
+  lines of NR2003CupDriver.frameStart / tickInputs; recovery/stage12): controls 7 (left) / 8 (right) -> 00552d00 slew +
+  sin shaping -> 00552720 (speed sensitivity through the linearity, arcade yaw limiter) -> 00551e80 tail (linearity
+  exponent with analog axes only, x pi, / 00554fb0 ratio = setup item 0x30 with the 7:1 low-speed override up to 8.94 m/s
+  and the ramp to 17.88 m/s) -> per-tick ramp + toe (005539c0) -> prescribed hub coordinates (states 15 / 21). No
+  Ackermann, no bump steer, no steering rate (states 16 / 22 never written). Cockpit wheel = 005662d0
+  clamp(-(ratio * car[0x1554]), +-2.79 rad). Steering mode "provisional" (controls.steer = road-wheel target) is used
+  ONLY by the Stage 6-11 regression suites and self-tests (one line each).
+- Refused in production (errors): steering assistance > 0 (needs the track racing line) and the ARCADE driving mode
+  (race settings bit 25: also selects car chassis spec 0 at build, 004233a0, not ported). The bit-25 branch itself is
+  validated (setSteeringOptions(opts, true), scenario yawlimit).
+- Validation method (STAGE12_VALIDATION.md): original code in Unicorn (orig_stage12.py); L1 functions vector by vector
+  (bit-exact on every stored f32); L2 frame-start snapshots traced in the original, bit-exact; L3 full-state restarts
+  within 4x the original's one-frame sensitivity; L4 closed-loop runs within 4x the envelope of 14 original twins (10
+  Stage 11 twins + 4 'all' twins), documented horizon notdriven 297 (the original continued from the port's own state
+  takes the port's branch: dev/reverse.py); L5 five deliberate mapping errors detected.
+
+Stage 13 - steering torque / force feedback: recover and port the ORIGINAL FFB chain as a presentation output (it feeds
+nothing back into the physics: verified, recovery/stage12/evidence/reports/ffbinterface.md):
+- producers already in the core: the front tyre callback 0055e180 -> 00554e70 accumulates c085dc (relaxed lateral slip),
+  |Fz| + 0.01, Fy and 0.1*(r x F).z + c081ec (aligning moment of 0054cab0, caster trail c082d4/c082d8 =
+  -0.3581686 * caster, spec+0x90 * q arm) into bf6ed4..bf6ef0 / 74c964..68 twice per tick;
+- 00554d30 (per tick from 005539c0 @00553a64, not run by the port today) -> bf6ec4 / bf6ec8 / bf6ed0 / 74c960, clears
+  the accumulators;
+- FFB block of 00554520 (frame end, gated by bf6ebb device acquired and bf6eb8 == 0): state bf6ec0 / bf6ecc,
+  out = clamp(ecc * strength 74c9a4 / (setup item 0x30 * 1600), +-1), options FFLatency / FFDamping / FFStrength
+  (bf6f20 / bf6f24 / 74c9a4), airspeed bf3a00 -> 005d08d0 (DirectInput constant force trunc(out * 10000)): in Roblox an
+  ADAPTER output (e.g. a steering-torque value for the cockpit / haptics), never an input to the physics;
+- 00550070 writes bf6eb8 ("player controls suspended"), which makes 005524f0 take the not-driven branch: map it, keep 0.
+Validate against the original in Unicorn with the Stage 12 chain active (the Stage 12 fixtures, harness and method can be
+reused). Do not change the Stage 12 steering chain.

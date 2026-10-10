@@ -1,3 +1,34 @@
+# 3.11.0-stage12 — Stage 12: cadeia de direção original do NR2003 Cup
+
+- Base: Stage 11 (3.10.0-stage11). Imagem e callbacks 6/7, freio 8, aero 9, setup/build 10 e runtime 11 **inalterados**
+  (exceto a correção C1 de sinal de zero, `STAGE12_RESULT.md`).
+- Novo `NR2003CupSteering` (portado à mão do x86, `recovery/stage12`): dispositivos (controles 7 esquerda / 8 direita,
+  tipo de vínculo; eixo analógico separado pelo sinal), `00552720` (entrada processada: `00552d00` taxa + seno,
+  sensibilidade por velocidade via linearidade, limitador arcade), `00552410`, `00550230`, `00554f50`, cauda de
+  `00551e80` (expoente de linearidade com eixos analógicos, × π, ÷ relação, alvo, rampas, `005524b0`), `00554fb0`
+  (relação = item 0x30 com override de baixa velocidade 7:1 ≤ 8,94 m/s e rampa até 17,88 m/s), setters das opções
+  (`005502f0`, `005500c0`, `00550110`, `00550210`; conversão do controls.cfg `0043f1d0`), ângulo do volante `005662d0`.
+- `NR2003CupDriver`: o alvo da roda vem da cauda original (o alvo provisório do host só no modo `"provisional"` das suítes
+  6–11); rampas e somas por tick com o zero de sinal do x87 (C1); `V._frameStartOnly`. `NR2003CupVehicle`: instala a
+  direção depois da garagem; API `setSteeringOptions` / `steeringOptions` / `steeringState` / `steeringWheelAngle`.
+- **Achados:** sem Ackermann, sem bump steer, sem taxa de esterço (cubos prescritos sobre eixo com caster 2,455° e
+  inclinação 9,215°); a única dependência de velocidade da entrada é a sensibilidade pela linearidade; o bit 25 das opções
+  de corrida é o modo ARCADE (também troca o chassi no build) e a assistência usa a linha de corrida da pista — ambos
+  recusados em produção; itens 0x3a / 0x9f..0xa4 são do diferencial traseiro (correção no `SETUP_MAP.md`); o FFB original
+  não lê células da direção (interface do Stage 13).
+- Adaptador Roblox: camada de dispositivos (teclas A/D → controles digitais; analógico esquerdo do gamepad → eixo),
+  atributos `SteeringLinearity`, `SteeringMomentum`, `SteeringLowSpeedOverride` (+ `Setup_steeringRatio` do Stage 10);
+  volante do cockpit = ângulo original (`Cockpit.updateAngle`, flag `FLAG_WHEEL_ANGLE` do render snapshot); telemetria
+  `hubSteerAngle` / `roadWheelAngle` (medido) / `steeringWheelAngle` / `steering`; linha `DIREÇÃO` no painel T.
+- Validação contra o original executado (`STAGE12_VALIDATION.md`): L1 funções bit a bit; L2 snapshots de início de quadro
+  rastreados bit a bit; L3 reinícios de estado completo; L4 malha fechada no envelope de 14 gêmeos (10 do Stage 11 + 4
+  "all"), horizonte documentado `notdriven` com prova por reinício reverso (`dev/reverse.py`); L5 mutações detectadas;
+  regressões 6/7–11, mocks do adaptador e dos 6 patches.
+- Entrega: `PATCH_STAGE12.lua` / `PATCH_STAGE12_PART1..2` + `INSTALL` / `NR2003_Patch_Stage12.rbxmx` /
+  `PATCH_STAGE12_ROLLBACK.lua` (base Stage 11 conferida módulo a módulo, backup só do que muda, fonte atualizada na mesma
+  instância, re-execução segura, reversão automática e manual verificada, nunca salva o place), `Stage12SelfTest`,
+  `STAGE12_RECOVERY.md`, `STAGE12_STEERING_STATE_MAP.md`, `STAGE12_VALIDATION.md`, `STAGE12_RESULT.md`.
+
 # 3.10.0-stage11 — Stage 11: térmico / desgaste / dano / combustível do NR2003 Cup
 
 - Base: Stage 10 (3.9.0-stage10). Imagem e callbacks 6/7, aero 9 e setup/build 10 **inalterados**.

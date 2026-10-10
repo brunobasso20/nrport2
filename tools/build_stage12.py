@@ -255,7 +255,7 @@ print("Stage 12 aplicado ("..(firstInstall and "backup: ServerStorage.NR2003Back
 print("Direção ORIGINAL do NR2003: dispositivo (A/D = teclas, analógico do gamepad = eixo) -> 00552720 (taxa + seno, sensibilidade")
 print("  por velocidade) -> linearidade -> x pi / relação do setup (item 0x30, 18:1; 7:1 abaixo de 20 mph) -> rampa + toe -> cubos.")
 print("Atributos do TestCar (no reset, R): Setup_steeringRatio 12..32, SteeringLinearity 0..100 (controls.cfg), SteeringMomentum")
-print("  0..100 (0 = sem taxa), SteeringLowSpeedOverride true/false, SteeringYawLimiter. O volante do cockpit é o ângulo original.")
+print("  0..100 (0 = sem taxa), SteeringLowSpeedOverride true/false (modo arcade e assistência: não portados, recusados). O volante do cockpit é o ângulo original.")
 print("O place NÃO foi salvo. Reverter: PATCH_STAGE12_ROLLBACK.lua. Auto-teste completo: require(...Roblox.Stage12SelfTest).run(true)")
 '''
 footer = footer.replace('__VERSION__', VERSION)

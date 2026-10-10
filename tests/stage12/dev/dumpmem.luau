@@ -18,7 +18,7 @@ end
 V.setRuntimeMode("original"); V.endSession(); V.clearSteeringOptions()
 if fx.law.ratio then local st = V.Setup.cupGarageDefault(); V.Setup.set(st, "steeringRatio", fx.law.ratio); V.applySetup(st) end
 V.reset()
-if fx.law.steer then V.setSteeringOptions(fx.law.steer) end
+if fx.law.steer then V.setSteeringOptions(fx.law.steer, true) end -- validation: may set race bit 25 as the reference
 V.startSession({temperatureF = 70, windSpeedMph = 0, windDirection = 0, conditions = 0, night = false}, {damageLevel = 0, series = 1})
 for k = 0, R - 1 do
 	local c = controlsOf(fx.law.controls[k + 1])

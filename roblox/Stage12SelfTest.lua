@@ -130,7 +130,7 @@ function M.run(full)
             local st=V.Setup.cupGarageDefault();V.Setup.set(st,"steeringRatio",sc.ratio);V.applySetup(st)
         else V.applySetup(V.Setup.cupGarageDefault()) end
         V.reset()
-        if sc.steer then V.setSteeringOptions(sc.steer) end
+        if sc.steer then V.setSteeringOptions(sc.steer,true) end
         V.startSession({temperatureF=70,windSpeedMph=0,windDirection=0,conditions=0,night=false},{damageLevel=0,series=1})
         local nn,dd,cnt=0,0,0
         for i,sn in ipairs(sc.start) do
@@ -155,6 +155,8 @@ function M.run(full)
         and math.abs(o.linearity-0.8)<1e-6 and V.steerRatioOriginal()==25)
     V.clearSteeringOptions();V.applySetup(V.Setup.cupGarageDefault());V.reset()
     check("steering assistance > 0 refused (needs the NR2003 track racing line)",not pcall(V.setSteeringOptions,{assist=50}))
+    check("arcade driving mode (race bit 25: also chassis spec 0 at build, 004233a0) refused",not pcall(V.setSteeringOptions,{yawLimiter=true})
+        and V.steeringOptions().drivingMode=="simulation")
     if full then
         local function run(n,k0)
             local out={}

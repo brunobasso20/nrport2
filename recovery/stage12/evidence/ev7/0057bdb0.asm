@@ -1,0 +1,8 @@
+0057bdb0 MOV EAX,0xd35b18
+0057bdb5 XOR ECX,ECX
+0057bdb7 MOV byte ptr [EAX + 0x4],CL
+0057bdba MOV dword ptr [EAX],ECX
+0057bdbc ADD EAX,0xa
+0057bdbf CMP EAX,0xd3637e
+0057bdc4 JL 0x0057bdb7
+0057bdc6 RET

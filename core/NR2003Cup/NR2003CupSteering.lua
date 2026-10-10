@@ -12,7 +12,9 @@
 --     00552d00(8) / 00552d00(7): per-control slew limit 74c990 (steering 'momentum') and sin(x * pi/2) shaping
 --       (only while the rate is < 1; Stage 8 hand port V.axisOriginal)
 --     speed sensitivity  k = L * 0.15 * exp(-0.000493827 * v^2) + (1 - L * 0.15),  L = 00552410()
---     yaw-rate limiter (race settings +0x4c bit 25, 0055a770): (min(12.25 / v, |r|) / max(|r|, 0.01)) * 0.9 + 0.1
+--     yaw-rate limiter (race settings +0x4c bit 25 = driving mode ARCADE, player.ini DrivingMode, 0055a770):
+--       (min(12.25 / v, |r|) / max(|r|, 0.01)) * 0.9 + 0.1 ; arcade also remaps L (00552410) and selects car chassis
+--       spec 0 at build time (004233a0) -> NOT PORTED as a production option (validation only, see setSteeringOptions)
 --     steering assistance (bf6f08 > 0, 00550230): needs the track racing line -> NOT PORTED (refused)
 --   00551e80 tail: bf63c0 = -bf63c8 ; 005524b0 ; linearity  x = sign * |x|^(L + 1)  (00552410() != 0 and both
 --     steering controls analog) ; road-wheel target = f32(x * pi) / 00554fb0() ; bf63b8 / bf6e80 / ramp bf6e88
@@ -266,12 +268,20 @@ return function(V)
 		end
 	end
 	-- opts: linearity (controls.cfg integer 0..100; nil = keep), linearityRaw (bf6f00 value 0..1), momentum (steering
-	-- momentum 0..100, 0 = no slew limit), lowSpeedOverride (bool), yawLimiter (race settings bit 25), assist (0..100:
-	-- only 0 is accepted, see steerInput). Values survive reset(); nil options = the image values (no message).
-	function V.setSteeringOptions(opts)
+	-- momentum 0..100, 0 = no slew limit), lowSpeedOverride (bool), assist (0..100: only 0 is accepted, see
+	-- steerInput). Values survive reset(); nil options = the image values (no message).
+	-- yawLimiter = race settings +0x4c bit 25, the session option DrivingMode = ARCADE (player.ini, default Simulation):
+	-- besides the 00552720 limiter and the 00552410 remap, arcade makes 004233a0 select car chassis spec 0 (8945b8)
+	-- instead of the Cup spec (7238e0) when the car is built -- not recovered / not ported. Bit 25 on the Cup spec is a
+	-- combination the original never runs, so yawLimiter = true is refused unless `validation` is true (the tests use
+	-- it to compare the 00552720 / 00552410 bit-25 branch with the Unicorn reference, which sets the same bit).
+	function V.setSteeringOptions(opts, validation)
 		opts = opts or {}
 		if opts.assist ~= nil and (tonumber(opts.assist) or 0) ~= 0 then
 			error("NR2003 Stage 12: steering assistance > 0 needs the NR2003 track racing line: not ported")
+		end
+		if opts.yawLimiter == true and validation ~= true then
+			error("NR2003 Stage 12: arcade driving mode (race settings bit 25) also selects car chassis spec 0 at build (004233a0): not ported")
 		end
 		options = table.clone(opts)
 		options.assist = nil
@@ -282,6 +292,7 @@ return function(V)
 	function V.steeringOptions()
 		return {linearity = rf32(0xbf6f00), steerRate = rf32(0x74c990), releaseFactor = rf32(0x74c99c),
 			lowSpeedOverride = r8(0x74c9a0) ~= 0, assist = rf32(0xbf6f08), yawLimiter = settingsBit25(),
+			drivingMode = settingsBit25() and "arcade" or "simulation",
 			aidsDisabled = band(r32(SETTINGS + 0x4c), 0x20000000) ~= 0, setupRatio = rf32(SETUP_RATIO)}
 	end
 	local baseReset = V.reset

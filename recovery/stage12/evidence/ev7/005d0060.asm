@@ -1,0 +1,4 @@
+005d0060 MOV EAX,dword ptr [ESP + 0x4]
+005d0064 MOV AL,byte ptr [EAX*0x4 + 0xf5cd90]
+005d006b AND AL,0x1
+005d006d RET

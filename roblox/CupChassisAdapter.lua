@@ -3,8 +3,8 @@
 -- The adapter is only the device layer (0057abc0 equivalent): keys -> digital steering controls 7 / 8, an analog
 -- axis (gamepad / wheel, normalised -1..1 by Roblox) -> both controls split by sign. Driver options from car
 -- attributes: SteeringLinearity (controls.cfg value 0..100), SteeringMomentum (0..100, 0 = no slew),
--- SteeringLowSpeedOverride (bool), SteeringYawLimiter (race setting bit 25); absent = the original values when no
--- controls.cfg was loaded. The cockpit wheel draws the ORIGINAL 005662d0 angle; front wheels use the solver poses.
+-- SteeringLowSpeedOverride (bool); absent = the original values when no controls.cfg was loaded. (The arcade
+-- driving mode and steering assistance are not ported: the core refuses them.) The cockpit wheel draws the ORIGINAL 005662d0 angle; front wheels use the solver poses.
 -- Stage 11: the ORIGINAL per-frame runtime systems run inside the core (fuel burn and fuel mass, tyre thermal /
 -- hot pressure / wear / failure, brake temperature, engine thermal / damage / failure, random failures, collision
 -- damage). The adapter only starts the Stage 11 session with the race options (car attributes RaceDamageLevel 0..3,
@@ -157,7 +157,7 @@ function M:initialize()
         self.core:setSteeringMode("original")
         local function flag(name) local v=self.car:GetAttribute(name);if type(v)=="boolean" then return v end;return nil end
         local o=self.core:setSteeringOptions({linearity=num("SteeringLinearity"),momentum=num("SteeringMomentum"),
-            lowSpeedOverride=flag("SteeringLowSpeedOverride"),yawLimiter=flag("SteeringYawLimiter")})
+            lowSpeedOverride=flag("SteeringLowSpeedOverride")})
         self.car:SetAttribute("SteeringLinearityApplied",o.linearity);self.car:SetAttribute("SteeringRateApplied",o.steerRate)
         self.car:SetAttribute("SteeringRatioApplied",o.setupRatio)
         print(string.format("[NR2003 Stage 12] direção original: relação %g:1 (item 0x30), override baixa velocidade %s, linearidade %.2f, taxa %.4f/quadro",
@@ -496,7 +496,11 @@ function M:telemetry()
             overRev=s11.engine.overRev,damageScale=s11.damage.scale,engineDamage=s11.damage.engine,leakRadiator=s11.damage.radiator,
             leakOil=s11.damage.oil,leakFuel=s11.damage.fuel,zones=s11.damage.zones,failures=s11.damage.failures,
             broken=s11.damage.brokenFlags,airspeed=s11.airspeed,ambientK=s11.ambient} or nil,
-        roadWheelAngle=st[16]*0.5+st[22]*0.5,steeringWheelAngle=self:steeringWheelAngle(),steering=self:steeringTelemetry()}
+        -- Stage 12: hubSteerAngle = mean prescribed hub coordinate q (states 15 / 21, + = left; the original car[0x1554]),
+        -- a rotation about the inclined steering axis (caster 2.455 deg, inclination 9.215 deg); roadWheelAngle = mean
+        -- front wheel yaw measured from the solver wheel poses (+ = right, Stage 5 sign; about -0.99 q, no Ackermann)
+        hubSteerAngle=st[16]*0.5+st[22]*0.5,roadWheelAngle=(self.wheelPose[1].steer+self.wheelPose[2].steer)*0.5,
+        steeringWheelAngle=self:steeringWheelAngle(),steering=self:steeringTelemetry()}
 end
 -- Stage 12 steering telemetry (original cells, see STAGE12_STEERING_STATE_MAP.md); nil without the Stage 12 core
 function M:steeringTelemetry()

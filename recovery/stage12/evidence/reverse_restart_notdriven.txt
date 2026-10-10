@@ -1,0 +1,41 @@
+Reverse restart evidence for the 'notdriven' L4 horizon (STAGE12_VALIDATION.md section 4).
+Produced by recovery/stage12/dev/reverse.py: the ORIGINAL code (Unicorn) continued from the PORT's own complete state
+(tests/stage12/dev/dumpmem.luau), mirror of the level-3 restart: original start image + the port's changes since the
+port's start; harness-only ranges keep the original's values; the port's tyre contact blocks and interrupt clock.
+Columns: frame, port fyLF/fyRF (N), original-from-port fyLF/fyRF, four original +-1 ulp 'all' twins from the same state
+(seeds 201..204), original's own run (fixture) where a row exists, |vx port - vx original-from-port| (m/s).
+
+== transfer check at frame 378 (one frame later the difference must be below the original twins spread)
+  frame 378  |dvx| 3.57e-09 (twins 0)  |dfyLF| 4.92e-07 N (twins 0)
+  frame 379  |dvx| 4.76e-07 (twins 2.86e-06)  |dfyLF| 0.00915 N (twins 0.0298)
+  frame 380  |dvx| 4.82e-09 (twins 4.77e-06)  |dfyLF| 0.00909 N (twins 0.106)
+  frame 381  |dvx| 1.2e-09 (twins 1.07e-05)  |dfyLF| 0.00812 N (twins 0.0602)
+== frame 288 (steering released at ~1.3 m/s), 144 frames: original continued from the port state
+  288 port (-968,-323) orig<-port (-968,-323) twins (-968,-323) (-968,-323) (-968,-323) (-968,-323) own (-251,196) |dvx| 1.7e-10
+  289 port (1448,1482) orig<-port (1448,1482) twins (1448,1482) (1448,1482) (1448,1482) (1448,1482) |dvx| 6e-08
+  290 port (1490,1525) orig<-port (1490,1525) twins (1490,1525) (1490,1525) (1490,1525) (1490,1525) |dvx| 6e-08
+  291 port (1515,1661) orig<-port (1515,1661) twins (1515,1662) (1515,1661) (1515,1661) (1515,1661) |dvx| 2.4e-07
+  292 port (1405,1529) orig<-port (1405,1529) twins (1405,1528) (1405,1529) (1405,1529) (1405,1529) |dvx| 2.4e-07
+  293 port (904,936) orig<-port (904,936) twins (905,937) (903,936) (903,936) (903,936) |dvx| 2e-06
+  294 port (691,681) orig<-port (691,681) twins (691,681) (691,681) (691,681) (690,680) |dvx| 1.9e-06
+  295 port (545,500) orig<-port (546,500) twins (529,493) (543,496) (537,489) (525,482) |dvx| 1.6e-05
+  296 port (416,323) orig<-port (417,323) twins (428,334) (408,314) (407,316) (409,311) |dvx| 3.9e-05
+  297 port (356,89) orig<-port (356,90) twins (354,109) (362,103) (356,102) (351,57) own (-107,187) |dvx| 0.00026
+  298 port (520,62) orig<-port (513,59) twins (429,-191) (478,21) (513,38) (558,59) |dvx| 0.00011
+  299 port (504,-342) orig<-port (516,-451) twins (510,-435) (471,-105) (628,-904) (477,-89) |dvx| 0.0001
+  300 port (970,-1106) orig<-port (971,-1113) twins (775,-488) (775,-314) (773,-975) (733,-296) |dvx| 0.00072
+  306 port (951,-1077) orig<-port (970,-1081) twins (73,-86) (847,-867) (904,-1076) (988,-1025) own (-217,-127) |dvx| 0.0014
+  315 port (973,-1069) orig<-port (976,-1070) twins (-208,376) (968,-1064) (936,-1058) (978,-1066) own (-30,19) |dvx| 0.00041
+  324 port (939,-1013) orig<-port (940,-1012) twins (-229,461) (935,-1012) (934,-1005) (933,-1009) own (4,282) |dvx| 8.7e-05
+  333 port (934,-996) orig<-port (934,-996) twins (-237,449) (933,-997) (935,-996) (933,-997) own (-160,289) |dvx| 0.00013
+  342 port (927,-985) orig<-port (927,-985) twins (-233,435) (927,-985) (927,-985) (927,-985) own (-177,364) |dvx| 0.00014
+  351 port (919,-975) orig<-port (920,-975) twins (-230,425) (919,-975) (919,-975) (920,-975) own (-187,415) |dvx| 0.00017
+  360 port (914,-964) orig<-port (914,-964) twins (-224,415) (914,-964) (914,-964) (914,-964) own (-167,405) |dvx| 0.00018
+  369 port (909,-952) orig<-port (909,-952) twins (-215,405) (909,-952) (909,-952) (909,-952) own (-201,345) |dvx| 0.00018
+  378 port (903,-943) orig<-port (903,-943) twins (-202,395) (903,-943) (903,-943) (903,-943) own (137,375) |dvx| 0.00018
+  387 port (895,-931) orig<-port (895,-932) twins (-192,383) (895,-931) (895,-932) (895,-932) own (83,323) |dvx| 0.00019
+  396 port (889,-919) orig<-port (889,-919) twins (-182,370) (889,-919) (889,-919) (889,-919) own (-128,325) |dvx| 0.0002
+  405 port (883,-908) orig<-port (883,-908) twins (-171,357) (883,-908) (883,-908) (883,-908) own (-174,311) |dvx| 0.00022
+  414 port (874,-896) orig<-port (874,-896) twins (-160,344) (874,-896) (874,-896) (874,-896) own (-186,320) |dvx| 0.00022
+  423 port (861,-880) orig<-port (861,-880) twins (-148,331) (861,-880) (860,-880) (861,-880) own (-145,331) |dvx| 0.00027
+  432 port (844,-862) orig<-port (845,-862) twins (-135,317) (845,-862) (844,-862) (844,-862) own (-134,315) |dvx| 0.00031
