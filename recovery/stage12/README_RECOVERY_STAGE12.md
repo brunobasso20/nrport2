@@ -15,7 +15,7 @@ projeto (usada pelo harness desde o Stage 6/7).
 
 | Arquivo | Papel |
 |---|---|
-| `orig_stage12.py` | harness: `OriginalStage12` = harness do Stage 11 + o início de quadro original do jogador (`005524f0` → `00552720`) e a cauda de `00551e80` executados do exe (stubs em `0xf7f060..0xf7f0f0`; resultado x87 guardado com `FSTP tbyte`; `ctl_remove_cache` antes de parar no meio de `00551e80`); `host_steer_devices` (mesmas células de controle do port); `set_steer_options` chama os setters ORIGINAIS |
+| `orig_stage12.py` | harness: `OriginalStage12` = harness do Stage 11 + o `00552720` original (stub no lugar do call de `005524f0` @`005525c8`; o resto do ramo do jogador / não dirigido de `005524f0` é host Python, com o `00553080` original do Stage 8) e a cauda de `00551e80` (`00552082..00552336`) executados do exe (stubs em `0xf7f060..0xf7f0f0`; resultado x87 guardado com `FSTP tbyte`; `ctl_remove_cache` antes de parar no meio de `00551e80`); `host_steer_devices` (mesmas células de controle do port); `set_steer_options` chama os setters ORIGINAIS |
 | `scenarios12.py` | 10 cenários (sessão, duração, lei de controle por quadro, opções) |
 | `gen_units12.py` | L1: vetores das funções originais → `tests/stage12/fixtures/units.lua` + `fixtures_json/units.json` |
 | `gen_fixtures12.py` | L2–L4: snapshots de início de quadro rastreados (ganchos de memória do Unicorn), reinícios de estado completo (12 gêmeos de um quadro), linhas a cada 0,25 s + 14 gêmeos (`PERTURB`), horizontes (`HORIZON`) |

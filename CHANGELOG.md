@@ -12,7 +12,8 @@
   6–11); rampas e somas por tick com o zero de sinal do x87 (C1); `V._frameStartOnly`. `NR2003CupVehicle`: instala a
   direção depois da garagem; API `setSteeringOptions` / `steeringOptions` / `steeringState` / `steeringWheelAngle`.
 - **Achados:** sem Ackermann, sem bump steer, sem taxa de esterço (cubos prescritos sobre eixo com caster 2,455° e
-  inclinação 9,215°); a única dependência de velocidade da entrada é a sensibilidade pela linearidade; o bit 25 das opções
+  inclinação 9,215°); no modo simulação (sem arcade e sem assistência, ambos recusados em produção) a única dependência de velocidade da
+  entrada é a sensibilidade pela linearidade (no arcade o limitador de guinada de `00552720` também multiplica a entrada); o bit 25 das opções
   de corrida é o modo ARCADE (também troca o chassi no build) e a assistência usa a linha de corrida da pista — ambos
   recusados em produção; itens 0x3a / 0x9f..0xa4 são do diferencial traseiro (correção no `SETUP_MAP.md`); o FFB original
   não lê células da direção (interface do Stage 13).

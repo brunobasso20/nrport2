@@ -63,8 +63,10 @@ Suíte `tests/stage12/run.luau`: **47/47 PASS** (`tests/stage12/RESULTS_STAGE12.
 **O quê:** as somas de composição por tick de `005539c0` (`bf6ea4`, `bf63c0`, `bf6360`, `bf6364`, `bf636c` e a embreagem
 `bf6e14 / bf6370`, `@00553a40..00553ab5`) e as rampas da cauda de `00551e80` (`bf6e88`, `bf6394`, `bf6358`, `bf6e50`) passam
 a dar **−0** quando o resultado é exatamente zero e o x87 com RC = para baixo dá −0 (`zadd` / `zsub`). **Por quê:** no
-L2 o original grava −0 nessas células em repouso (`x − x = −0` com arredondamento para −∞) e o port gravava +0 (`bf63c0`
-em repouso; 445 dwords só nas rampas de pedal), todos diferentes só no sinal do zero. **Efeito:** só o sinal de zeros exatos muda (nenhum valor diferente de zero); as rampas no
+L2 o original grava −0 nas rampas da cauda em repouso (`x − x = −0` com arredondamento para −∞) e a aritmética antiga do
+port gravava +0: 4554 dwords nos 1481 snapshots, todos −0/+0 — 4246 nas rampas de pedal `bf6394` / `bf6358` / `bf6e50` (445
+em `keys`) e 308 na rampa de direção `bf6e88` (83 em `keys`). As somas por tick de `005539c0` (`bf63c0` etc.) não são
+executadas pelo L2; o efeito delas aparece só no L3 (células a mais dentro da tolerância, p. ex. `keys` 3301 → 3281). **Efeito:** só o sinal de zeros exatos muda (nenhum valor diferente de zero); as rampas no
 modo `"provisional"` mantêm a aritmética antiga (`plainSub`), para que as fixtures dos Stages 6–11 continuem válidas.
 **Verificação:** L2 100 % bit a bit depois da correção; regressões 6/7–11 inalteradas (mesmas contagens do baseline).
 

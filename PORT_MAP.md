@@ -20,15 +20,15 @@ diferencial traseiro, não da direção (correção no `SETUP_MAP.md`).
 
 | Endereço | Papel | Chamadores | Chamados | Globais / offsets | Destino Luau | Status | Confiança | Validação |
 |---|---|---|---|---|---|---|---|---|
-| `005524f0` (ramo do jogador / não dirigido) | dispositivos do piloto por quadro | `00551e80` | `00553080`, `00552720`, `00552df0` | `bf63c8`, `bf6eac`, `bf6390`, células zeradas sem motorista | `frameStart` + `V._steerDevices` | EXACT · LUA VALIDATED · ROBLOX INTEGRATED | alta | L2 1481 snapshots bit a bit; cenário `notdriven` |
+| `005524f0` (ramo do jogador / não dirigido) | dispositivos do piloto por quadro | `00551e80` | `00553080`, `00552720`, `00552df0` | `bf63c8`, `bf6eac`, `bf6390`, células zeradas sem motorista | `frameStart` + `V._steerDevices` | EXACT para a entrada de direção (`bf63c8 = 00552720()`), o caminho do freio do Stage 8 (`00553080`) e as células do ramo não dirigido; acelerador / embreagem (`00552df0` / `005534f0`) ainda valores do host (PROVISIONAL desde o Stage 7); bloco `00568e00` / `bf6f18`, `0057af40(3)` / `bf6f36` e a porta estado de jogo / `bf6eb8` não portados (substituída por `controls.driver = false`) · ROBLOX INTEGRATED | alta | L2 1481 snapshots bit a bit contra o harness (no harness o ramo não dirigido e acelerador / embreagem também são host); cenário `notdriven` |
 | `00552d00` | limite de taxa por controle + `sin(x·π/2)` (rate < 1) | `00552720`, `00552df0` | — | `74c990[i]`, `74c99c`, `bf639c[i]` | Stage 8 `V.axisOriginal` | EXACT · LUA VALIDATED | alta | L1 1200 vetores |
 | `00552720` | entrada processada: velocidade, sensibilidade, limitador arcade, assistência | `005524f0` | `00554f50`, `00552410`, `00552d00`, `0055a770`, `00550230` | `bf6d70` (taxa de guinada), `bf6f44` | `steerInput` | EXACT · LUA VALIDATED (assistência > 0 NOT PORTED) | alta | L1 3872 vetores + sequência de 120 quadros |
 | `00552410`, `00550230`, `0055a770`, `0055a680` | linearidade (remapeamento arcade/assistência), assistência, bit 25 | `00552720`, `00551e80` | — | `bf6f00`, `bf6f08`, `c0692a+0x4c` | `linearity`, `assist`, `settingsBit25` | EXACT | alta | L1 |
 | `00551e80` cauda `@00552082..00552336` | `−bf63c8`, linearidade (`_CIpow`, só eixos analógicos), × π, ÷ relação, alvo, rampas | `005b2190` | `005524b0`, `00552410`, `006c5c40`, `00554fb0` | `bf63c0`, `bf63b8`, `bf6e80`, `bf6e88` | `V._steerTail` + `frameStart` | EXACT · LUA VALIDATED | alta | L1 2100 vetores; L2; L3 |
-| `00554fb0` | relação de direção (item 0x30) + override de baixa velocidade | `00551e80`, `005662d0`, `00565cc0`, FFB `00554520` | `00557d60`, `00554f50` | `c055c0+0xc0`, `74c9a0` | `ratio` | EXACT · LUA VALIDATED | alta | L1 192 vetores (limiares ±1 ulp); cenários `ratio12` / `ratio32` / `parking` |
+| `00554fb0` | relação de direção (item 0x30) + override de baixa velocidade | `00551e80`, `005662d0`, `00565cc0` (o bloco FFB de `00554520` lê o item 0x30 cru via `00557d60`, sem o override) | `00557d60`, `00554f50` | `c055c0+0xc0`, `74c9a0` | `ratio` | EXACT · LUA VALIDATED | alta | L1 192 vetores (limiares ±1 ulp); cenários `ratio12` / `ratio32` / `parking` |
 | `005502f0`, `005500c0`, `00550110`, `00550210`; `0043f1d0` | setters das opções (mensagens 0x48..0x4c / 0x51 da tabela `00752370`, despachante `005bad80` na tarefa de simulação); carga do controls.cfg | front end | — | `bf6f00`, `74c990..998`, `74c9a0`, `bf6f08`, `72c5f0` | `V.setSteeringOptions` | EXACT · LUA VALIDATED | alta | L1 215 vetores |
-| `005662d0`, `00565cc0` | ângulo do volante (cockpit / modelo) | desenho `00587aa5` | `00554fb0`, `005ba130` | `car+0x1554` (`00551990`), limite 2,79 rad `006f5e6c` | `V.steeringWheelAngle` → `Cockpit.updateAngle` | EXACT (fórmula) · ROBLOX INTEGRATED | alta | testes de comportamento / adaptador |
-| `005539c0` (linhas de direção) | rampa por tick + toe → entradas dos cubos | `005b2190` | `005b2b90` | `bf6360/64`, `c086b0/b4` | `tickInputs` (Stage 7 + C1) | EXACT · LUA VALIDATED | alta | L2 / L3 / L4 |
+| `005662d0`, `00565cc0` | ângulo do volante (cockpit / modelo) | desenho `00587aa5` (em `00587a90`) / `00587afb` (em `00587ae0`) | `00554fb0`, `005ba130` | `car+0x1554` (`00551990`), limite 2,79 rad `006f5e6c` | `V.steeringWheelAngle` → `Cockpit.updateAngle` | EXACT (fórmula) · ROBLOX INTEGRATED | alta | testes de comportamento / adaptador |
+| `005539c0` (linhas de direção) | rampa por tick + toe → entradas dos cubos | `005b2190` | `005b2b90` | `bf6360/64`, `c086b0/b4` | `tickInputs` (Stage 7 + C1) | EXACT · LUA VALIDATED | alta | L3 / L4 (L2 cobre só o início de quadro) |
 
 ## Fronteira do host (ADAPTER) e itens não portados
 
@@ -39,7 +39,7 @@ diferencial traseiro, não da direção (correção no `SETUP_MAP.md`).
 | assistência de direção > 0 (linha de corrida `bd7960` via `car+0x5ae`) | `setSteeringOptions` → erro | NOT PORTED (sistema de pista) |
 | modo ARCADE (bit 25: limitador + remapeamento + chassi 0 no build `004233a0`) | `setSteeringOptions{yawLimiter = true}` → erro (só validação) | NOT PORTED como opção de produção; o ramo da direção é EXACT (cenário `yawlimit`) |
 | replay / rede (`005beac0`, quantização de `bf6360`) | — | NOT PORTED (sem replay) |
-| FFB / torque de direção (`00554d30`, `bf6ec4..bf6ef0`, bloco FFB de `00554520`) | — | **Stage 13** (interface em `STAGE12_RECOVERY.md` §8) |
+| FFB / torque de direção (`00554d30` e `bf6ec4..bf6ef0` não portados; o bloco FFB de `00554520` já foi erguido no Stage 11 e fica inerte: `bf6ebb` nunca escrito (0), `005d08d0` = `ret`) | `NR2003CupFrameCode*` `XF[0x554520]` (bloco inerte) | **Stage 13** (saída / ativação; interface em `STAGE12_RECOVERY.md` §8) |
 
 ---
 

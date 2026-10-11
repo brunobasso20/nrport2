@@ -52,10 +52,11 @@ struct SetupItemDesc { u16 type; /* 3 int, 4 float */ u32 min, max, step, deflt;
     0057c990(e84474..e84494, 0); 005b4060(raiz); 005b4560(raiz); 005b3f50(raiz); 005b2fb0(raiz); 005b9ce0();
     0057dcd0(2); 005b3090(raiz) /* executa o callback de solve gerado */; 0057dcd0(1);
 0054d610() x4                                  /* propriedades do pneu por quadro (térmica = Stage 11)             */
-/* tempo de execução: só 0x29/0x2a (toe, via c086b0 por 005539c0), 0x3b/0x3d (fita/aerofólio, 00410280), 0x30
-   (relação de direção, 00554fb0 = Stage 12; também FFB 00554520 = Stage 13), 0xa3/0xa4 (rampas do diferencial
-   traseiro, 005614b0 a cada tick; correção Stage 12) e combustível/temperaturas/desgaste (Stage 11) são lidos do setup ativo;
-   o resto chega à física pelas células gravadas no build. Pit stop: 0040e1c0 -> 005581d0/005580f0 -> 005601c0
+/* tempo de execução: 0x3b/0x3d (fita/aerofólio, 00410280), 0x30 (relação de direção, 00554fb0 = Stage 12; também o
+   bloco FFB de 00554520, inerte), 0xa3/0xa4 (rampas do diferencial traseiro, 005614b0 a cada tick; correção Stage 12) e
+   combustível/temperaturas/desgaste (Stage 11) são lidos do setup ativo; o toe (0x29 -> c086b0/b4, lidas por 005539c0
+   a cada tick; 0x2a -> c086b8/bc -> registros das rodas traseiras +0x51) e o resto chegam à física pelas células
+   gravadas no build. Pit stop: 0040e1c0 -> 005581d0/005580f0 -> 005601c0
    (track bar/cunha: c085ac/registros + células c08490/c081f0/c08534/c08664) e 00550f10 (pressão: pneu +0,
    reinício térmico) = mudança em corrida sem rebuild (mapeado, não portado: pit stop é de estágio posterior).    */
 ```
@@ -250,8 +251,8 @@ padrão. O port tem:
 | 0xa0 · c055c0+0x280 | steeringGeometry1 (**diferencial traseiro, não direção** — cos(tabela[0x3a].b) (intermediário); correção Stage 12) | interno | - | — | — | derived 00424860 from item 58 | — | recalculado por `00559820`/build a cada aplicação | ORIGINAL | baixa | derivado: build = original (fixtures nomeados) |
 | 0xa1 · c055c0+0x284 | steeringGeometry2 (**diferencial traseiro, não direção** — 0,2 constante (intermediário); correção Stage 12) | interno | - | — | — | derived 00424860 from item 58 | — | recalculado por `00559820`/build a cada aplicação | ORIGINAL | baixa | derivado: build = original (fixtures nomeados) |
 | 0xa2 · c055c0+0x288 | steeringGeometry3 (**diferencial traseiro, não direção** — 0,2 constante (intermediário); correção Stage 12) | interno | - | — | — | derived 00424860 from item 58 | — | recalculado por `00559820`/build a cada aplicação | ORIGINAL | baixa | derivado: build = original (fixtures nomeados) |
-| 0xa3 · c055c0+0x28c | steeringGeometry4 (**diferencial traseiro, não direção** — rampa de desaceleração do diferencial = 0xa1·0x9f; lida por 005614b0 (torque < 0) a cada tick; correção Stage 12) | interno | - | — | — | derived 00424860 from item 58 | — | recalculado por `00559820`/build a cada aplicação | ORIGINAL | baixa | derivado: build = original (fixtures nomeados) |
-| 0xa4 · c055c0+0x290 | steeringGeometry5 (**diferencial traseiro, não direção** — rampa de potência do diferencial = 0xa2·0xa0; lida por 005614b0 (torque ≥ 0) a cada tick; correção Stage 12) | interno | - | — | — | derived 00424860 from item 58 | — | recalculado por `00559820`/build a cada aplicação | ORIGINAL | baixa | derivado: build = original (fixtures nomeados) |
+| 0xa3 · c055c0+0x28c | steeringGeometry4 (**diferencial traseiro, não direção** — rampa de desaceleração do diferencial = 0xa1·0x9f; lida por 005614b0 (torque < 0) a cada tick; correção Stage 12) | interno | - | — | — | derived 00424860 from item 58 | RT 005614b0 (capacidade do diferencial, 2× por tick; torque < 0) | recalculado por `00559820`/build a cada aplicação | ORIGINAL | média | derivado: build = original (fixtures nomeados) |
+| 0xa4 · c055c0+0x290 | steeringGeometry5 (**diferencial traseiro, não direção** — rampa de potência do diferencial = 0xa2·0xa0; lida por 005614b0 (torque ≥ 0) a cada tick; correção Stage 12) | interno | - | — | — | derived 00424860 from item 58 | RT 005614b0 (capacidade do diferencial, 2× por tick; torque ≥ 0) | recalculado por `00559820`/build a cada aplicação | ORIGINAL | média | derivado: build = original (fixtures nomeados) |
 | 0xa5 · c055c0+0x294 | cornerLoadDeltaLF | interno | N | — | — | derived 00424860 (0xa5..0xa8) | — | recalculado por `00559820`/build a cada aplicação | ORIGINAL | média | derivado: build = original (fixtures nomeados) |
 | 0xa6 · c055c0+0x298 | cornerLoadDeltaRF | interno | N | — | — | derived 00424860 (0xa5..0xa8) | — | recalculado por `00559820`/build a cada aplicação | ORIGINAL | média | derivado: build = original (fixtures nomeados) |
 | 0xa7 · c055c0+0x29c | cornerLoadDeltaLR | interno | N | — | — | derived 00424860 (0xa5..0xa8) | — | recalculado por `00559820`/build a cada aplicação | ORIGINAL | média | derivado: build = original (fixtures nomeados) |
@@ -306,5 +307,5 @@ Stage 6/7 (0x077f), que reproduz a imagem original bit a bit (o CW real desse ta
 | Parâmetros de tempo de execução | memória do núcleo (`NR2003CupCore`, callbacks `NR2003CupJIT*`/`NR2003CupJITG*`) | ORIGINAL |
 | Orquestração, inspeção | `NR2003CupGarage` | ROBLOX ADAPTER |
 | Atributos `Setup_<item>`, linha de Output | `CupChassisAdapter` | ROBLOX ADAPTER |
-| Uso da relação de direção | cadeia de direção | PROVISIONAL (Stage 12) |
+| Uso da relação de direção | cadeia de direção (`NR2003CupSteering`, `00554fb0`) | ORIGINAL (Stage 12) |
 | Térmica/desgaste/combustível/dano | Stage 11 | mapeado, não implementado |
