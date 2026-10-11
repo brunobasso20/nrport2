@@ -1,0 +1,12 @@
+# Stage 11 regression run -- 2026-10-08 00:47 -- Stage 6-10 suites with the Stage 11 core loaded (frozen mode), adapter mock, patch mocks
+tests/stage67/run.luau               exit 0  16 passed, 0 failed  (9 s)
+tests/stage8/run.luau                exit 0  49 passed, 0 failed  (15 s)
+tests/stage9/run.luau                exit 0  59 passed, 0 failed  (62 s)
+tests/stage10/run_setup.luau         exit 0  Stage 10 setup conversion: 23 passed, 0 failed  (0 s)
+tests/stage10/run.luau               exit 0  61 passed, 0 failed  (63 s)
+tests/stage67/adapter_mock.luau      exit 0  adapter mock: 55 passed, 0 failed  (32 s)
+tests/stage67/patch_mock.luau        exit 0  patch mock: 11 passed, 0 failed  (4 s)
+tests/stage8/patch8_mock.luau        exit 0  patch8 mock: 13 passed, 0 failed  (23 s)
+tests/stage9/patch9_mock.luau        exit 0  patch9 mock: 13 passed, 0 failed  (52 s)
+tests/stage10/patch10_mock.luau      exit 0  patch10 mock: 17 passed, 0 failed  (181 s)
+tests/stage11/patch11_mock.luau      exit 0  patch11 mock: 15 passed, 0 failed  (264 s)

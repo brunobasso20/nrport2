@@ -24,6 +24,8 @@ end
 local t0 = os.clock()
 local car = Vehicle.fromLoader(get)
 local V = car.V
+-- Stage 11: the golden data of this suite were produced by the ORIGINAL code with the Stage 6-10 frame end (0051aac0 cut-timer subset); compare in the explicit "frozen" runtime mode (production = "original", see tests/stage11)
+if V.setRuntimeMode then V.setRuntimeMode("frozen") end if V.setSteeringMode then V.setSteeringMode("provisional") end
 check("load core + Stage 10 modules (setup, build code/data, generic callbacks, garage)", V.applySetup ~= nil and V.Setup ~= nil,
 	string.format("%.3f s, footprint %d bytes", os.clock() - t0, V.Build.footprintBytes))
 local Setup = V.Setup

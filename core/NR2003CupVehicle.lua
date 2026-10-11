@@ -12,6 +12,7 @@
 --                        (setup -> runtime parameters) lifted from the exe, run on the core memory
 --   NR2003CupGarage    : Stage 10 applySetup / setup inspection (orchestration only)
 --   NR2003CupJITG1..n  : Stage 10 callbacks of the generic (setup-invariant) structure, translated
+--   NR2003CupSteering  : Stage 12 ORIGINAL steering chain (00552720, 00551e80 tail, 00554fb0, options)
 -- This module only assembles them and exposes a numeric API (no Instances, no Roblox types).
 -- Axes: NR2003 vehicle-world frame (+X forward, +Y left, +Z up, metres, seconds) fixed at reset.
 local M={};M.__index=M
@@ -44,12 +45,22 @@ function M.fromLoader(get)
     local V=get("NR2003CupDriver")(get("NR2003CupCore")(image,jit))
     local aero=get("NR2003CupAero") -- Stage 9 (absent in a Stage 6/7/8 install)
     if aero then aero(V) end
+    -- Stage 11 (absent in a Stage 6..10 install). Installed before the garage: its image supplement becomes part
+    -- of the reset image that the garage snapshots (applySetup of the default setup restores that image)
+    local frame=get("NR2003CupFrame")
+    if frame then
+        frame(V,collect(get,"NR2003CupFrameCode"),collect(get,"NR2003CupFrameData"))
+    end
     local build=get("NR2003CupBuild") -- Stage 10 (absent in a Stage 6/7/8/9 install)
     if build then
         local Setup=get("NR2003CupSetup")(get("NR2003CupSetupData"))
         local B=build(V,collect(get,"NR2003CupBuildCode"),collect(get,"NR2003CupBuildData"))
         get("NR2003CupGarage")(V,Setup,B,collect(get,"NR2003CupJITG"))
     end
+    -- Stage 12 (absent in a Stage 6..11 install): ORIGINAL steering chain; installed last so that its option
+    -- re-application wraps every reset (garage rebuilds included)
+    local steering=get("NR2003CupSteering")
+    if steering then steering(V) end
     return setmetatable({V=V,state=table.create(45,0),pos={0,0,0},rot={1,0,0,0,1,0,0,0,1}},M)
 end
 function M.new(folder)
@@ -63,7 +74,10 @@ end
 
 function M:reset() self.V.reset() end
 function M:tick() return self.V.tick end
--- controls: {throttle, clutch(engagement), steer(road-wheel rad, + left), shiftUp, shiftDown,
+-- controls: {throttle, clutch(engagement), shiftUp, shiftDown,
+--   steerLeft/steerRight (Stage 12: raw steering controls 7/8, 0..1) + steerDigital (true = keys/buttons,
+--   false = analog axis), or steerAxis (-1..1, + right: one analog axis split as the original device layer),
+--   steer (road-wheel rad, + left: PROVISIONAL Stage 6-11 contract, only in the steering mode "provisional"),
 --   brakeControl (Stage 8: raw brake device value 0..1 -> ORIGINAL 00552d00/00553080 chain),
 --   brakeDigital (true = key/button binding, false = analog axis), throttleControl/throttleDigital,
 --   driver (false -> 005524f0 'not driven': brake held at 1.0),
@@ -80,7 +94,8 @@ function M:brakeTemperature(i) return self.V.brakeTemperature(i) end
 -- post-build state (no air: rho = 0), the condition of every Stage 6/7/8 fixture.
 --   weather = {temperatureF, windSpeedMph, windDirection 0..7, conditions 0..3, night, trackNorth,
 --              humidity, pressureInHg}  (nil fields = original defaults)
-function M:startSession(weather) return self.V.startSession(weather) end
+-- Stage 11: opts = {damageLevel 0..3, consumptionRate 0..3, series (car+0x596), seed} (see CORE_API.md)
+function M:startSession(weather,opts) return self.V.startSession(weather,opts) end
 function M:endSession() self.V.endSession() end
 function M:sessionActive() return self.V.sessionActive() end
 function M:weather() return self.V.weather() end
@@ -98,6 +113,25 @@ function M:setup() return self.V.setup() end
 function M:applySetup(s) return self.V.applySetup(s) end
 function M:setupReport() return self.V.setupReport() end
 function M:setupDump(out) return self.V.setupDump(out) end
+-- Stage 11 runtime systems (ORIGINAL frame end; see CORE_API.md). Mode "original" (default, production) or
+-- "frozen" (the Stage 6-10 frame end, only for comparisons with the Stage 6-10 golden data).
+function M:setRuntimeMode(m) self.V.setRuntimeMode(m) end
+function M:runtimeMode() return self.V.runtimeMode() end
+function M:stage11State(out) return self.V.stage11State(out) end
+function M:collision(rec) self.V.collision(rec) end
+function M:pitTyres(wheels) self.V.pitTyres(wheels) end
+function M:enterTrack() self.V.enterTrack() end
+function M:setDamageLevel(level) return self.V.setDamageLevel(level) end
+function M:setConsumptionRate(rate) return self.V.setConsumptionRate(rate) end
+function M:setRandomSeed(seed) self.V.setRandomSeed(seed) end
+function M:randomState() return self.V.randomState() end
+-- Stage 12 steering API (ORIGINAL chain; see CORE_API.md / STAGE12_STEERING_STATE_MAP.md)
+function M:setSteeringMode(m) self.V.setSteeringMode(m) end
+function M:steeringMode() return self.V.steeringMode() end
+function M:setSteeringOptions(o) return self.V.setSteeringOptions(o) end
+function M:steeringOptions() return self.V.steeringOptions() end
+function M:steeringState(out) return self.V.steeringState(out) end
+function M:steeringWheelAngle() return self.V.steeringWheelAngle() end
 function M:readState() return self.V.state(self.state) end
 function M:componentPose(record,pos,rot) return self.V.componentPose(record,pos,rot) end
 function M:contactOut(i) return self.V.contactOut(i) end

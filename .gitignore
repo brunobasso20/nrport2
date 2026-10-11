@@ -7,3 +7,7 @@ recovery/stage10/out/
 recovery/stage10/out_core/
 tests/stage10/_work/
 recovery/stage10/dev/fixture_steps.lua
+# Stage 11 regenerable intermediates (recovery/stage11/trace11.py per scenario; the merged footprint11.pkl is kept)
+recovery/stage11/footprint11_*.pkl
+recovery/stage11/out/
+tests/stage11/dev/*.lua

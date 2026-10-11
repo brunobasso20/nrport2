@@ -1,0 +1,2 @@
+00516e1a FLD dword ptr [0x00bad918]
+00516e20 RET

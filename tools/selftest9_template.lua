@@ -53,6 +53,8 @@ function M.run(full)
     end
     local t0=os.clock()
     local car=Vehicle.new(Core.NR2003Cup);local V=car.V
+-- Stage 11: golden data produced by the ORIGINAL code with the Stage 6-10 frame end -> explicit "frozen" runtime mode
+if V.setRuntimeMode then V.setRuntimeMode("frozen") end if V.setSteeringMode then V.setSteeringMode("provisional") end
     check("load Core.NR2003Cup (Stage 9 aero module)",V.startSession~=nil and V.aeroState~=nil and V.draftingOriginal~=nil,string.format("%.2f s",os.clock()-t0))
     local w32,r32=V.w32,V.r32
     local AIR,CAR,HOST=0xe0b840,0xc12030,0xf7f100

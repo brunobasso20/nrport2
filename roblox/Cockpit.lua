@@ -61,6 +61,14 @@ function M.angle(roadAngle,tune)
     local ratio=(tune.steering and tune.steering.wheelRatio) or Config.steeringRatio
     return roadAngle*ratio
 end
+-- Stage 12 (NR2003_CUP): the steering wheel at an angle given directly (rad, + = clockwise seen by the driver),
+-- the ORIGINAL 005662d0 angle of the core (setup ratio + low-speed override, +-2.79 rad); no visual multiplier
+function M.updateAngle(car,angle)
+    local cockpit=car:FindFirstChild("Cockpit")
+    local pivot=cockpit and cockpit:FindFirstChild("SteeringPivot")
+    if not pivot then return end
+    pivot.SteeringMotor.C0=pivot:GetAttribute("NeutralCFrame")*CFrame.Angles(0,0,-angle)
+end
 function M.update(car,tune,roadAngle)
     local cockpit=car:FindFirstChild("Cockpit")
     local pivot=cockpit and cockpit:FindFirstChild("SteeringPivot")

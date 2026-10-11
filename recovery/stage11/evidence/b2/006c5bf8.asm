@@ -1,0 +1,6 @@
+006c5bf8 ADC byte ptr [EBX + -0x66],BL
+006c5bfb LOOP 0x006c5c6a
+006c5bfd RET
+006c5c6a MOV ECX,0x757d3dfa
+006c5c6f INC EAX
+006c5c70 IRETD

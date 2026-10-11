@@ -1,0 +1,79 @@
+PASS  load core + Stage 12 steering (NR2003CupSteering)  1.18 s
+PASS  L1 00552d00 steering axes: 1212 vectors (raw x slew state x rate x binding): state bits + float32 of the x87 value exact, value <= 4 double ulp  worst 0.99 ulp 
+PASS  L1 00552720 processed input: 3872 vectors (11 inputs -1..1 x speed x yaw rate x linearity x yaw limiter) bit-exact  exact 3872 
+PASS  L1 keyboard steering sequence: 400 frames of 00552720 with the 0.033/frame slew and sin shaping (keys held / released, full holds at state 1.0, both keys) bit-exact; 44 a8 - a7 cancellation frames (|x| < 2^-20), 6 of them differ by <= 4 * 2^-53 (D3)
+PASS  L1 00554fb0 steering ratio: 192 vectors (speed at / +-1 ulp around 8.94 and 17.88 m/s x setup ratio 6.5..32 x low-speed override) float32 exact, x87 value <= 2 double ulp  worst 0.00 ulp 
+PASS  L1 00551e80 tail (bf63c0 = -bf63c8, linearity _CIpow, x pi, / 00554fb0, bf63b8 / bf6e80 / bf6e88): 2100 vectors bit-exact
+PASS  L1 setters 005502f0 / 005500c0 / 00550110 / 00550210 + controls.cfg conversion of 0043f1d0: 215 vectors bit-exact
+PASS  image defaults (no front-end message): linearity 0, steering rate 0.033/frame, release x2.5, low-speed override on, assistance 0  rate 0.0329999998 release 2.5
+PASS  keys: L2 150 frame-start snapshots (traced 005524f0 + 00551e80): written dwords bit-exact, no extra Luau writes  17700 dwords: exact 17700, differing 0, extra writes 0 
+      L5 frame-start: mutations detected in keys: {1,2,3,4,5}
+PASS  keys: L3 6 full-state restarts (frames 90,234,378,522,666,810): one Luau frame from the original state = original within 4x its twins  3281 differing cells: float 3267, protected 7 (worst rel 3.06e-01 at 00ebd7d4), outside tolerance 0, row fields 0 
+PASS  keys: L4 24 s closed loop (97 rows x 35 fields) within 4x the envelope of the original's 14 twins  3.4 s Luau (2006 ticks/s); outside envelope 0, integer 0 
+      end: x 570.663/570.791 m  y 166.048/165.549 m  yaw rate -0.0001/-0.0002  hub LF -0.00224/-0.00224  wheel yaw LF -0.00317/-0.00317
+PASS  slalom: L2 150 frame-start snapshots (traced 005524f0 + 00551e80): written dwords bit-exact, no extra Luau writes  17700 dwords: exact 17700, differing 0, extra writes 0 
+      L5 frame-start: mutations detected in slalom: {1,2,3,4,5}
+PASS  slalom: L3 7 full-state restarts (frames 90,234,378,522,666,810,954): one Luau frame from the original state = original within 4x its twins  4371 differing cells: float 4367, protected 2 (worst rel 3.27e-01 at 00ebd7d4), outside tolerance 0, row fields 0 
+      L5 restart frame 234: mutations detected in slalom: {1,2,3,4,5}
+PASS  slalom: L4 30 s closed loop (121 rows x 35 fields) within 4x the envelope of the original's 14 twins  3.7 s Luau (2351 ticks/s); outside envelope 0, integer 0 
+      end: x 1133.869/1130.599 m  y 231.906/252.333 m  yaw rate -0.1645/-0.1593  hub LF -0.00415/-0.00415  wheel yaw LF -0.00128/-0.00128
+PASS  linear: L2 150 frame-start snapshots (traced 005524f0 + 00551e80): written dwords bit-exact, no extra Luau writes  17400 dwords: exact 17400, differing 0, extra writes 0 
+      L5 frame-start: mutations detected in linear: {1,2,3,4,5}
+PASS  linear: L3 5 full-state restarts (frames 90,234,378,522,666): one Luau frame from the original state = original within 4x its twins  1822 differing cells: float 1816, protected 3 (worst rel 4.39e-03 at 00ebd7d4), outside tolerance 0, row fields 0 
+      L5 restart frame 378: mutations detected in linear: {1,2,3,4}
+PASS  linear: L4 22 s closed loop (89 rows x 35 fields) within 4x the envelope of the original's 14 twins  3.1 s Luau (2015 ticks/s); outside envelope 0, integer 0 
+      end: x 166.903/166.853 m  y 0.605/0.405 m  yaw rate -0.0002/-0.0002  hub LF -0.00343/-0.00343  wheel yaw LF -0.00200/-0.00200
+PASS  brakesteer: L2 150 frame-start snapshots (traced 005524f0 + 00551e80): written dwords bit-exact, no extra Luau writes  17700 dwords: exact 17700, differing 0, extra writes 0 
+      L5 frame-start: mutations detected in brakesteer: {1,2,3,4,5}
+PASS  brakesteer: L3 7 full-state restarts (frames 90,234,378,522,666,810,954): one Luau frame from the original state = original within 4x its twins  3825 differing cells: float 3815, protected 5 (worst rel 1.37e-01 at 00ebd7d4), outside tolerance 0, row fields 0 
+      L5 restart frame 666: mutations detected in brakesteer: {1,2,3,4,5}
+PASS  brakesteer: L4 28 s closed loop (113 rows x 35 fields) within 4x the envelope of the original's 14 twins  3.9 s Luau (2060 ticks/s); outside envelope 0, integer 0 
+      end: x 301.000/297.292 m  y 114.411/117.546 m  yaw rate 0.0040/0.0049  hub LF -0.00224/-0.00224  wheel yaw LF -0.00317/-0.00317
+PASS  ratio12: L2 150 frame-start snapshots (traced 005524f0 + 00551e80): written dwords bit-exact, no extra Luau writes  17700 dwords: exact 17700, differing 0, extra writes 0 
+      L5 frame-start: mutations detected in ratio12: {1,2,3,4,5}
+PASS  ratio12: L3 4 full-state restarts (frames 90,234,378,522): one Luau frame from the original state = original within 4x its twins  2086 differing cells: float 2084, protected 1 (worst rel 1.64e-01 at 00ebd7d4), outside tolerance 0, row fields 0 
+      L5 restart frame 234: mutations detected in ratio12: {1,2,3,4,5}
+PASS  ratio12: L4 16 s closed loop (65 rows x 35 fields) within 4x the envelope of the original's 14 twins  2.3 s Luau (1967 ticks/s); outside envelope 0, integer 0 
+      end: x 96.546/97.696 m  y -14.871/-14.885 m  yaw rate -1.4877/-1.5486  hub LF 0.03507/0.03507  wheel yaw LF -0.04009/-0.04009
+PASS  ratio32: L2 150 frame-start snapshots (traced 005524f0 + 00551e80): written dwords bit-exact, no extra Luau writes  17700 dwords: exact 17700, differing 0, extra writes 0 
+      L5 frame-start: mutations detected in ratio32: {1,2,3,4,5}
+PASS  ratio32: L3 4 full-state restarts (frames 90,234,378,522): one Luau frame from the original state = original within 4x its twins  2088 differing cells: float 2084, protected 2 (worst rel 2.17e-01 at 00ebd7d4), outside tolerance 0, row fields 0 
+      L5 restart frame 234: mutations detected in ratio32: {1,2,3,4,5}
+PASS  ratio32: L4 16 s closed loop (65 rows x 35 fields) within 4x the envelope of the original's 14 twins  2.3 s Luau (2011 ticks/s); outside envelope 0, integer 0 
+      end: x 118.715/118.855 m  y -18.393/-18.307 m  yaw rate -2.9432/-2.9482  hub LF 0.03507/0.03507  wheel yaw LF -0.04009/-0.04009
+PASS  parking: L2 150 frame-start snapshots (traced 005524f0 + 00551e80): written dwords bit-exact, no extra Luau writes  17700 dwords: exact 17700, differing 0, extra writes 0 
+      L5 frame-start: mutations detected in parking: {1,2,3,5}
+PASS  parking: L3 4 full-state restarts (frames 90,234,378,522): one Luau frame from the original state = original within 4x its twins  2116 differing cells: float 2110, protected 3 (worst rel 4.73e-01 at 00ebcf24), outside tolerance 0, row fields 0 
+      L5 restart frame 90: mutations detected in parking: {1,2,3,5}
+PASS  parking: L4 16 s closed loop (65 rows x 35 fields) within 4x the envelope of the original's 14 twins  2.3 s Luau (2039 ticks/s); outside envelope 0, integer 0 
+      end: x 36.988/37.133 m  y -2.366/-2.563 m  yaw rate 0.0009/-0.0010  hub LF -0.00224/-0.00224  wheel yaw LF -0.00317/-0.00317
+PASS  yawlimit: L2 150 frame-start snapshots (traced 005524f0 + 00551e80): written dwords bit-exact, no extra Luau writes  17700 dwords: exact 17700, differing 0, extra writes 0 
+      L5 frame-start: mutations detected in yawlimit: {1,2,3,5}
+PASS  yawlimit: L3 4 full-state restarts (frames 90,234,378,522): one Luau frame from the original state = original within 4x its twins  1303 differing cells: float 1299, protected 2 (worst rel 2.05e-01 at 00ebf3f8), outside tolerance 0, row fields 0 
+      L5 restart frame 522: mutations detected in yawlimit: {1,2,3,5}
+PASS  yawlimit: L4 18 s closed loop (73 rows x 35 fields) within 4x the envelope of the original's 14 twins  2.4 s Luau (2186 ticks/s); outside envelope 0, integer 0 
+      end: x 580.135/580.136 m  y -0.169/-0.157 m  yaw rate -0.9690/-0.9691  hub LF -0.00224/-0.00224  wheel yaw LF -0.00317/-0.00317
+PASS  notdriven: L2 131 frame-start snapshots (traced 005524f0 + 00551e80): written dwords bit-exact, no extra Luau writes  15384 dwords: exact 15384, differing 0, extra writes 0 
+      L5 frame-start: mutations detected in notdriven: {1,2,3,4,5}
+PASS  notdriven: L3 3 full-state restarts (frames 90,234,378): one Luau frame from the original state = original within 4x its twins  1711 differing cells: float 1707, protected 2 (worst rel 4.09e-02 at 00ebd7d4), outside tolerance 0, row fields 0 
+      L5 restart frame 234: mutations detected in notdriven: {}
+PASS  notdriven: L4 12 s closed loop (34 rows x 35 fields) within 4x the envelope of the original's 14 twins (horizon frame 297)  1.7 s Luau (2072 ticks/s); outside envelope 0, integer 0  | after horizon (not gated): 15 rows, 13 field-rows outside
+      end: x 37.689/38.632 m  y -41.568/-41.385 m  yaw rate 0.0012/0.0044  hub LF -0.00224/-0.00224  wheel yaw LF -0.00317/-0.00317
+PASS  stationary: L2 150 frame-start snapshots (traced 005524f0 + 00551e80): written dwords bit-exact, no extra Luau writes  17700 dwords: exact 17700, differing 0, extra writes 0 
+      L5 frame-start: mutations detected in stationary: {1,2,3,4,5}
+PASS  stationary: L3 3 full-state restarts (frames 90,234,378): one Luau frame from the original state = original within 4x its twins  1835 differing cells: float 1835, protected 0 (worst rel 1.34e-02 at 00ebd7d4), outside tolerance 0, row fields 0 
+      L5 restart frame 234: mutations detected in stationary: {1,2,3,4,5}
+PASS  stationary: L4 12 s closed loop (49 rows x 35 fields) within 4x the envelope of the original's 14 twins  1.8 s Luau (1868 ticks/s); outside envelope 0, integer 0 
+      end: x -0.088/-0.044 m  y -0.017/0.005 m  yaw rate -0.0059/0.0077  hub LF -0.00224/-0.00224  wheel yaw LF -0.00317/-0.00317
+frame-start snapshots total: 1481 snapshots, 174384 dwords, exact 174384 (100.0000%)
+PASS  L5 every deliberate steering-mapping error (5) is detected by the frame-start snapshots (scenarios per mutation 1:10 2:10 3:10 4:8 5:10)
+PASS  L5 every deliberate steering-mapping error (5) is detected by the full-state restarts (scenarios per mutation 1:8 2:8 3:8 4:6 5:7)
+PASS  steering options survive reset() and a garage rebuild (applySetup); the rebuilt setup ratio reaches 00554fb0
+PASS  default garage ratio 18:1 (setup item 0x30) after restoring the default setup
+PASS  steering assistance > 0 refused (needs the NR2003 track racing line; not ported)
+PASS  arcade driving mode (race settings bit 25) refused in production; settable only for validation against the reference
+PASS  steering mode 'provisional' (regression only) takes controls.steer as road-wheel target; 'original' ignores it
+PASS  analog full left at rest: road-wheel target = pi / 7 (ratio 18 -> 7 below 8.94 m/s), hubs = target -+ toe/2, cockpit wheel -2.79 rad  target 0.448799 ratio 7.000 hub LF/RF 0.446559/0.451039 wheel -2.7900
+PASS  determinism: identical steering runs and checkpoint/restore replay are bit-identical
+
+47 passed, 0 failed

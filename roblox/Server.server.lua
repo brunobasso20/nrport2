@@ -24,6 +24,8 @@ elseif Mode.mode=="NR2003_CUP" then
     -- Stage 6/7: original NR2003 Cup 45-state core (Core.NR2003Cup); Roblox = contact/presentation host
     controller=require(package.Roblox.CupChassisAdapter).new(car,tune,remote)
 else error("Unknown NR2003 mode: "..tostring(Mode.mode)) end
+-- Stage 12: only the Cup core sends the ORIGINAL steering-wheel angle in the render snapshots
+car:SetAttribute("CockpitWheelAngle",Mode.mode=="NR2003_CUP")
 local input={throttle=0,brake=1,steer=0,handbrake=0,clutch=1}
 local lastInput,lastAction=0,0; local lastDriver=nil; local packetTimes={}
 local renderInterval=1/RenderConfig.snapshotHz;local renderAccumulator=renderInterval;local renderSeq=0
@@ -41,6 +43,12 @@ remote.OnServerEvent:Connect(function(player,message)
         for _,key in ipairs({"throttle","brake","steer","handbrake","clutch"}) do
             input[key]=U.clamp(message[key],key=="steer" and -1 or 0,1)
         end
+        -- Stage 12 (NR2003_CUP): raw steering controls of the client device layer (optional; the legacy
+        -- 'steer' keeps the Stage 5 modes working): keys steerLeft/steerRight 0..1, analog steerAxis -1..1
+        input.steerLeft=U.finite(message.steerLeft) and U.clamp(message.steerLeft,0,1) or nil
+        input.steerRight=U.finite(message.steerRight) and U.clamp(message.steerRight,0,1) or nil
+        input.steerAxis=U.finite(message.steerAxis) and U.clamp(message.steerAxis,-1,1) or nil
+        input.steerAnalog=message.steerAnalog==true and input.steerAxis~=nil
         lastInput=now
     elseif now-lastAction>0.15 then
         if message.kind=="shift" and U.finite(message.delta) then controller:shift(message.delta)

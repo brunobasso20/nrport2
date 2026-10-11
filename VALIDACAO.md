@@ -1,3 +1,146 @@
+# Validação — Stage 12 (cadeia de direção)
+
+Executada nesta máquina com Luau CLI 0.741 (codegen nativo), Python 3 + Unicorn 2.1.4 + Capstone e Ghidra 11.1.2.
+Saídas: `tests/stage12/RESULTS_STAGE12.txt` (`tools/run_stage12_tests.sh` / `.ps1` roda tudo, incluindo as suítes 6/7–11,
+o mock do adaptador e os mocks dos 6 patches). Método e tolerâncias: **`STAGE12_VALIDATION.md`**.
+
+## Método
+
+1. **Referência = código original** executado no Unicorn (`recovery/stage12/orig_stage12.py`): `00552720` original
+   (chamado por um stub no lugar do call de `005524f0` @`005525c8`; o resto do ramo do jogador / "não dirigido" de
+   `005524f0` é código host do harness, com o `00553080` original) e a cauda de `00551e80` (`00552082..00552336`)
+   executados do exe, com a física por tick e o fim de quadro do Stage 11 — mesma fronteira de host do port (células
+   brutas dos controles 7/8 e tipo de vínculo).
+2. **L1 funções** vetor a vetor (bit a bit em todo f32 gravado). **L2** início de quadro com o estado rastreado do
+   original, bit a bit. **L3** reinícios de estado completo (um quadro) dentro de 4× a sensibilidade de um quadro do
+   original. **L4** malha fechada dentro de 4× o envelope de 14 gêmeos do original. **L5** 5 erros deliberados de
+   mapeamento precisam ser detectados.
+
+## Resultados automáticos
+
+| Verificação | Resultado |
+|---|---|
+| L1: `00552d00` (1212), `00552720` (3872 + sequência de 400 quadros), `00554fb0` (192), cauda `00551e80` (2100), setters (215) | PASS — bit a bit (6 quadros de cancelamento `a8 − a7` dentro de 4·2⁻⁵³, D3) |
+| L2: 1481 snapshots de início de quadro em 10 cenários | PASS — 174 384 / 174 384 dwords bit a bit, 0 escritas extras |
+| L3: 47 reinícios de estado completo | PASS — 0 células / 0 campos fora do envelope de um quadro |
+| L4: 10 cenários, 194 s, 771 linhas × 35 campos | PASS — no envelope de 14 gêmeos; horizonte documentado `notdriven` 297 (reinício reverso) |
+| L5: 5 mutações (entrada ×1,001, expoente +5 %, relação +0,1, override ignorado, alvo +1e−4) | PASS — detectadas por L2 (10/10/10/8/10 cenários) e por L3 (8/8/8/6/7) |
+| Opções sobrevivem a reset/garagem, assistência e arcade recusados, modo provisional, batente π/7, determinismo | PASS |
+| Regressão Stage 6/7 / 8 / 9 / 10 / 11 (direção `"provisional"`) | PASS — 16/16, 49/49, 59/59, 23/23 + 61/61, 66/66 |
+| Adaptador sob mock (inclui 8 verificações do Stage 12 e o `Stage12SelfTest` rápido/completo) | PASS — 65/65 |
+| `PATCH_STAGE12` em DataModel simulado (recusas, instalação na mesma instância, edições de uma linha, backup só do que muda, re-execução, reversão, reversão automática, partes + INSTALL, sem SavePlace) | PASS — 19/19 |
+| `PATCH_STAGE6_7` / `8` / `9` / `10` / `11` (inalterados) | PASS — 11/11, 13/13, 13/13, 17/17, 15/15 |
+
+## Validação manual no Roblox Studio — a fazer (15 itens)
+
+Valores esperados entre parênteses (relação 18:1, override ligado, sem atributos).
+
+1. **Instalação**: fora do Play, aplicar `PATCH_STAGE12.lua` (ou `PART1`, `PART2` + `INSTALL`, ou o `.rbxmx`) sobre a
+   bancada Stage 11. Output: auto-testes 6/7, 8, 9, 10, 11 e `[NR2003 Stage 12 self-test] 13 passed, 0 failed (… s)`, depois
+   `Stage 12 aplicado (backup: ServerStorage.NR2003Backup_Stage12)`. O place **não** é salvo pelo patch.
+2. **Re-execução**: aplicar de novo → `re-execução: backup anterior mantido`; no Explorer só um `NR2003CupSteering`, um
+   `Stage12SelfTest` e um `NR2003Backup_Stage12`.
+3. Play → entrar no carro (o painel já abre expandido; **T** recolhe / expande): linha lilás
+   `DIREÇÃO teclas  entrada -0.000  relação 7.0:1  alvo +0.00° …` (o original grava −0 em repouso); volante do
+   cockpit centrado.
+4. **Teclas paradas**: segurar **A** → a entrada vai a −1 em ~0,85 s (taxa 0,033/quadro com seno), alvo **+25,71°**
+   (π/7), cubos **+25,59° / +25,84°** (toe), volante **−160°** (limite 2,79 rad). Soltar → volta ao centro.
+5. Segurar **D** → espelho: alvo **−25,71°**, volante **+160°**; as duas teclas juntas → 0.
+6. **Em velocidade** (> 64 km/h): batente com A/D = **±10,00°**, relação **18.0:1**; entre 32 e 64 km/h a relação sobe
+   continuamente (≈ 12,4:1 a 48 km/h).
+7. **Transição**: acelerando com uma tecla segurada, a relação fica em 7.0 até ~32 km/h e chega a 18.0 em ~64 km/h; o
+   carro não dá trancos (rampa por tick do original).
+8. **Gamepad** (analógico esquerdo): a linha mostra `eixo`; meio curso parado → alvo ≈ **±18,2°** (sin(0,5·π/2)·π/7);
+   curso total → ±25,71°.
+9. **Linearidade**: parar o Play; no `Workspace.NR2003LabWorld.TestCar` criar `SteeringLinearity = 80`,
+   `SteeringMomentum = 0`; Play → Output `[NR2003 Stage 12] direção original: relação 18:1 …, linearidade 0.80, taxa
+   1.0000/quadro`; gamepad em meio curso parado → alvo ≈ **±7,38°** (π·0,5^1,8/7, sem seno); com teclas o alvo
+   continua ±25,71° (linearidade só vale para eixo analógico).
+10. **Override**: `SteeringLowSpeedOverride = false` → R → parado, batente **±10,00°** (18:1 em qualquer velocidade).
+11. **Relação do setup**: `Setup_steeringRatio = 12` → R → atributo `SteeringRatioApplied = 12`; acima de 64 km/h o
+    batente é **±15,00°** (π/12); com 32 → **±5,63°** (π/32). Parado (override ligado) continua ±25,71°.
+12. **Rodas dianteiras**: com H (diagnóstico de render) / visual, as duas rodas dianteiras viram juntas
+    (≈ 0,99 × ângulo do cubo; sem Ackermann), as traseiras não esterçam; o volante do cockpit gira 7× (parado) ou
+    18× (em velocidade) o ângulo do cubo até o limite de ±160°.
+13. **Sem motorista**: sair do carro (X) com a direção virada → a direção volta ao centro (ramo "não dirigido" do
+    `005524f0`); o carro para como no Stage 11.
+14. **Reversão**: fora do Play, `PATCH_STAGE12_ROLLBACK.lua` → `Rollback Stage 12 -> Stage 11: N fontes restauradas,
+    2 módulos removidos; auto-teste Stage 11 OK.`; a direção volta ao comportamento do Stage 11; reaplicar
+    `PATCH_STAGE12.lua` em seguida.
+15. **Regressão + auto-teste completo**: freio (Stage 8), linha aero (Stage 9), atributos de setup (Stage 10) e linha do
+    Stage 11 como antes; na Command Bar (fora do Play):
+    `require(game.ReplicatedStorage.NR2003Lab.Roblox.Stage12SelfTest).run(true)` → `[NR2003 Stage 12 self-test] 14 passed, 0 failed (… s)`.
+
+---
+
+# Validação — Stage 11 (térmico / desgaste / dano / combustível)
+
+Executada nesta máquina com Luau CLI (codegen nativo), Python 3.12 + Unicorn 2.1.4 + Capstone 5.0.6 e Ghidra 11.1.2.
+Saídas: `tests/stage11/RESULTS_STAGE11.txt` (`tools/run_stage11_tests.ps1` / `.sh` roda tudo, incluindo as suítes 6/7, 8,
+9 e 10 e os mocks dos 5 patches). Método e tolerâncias em detalhe: **`STAGE11_VALIDATION.md`**.
+
+## Método
+
+1. **Referência = código original** executado no Unicorn (`recovery/stage11/orig_stage11.py`): fim de quadro `00554520`,
+   dano de colisão `00549c40`, entrada de registro `0054a760`, troca de pneus `00550f10`, carro na pista `00550a50`,
+   opções de corrida, árvore de zonas `00433610` — com a mesma fronteira de host do port.
+2. **Bit a bit** para a lógica do Stage 11: início de sessão e snapshots sincronizados (estado original carregado no Luau
+   logo antes de um fim de quadro / colisão / pit / colocação na pista; todo dword escrito comparado).
+3. **Reinícios de estado completo**: a janela de memória inteira do original no início de um quadro carregada no Luau;
+   um quadro completo (8 ticks + fim de quadro) comparado com o original, dentro de 4× a sensibilidade do próprio
+   original em um quadro (gêmeos de ±1 ulp); 3 erros deliberados de acoplamento (aderência −2 %, rigidez +5 %,
+   combustível +2 kg) precisam ser detectados.
+4. **Corridas de 20–50 s em malha fechada**: 60 campos a cada 0,5 s dentro de 4× o envelope de 10 gêmeos do original
+   (±1 ulp no início; 8 com ±1 ulp na altura do chassi a cada quadro).
+
+## Resultados automáticos
+
+| Verificação | Resultado |
+|---|---|
+| Início de sessão, 12 cenários | PASS — 12 × 8551 dwords bit a bit (motor, combustível, 4 pneus novos, dano reparado, árvore de zonas, opções) |
+| Snapshots sincronizados (45 fins de quadro, 8 colisões, 1 pit) | PASS — 420 714 dwords: 420 682 bit a bit, 32 = double protegido do combustível a 1 ulp (≤ 1,16e−16) |
+| Reinícios de estado completo (77, a cada 5 s e após cada evento) | PASS — 0 células / 0 campos fora do envelope de um quadro dos gêmeos do original |
+| Sensibilidade dos reinícios (aderência −2 %, rigidez +5 %, combustível +2 kg) | PASS — 36 / 36 detectados |
+| Corridas em malha fechada (12 cenários, 20–50 s) | PASS — 603 linhas × 60 campos dentro de 4× o envelope de 10 gêmeos; horizontes `failure` 198, `overrev` 108, `hot` 252 |
+| Determinismo / checkpoint / modo congelado | PASS |
+| Regressão Stage 6/7 / 8 / 9 / 10 (setup + dinâmica), modo congelado | PASS — 16/16, 49/49, 59/59, 23/23 + 61/61 |
+| Adaptador sob mock (inclui atributos do Stage 11 e auto-testes 6/7–11 rápido/completo) | PASS — 55/55 |
+| `PATCH_STAGE11.lua` e instalação em partes (`PART1..3` + `INSTALL`) em DataModel simulado (6/7 → 8 → 9 → 10 → 11, reaplicação, módulos 6/7–10 intactos, backup do pacote e do cliente, reversão, recusa sem 10, INSTALL sem partes recusado, partes = arquivo único) | PASS — 15/15 |
+| `PATCH_STAGE6_7` / `8` / `9` / `10` (inalterados) | PASS — 11/11, 13/13, 13/13, 17/17 |
+| Sintaxe (todos os módulos + `PATCH_STAGE11*`) | PASS — 98 arquivos |
+
+Desempenho (Luau CLI nativo, 4 núcleos ocupados por outros processos): 1200–2400 ticks/s com o fim de quadro original
+(≈ 4–8× o tempo real de 288 Hz); carga do núcleo com o Stage 11: ~3 s no CLI.
+
+## Validação manual no Roblox Studio — a fazer
+
+1. Aplicar o patch na Command Bar (fora do Play) sobre a bancada Stage 10: `PATCH_STAGE11.lua` inteiro, ou as partes
+   `PATCH_STAGE11_PART1..3.lua` em ordem seguidas de `PATCH_STAGE11_INSTALL.lua`, ou `NR2003_Patch_Stage11.rbxmx`
+   (*Insert from File* + `require(workspace.NR2003_Patch_Stage11)()`). Output: self-tests 6/7 (7), 8 (5), 9 (13), 10 (6),
+   11 (4) sem falhas e `Stage 11 aplicado`.
+2. Play → F → T (painel). Linha nova (laranja): `COMB 62.47 kg  água 93.0°C  óleo 0.0°C  pot 0.9xx  dano mot 0.00 ...`
+   e os 4 pneus a ~60 °C (temperatura do ar da sessão com sol, 49 °C a 70 °F, + 11 °C), pressão a frio do setup, 0 %.
+3. **Combustível/motor**: acelerar a fundo por ~30 s. COMB cai continuamente (mais rápido em rotação alta); óleo sobe
+   desde 0 °C; água oscila em torno de 90–100 °C conforme a carga; `pot` acompanha a densidade do ar.
+4. **Pneus**: em arrancada patinando / curva forte as temperaturas traseiras sobem até o limite do original (505 K =
+   232 °C) e o desgaste (%) cresce; parado, esfriam devagar. Não há perda de aderência inventada: a aderência é a do
+   código original (1 − 0,2·desgaste, rigidez pela temperatura).
+5. **Freios**: frenagens fortes repetidas — as temperaturas de freio (linha, `freio a/b/c/d`) sobem e caem; o carro freia
+   igual (o executável não tem fade).
+6. **Consumo ×4**: parar o Play, criar `RaceConsumptionRate = 3` no `Workspace.NR2003LabWorld.TestCar`; Play: COMB e
+   desgaste caem ~4× mais rápido.
+7. **Dano**: em Play, no servidor, `workspace.NR2003LabWorld.TestCar:SetAttribute("DamageTestImpact", 150000)` (teste:
+   um registro de colisão original no para-choque dianteiro). Output `[NR2003 Stage 11] TESTE: registro de colisão
+   original ...`; no painel `carroc` passa de 0 para ~0,07 (zona dianteira). Repetir com 400000: dano do motor e vazamentos
+   podem aparecer (sorteios originais); o radiador perde eficiência (água sobe).
+8. `RaceDamageLevel = 0` → R → o mesmo `DamageTestImpact` não causa dano (escala 0 do original).
+9. **Pit**: `PitTyresTest = true` → pneus voltam a ~60 °C, desgaste 0 %.
+10. **A/B**: `Stage11Runtime = "frozen"` → R → a linha mostra `ESTÁGIO 11 congelado ...`; combustível/temperaturas
+    parados; o carro anda como no Stage 10. Apagar o atributo → R → volta ao runtime original.
+11. Regressão: entrada no carro, freio (Stage 8), aero (Stage 9), setup (Stage 10) e trocas como antes.
+
+---
+
 # Validação — Stage 10 (setup → parâmetros de tempo de execução)
 
 Executada nesta máquina com Luau CLI (codegen nativo), Python 3 + Unicorn 2.1.4 + Capstone e Ghidra 11.1.2. Saídas:
@@ -31,7 +174,7 @@ Executada nesta máquina com Luau CLI (codegen nativo), Python 3 + Unicorn 2.1.4
 | 8 setups nomeados: estrutura, pool, literais, fim do código | PASS — = original (1 natural, 7 genéricos) |
 | 8 setups nomeados: imagem reconstruída vs build original | PASS — 0 diferenças exatas; células do solve ≤ 6,7e−5 |
 | Padrão reconstruído em Luau vs imagem entregue | PASS — 0 diferenças exatas; 528 células do solve ≤ 1,3e−7 |
-| `applySetup(padrão)` restaura a imagem | PASS — bit a bit |
+| `applySetup(padrão)` restaura a imagem | PASS — bit a bit (6 quadros de cancelamento `a8 − a7` dentro de 4·2⁻⁵³, D3) |
 | 184 builds de item (mín/máx/±1 de cada item ajustável) | PASS — 114 naturais + 70 genéricos = original (hash exato + células do solve ≤ 6,4e−4) |
 | 9 corridas de 8 s (driver) vs build natural ORIGINAL de cada setup | PASS — ticks 1–8 ≤ 4,7e−7; chassi no envelope; marchas idênticas |
 | Resposta ao setup (x, vx após 8 s; z assentado) vs padrão | PASS — 24 sondas com o sinal/tamanho do original |
@@ -226,7 +369,7 @@ Executada nesta máquina com Luau CLI (codegen nativo), Python 3.14 + Unicorn 2.
 | Quase parado: para e fica parado após soltar (hold) | PASS |
 | Sem piloto: pedal exatamente 1,0 | PASS |
 | `setBrakeBias` 74/60 = células do rebuild original | PASS |
-| Checkpoint/restore com travamento | PASS — bit a bit |
+| Checkpoint/restore com travamento | PASS — bit a bit (6 quadros de cancelamento `a8 − a7` dentro de 4·2⁻⁵³, D3) |
 | Regressão Stage 6/7 | PASS — 16/16, números idênticos ao pacote 3.6.0 |
 | Adaptador sob mock (inclui 10 checks de freio + auto-testes 6/7 e 8 rápido/completo) | PASS — 28/28 |
 | `PATCH_STAGE8.lua` em DataModel simulado (6/7 → 8, módulos gerados intactos, backup, reversão forçada, recusa sem 6/7) | PASS — 13/13 |
@@ -268,7 +411,7 @@ Executada com Luau CLI (codegen nativo) e Python/Unicorn. Saída completa: `test
 | 2304 ticks (8 s) dentro do envelope do original | PASS — `raw`: x final Luau 102,816 m, original 102,799, pert 102,825; `drive`: 46,368 / 46,336 / 46,366 |
 | Sequência de marchas (00553d70) | PASS — 0 divergências, chega à 4ª |
 | Limitador | PASS — corta aceleração, pico 9385 rpm (limite 9300 + histerese) |
-| Checkpoint/restore | PASS — bit a bit |
+| Checkpoint/restore | PASS — bit a bit (6 quadros de cancelamento `a8 − a7` dentro de 4·2⁻⁵³, D3) |
 | Provedor de contato por função / leituras de estado | PASS — sem efeitos colaterais |
 | Pose dos registros vs estado/quaternion | PASS |
 | Rodas sobre os pontos de contato, cargas | PASS — altura do centro 0,349–0,356 m, cargas 3,2–4,6 kN |

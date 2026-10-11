@@ -1,3 +1,63 @@
+# 3.11.0-stage12 — Stage 12: cadeia de direção original do NR2003 Cup
+
+- Base: Stage 11 (3.10.0-stage11). Imagem e callbacks 6/7, freio 8, aero 9, setup/build 10 e runtime 11 **inalterados**
+  (exceto a correção C1 de sinal de zero, `STAGE12_RESULT.md`).
+- Novo `NR2003CupSteering` (portado à mão do x86, `recovery/stage12`): dispositivos (controles 7 esquerda / 8 direita,
+  tipo de vínculo; eixo analógico separado pelo sinal), `00552720` (entrada processada: `00552d00` taxa + seno,
+  sensibilidade por velocidade via linearidade, limitador arcade), `00552410`, `00550230`, `00554f50`, cauda de
+  `00551e80` (expoente de linearidade com eixos analógicos, × π, ÷ relação, alvo, rampas, `005524b0`), `00554fb0`
+  (relação = item 0x30 com override de baixa velocidade 7:1 ≤ 8,94 m/s e rampa até 17,88 m/s), setters das opções
+  (`005502f0`, `005500c0`, `00550110`, `00550210`; conversão do controls.cfg `0043f1d0`), ângulo do volante `005662d0`.
+- `NR2003CupDriver`: o alvo da roda vem da cauda original (o alvo provisório do host só no modo `"provisional"` das suítes
+  6–11); rampas e somas por tick com o zero de sinal do x87 (C1); `V._frameStartOnly`. `NR2003CupVehicle`: instala a
+  direção depois da garagem; API `setSteeringOptions` / `steeringOptions` / `steeringState` / `steeringWheelAngle`.
+- **Achados:** sem Ackermann, sem bump steer, sem taxa de esterço (cubos prescritos sobre eixo com caster 2,455° e
+  inclinação 9,215°); no modo simulação (sem arcade e sem assistência, ambos recusados em produção) a única dependência de velocidade da
+  entrada é a sensibilidade pela linearidade (no arcade o limitador de guinada de `00552720` também multiplica a entrada); o bit 25 das opções
+  de corrida é o modo ARCADE (também troca o chassi no build) e a assistência usa a linha de corrida da pista — ambos
+  recusados em produção; itens 0x3a / 0x9f..0xa4 são do diferencial traseiro (correção no `SETUP_MAP.md`); o FFB original
+  não lê células da direção (interface do Stage 13).
+- Adaptador Roblox: camada de dispositivos (teclas A/D → controles digitais; analógico esquerdo do gamepad → eixo),
+  atributos `SteeringLinearity`, `SteeringMomentum`, `SteeringLowSpeedOverride` (+ `Setup_steeringRatio` do Stage 10);
+  volante do cockpit = ângulo original (`Cockpit.updateAngle`, flag `FLAG_WHEEL_ANGLE` do render snapshot); telemetria
+  `hubSteerAngle` / `roadWheelAngle` (medido) / `steeringWheelAngle` / `steering`; linha `DIREÇÃO` no painel T.
+- Validação contra o original executado (`STAGE12_VALIDATION.md`): L1 funções bit a bit; L2 snapshots de início de quadro
+  rastreados bit a bit; L3 reinícios de estado completo; L4 malha fechada no envelope de 14 gêmeos (10 do Stage 11 + 4
+  "all"), horizonte documentado `notdriven` com prova por reinício reverso (`dev/reverse.py`); L5 mutações detectadas;
+  regressões 6/7–11, mocks do adaptador e dos 6 patches.
+- Entrega: `PATCH_STAGE12.lua` / `PATCH_STAGE12_PART1..2` + `INSTALL` / `NR2003_Patch_Stage12.rbxmx` /
+  `PATCH_STAGE12_ROLLBACK.lua` (base Stage 11 conferida módulo a módulo, backup só do que muda, fonte atualizada na mesma
+  instância, re-execução segura, reversão automática e manual verificada, nunca salva o place), `Stage12SelfTest`,
+  `STAGE12_RECOVERY.md`, `STAGE12_STEERING_STATE_MAP.md`, `STAGE12_VALIDATION.md`, `STAGE12_RESULT.md`.
+
+# 3.10.0-stage11 — Stage 11: térmico / desgaste / dano / combustível do NR2003 Cup
+
+- Base: Stage 10 (3.9.0-stage10). Imagem e callbacks 6/7, aero 9 e setup/build 10 **inalterados**.
+- Novo `NR2003CupFrame` + `NR2003CupFrameCode1..4` + `NR2003CupFrameData1`: o fim de quadro ORIGINAL `00554520` e o dano de
+  colisão `00549c40` erguidos do x86 (216 funções; `recovery/stage11/lift11.py` sobre o lifter do Stage 10) e executados
+  na memória do núcleo uma vez por quadro: motor (`0051aac0`: combustível, água/óleo, níveis, vazamentos, desgaste/vida,
+  falha aleatória, potência × ρ), radiador `0051a830`, falhas aleatórias `0051c3d0`, combustível → massa/inércia do
+  registro de componente `005605c0`, pneus `0054d610` (3 zonas superfície/carcaça, pressão quente, rigidez, desgaste,
+  aderência, estouro), freios `0054f260`, dano de colisão (zonas, motor, vazamentos, pneus/rodas, detritos), partículas
+  (mesmo fluxo aleatório da física).
+- Eventos e sessão: registro de colisão `0054a760` (`collision`), troca de pneus `00550f10` (`pitTyres`), carro na pista
+  `00550a50` (`enterTrack`), opções de corrida dano (`00547e90`) e consumo, semente, árvore de zonas de dano `00433610`.
+- **Achados:** combustível só age pela massa/inércia; não há fade/falha de freio nem geometria de suspensão dependente de
+  dano no executável; o dano de colisão precisa da árvore de zonas (carga do modelo do carro), da ordem de corrida
+  (`car+4`) e do objeto de colisão do sistema de pista (`c7e75c`) — nenhum existia na bancada só-física.
+- Pontos de integração (documentados em `STAGE11_RECOVERY.md` §7): `NR2003CupDriver` chama `V._frameStart11` e o fim de
+  quadro trocável; `NR2003CupVehicle` carrega o Stage 11 antes da garagem; suítes e self-tests 6/7, 8, 9, 10 comparam no
+  modo `"frozen"` (fim de quadro dos Stages 6–10, uma linha cada).
+- Adaptador Roblox: `RaceDamageLevel`, `RaceConsumptionRate`, `RosterSeries`, `RandomSeed`, `Stage11Runtime="frozen"`;
+  teste `DamageTestImpact` / `PitTyresTest`; telemetria dos pneus pelas células originais; linha de HUD do Stage 11.
+- Validação contra o original executado (`STAGE11_VALIDATION.md`): início de sessão e snapshots bit a bit; reinícios de
+  estado completo no envelope de um quadro dos gêmeos do original (+ 3 mutações detectadas); corridas em malha fechada no
+  envelope de 10 gêmeos; determinismo; regressões 6/7, 8, 9, 10 inalteradas no modo congelado; mocks do adaptador e dos 5
+  patches.
+- Entrega: `PATCH_STAGE11.lua` / `PATCH_STAGE11_PART1..3` + `INSTALL` / `NR2003_Patch_Stage11.rbxmx` (backup, auto-testes
+  6/7 + 8 + 9 + 10 + 11, reversão), `Stage11SelfTest`, `STAGE11_RECOVERY.md`, `STAGE11_STATE_MAP.md`,
+  `STAGE11_VALIDATION.md`.
+
 # 3.9.0-stage10 — Stage 10: setup completo da garagem → parâmetros de tempo de execução
 
 - Base: Stage 9 (3.8.0-stage9). Imagem e callbacks gerados do Stage 6/7 (`NR2003CupImage*`, `NR2003CupJIT*`) e o aero

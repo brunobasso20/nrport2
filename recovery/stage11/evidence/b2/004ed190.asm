@@ -1,0 +1,7 @@
+004ed190 MOV ECX,dword ptr [ECX]
+004ed192 TEST ECX,ECX
+004ed194 JZ 0x004ed1a3
+004ed196 MOV EAX,dword ptr [ESP + 0x4]
+004ed19a MOV dword ptr [ESP + 0x4],EAX
+004ed19e JMP 0x004f0790
+004ed1a3 RET 0x4

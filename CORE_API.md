@@ -1,3 +1,98 @@
+# Direção — API do Stage 12 (núcleo NR2003 Cup)
+
+A cadeia de direção é o **código original** portado à mão do x86 (`NR2003CupSteering` + linhas do Stage 12 em
+`NR2003CupDriver`): controles 7 (esquerda) / 8 (direita) → `00552d00` (taxa por quadro + `sin(x·π/2)`) → `00552720`
+(sensibilidade à velocidade pela linearidade) → cauda de `00551e80` (expoente de linearidade só com eixos analógicos,
+× π, ÷ relação `00554fb0` = item de setup 0x30 com override de baixa velocidade 7:1 abaixo de 8,94 m/s e rampa até
+17,88 m/s) → rampa por tick (`005539c0`) + toe → coordenadas prescritas dos cubos (estados 15 / 21) → multicorpo. O
+volante do cockpit é a fórmula original `005662d0`. Nenhum estado é duplicado em Luau (`STAGE12_STEERING_STATE_MAP.md`).
+
+```lua
+local car = Vehicle.new()
+-- controles por quadro (V.drive / car:step), além de throttle / clutch / brake do Stage 8:
+--   teclado:  {steerLeft = 0..1, steerRight = 0..1, steerDigital = true}    (vínculo digital: tipo 0)
+--   analógico: {steerAxis = -1..1}  (+ = direita; um eixo vinculado aos dois controles, separado pelo sinal; tipo 1)
+--   sem motorista: {driver = false} -> ramo "carro não dirigido" de 005524f0 (entrada de direção 0)
+car:setSteeringOptions({linearity = 80, momentum = 0, lowSpeedOverride = false})   -- setters ORIGINAIS
+local o = car:steeringOptions()      -- {linearity, steerRate, releaseFactor, lowSpeedOverride, assist, yawLimiter,
+                                     --  drivingMode = "simulation" | "arcade", aidsDisabled, setupRatio}
+local s = car:steeringState()        -- leitura das células originais (sem efeito colateral)
+print(s.input, s.target, s.current, s.hubLF, s.hubRF, s.ratioNow, s.wheelAngle)
+local a = car:steeringWheelAngle()   -- 005662d0: clamp(-(relação · car[0x1554]), ±2,79 rad), + = horário (direita)
+```
+
+| Método | Contrato |
+|---|---|
+| `setSteeringOptions(opts)` | opções do piloto pelos setters ORIGINAIS: `linearity` (inteiro do controls.cfg 0..100 → `(float)v·0,01f`, `005502f0`), `linearityRaw` (valor 0..1 de `bf6f00`), `momentum` (0..100; 0 = sem limite de taxa → 1,0; senão `(1/(m·0,01))·0,016663333999866692`, `005500c0`), `lowSpeedOverride` (bool, `00550110`, ini `steer_ratio`). `nil` = valor da imagem (sem controls.cfg: linearidade 0, taxa 0,033/quadro, override ligado). Os valores sobrevivem a `reset()` e a `applySetup()`. **Recusados (erro)**: `assist ≠ 0` (assistência de direção precisa da linha de corrida da pista do NR2003, não portada) e `yawLimiter = true` (modo de condução ARCADE, bit 25 das opções de corrida: também troca a especificação do chassi do carro no build, `004233a0`, não portado) |
+| `clearSteeringOptions()` | volta aos valores da imagem no próximo `reset()` |
+| `steeringOptions()` | leitura das opções e da relação de setup ativa (`c055c0+0xc0`) |
+| `steeringState(out?)` | `mode`, `left` / `right` (controles brutos 7 / 8), `digital`, `slewLeft` / `slewRight` (`bf639c` / `bf63a0`), `input` (`bf63c8`), `shaped` (após a linearidade), `sensitivity`, `yawLimiter` (fator do limitador de taxa de guinada de `00552720`, calculado em todo quadro também em simulação: `min(12,25/max(v, 0,01), max(|r|, 0,01)) / max(|r|, 0,01) · 0,9 + 0,1`; só multiplica a entrada com o bit 25 / arcade; vale 1 antes do primeiro quadro), `ratio` (relação do último quadro), `ratioNow` (`00554fb0` na velocidade atual, sem tocar no cache), `target` (`bf63b8`, rad, + = esquerda), `frameTarget` / `ramp` (`bf6e80` / `bf6e88`), `current` (`bf63c0`, rampa por tick), `lf` / `rf` (`bf6360` / `bf6364`, com toe), `toeLeft` / `toeRight` (`c086b0` / `c086b4`), `hubLF` / `hubRF` (estados 15 / 21 exportados), `drawSteer` (`car+0x1554`), `wheelAngle` |
+| `steeringWheelAngle()` | ângulo do volante do cockpit (`005662d0`); em runtime `"frozen"` usa a média dos estados 15 / 21 em vez de `car+0x1554` |
+| `setSteeringMode("original" | "provisional")`, `steeringMode()` | produção = `"original"`; `"provisional"` = contrato dos Stages 6–11 (`controls.steer` = alvo da roda em rad, + = esquerda) **só** para as suítes de regressão / self-tests 6–11 |
+
+Fronteira do host (ADAPTER): a camada de dispositivos `0057abc0` (DirectInput, calibração `005d04d0`) é substituída
+pelo adaptador Roblox, que escreve os dois controles brutos e o tipo de vínculo; o Roblox já normaliza o eixo do
+gamepad em −1..1. Adaptador: entradas `steerLeft` / `steerRight` (teclas), `steerAxis` + `steerAnalog = true`
+(gamepad `Thumbstick1`), `steer` legado (= teclas); atributos do carro `SteeringLinearity` (0..100),
+`SteeringMomentum` (0..100), `SteeringLowSpeedOverride` (bool), lidos a cada reset; aplicados:
+`SteeringLinearityApplied`, `SteeringRateApplied`, `SteeringRatioApplied`. Relação de direção pela garagem:
+`Setup_steeringRatio` (12..32, Stage 10). Telemetria: `hubSteerAngle` (média dos estados 15 / 21, + = esquerda),
+`roadWheelAngle` (guinada média das rodas dianteiras medida nas poses do solver, + = direita, ≈ −0,99·q),
+`steeringWheelAngle`, `steering {…}` (subconjunto de `steeringState`). Render snapshot: `steer` = ângulo do volante
+(flag `FLAG_WHEEL_ANGLE`).
+
+---
+
+# Térmico / desgaste / dano / combustível — API do Stage 11 (núcleo NR2003 Cup)
+
+O fim de quadro do carro é o **código original** `00554520` (+ dano de colisão `00549c40`), erguido do x86 para Luau
+(`NR2003CupFrame` + `NR2003CupFrameCode1..4` + `NR2003CupFrameData1`) e executado na memória do núcleo uma vez por quadro
+de 36 Hz, depois dos 8 ticks: motor (`0051aac0`: ignição/falha, queima de combustível, água/óleo, níveis, vazamentos,
+desgaste, falha aleatória, potência × ρ), falhas aleatórias de componentes (`0051c3d0`), massa/inércia do combustível no
+registro de componente (`005605c0`), pneus (`0054d610`: pressão quente, rigidez, 3 zonas superfície/carcaça, desgaste a
+cada 0,2 s, estouro, fumaça), freios (`0054f260`), dano de colisão. Os estados são lidos pelos ticks do quadro seguinte
+pelo código dos Stages 6–10 (sem mudança): massa do combustível, pressão/rigidez/aderência do pneu, potência do motor,
+componentes quebrados. Nenhum estado é duplicado em Luau.
+
+```lua
+local car = Vehicle.new()
+car:startSession({temperatureF = 70}, {damageLevel = 3, consumptionRate = 0, series = 1, seed = nil})
+-- ... car.V.drive(controles, contatos) por tick (o fim de quadro original roda a cada 8 ticks)
+local s = car:stage11State()          -- leitura das células originais (sem efeito colateral)
+print(s.fuel.kg, s.engine.water, s.tyres[3].surface[2], s.tyres[3].wear, s.damage.zones[7])
+car:collision({magnitude = 150000, material = 0x10, surface = 1, point = {x, y, z}, localPoint = {2.4, 0, 0.3},
+               velocity = {vx, vy, vz}, normal = {nx, ny, nz}, speed = 20})   -- registro original 0054a760
+car:pitTyres({0, 1, 2, 3})            -- 00550f10 x4 (troca de pneus)
+car:enterTrack()                      -- 00550a50 (subconjunto): reparo, motor/combustível, 4 pneus novos
+car:setRuntimeMode("frozen")          -- A/B: fim de quadro dos Stages 6–10 (só para comparações)
+```
+
+| Método | Contrato |
+|---|---|
+| `startSession(weather, opts)` | Stage 9 (`005a3c00`) e, no modo `"original"`, a sessão do Stage 11: blocos do host, **árvore de zonas de dano** (`00433610`, carga do modelo do carro no jogo), campo de série `car+0x596` (`opts.series`, padrão 1, PROVISIONAL), opções de corrida `opts.damageLevel` 0..3 (`00547e90` → escala `bef700` = 0 / 0,15 / 0,6 / 1,0; `nil` = valor pós-build 1,0), `opts.consumptionRate` 0..3 (×1..×4; `nil` = pós-build ×1), `opts.seed` (estado do fluxo aleatório 0; `nil` = pós-build) e o carro colocado na pista (`enterTrack`). `reset()` reaplica a mesma sessão |
+| `enterTrack()` | `00563080(car, 1)` (reparo `0054b3c0`), `00550c40` (motor: água 93 °C, óleo 0 °C), `00550c60` (combustível: célula cheia 62,4698 kg no treino; item 0x31 em corrida), `005512d0` (4 × `00550f10`: pneus novos à temperatura do ar da sessão `e0b834` + 11 °C, pressão fria do setup, desgaste 0) |
+| `collision(rec)` | entrada ORIGINAL de registro de colisão `0054a760` (o que o código de contato da pista chama): `magnitude`, `material` (0x13 pneu, 0x10 carroceria), `flags` (0x2000000 contato contínuo), `surface` (material do outro), `point` (mundo), `localPoint` (referencial do carro → zona), `otherLocal`, `velocity`, `normal`, `p9`, `speed`, `key` 0..7, `other`. Avaliado por `0054a8d0` (pneus, imediato) e `00549c40` (carroceria, fim do quadro) |
+| `pitTyres(wheels)` | `00550f10` por roda (0 LF, 1 RF, 2 LR, 3 RR) |
+| `setDamageLevel(n)` / `setConsumptionRate(n)` / `setSeriesField(v)` / `setRandomSeed(s)` / `randomState()` | opções individuais (as mesmas de `startSession`) |
+| `buildDamageZones()` | `00433610(car+0x58e)` (já chamado por `startSession`) |
+| `setRuntimeMode("original" | "frozen")`, `runtimeMode()` | produção = `"original"`; `"frozen"` mantém o fim de quadro dos Stages 6–10 (subconjunto do cut timer) para as suítes de regressão 6–10 |
+| `stage11State(out?)` | leitura: `fuel {kg (double protegido), massRecord, inertiaRecord, specInertiaPerKg}`, `engine {water, oil, coolantLevel, oilLevel, power, cutTimer, radiator[5], heat[2], overRev, wear, life, blown, flags, x4d0}`, `tyres[1..4] {coldPressure, pressure, surface[3], carcass[3] (K), wear, gripWear, brake (K), state, wheel}`, `damage {words, zones[11], tyre[4], radiator, oil, fuel, engine, x5c, x60, failures, brokenFlags[9], scale, series}`, `airspeed`, `ambient`, `bgCount`, `intCount`, `random`, `mode` |
+
+Fronteira do host (ADAPTER, idêntica no port e na referência Unicorn): contador de quadros `getBGCount` (`7559bc`) e
+relógio de interrupção `getIntCount` (`7559c4`) +1 por quadro; registro de mundo do carro sincronizado do estado exportado
+antes do fim de quadro (`005f5a60` / `005f5ac0` originais); carro na ordem de corrida (anel de um carro em `car+4/car+8`)
+só durante `00549c40`; objeto de colisão do sistema de pista (`c7e75c`, 9 partes zeradas — sem deformação de malha
+simulada pelo host); registro de mundo/replay `005547a0`, som `00557650`, FFB `005d08d0`, sincronização de dano
+`00592dc0` = `ret`; consulta de pista `005f58d0` = copia o ponto.
+
+Adaptador Roblox: atributos do carro `RaceDamageLevel` (0..3), `RaceConsumptionRate` (0..3), `RosterSeries`,
+`RandomSeed`, `Stage11Runtime = "frozen"` (A/B), aplicados no reset; **teste** (não é recurso do NR2003):
+`DamageTestImpact = magnitude` (registro original no para-choque dianteiro), `PitTyresTest = true` (troca dos 4 pneus).
+Telemetria por roda (`temperature` = superfície do meio, `tyreSurfaceK`, `tyreCarcassK`, `tyrePressure`, `tyreWear`,
+`tyreGrip`, `tyreState`, `brakeTemperatureK`) e o resumo `stage11`; HUD (painel T): linha COMB / água / óleo / pot /
+dano / pneus / freios.
+
+---
 # Setup — API do Stage 10 (núcleo NR2003 Cup)
 
 O setup da garagem é convertido em parâmetros de tempo de execução **pelo próprio build original do carro**, erguido do

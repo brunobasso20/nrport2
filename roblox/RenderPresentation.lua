@@ -38,7 +38,8 @@ function M:update()
     end
     self.dynamics.steering=s.steer
     self.visual:update(self.dynamics,self.contacts,self.car:GetAttribute("DebugContacts")==true)
-    Cockpit.update(self.car,self.tune,s.steer)
+    if self.car:GetAttribute("CockpitWheelAngle")==true then Cockpit.updateAngle(self.car,s.steer) -- Stage 12 (NR2003_CUP)
+    else Cockpit.update(self.car,self.tune,s.steer) end
     self.active=true;return true
 end
 function M:stats()

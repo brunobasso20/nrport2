@@ -6,14 +6,16 @@
 --
 -- Per 36 Hz task frame (005b2190 -> 00551e80 tail, player car):
 --   pedals/axes -> bf6390/bf6eac/bf6eb0, throttle^2/brake^2 targets, per-tick ramps (/N),
---   shift request (00552450/00552480).  Steering: PROVISIONAL (Stage 12 pending) -- the host
---   supplies the road-wheel target instead of 00552720 shaping + pow linearity + 00554fb0 ratio.
+--   shift request (00552450/00552480).  Steering (Stage 12, NR2003CupSteering): ORIGINAL 00552720
+--   (005524f0 -> bf63c8) and the 00551e80 tail (linearity, x pi, 00554fb0 ratio -> road-wheel target);
+--   steering mode "provisional" keeps the Stage 6-11 host road-wheel target for the regression suites.
 -- Per 288 Hz tick (005b2190 loop body):
 --   005539c0 input composition (ramps, toe c086b0/c086b4, brake/clutch ramps, lifted 00553d70
 --   shift FSM + auto clutch 005542f0, gear, rev limiter engine+0x438 with 006f5a3c hysteresis),
 --   005b2b90 predictor+solve, 005b2cb0 export, tires (00578da0 -> 0055e1e0 x4), 005b2bd0 forces,
 --   005b2be0 corrector+solve, export, tires (00578de0), forces, 005b2c00 commit.
--- Per frame end (00554520): 0051aac0 cut-timer subset (in the core: V._frameEnd).
+-- Per frame end (00554520): V._frameEnd. Stages 6-10: 0051aac0 cut-timer subset (core); Stage 11:
+-- the ORIGINAL 00554520 + 00549c40 lifted (NR2003CupFrame, "frozen" runtime mode = the subset).
 -- Stage 8 (brake input chain, per frame, 005524f0 player branch):
 --   raw brake control (0057af30 control table) -> 00552d00 axis limiter -> 00553080 pedal
 --   processing (auto-hold below 0.8 m/s, key ramp, braking help 00550130) -> bf6eac; the
@@ -22,8 +24,7 @@
 -- Stage 9: frame start calls V._aeroFrame (005637e0 subset, NR2003CupAero) before frameStart.
 -- Not ported (documented): replay/telemetry recording, FFB, auto-shift 005536b0 (transmission
 -- mode 0), H-pattern mode (bf6f0c 1/2), ignition states driven by 005524f0/0057af40(0x19),
--- throttle/clutch/steering device processing (00552df0/005534f0/00552720 - Stage 7 host
--- values / Stage 12).
+-- throttle/clutch device processing (00552df0/005534f0 - Stage 7 host values).
 return function(V)
 	local rf32, r32, ri32, w32, r8, w8 = V.rf32, V.r32, V.ri32, V.w32, V.r8, V.w8
 	local wf32d, fd, rf64, wf64 = V.wf32d, V.fd, V.rf64, V.wf64
@@ -32,6 +33,15 @@ return function(V)
 	local M, BASE = V.memory(), V.base
 	local TPF, ENGINE, ROOT, INPUTS = V.TPF, V.ENGINE, V.ROOT, V.INPUTS
 	local abs, sqrt, atan2 = math.abs, math.sqrt, math.atan2
+	-- exact-zero sums signed as under round-toward-negative (CW 0x077f; IEEE 754: x + (-x) = -0). Stage 12 change
+	-- record C1 (STAGE12_RESULT.md): used by the driver-layer sums of 005539c0 and of the 00551e80 tail
+	local function zadd(x, y)
+		local r = x + y
+		if r == 0 and not (x == 0 and y == 0 and 1 / x > 0 and 1 / y > 0) then return -0.0 end
+		return r
+	end
+	local function zsub(x, y) return zadd(x, -y) end
+	local function plainSub(x, y) return x - y end
 
 	---------------------------------------------------------------------------------------------
 	-- Stage 8: ORIGINAL brake input chain (hand port of x87 code; float32 stores round toward
@@ -66,14 +76,20 @@ return function(V)
 		local prev = rf32(0xbf639c + 4 * ecx)
 		local v
 		if raw <= prev or raw ~= raw or prev ~= prev then -- AND 0x4100; JNZ
-			v = prev - rate -- FSUBR
+			v = zsub(prev, rate) -- FSUBR (Stage 12 C2: an exact-zero step is -0 under RC-down, stored 80000000)
 			if not (v >= raw or v ~= v or raw ~= raw) then v = raw end -- TEST AH,5; JP keep
 		else
 			v = rate + prev -- FADD
 			if not (v <= raw or v ~= v or raw ~= raw) then v = raw end -- AND 0x4100; JNZ keep
 		end
 		wf32d(0xbf639c + 4 * ecx, v) -- FST dword (state), ST0 keeps the x87 value
-		if edx == 0 then v = math.sin(v * rf64(0x6f5a00)) end -- steering axes only
+		if edx == 0 then -- steering axes only: FMUL 1.570796326793946 (9.5e-13 below pi/2); FSIN
+			-- Stage 12 C2: for a state of exactly 1.0 the x87 FSIN under RC-down returns 1 - 2^-64 (the true value is
+			-- 1 - 4.5e-25; hardware-verified, recovery/stage12/evidence/reports/verify-input.md), stored as 3f7fffff; double
+			-- sin gives 1.0. 1 - 2^-53 reproduces every stored result (f32 store, a8 - a7 with the other control).
+			-- Every other f32 state gives the same stored f32 as the x87 (exhaustive scan).
+			if v == 1 then v = 1 - 2 ^ -53 else v = math.sin(v * rf64(0x6f5a00)) end
+		end
 		return v
 	end
 
@@ -220,8 +236,10 @@ return function(V)
 	end
 
 	-- frame start: 005524f0 (driver devices) + 00551e80 tail for the player car.
-	-- controls: throttle pedal 0..1, clutch = engagement 0..1 (1 = pedal up), steer = road-wheel
-	-- target (rad, + = left, PROVISIONAL), shiftUp/shiftDown = sequential shift keys.
+	-- controls: throttle pedal 0..1, clutch = engagement 0..1 (1 = pedal up), shiftUp/shiftDown =
+	-- sequential shift keys. Steering (Stage 12): steerLeft/steerRight (controls 7/8, 0..1) + steerDigital,
+	-- or steerAxis (-1..1, + right); steer = road-wheel target (rad, + = left) only in the steering mode
+	-- "provisional" (Stage 6-11 contract, regression suites).
 	-- Brake (Stage 8): brakeControl = raw brake control value 0..1 of the input device (keyboard
 	-- 0/1 or pedal axis), brakeDigital = key/button binding (default true; false = analog axis),
 	-- throttleControl/throttleDigital = raw throttle control (key release-rate choice in 00553080).
@@ -250,6 +268,8 @@ return function(V)
 				wf32d(0xbf6eac, c.brake or 0)
 				wf32d(0xbf6eb0, c.clutch or 0)
 			end
+			-- Stage 12: bf63c8 = ORIGINAL 00552720 (steering devices), NR2003CupSteering
+			if V._steerDevices then V._steerDevices(c) end
 			wf32d(0xbf6390, c.throttle or 0)
 		end
 		for w = 0, 3 do -- per-frame tire accumulators cleared by 00551e80 (bf3ccc.., bf4705.., ...)
@@ -257,17 +277,24 @@ return function(V)
 			w32(t + 0x2ac, 0); w32(t + 0x2b0, 0); w32(t + 0x2b4, 0); w32(t + 0x2b8, 0)
 			w32(t + 0x2d0, 0); w32(t + 0x2d4, 0); w32(t + 0x2bc, 0); w32(t + 0x2c0, 0)
 		end
-		local target = c.steer or 0
+		-- Stage 12: road-wheel target of the ORIGINAL 00551e80 tail (linearity, x pi, / 00554fb0 ratio), or the
+		-- Stage 6-11 PROVISIONAL host target in the steering mode "provisional" (regression suites only)
+		local target = V._steerTail and V._steerTail(c)
+		local provisional = target == nil
+		if provisional then target = c.steer or 0 end
 		wf32d(0xbf63b8, target)
 		w32(0xbf6e38, r32(0xbf6eb0))
 		w32(0xbf63c0, r32(0xbf6e80)); w32(0xbf636c, r32(0xbf6e64))
 		w32(0xbf6ea4, r32(0xbf6e60)); w32(0xbf6e14, r32(0xbf6e68))
 		local thr, brk = rf32(0xbf6390), rf32(0xbf6eac)
 		wf32d(0xbf6e30, thr * thr); wf32d(0xbf6e34, brk * brk)
-		wf32d(0xbf6e88, (target - rf32(0xbf6e80)) / N)
-		wf32d(0xbf6394, (rf32(0xbf6e30) - rf32(0xbf6e60)) / N)
-		wf32d(0xbf6358, (rf32(0xbf6e34) - rf32(0xbf6e64)) / N)
-		local cl = rf32(0xbf6eb0) - rf32(0xbf6e68)
+		-- ramps (/N): the original tail signs exact-zero differences under RC-down (x - x = -0); the provisional
+		-- mode keeps the Stage 6-11 arithmetic of its golden data (Python hand port of the tail)
+		local sub = provisional and plainSub or zsub
+		wf32d(0xbf6e88, sub(target, rf32(0xbf6e80)) / N)
+		wf32d(0xbf6394, sub(rf32(0xbf6e30), rf32(0xbf6e60)) / N)
+		wf32d(0xbf6358, sub(rf32(0xbf6e34), rf32(0xbf6e64)) / N)
+		local cl = sub(rf32(0xbf6eb0), rf32(0xbf6e68))
 		buffer.copy(M, 0xbf6e58 - BASE, M, 0xbf6e28 - BASE, 36) -- rep movsd bf6e28 -> bf6e58 (9 dwords)
 		wf32d(0xbf6e50, cl / N)
 		wf32d(0xbf6e80, target)
@@ -283,15 +310,18 @@ return function(V)
 	end
 
 	-- 005539c0 input composition (player car; replay/telemetry recording not ported)
+	-- Stage 12 (scoped correction, STAGE12_RESULT.md change record C1): the steering / pedal composition sums
+	-- (@00553a40..00553ab5) sign exact-zero sums as the x87 under RC-down; until Stage 11 they returned
+	-- +0 where the original stores -0 (e.g. +0 + -0 at rest). Only the sign of a zero changes.
 	local function tickInputs()
 		wf64(0xbf6ef8, rf64(0xbf6ef8) + rf32(0x74fd74))
-		wf32d(0xbf6ea4, rf32(0xbf6394) + rf32(0xbf6ea4))
-		wf32d(0xbf63c0, rf32(0xbf6e88) + rf32(0xbf63c0))
-		wf32d(0xbf6360, rf32(0xbf63c0) - rf32(0xc086b0))
+		wf32d(0xbf6ea4, zadd(rf32(0xbf6394), rf32(0xbf6ea4)))
+		wf32d(0xbf63c0, zadd(rf32(0xbf6e88), rf32(0xbf63c0)))
+		wf32d(0xbf6360, zadd(rf32(0xbf63c0), -rf32(0xc086b0)))
 		w32(0xbf6368, r32(0xbf6ea4))
-		wf32d(0xbf6364, rf32(0xc086b4) + rf32(0xbf63c0))
-		wf32d(0xbf636c, rf32(0xbf636c) + rf32(0xbf6358))
-		local c = rf32(0xbf6e50) + rf32(0xbf6e14)
+		wf32d(0xbf6364, zadd(rf32(0xc086b4), rf32(0xbf63c0)))
+		wf32d(0xbf636c, zadd(rf32(0xbf636c), rf32(0xbf6358)))
+		local c = zadd(rf32(0xbf6e50), rf32(0xbf6e14))
 		wf32d(0xbf6e14, c); wf32d(0xbf6370, c)
 		callx(0x553d70) -- lifted original: shift FSM, throttle blip/cut, auto clutch (005542f0)
 		wf32d(0xbf6374, ri32(0x74c97c))
@@ -312,11 +342,19 @@ return function(V)
 	-- Stage 9: the per-frame car update 005637e0 (aero factors, airspeed, drafting) runs in
 	-- 0055bfd0 before 005b2190 starts the frame; V._aeroFrame is installed by NR2003CupAero and
 	-- does nothing until a session is started (post-build state of Stages 6-8).
+	-- Stage 11 (integration point): the task loop increments getBGCount before the frame
+	-- (V._frameStart11) and the frame end is looked up at run time (V._frameEnd): NR2003CupFrame
+	-- replaces the Stage 6-10 subset by the ORIGINAL 00554520 + 00549c40.
+	-- the frame start of the 36 Hz task frame (task loop counter, 005637e0 aero subset, 005524f0 + 00551e80);
+	-- also called alone by the Stage 12 frame-start snapshot tests
+	local function frameStartAll(controls)
+		if V._frameStart11 then V._frameStart11() end
+		if V._aeroFrame then V._aeroFrame() end
+		frameStart(controls)
+	end
+	V._frameStartOnly = frameStartAll
 	function V.drive(controls, contacts)
-		if V.tick % TPF == 0 then
-			if V._aeroFrame then V._aeroFrame() end
-			frameStart(controls)
-		end
+		if V.tick % TPF == 0 then frameStartAll(controls) end
 		w32(0xe8441c, V.tick % TPF)
 		w8(0xe843fc, 1)
 		tickInputs()
@@ -327,7 +365,7 @@ return function(V)
 		tires(contacts, 2); callx(0x5b2bd0)
 		callx(0x5b2c00)
 		V.tick += 1
-		if V.tick % TPF == 0 then frameEnd() end
+		if V.tick % TPF == 0 then V._frameEnd() end
 	end
 
 	-- component world transforms (vehicle-world axes) through the record pointer fields

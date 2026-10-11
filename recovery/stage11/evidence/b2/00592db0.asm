@@ -1,0 +1,3 @@
+00592db0 MOV EAX,dword ptr [ESP + 0x4]
+00592db4 ADD EAX,0x1493
+00592db9 RET

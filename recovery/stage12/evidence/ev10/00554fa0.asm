@@ -1,0 +1,2 @@
+00554fa0 FLD dword ptr [0x00bf6360]
+00554fa6 RET

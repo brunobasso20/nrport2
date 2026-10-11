@@ -20,6 +20,8 @@ function M.run(full)
     end
     local t0=os.clock()
     local car=Vehicle.new(Core.NR2003Cup);local V=car.V
+-- Stage 11: golden data produced by the ORIGINAL code with the Stage 6-10 frame end -> explicit "frozen" runtime mode
+if V.setRuntimeMode then V.setRuntimeMode("frozen") end if V.setSteeringMode then V.setSteeringMode("provisional") end
     check("load Core.NR2003Cup (Stage 10: setup, build, generic callbacks, garage)",V.applySetup~=nil and V.Setup~=nil and V.setupStructure()=="image",string.format("%.2f s",os.clock()-t0))
     local Setup=V.Setup
     -- conversions (subset of the CLI vectors, both FPU control words)

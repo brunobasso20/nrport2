@@ -1,0 +1,2 @@
+00544bf0 MOV EAX,0xbebd38
+00544bf5 RET

@@ -70,6 +70,12 @@
           "Stage10SelfTest": {
             "$path": "roblox/Stage10SelfTest.lua"
           },
+          "Stage11SelfTest": {
+            "$path": "roblox/Stage11SelfTest.lua"
+          },
+          "Stage12SelfTest": {
+            "$path": "roblox/Stage12SelfTest.lua"
+          },
           "Units": {
             "$path": "roblox/Units.lua"
           },

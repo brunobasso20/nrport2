@@ -1,35 +1,37 @@
-# Stage 10 (3.9.0-stage10) — arquivos novos/alterados em relação ao pacote Stage 9 (3.8.0-stage9)
-PATCH_STAGE10.lua                          (novo; Command Bar, sobre Stage 9, arquivo único ~2,1 MB)
-PATCH_STAGE10_PART1..4.lua, PATCH_STAGE10_INSTALL.lua (novos; mesma instalação em partes menores para a Command Bar)
-NR2003_Patch_Stage10.rbxmx                 (novo; recomendado: Insert from File)
-SETUP_MAP.md                               (novo: mapa dos 184 itens de setup, gerado)
-core/NR2003Cup/NR2003CupSetupData.lua      (novo, gerado do exe: descritores c05150, constantes, padrões)
-core/NR2003Cup/NR2003CupSetup.lua          (novo: conversores 00423dc0..004241f0, garagem, padrões, validação .sto)
-core/NR2003Cup/NR2003CupBuild.lua          (novo, gerado: host da aplicação original do setup)
-core/NR2003Cup/NR2003CupBuildCode1..6.lua  (novos, gerados: build original do carro erguido do x86, 388 funções)
-core/NR2003Cup/NR2003CupBuildData1..2.lua  (novos, gerados: entradas pré-aplicação + tabelas natural/genérica)
-core/NR2003Cup/NR2003CupJITG1..4.lua       (novos, gerados: callbacks da estrutura genérica)
-core/NR2003Cup/NR2003CupGarage.lua         (novo: applySetup / setup / setupReport / setupDump / setupStructure)
-core/NR2003Cup/NR2003CupCore.lua           (alterado, regenerado: host exporta _pristine, imageSize, _jitTable, _jitLoad)
-core/NR2003Cup/NR2003CupDriver.lua         (alterado: células de freio/inércia re-ligadas após rebuild, _bindDriverCells)
-core/NR2003CupVehicle.lua                  (alterado: carrega o Stage 10, API de setup)
-roblox/CupChassisAdapter.lua               (alterado: atributos Setup_<item>, rebuild no reset quando o setup muda)
-roblox/Stage10SelfTest.lua                 (novo, gerado)
-recovery/stage6_7/runtime_host.luau        (alterado: exportações do host; gera o NR2003CupCore acima)
-recovery/stage10/**                        (novo: pseudo-C, evidências Ghidra, harness, controle do emissor, busca da
-                                            estrutura genérica, lifter estendido, geradores, tabelas, fixtures JSON, dev/)
-tests/stage10/run_setup.luau, run.luau     (novos)
-tests/stage10/fixtures/setup_vectors.lua, build_fixture.lua, items_fixture.lua, dyn_fixture.lua (novos, do código original)
-tests/stage10/patch10_mock.luau            (novo, gerado)
-tests/stage10/RESULTS_STAGE10.txt          (novo: saída de tools/run_stage10_tests.sh)
-tests/stage67/adapter_mock.luau            (regenerado: checks do Stage 10 + Stage10SelfTest)
-tools/build_stage10.py, tools/selftest10_template.lua, tools/make_patch10_mock.py, tools/patch10_mock_tail.luau,
-tools/run_stage10_tests.sh, tools/run_stage10_tests.ps1, tools/update_manifest_stage10.py (novos)
-tools/make_adapter_mock.py, tools/adapter_mock_body.luau (alterados)
-tools/stage9_manifest_files.json, tools/stage10_changes.json (novos: base de comparação do manifesto)
-.gitignore                                 (novo: intermediários regeneráveis do Stage 10)
-PORT_MAP.md, ROADMAP_STATUS.md, STAGE_RESULT.md, VALIDACAO.md, CHANGELOG.md, CORE_API.md, README_PT.md,
-MANIFEST.json, NEXT_PROMPT_STAGE11.txt, CHANGED_FILES.txt, default.project.json (alterados/novos)
-Inalterados: core/NR2003Cup/NR2003CupImage1..2, NR2003CupJIT1..4 (regenerados byte a byte), NR2003CupAero;
-roblox/Server.server.lua, roblox/Client.client.lua; PATCH_STAGE6_7/8/9; Stage67/8/9SelfTest; tests/stage67/run.luau,
-tests/stage8/**, tests/stage9/**.
+# Stage 12 (3.11.0-stage12) — arquivos novos/alterados em relação ao pacote Stage 11 (3.10.0-stage11)
+# (lista completa com sha256: MANIFEST.json; diferença: tools/stage12_changes.json)
+PATCH_STAGE12.lua                          (novo; Command Bar, sobre Stage 11, arquivo único ~320 KB)
+PATCH_STAGE12_PART1..2.lua, PATCH_STAGE12_INSTALL.lua (novos; mesma instalação em partes para a Command Bar)
+PATCH_STAGE12_ROLLBACK.lua                 (novo; reversão verificada para o Stage 11 a partir do backup do patch)
+NR2003_Patch_Stage12.rbxmx                 (novo; Insert from File + require(workspace.NR2003_Patch_Stage12)())
+STAGE12_RECOVERY.md, STAGE12_STEERING_STATE_MAP.md, STAGE12_VALIDATION.md, STAGE12_RESULT.md (novos: relatórios)
+core/NR2003Cup/NR2003CupSteering.lua       (novo: cadeia de direção ORIGINAL portada à mão do x86)
+core/NR2003Cup/NR2003CupDriver.lua         (alterado: alvo da cauda original de 00551e80; C1 sinal de zero; V._frameStartOnly)
+core/NR2003CupVehicle.lua                  (alterado: instala a direção depois da garagem; API de direção)
+roblox/CupChassisAdapter.lua               (alterado: camada de dispositivos, opções por atributo, volante original, telemetria)
+roblox/Client.client.lua                   (alterado: teclas + analógico do gamepad; linha DIREÇÃO no painel T)
+roblox/Server.server.lua                   (alterado: aceita steerLeft/steerRight/steerAxis/steerAnalog; CockpitWheelAngle)
+roblox/Cockpit.lua, RenderSnapshot.lua, RenderPresentation.lua (alterados: ângulo original do volante, FLAG_WHEEL_ANGLE)
+roblox/Stage12SelfTest.lua                 (novo, gerado)
+roblox/Stage67SelfTest.lua, Stage8SelfTest.lua, Stage9SelfTest.lua, Stage10SelfTest.lua, Stage11SelfTest.lua
+                                           (alterados: uma linha, direção "provisional")
+tests/stage67/run.luau, tests/stage8/run.luau, tests/stage9/run.luau, tests/stage10/run.luau, tests/stage11/run.luau
+                                           (alterados: uma linha, direção "provisional")
+tests/stage12/run.luau                     (novo: suíte do Stage 12, L1-L5 + comportamento)
+tests/stage12/fixtures/*.lua               (novos, do código original: units + 10 cenários)
+tests/stage12/patch12_mock.luau            (novo, gerado)
+tests/stage12/RESULTS_STAGE12.txt, REGRESSION_STAGE12.txt (novos: saídas da suíte e da regressão completa)
+tests/stage12/dev/*.luau                   (novos: diagnósticos)
+tests/stage67/adapter_mock.luau            (regenerado: checks do Stage 12 + Stage12SelfTest)
+tools/build_stage12.py, tools/selftest12_template.lua, tools/make_patch12_mock.py, tools/patch12_mock_tail.luau,
+tools/run_stage12_tests.ps1, tools/run_stage12_tests.sh, tools/update_manifest_stage12.py (novos)
+tools/adapter_mock_body.luau, tools/make_adapter_mock.py (alterados: checks do Stage 12)
+tools/selftest_template.lua, selftest8..11_template.lua (alterados: direção "provisional")
+tools/stage11_manifest_files.json, tools/stage12_changes.json (novos: base de comparação do manifesto)
+recovery/stage12/**                        (novo: harness, cenários, geradores, fixtures JSON, dev/, evidências Ghidra
+                                            ev1..ev14, relatórios de pesquisa, prova do reinício reverso, README)
+PORT_MAP.md, SETUP_MAP.md (correção 0x3a / 0x9f..0xa4), ROADMAP_STATUS.md, STAGE_RESULT.md, VALIDACAO.md, CHANGELOG.md,
+CORE_API.md, README_PT.md, MANIFEST.json, NEXT_PROMPT_STAGE13.txt, CHANGED_FILES.txt, default.project.json (alterados/novos)
+Inalterados: core/NR2003Cup/NR2003CupImage*, NR2003CupJIT*, NR2003CupCore, NR2003CupAero, NR2003CupSetup*,
+NR2003CupBuild*, NR2003CupJITG*, NR2003CupGarage, NR2003CupFrame*; roblox/VisualRig.lua, DriverConfig.lua;
+PATCH_STAGE6_7/8/9/10/11.
