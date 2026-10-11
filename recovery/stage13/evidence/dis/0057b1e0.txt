@@ -1,0 +1,10 @@
+0057b1e0  8b44241c               mov eax, dword ptr [esp + 0x1c]
+0057b1e4  8d0cc500000000         lea ecx, [eax*8]
+0057b1eb  2bc8                   sub ecx, eax
+0057b1ed  8d9488b87cd300         lea edx, [eax + ecx*4 + 0xd37cb8]  ; [d37cb8] f32=0 u32=0
+0057b1f4  8954241c               mov dword ptr [esp + 0x1c], edx
+0057b1f8  e9f3fdffff             jmp 0x57aff0  ; [57aff0] f32=1.93132542e-36 u32=4244c8b
+0057b1fd  90                     nop 
+0057b1fe  90                     nop 
+0057b1ff  90                     nop 
+0057b200  c3                     ret 

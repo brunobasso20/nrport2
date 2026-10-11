@@ -1,0 +1,6 @@
+005f7c50  a1185a7500             mov eax, dword ptr [0x755a18]  ; [755a18] f32=0 u32=0
+005f7c55  85c0                   test eax, eax
+005f7c57  b824000000             mov eax, 0x24
+005f7c5c  7505                   jne 0x5f7c63  ; [5f7c63] f32=-5.70210259e-29 u32=909090c3
+005f7c5e  a1b4597500             mov eax, dword ptr [0x7559b4]  ; [7559b4] f32=0 u32=0
+005f7c63  c3                     ret 

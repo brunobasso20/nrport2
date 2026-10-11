@@ -1,3 +1,11 @@
+-- Stage 13: the ORIGINAL force feedback runs inside the core (00554d30 front tyre statistics per tick, the FFB block of the
+-- frame end 00554520, 0054fed0 / 00550070 FF axis and controls; exact x87 arithmetic). Options = the controls.cfg values
+-- (attributes ForceFeedback bool, ForceFeedbackStrength 0..100, ForceFeedbackDamping 0..100, ForceFeedbackLatency
+-- 0..250 ms; absent = CupTune.driver bench defaults, then the original image values: off, 80, 0, 0). ForceFeedbackDevice
+-- (bool) = the host offers an FF output for the steering axis (ADAPTER for DirectInput: the HUD + gamepad motors on the
+-- client); the effect is acquired by the ORIGINAL 0054fed0 only while the steering is on an analog axis. No driver seated
+-- = player controls suspended (ORIGINAL 00550070(1)). The output (the original constant force -1..1 and the DirectInput
+-- magnitude _ftol(force x 10000)) is published as car attributes FFBForce / FFBMagnitude / FFBActive; nothing feeds back.
 -- Stage 12: the ORIGINAL steering chain runs inside the core (00552720 device processing, linearity, x pi,
 -- 00554fb0 setup ratio item 0x30 with the low-speed override, per-tick ramp + toe -> prescribed hub coordinates).
 -- The adapter is only the device layer (0057abc0 equivalent): keys -> digital steering controls 7 / 8, an analog
@@ -50,7 +58,7 @@ function M.new(car,tune,remote)
     local cup=CupTune.new()
     local self=setmetatable({car=car,root=car.Chassis,tune=cup,benchTune=tune,telemetryTimer=0,debugVisible=false,
         fault=nil,renderSpin={},lastRenderSnapshotTime=nil,renderTeleport=true,pendingShift=0,steeringOut={},
-        planes={},inContact={},wheelPose={},contactPoints={},scratchPos={0,0,0},scratchRot={1,0,0,0,1,0,0,0,1}},M)
+        planes={},inContact={},wheelPose={},contactPoints={},scratchPos={0,0,0},scratchRot={1,0,0,0,1,0,0,0,1},ffbOut={}},M)
     for j=1,4 do
         self.planes[j]={0,0,1,0,0,0,0,1,1};self.inContact[j]=false
         self.wheelPose[j]={pos={0,0,0},rot={1,0,0,0,1,0,0,0,1},compression=0,steer=0,angle=0,rate=0}
@@ -125,6 +133,7 @@ function M:initialize()
     self.origin=self:groundOrigin(self.spawn)
     -- Stage 12: the steering options are re-read from the attributes at every initialize/reset
     if self.core.V.clearSteeringOptions then self.core.V.clearSteeringOptions() end
+    if self.core.V.clearForceFeedbackOptions then self.core.V.clearForceFeedbackOptions() end
     self.core:reset()
     local function num(name) local v=self.car:GetAttribute(name);return U.finite(v) and v or nil end
     local garage=self:garageSetup()
@@ -175,6 +184,25 @@ function M:initialize()
             o.setupRatio,o.lockDegrees,o.lockDegrees/2,o.lowSpeedOverride and "on" or "off",o.linearity,o.steerRate,
             o.momentumKeys==nil and "imagem" or tostring(o.momentumKeys),o.momentumAxis==nil and "imagem" or tostring(o.momentumAxis),
             o.cockpitLimitDegrees))
+    end
+    -- Stage 13: ORIGINAL force feedback options (messages 8..11 = controls.cfg values) and the host FF device, set before
+    -- the car is placed on the track (00550a50 -> 00550070(0) -> 0054fed0)
+    self.controlsSuspended=nil
+    if self.core.V.setForceFeedbackOptions then
+        local d=self.tune.driver or {}
+        local function boolAttr(name,default) local v=self.car:GetAttribute(name);if type(v)=="boolean" then return v end;return default end
+        local function range(name,hi,default)
+            local v=num(name);if v==nil then v=default end
+            if v==nil then return nil end
+            return math.clamp(math.floor(v),0,hi)            -- the front-end slider ranges (0043ef90 / 0043efe0 / 0043f030)
+        end
+        self.core:setForceFeedbackDevice({capable=boolAttr("ForceFeedbackDevice",d.ffbDevice==true)})
+        local o=self.core:setForceFeedbackOptions({enabled=boolAttr("ForceFeedback",d.ffbEnabled),
+            strength=range("ForceFeedbackStrength",100,d.ffbStrength),damping=range("ForceFeedbackDamping",100,d.ffbDamping),
+            latency=range("ForceFeedbackLatency",250,d.ffbLatency)})
+        self.car:SetAttribute("ForceFeedbackApplied",o.enabled)
+        print(string.format("[NR2003 Stage 13] force feedback original %s: força %g, amortecimento %g, latência %g ms, dispositivo %s (efeito adquirido pelo 0054fed0 só com o eixo analógico)",
+            o.enabled and "ligado" or "desligado",o.strength,o.damping,o.latency,boolAttr("ForceFeedbackDevice",d.ffbDevice==true) and "sim" or "não"))
     end
     if self.car:GetAttribute("AeroSession")==false then
         self.core:endSession();self.weather=nil
@@ -297,6 +325,12 @@ function M:tickCore(input)
         controls.shiftUp=self.pendingShift>0;controls.shiftDown=self.pendingShift<0;self.pendingShift=0
     end
     if frame and self.weather then self:aeroHostInputs() end
+    -- Stage 13: no driver seated = player controls suspended (ORIGINAL 00550070(1): 005524f0 not-driven branch, FFB block
+    -- gated, zero force); a driver seated = 00550070(0). Applied between frames, where the original drains its messages
+    local suspended=controls.driver==false
+    if frame and self.core.V.setControlsSuspended and suspended~=self.controlsSuspended then
+        self.controlsSuspended=suspended;self.core:setControlsSuspended(suspended)
+    end
     self.core:step(controls,self.contactFn)
     if self.core:tick()%8==0 and self.weather then self:stage11TestEvents() end
     self:pose(false)
@@ -419,6 +453,12 @@ function M:step(elapsed,input)
         end
         self.visual:update({wheels=wheels},self.contactPoints,self.debugVisible)
         Cockpit.updateAngle(self.car,self:steeringWheelAngle())
+        -- Stage 13: the ORIGINAL constant force (005d08d0 -> 005d3010) for the client presentation (HUD, gamepad motors)
+        if self.core.V.forceFeedbackState then
+            local f=self.core:forceFeedbackState(self.ffbOut)
+            self.car:SetAttribute("FFBForce",f.force);self.car:SetAttribute("FFBMagnitude",f.magnitude)
+            self.car:SetAttribute("FFBActive",f.acquired and f.effect and not f.suspended)
+        end
     end)
     if not ok then self.fault=tostring(reason);self.car:SetAttribute("PhysicsFault",self.fault);warn("NR2003 Cup core paused: "..self.fault) end
 end
@@ -513,7 +553,15 @@ function M:telemetry()
         -- a rotation about the inclined steering axis (caster 2.455 deg, inclination 9.215 deg); roadWheelAngle = mean
         -- front wheel yaw measured from the solver wheel poses (+ = right, Stage 5 sign; about -0.99 q, no Ackermann)
         hubSteerAngle=st[16]*0.5+st[22]*0.5,roadWheelAngle=(self.wheelPose[1].steer+self.wheelPose[2].steer)*0.5,
-        steeringWheelAngle=self:steeringWheelAngle(),steering=self:steeringTelemetry()}
+        steeringWheelAngle=self:steeringWheelAngle(),steering=self:steeringTelemetry(),ffb=self:forceFeedbackTelemetry()}
+end
+-- Stage 13 force-feedback telemetry (original cells + the last device output, see STAGE13_FFB_STATE_MAP.md)
+function M:forceFeedbackTelemetry()
+    if not self.core.V.forceFeedbackState then return nil end
+    local f=self.core:forceFeedbackState(self.ffbOut)
+    return {enabled=f.enabled,acquired=f.acquired,suspended=f.suspended,effect=f.effect,force=f.force,magnitude=f.magnitude,
+        slip=f.slip,moment=f.moment,filtered=f.filtered,load=f.load,strength=f.strength,damping=f.damping,latency=f.latency,
+        axis=f.axis}
 end
 -- Stage 12 steering telemetry (original cells, see STAGE12_STEERING_STATE_MAP.md); nil without the Stage 12 core
 function M:steeringTelemetry()

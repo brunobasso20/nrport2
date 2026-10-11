@@ -1,0 +1,123 @@
+0043ef90  a1ecc57200             mov eax, dword ptr [0x72c5ec]  ; [72c5ec] f32=7.00649232e-44 u32=32
+0043ef95  85c0                   test eax, eax
+0043ef97  7d08                   jge 0x43efa1  ; [43efa1] f32=7.60885824e+37 u32=7e64f883
+0043ef99  33c0                   xor eax, eax
+0043ef9b  a3ecc57200             mov dword ptr [0x72c5ec], eax  ; [72c5ec] f32=7.00649232e-44 u32=32
+0043efa0  c3                     ret 
+0043efa1  83f864                 cmp eax, 0x64
+0043efa4  7e0a                   jle 0x43efb0  ; [43efb0] f32=-5.70210259e-29 u32=909090c3
+0043efa6  b864000000             mov eax, 0x64
+0043efab  a3ecc57200             mov dword ptr [0x72c5ec], eax  ; [72c5ec] f32=7.00649232e-44 u32=32
+0043efb0  c3                     ret 
+0043efb1  90                     nop 
+0043efb2  90                     nop 
+0043efb3  90                     nop 
+0043efb4  90                     nop 
+0043efb5  90                     nop 
+0043efb6  90                     nop 
+0043efb7  90                     nop 
+0043efb8  90                     nop 
+0043efb9  90                     nop 
+0043efba  90                     nop 
+0043efbb  90                     nop 
+0043efbc  90                     nop 
+0043efbd  90                     nop 
+0043efbe  90                     nop 
+0043efbf  90                     nop 
+0043efc0  8b442404               mov eax, dword ptr [esp + 4]
+0043efc4  85c0                   test eax, eax
+0043efc6  7d08                   jge 0x43efd0  ; [43efd0] f32=7.60885824e+37 u32=7e64f883
+0043efc8  33c0                   xor eax, eax
+0043efca  a3ecc57200             mov dword ptr [0x72c5ec], eax  ; [72c5ec] f32=7.00649232e-44 u32=32
+0043efcf  c3                     ret 
+0043efd0  83f864                 cmp eax, 0x64
+0043efd3  7e05                   jle 0x43efda  ; [43efda] f32=7.84059177e+30 u32=72c5eca3
+0043efd5  b864000000             mov eax, 0x64
+0043efda  a3ecc57200             mov dword ptr [0x72c5ec], eax  ; [72c5ec] f32=7.00649232e-44 u32=32
+0043efdf  c3                     ret 
+0043efe0  a1104e8900             mov eax, dword ptr [0x894e10]  ; [894e10] f32=0 u32=0
+0043efe5  85c0                   test eax, eax
+0043efe7  7d08                   jge 0x43eff1  ; [43eff1] f32=7.60885824e+37 u32=7e64f883
+0043efe9  33c0                   xor eax, eax
+0043efeb  a3104e8900             mov dword ptr [0x894e10], eax  ; [894e10] f32=0 u32=0
+0043eff0  c3                     ret 
+0043eff1  83f864                 cmp eax, 0x64
+0043eff4  7e0a                   jle 0x43f000  ; [43f000] f32=-5.70210259e-29 u32=909090c3
+0043eff6  b864000000             mov eax, 0x64
+0043effb  a3104e8900             mov dword ptr [0x894e10], eax  ; [894e10] f32=0 u32=0
+0043f000  c3                     ret 
+0043f001  90                     nop 
+0043f002  90                     nop 
+0043f003  90                     nop 
+0043f004  90                     nop 
+0043f005  90                     nop 
+0043f006  90                     nop 
+0043f007  90                     nop 
+0043f008  90                     nop 
+0043f009  90                     nop 
+0043f00a  90                     nop 
+0043f00b  90                     nop 
+0043f00c  90                     nop 
+0043f00d  90                     nop 
+0043f00e  90                     nop 
+0043f00f  90                     nop 
+0043f010  8b442404               mov eax, dword ptr [esp + 4]
+0043f014  85c0                   test eax, eax
+0043f016  7d08                   jge 0x43f020  ; [43f020] f32=7.60885824e+37 u32=7e64f883
+0043f018  33c0                   xor eax, eax
+0043f01a  a3104e8900             mov dword ptr [0x894e10], eax  ; [894e10] f32=0 u32=0
+0043f01f  c3                     ret 
+0043f020  83f864                 cmp eax, 0x64
+0043f023  7e05                   jle 0x43f02a  ; [43f02a] f32=-2.48041706e-33 u32=894e10a3
+0043f025  b864000000             mov eax, 0x64
+0043f02a  a3104e8900             mov dword ptr [0x894e10], eax  ; [894e10] f32=0 u32=0
+0043f02f  c3                     ret 
+0043f030  a1144e8900             mov eax, dword ptr [0x894e14]  ; [894e14] f32=0 u32=0
+0043f035  85c0                   test eax, eax
+0043f037  7d08                   jge 0x43f041  ; [43f041] f32=8.97685809e-41 u32=fa3d
+0043f039  33c0                   xor eax, eax
+0043f03b  a3144e8900             mov dword ptr [0x894e14], eax  ; [894e14] f32=0 u32=0
+0043f040  c3                     ret 
+0043f041  3dfa000000             cmp eax, 0xfa
+0043f046  7e0a                   jle 0x43f052  ; [43f052] f32=-5.70210259e-29 u32=909090c3
+0043f048  b8fa000000             mov eax, 0xfa
+0043f04d  a3144e8900             mov dword ptr [0x894e14], eax  ; [894e14] f32=0 u32=0
+0043f052  c3                     ret 
+0043f053  90                     nop 
+0043f054  90                     nop 
+0043f055  90                     nop 
+0043f056  90                     nop 
+0043f057  90                     nop 
+0043f058  90                     nop 
+0043f059  90                     nop 
+0043f05a  90                     nop 
+0043f05b  90                     nop 
+0043f05c  90                     nop 
+0043f05d  90                     nop 
+0043f05e  90                     nop 
+0043f05f  90                     nop 
+0043f060  8b442404               mov eax, dword ptr [esp + 4]
+0043f064  85c0                   test eax, eax
+0043f066  7d08                   jge 0x43f070  ; [43f070] f32=8.97685809e-41 u32=fa3d
+0043f068  33c0                   xor eax, eax
+0043f06a  a3144e8900             mov dword ptr [0x894e14], eax  ; [894e14] f32=0 u32=0
+0043f06f  c3                     ret 
+0043f070  3dfa000000             cmp eax, 0xfa
+0043f075  7e05                   jle 0x43f07c  ; [43f07c] f32=-2.48060514e-33 u32=894e14a3
+0043f077  b8fa000000             mov eax, 0xfa
+0043f07c  a3144e8900             mov dword ptr [0x894e14], eax  ; [894e14] f32=0 u32=0
+0043f081  c3                     ret 
+0043f082  90                     nop 
+0043f083  90                     nop 
+0043f084  90                     nop 
+0043f085  90                     nop 
+0043f086  90                     nop 
+0043f087  90                     nop 
+0043f088  90                     nop 
+0043f089  90                     nop 
+0043f08a  90                     nop 
+0043f08b  90                     nop 
+0043f08c  90                     nop 
+0043f08d  90                     nop 
+0043f08e  90                     nop 
+0043f08f  90                     nop 

@@ -1,0 +1,13 @@
+005d0870  56                     push esi
+005d0871  8b742408               mov esi, dword ptr [esp + 8]
+005d0875  56                     push esi
+005d0876  e8a5ffffff             call 0x5d0820  ; [5d0820] f32=-5.39866889e+32 u32=f5d4f0a0
+005d087b  83c404                 add esp, 4
+005d087e  84c0                   test al, al
+005d0880  7410                   je 0x5d0892  ; [5d0892] f32=-5.7098996e-29 u32=9090c35e
+005d0882  56                     push esi
+005d0883  e838190000             call 0x5d21c0  ; [5d21c0] f32=-3.71416459e+24 u32=e844a051
+005d0888  83c404                 add esp, 4
+005d088b  c60514d4f50000         mov byte ptr [0xf5d414], 0  ; [f5d414] f32=0 u32=0
+005d0892  5e                     pop esi
+005d0893  c3                     ret 

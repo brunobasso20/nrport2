@@ -13,6 +13,8 @@
 --   NR2003CupGarage    : Stage 10 applySetup / setup inspection (orchestration only)
 --   NR2003CupJITG1..n  : Stage 10 callbacks of the generic (setup-invariant) structure, translated
 --   NR2003CupSteering  : Stage 12 ORIGINAL steering chain (00552720, 00551e80 tail, 00554fb0, options)
+--   NR2003CupFFB       : Stage 13 ORIGINAL force feedback (00554d30, FFB block of 00554520, 0054fed0 / 00550070,
+--                        options), exact x87 arithmetic; output = the DirectInput constant force (ADAPTER)
 -- This module only assembles them and exposes a numeric API (no Instances, no Roblox types).
 -- Axes: NR2003 vehicle-world frame (+X forward, +Y left, +Z up, metres, seconds) fixed at reset.
 local M={};M.__index=M
@@ -61,6 +63,10 @@ function M.fromLoader(get)
     -- re-application wraps every reset (garage rebuilds included)
     local steering=get("NR2003CupSteering")
     if steering then steering(V) end
+    -- Stage 13 (absent in a Stage 6..12 install): ORIGINAL force feedback; installed after the steering chain (it
+    -- follows the control-7 binding written by the steering device layer) and after the frame end (its hooks)
+    local ffb=get("NR2003CupFFB")
+    if ffb then ffb(V) end
     return setmetatable({V=V,state=table.create(45,0),pos={0,0,0},rot={1,0,0,0,1,0,0,0,1}},M)
 end
 function M.new(folder)
@@ -132,6 +138,14 @@ function M:setSteeringOptions(o) return self.V.setSteeringOptions(o) end
 function M:steeringOptions() return self.V.steeringOptions() end
 function M:steeringState(out) return self.V.steeringState(out) end
 function M:steeringWheelAngle() return self.V.steeringWheelAngle() end
+-- Stage 13 force feedback API (ORIGINAL chain; see CORE_API.md / STAGE13_FFB_STATE_MAP.md)
+function M:setForceFeedbackOptions(o) return self.V.setForceFeedbackOptions(o) end
+function M:forceFeedbackOptions() return self.V.forceFeedbackOptions() end
+function M:setForceFeedbackDevice(d) self.V.setForceFeedbackDevice(d) end
+function M:forceFeedbackState(out) return self.V.forceFeedbackState(out) end
+function M:setControlsSuspended(flag) self.V.setControlsSuspended(flag) end
+function M:controlsSuspended() return self.V.controlsSuspended() end
+function M:selectActiveControls() self.V.selectActiveControls() end
 function M:readState() return self.V.state(self.state) end
 function M:componentPose(record,pos,rot) return self.V.componentPose(record,pos,rot) end
 function M:contactOut(i) return self.V.contactOut(i) end

@@ -1,0 +1,18 @@
+00554e70  8b442404               mov eax, dword ptr [esp + 4]
+00554e74  d9442408               fld dword ptr [esp + 8]
+00554e78  d80485d46ebf00         fadd dword ptr [eax*4 + 0xbf6ed4]  ; [bf6ed4] f32=0 u32=0
+00554e7f  8b0c8564c97400         mov ecx, dword ptr [eax*4 + 0x74c964]  ; [74c964] f32=1.40129846e-45 u32=1
+00554e86  41                     inc ecx
+00554e87  890c8564c97400         mov dword ptr [eax*4 + 0x74c964], ecx  ; [74c964] f32=1.40129846e-45 u32=1
+00554e8e  d91c85d46ebf00         fstp dword ptr [eax*4 + 0xbf6ed4]  ; [bf6ed4] f32=0 u32=0
+00554e95  d944240c               fld dword ptr [esp + 0xc]
+00554e99  d80485dc6ebf00         fadd dword ptr [eax*4 + 0xbf6edc]  ; [bf6edc] f32=0 u32=0
+00554ea0  d91c85dc6ebf00         fstp dword ptr [eax*4 + 0xbf6edc]  ; [bf6edc] f32=0 u32=0
+00554ea7  d9442410               fld dword ptr [esp + 0x10]
+00554eab  d80485e46ebf00         fadd dword ptr [eax*4 + 0xbf6ee4]  ; [bf6ee4] f32=0 u32=0
+00554eb2  d91c85e46ebf00         fstp dword ptr [eax*4 + 0xbf6ee4]  ; [bf6ee4] f32=0 u32=0
+00554eb9  d9442414               fld dword ptr [esp + 0x14]
+00554ebd  d80485ec6ebf00         fadd dword ptr [eax*4 + 0xbf6eec]  ; [bf6eec] f32=0 u32=0
+00554ec4  d91c85ec6ebf00         fstp dword ptr [eax*4 + 0xbf6eec]  ; [bf6eec] f32=0 u32=0
+00554ecb  8d048564c97400         lea eax, [eax*4 + 0x74c964]  ; [74c964] f32=1.40129846e-45 u32=1
+00554ed2  c3                     ret 

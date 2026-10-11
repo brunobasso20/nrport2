@@ -17,7 +17,8 @@
 --
 -- Host boundary (ADAPTER, documented in STAGE11_RECOVERY.md, identical in the Unicorn reference harness
 -- recovery/stage11/orig_stage11.py): 005547a0 / 00592dc0 / 00557650 / 005d08d0 return immediately (track and
--- replay recorders, multiplayer damage sync, collision sound, force feedback); 005f58d0 (track point) copies the
+-- replay recorders, multiplayer damage sync, collision sound, force feedback: Stage 13 evaluates the FFB block in
+-- NR2003CupFFB and delivers 005d08d0 to the host device layer); 005f58d0 (track point) copies the
 -- point and clears the track-query fields (no track loaded); the car world record (car+0x5ae) is posed from the
 -- exported state like 005543f0 does (position, 005f5a60 rotation, 005f5ac0 velocities) before the frame end.
 -- Pure Luau: no Instances.
@@ -159,7 +160,19 @@ return function(V, codeParts, dataParts)
 	local function frameEnd11()
 		if mode ~= "original" then frozenFrameEnd(); return end
 		syncWorldRecord()
-		callx(0x554520, nil)
+		-- Stage 13: the force-feedback block of 00554520 (0055464c..0055479d) is evaluated by NR2003CupFFB in exact x87
+		-- arithmetic right after the lifted function (V._ffbFrameEnd: where the block ends the function); the lifted copy
+		-- (IEEE double intermediates) is skipped by presenting bf6ebb = 0, its only reader in 00554520 / 00549c40
+		local ffb = V._ffbFrameEnd
+		if ffb then
+			local acquired = buffer.readu8(M, 0xbf6ebb - BASE)
+			buffer.writeu8(M, 0xbf6ebb - BASE, 0)
+			callx(0x554520, nil)
+			buffer.writeu8(M, 0xbf6ebb - BASE, acquired)
+			ffb()
+		else
+			callx(0x554520, nil)
+		end
 		-- ADAPTER: the car is in the race order of the session (race-order ring car+4 / car+8, recovered in Stage 9;
 		-- the Stage 6/7 build leaves it 0). car+4 != 0 gates the collision damage of 00549c40 (00549290 body damage,
 		-- 0054a330 wheel / tyre impact states). One-car ring (links -> car+4) around 00549c40 only, as in the Unicorn
@@ -201,7 +214,8 @@ return function(V, codeParts, dataParts)
 	function V.randomState() return r32(RNG), r32(RNG + 4) end
 
 	-- ORIGINAL 00550a50 subset (car placed on the track by the simulation task): 00563080(car, 1) damage repair,
-	-- 00550c40 engine init, 00550c60 fuel load, 005512d0 four new tyres (00550f10), car+0x1518 = 0, bf6eb9 = 0
+	-- 00550c40 engine init, 00550c60 fuel load, 005512d0 four new tyres (00550f10), car+0x1518 = 0, 00550070(0)
+	-- (Stage 13, NR2003CupFFB), bf6eb9 = 0
 	function V.enterTrack()
 		ensureWorldRecord()
 		callx(0x563080, nil, CAR, 1)
@@ -209,6 +223,8 @@ return function(V, codeParts, dataParts)
 		callx(0x550c60, nil)
 		callx(0x5512d0, nil)
 		w32(CAR + 0x1518, 0)
+		-- Stage 13 (@00550b07): ORIGINAL 00550070(0), player controls active + FF axis setup (NR2003CupFFB)
+		if V._ffbEnterTrack then V._ffbEnterTrack() end
 		buffer.writeu8(M, 0xbf6eb9 - BASE, 0)
 	end
 	-- ORIGINAL 00433610(chassis type car+0x58e): the collision-damage zone tree (00433660, nodes from the static pool

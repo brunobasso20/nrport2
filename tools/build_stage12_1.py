@@ -18,6 +18,7 @@ from pathlib import Path
 from xml.sax.saxutils import escape
 root = Path(__file__).resolve().parents[1]
 STAGE12_COMMIT = 'b531e60'         # published Stage 12 (3.11.0-stage12): the baseline this patch verifies
+STAGE12_1_COMMIT = '5d9f5ee'       # published Stage 12.1 (3.11.1-stage12.1): the sources this builder ships, frozen
 VERSION = '3.11.1-stage12.1'
 
 
@@ -43,6 +44,9 @@ def lua_value(v):
 def read(p): return p.read_text(encoding='utf-8')
 def write(p, s): p.write_text(s, encoding='utf-8', newline='\n')
 def published(path): return subprocess.run(['git', 'show', '%s:%s' % (STAGE12_COMMIT, path)], cwd=root, capture_output=True, check=True).stdout.decode('utf-8')
+# Since Stage 13 the Stage 12.1 deliverables are FROZEN: the sources are read from the published Stage 12.1 commit (the
+# working tree holds the Stage 13 sources, shipped by tools/build_stage13.py)
+def published121(path): return subprocess.run(['git', 'show', '%s:%s' % (STAGE12_1_COMMIT, path)], cwd=root, capture_output=True, check=True).stdout.decode('utf-8')
 
 
 def fnv(s):
@@ -75,8 +79,9 @@ def golden():
     return lua_value(g)
 
 
-template = read(root / 'tools/selftest12_template.lua')
+template = published121('tools/selftest12_template.lua')
 selftest = template.replace('__GOLDEN__', golden())
+assert selftest == published121('roblox/Stage12SelfTest.lua'), 'Stage 12.1 self-test changed'
 write(root / 'roblox/Stage12SelfTest.lua', selftest)
 # the golden part must be exactly the published one (only the 12.1 checks are new)
 assert published('roblox/Stage12SelfTest.lua').replace(published('tools/selftest12_template.lua').split('__GOLDEN__')[0], '', 1) \
@@ -92,7 +97,7 @@ REPLACE = [
 ]
 items = []
 for folder, name, path in REPLACE:
-    old, new = published(path), read(root / path)
+    old, new = published(path), published121(path)
     assert old != new, '%s unchanged since Stage 12' % path
     items.append(dict(folder=folder, name=name, source=new, oldLen=len(old.encode()), oldHash=fnv(old),
                       newLen=len(new.encode()), newHash=fnv(new)))

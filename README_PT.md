@@ -1,4 +1,47 @@
-# OpenNR2003 para Roblox — Stage 12.1 (direção original: trava 360°, relação 12:1, momentum por dispositivo)
+# OpenNR2003 para Roblox — Stage 13 (torque de direção / force feedback original do NR2003)
+
+## Aplicar o Stage 13 sobre o Stage 12.1
+
+1. Studio, **fora do Play**, na **Command Bar**, sobre a bancada **Stage 12.1 publicada** (se ainda estiver no Stage 12,
+   aplique antes o `PATCH_STAGE12_1.lua`, seção abaixo) — escolha UMA das formas:
+   - **Um arquivo**: `PATCH_STAGE13.lua` (~315 KB) inteiro na Command Bar, Enter.
+   - **Em partes**: `PATCH_STAGE13_PART1.lua`, `PATCH_STAGE13_PART2.lua` (guardam as fontes em
+     `ServerStorage.NR2003Stage13Staging`) e por fim `PATCH_STAGE13_INSTALL.lua`.
+   - **Arquivo de modelo**: *Insert from File* → `NR2003_Patch_Stage13.rbxmx`; na Command Bar
+     `require(workspace.NR2003_Patch_Stage13)()` e apague o ModuleScript inserido.
+2. O instalador confere o Stage 12.1 **módulo por módulo** (tamanho + hash da fonte publicada; recusa base diferente ou
+   módulo editado localmente — forçar só com `_G.NR2003_PATCH13_FORCE = true`), faz backup **só** dos 6 módulos que muda em
+   `ServerStorage.NR2003Backup_Stage13` (criado uma vez; os 2 módulos novos ficam registrados como `ADDED:`), atualiza a
+   fonte **na mesma instância** (`Core.NR2003Cup.NR2003CupDriver`, `Core.NR2003Cup.NR2003CupFrame`, `Core.NR2003CupVehicle`,
+   `Core.CupTune`, `Roblox.CupChassisAdapter`, `NR2003Client`), cria `Core.NR2003Cup.NR2003CupFFB` e
+   `Roblox.Stage13SelfTest`, roda os auto-testes 6/7..13 e **reverte tudo** se algo falhar. Re-executar é seguro. **O
+   place não é salvo**: salve você mesmo. Reverter: `PATCH_STAGE13_ROLLBACK.lua` (volta ao Stage 12.1 e apaga os módulos
+   novos).
+3. Output esperado: auto-testes 6/7..12, `[NR2003 Stage 13 self-test] 11 PASS, 0 FAIL (… s)` e `Stage 13 aplicado`.
+4. **O que é o FFB do NR2003** (código original, `STAGE13_RESULT.md`): por tick, médias das forças dos pneus dianteiros
+   (`00554d30`); por quadro, um filtro com latência / amortecimento sobre o momento de alinhamento, escalado pela força e
+   pela relação do setup (`00554520`) → **uma força constante −1..1 no eixo de direção** (DirectInput: × 10000). Só existe
+   com a direção num **eixo analógico** (gamepad) e o FF ligado; com teclado o NR2003 não gera FFB. Nada volta para a
+   física.
+5. Padrões da bancada (`Core.CupTune.driver`; atributos do `TestCar` mandam, valem no reset **R**):
+
+| O quê | Padrão | Atributo | Original? |
+|---|---|---|---|
+| FF ligado | **sim** | `ForceFeedback` (true/false) | sem controls.cfg o NR2003 vem desligado; ligar = o que o controls.cfg faz |
+| Força | **80** (valor da imagem) | `ForceFeedbackStrength` (0..100) | sim (mensagem 9) |
+| Amortecimento | **0** | `ForceFeedbackDamping` (0..100) | sim (mensagem 10) |
+| Latência | **0 ms** | `ForceFeedbackLatency` (0..250) | sim (mensagem 11) |
+| Dispositivo FF | **presente** | `ForceFeedbackDevice` (true/false) | ADAPTER: o "dispositivo" é o painel + motores do gamepad |
+| Vibração do gamepad | **sim** (|força|) | `CupTune.driver.ffbRumble` | apresentação (o Roblox não tem FFB direcional) |
+
+6. Painel **T**, linha `FFB`: `ativo (eixo)` / `suspenso` / `inativo (teclas / sem dispositivo)`, a força −1..1 e o valor
+   DirectInput (`DI`), deslize médio, momento, filtro e as opções. Saída para outros scripts: atributos do `TestCar`
+   `FFBForce`, `FFBMagnitude`, `FFBActive`. Sair do carro suspende os controles do jogador (`00550070(1)` original): força
+   zero.
+
+---
+
+# Histórico — Stage 12.1 (direção original: trava 360°, relação 12:1, momentum por dispositivo)
 
 ## Aplicar o Stage 12.1 sobre o Stage 12
 

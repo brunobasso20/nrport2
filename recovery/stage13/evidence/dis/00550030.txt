@@ -1,0 +1,21 @@
+00550030  a1bc6ebf00             mov eax, dword ptr [0xbf6ebc]  ; [bf6ebc] f32=0 u32=0
+00550035  680000403f             push 0x3f400000
+0055003a  6a00                   push 0
+0055003c  6a00                   push 0
+0055003e  50                     push eax
+0055003f  e85c080800             call 0x5d08a0  ; [5d08a0] f32=-5.39866889e+32 u32=f5d4f0a0
+00550044  8b0dbc6ebf00           mov ecx, dword ptr [0xbf6ebc]  ; [bf6ebc] f32=0 u32=0
+0055004a  83c410                 add esp, 0x10
+0055004d  c744240800000000       mov dword ptr [esp + 8], 0
+00550055  894c2404               mov dword ptr [esp + 4], ecx
+00550059  e972080800             jmp 0x5d08d0  ; [5d08d0] f32=-5.39866889e+32 u32=f5d4f0a0
+0055005e  90                     nop 
+0055005f  90                     nop 
+00550060  a1bc6ebf00             mov eax, dword ptr [0xbf6ebc]  ; [bf6ebc] f32=0 u32=0
+00550065  50                     push eax
+00550066  e805080800             call 0x5d0870  ; [5d0870] f32=5.30270881e-17 u32=24748b56
+0055006b  59                     pop ecx
+0055006c  c3                     ret 
+0055006d  90                     nop 
+0055006e  90                     nop 
+0055006f  90                     nop 

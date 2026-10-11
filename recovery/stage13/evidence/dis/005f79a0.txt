@@ -1,0 +1,24 @@
+005f79a0  e8cb0e0000             call 0x5f8870  ; [5f8870] f32=5.75336792e+31 u32=74358b56
+005f79a5  84c0                   test al, al
+005f79a7  7435                   je 0x5f79de  ; [5f79de] f32=1.26547268e-31 u32=c24448b
+005f79a9  8b442408               mov eax, dword ptr [esp + 8]
+005f79ad  8b4c240c               mov ecx, dword ptr [esp + 0xc]
+005f79b1  8b542404               mov edx, dword ptr [esp + 4]
+005f79b5  a3e0597500             mov dword ptr [0x7559e0], eax  ; [7559e0] f32=0 u32=0
+005f79ba  890ddc597500           mov dword ptr [0x7559dc], ecx  ; [7559dc] f32=0 u32=0
+005f79c0  8915d8597500           mov dword ptr [0x7559d8], edx  ; [7559d8] f32=0 u32=0
+005f79c6  a1d8597500             mov eax, dword ptr [0x7559d8]  ; [7559d8] f32=0 u32=0
+005f79cb  85c0                   test eax, eax
+005f79cd  7420                   je 0x5f79ef  ; [5f79ef] f32=7.62205673e+15 u32=59d8a1c3
+005f79cf  e8bc050000             call 0x5f7f90  ; [5f7f90] f32=-3.29468116e+33 u32=f72270b9
+005f79d4  a1d8597500             mov eax, dword ptr [0x7559d8]  ; [7559d8] f32=0 u32=0
+005f79d9  85c0                   test eax, eax
+005f79db  75f2                   jne 0x5f79cf  ; [5f79cf] f32=5.26944275e-40 u32=5bce8
+005f79dd  c3                     ret 
+005f79de  8b44240c               mov eax, dword ptr [esp + 0xc]
+005f79e2  8b4c2408               mov ecx, dword ptr [esp + 8]
+005f79e6  50                     push eax
+005f79e7  51                     push ecx
+005f79e8  ff54240c               call dword ptr [esp + 0xc]
+005f79ec  83c408                 add esp, 8
+005f79ef  c3                     ret 

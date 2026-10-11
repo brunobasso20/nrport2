@@ -1,3 +1,49 @@
+# Validação — Stage 13 (torque de direção / force feedback original)
+
+Ferramentas: Luau CLI 0.741 (codegen nativo), Python 3 + Unicorn 2.1.4 + Capstone, Ghidra 11.1.2 sobre o projeto do
+OpenNR2003 (`TChapman500/OpenNR2003`, memória exportada = `NR2003_MEM`). `tools/run_stage13_tests.sh` / `.ps1` refaz as
+entregas do Stage 12 e 12.1 (congeladas, byte a byte) e do 13 e roda tudo; saídas em `tests/stage13/RESULTS_STAGE13.txt`
+e `tests/stage13/REGRESSION_STAGE13.txt`. Método e tolerâncias: **`STAGE13_VALIDATION.md`**.
+
+## Resultados automáticos
+
+Ver o resumo em `STAGE13_VALIDATION.md` (L1 aritmética x87 + funções bit a bit, L2 chamadas originais rastreadas em malha
+fechada bit a bit, L3 reinícios do Stage 12 nas células do FFB, L4 malha fechada no envelope de 14 gêmeos com a sequência
+de chamadas ao dispositivo idêntica, L5 erros deliberados detectados), o mock do `PATCH_STAGE13` e a regressão 6/7–12.
+
+## Validação manual no Roblox Studio — a fazer (10 itens)
+
+Sem atributos novos no `TestCar` (padrões da bancada: FFB ligado com força 80 / amortecimento 0 / latência 0, dispositivo
+presente, relação 12, trava 360). O efeito só é adquirido com a direção no **analógico do gamepad** (como no original, com
+teclado não há FFB).
+
+1. **Instalação**: fora do Play, sobre a bancada Stage 12.1, `PATCH_STAGE13.lua` (ou `PART1`, `PART2` + `INSTALL`, ou o
+   `.rbxmx`). Output: auto-testes 6/7..12, `[NR2003 Stage 13 self-test] 11 PASS, 0 FAIL (… s)`, `Stage 13 aplicado
+   (backup: ServerStorage.NR2003Backup_Stage13)`. Aplicar de novo → `re-execução: backup anterior mantido`.
+2. Play → Output `[NR2003 Stage 13] force feedback original ligado: força 80, amortecimento 0, latência 0 ms, dispositivo
+   sim (...)`; no `TestCar` `ForceFeedbackApplied = true`. As linhas do Stage 12 (`direção original ... relação 12:1`)
+   continuam iguais.
+3. **Teclado** (A/D): painel `FFB inativo (teclas / sem dispositivo)  força +0.000 (DI +0)`; atributos `FFBActive = false`,
+   `FFBForce = 0`. Dirigibilidade idêntica ao Stage 12.1.
+4. **Gamepad** (analógico esquerdo) parado e em reta: `FFB ativo (eixo)`, `FFBActive = true`, força perto de 0
+   (|força| < 0,05).
+5. **Gamepad em curva** a ~100 km/h com um toque leve para a **direita**: força **positiva** da ordem de +0,5..+0,8
+   (`DI` = força × 10000, truncado); para a **esquerda**: negativa; volta a ~0 ao soltar. Com curso maior a força satura em
+   ±1 (o original corta em |ecc| ≥ relação × 1600 / força = 240 com a relação 12).
+6. **Vibração** (se o gamepad tiver motores): intensidade proporcional a |força| em curva, nula em reta / parado / com
+   teclado. `CupTune.driver.ffbRumble = false` desliga só a vibração.
+7. **Sair do carro** (X) com o gamepad em curva: `FFBActive = false`, `FFBForce = 0` (o `00550070(1)` original zera a força),
+   o carro freia como antes (ramo não dirigido); entrar de novo e girar o analógico → ativo outra vez.
+8. **Opções** (atributos do `TestCar`, depois R): `ForceFeedbackStrength = 40` → a mesma curva dá ~metade da força;
+   `ForceFeedbackLatency = 250`, `ForceFeedbackDamping = 100` → mostrados no painel (`lat 250 ms`, `amort 100`);
+   `ForceFeedback = false` → `FFB desligado (atributo ForceFeedback)`, força 0; apagar os atributos → padrões.
+9. **Reversão**: fora do Play, `PATCH_STAGE13_ROLLBACK.lua` → `Rollback Stage 13 -> Stage 12.1: 6 fontes restauradas, 2
+   módulos do Stage 13 removidos; auto-teste Stage 12 OK.`; Play → bancada 12.1 (sem linha FFB); reaplicar `PATCH_STAGE13.lua`.
+10. **Auto-teste completo** (fora do Play): `require(game.ReplicatedStorage.NR2003Lab.Roblox.Stage13SelfTest).run(true)` →
+    `[NR2003 Stage 13 self-test] 12 PASS, 0 FAIL (… s)`.
+
+---
+
 # Validação — Stage 12.1 (trava 360°, relação 12:1, momentum por dispositivo)
 
 Mesma máquina e ferramentas do Stage 12. `tools/run_stage12_1_tests.sh` / `.ps1` refaz as entregas do Stage 12
@@ -12,7 +58,7 @@ Mesma máquina e ferramentas do Stage 12. `tools/run_stage12_1_tests.sh` / `.ps1
 | `PATCH_STAGE12_1` em DataModel simulado (patches 6/7..12 publicados, recusas, instalação na mesma instância, só 5 módulos, backup, `Stage12SelfTest.run(true)`, re-execução, `PATCH_STAGE12_ROLLBACK` recusa 12.1, reversão para o Stage 12, reversão automática, partes + INSTALL, sem SavePlace) | PASS — 20/20 |
 | Regressão Stage 6/7 / 8 / 9 / 10 / 11 e mocks dos patches 6/7–12 | PASS — mesmas contagens do Stage 12 |
 
-## Validação manual no Roblox Studio — a fazer (10 itens)
+## Validação manual no Roblox Studio — validada pelo usuário (informado em 2026-10-11)
 
 Sem atributos novos no `TestCar` (padrões da bancada: trava 360, relação 12, teclas 0,033, eixo 0, volante até a trava).
 

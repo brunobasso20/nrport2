@@ -1,3 +1,33 @@
+# Mapa de recuperação — Stage 13 (torque de direção / force feedback)
+
+Base: Stage 12.1 (3.11.1-stage12.1). Imagem do executável: projeto Ghidra do OpenNR2003 (`TChapman500/OpenNR2003`)
+exportado por `recovery/ghidra_tools/ExportMemoryPy.py`. Evidências: `recovery/stage13/` (listagens `evidence/dis/`, prova
+sem realimentação `evidence/nofeedback.txt`, harness `orig_stage13.py`, cenários `scenarios13.py`, fixtures
+`gen_units13.py` / `gen_fixtures13.py`). Relatórios: **`STAGE13_RECOVERY.md`**, **`STAGE13_FFB_STATE_MAP.md`**,
+**`STAGE13_VALIDATION.md`**. Destino: `core/NR2003Cup/NR2003CupFFB.lua` (portado à mão do x86, aritmética x87 exata) +
+linhas do Stage 13 em `NR2003CupDriver.lua` e `NR2003CupFrame.lua`.
+
+**Achados principais:** (1) o FFB não lê nenhuma célula da cadeia de direção: só estatísticas dos pneus dianteiros
+(`00554e70` → `00554d30`) e o item 0x30 cru; nada volta para a física (prova dinâmica); (2) o efeito é uma única força
+constante DirectInput num eixo (`_ftol(força × 10000)`), adquirida pelo `0054fed0` só com o controle 7 num eixo analógico,
+FF ligado e dispositivo capaz; (3) `bf6eb8` é ao mesmo tempo o portão do FFB e o portão do ramo do jogador de `005524f0`;
+(4) as opções só chegam pela leitura do controls.cfg (`0043f1d0`, inteiros); (5) o modelo double das convenções dos
+Stages 6–12 muda um bit gravado em 197 de 26 568 chamadas reais (até 3,3 % num cenário) → aritmética x87 exata.
+
+| Função | Papel | Chamado por | Chama | Células | Destino Luau | Status | Confiança | Evidência |
+|---|---|---|---|---|---|---|---|---|
+| `00554d30` | estatísticas dos pneus dianteiros por tick (carga, deslize, Fy, momento) | `005539c0` @00553a64 | — | `74c960..68`, `bf6ec4/c8/d0`, `bf6ed4..ef0` | `V._ffbTick` (de `tickInputs`) | EXACT · LUA VALIDATED · ROBLOX INTEGRATED | alta | L1 2600 vetores, L2 21 168 chamadas originais rastreadas, L3 32 reinícios do Stage 12 |
+| bloco FFB de `00554520` (`0055464c..0055479d`) | latência / amortecimento / força / relação → força constante | `00554520` | `005f7c50`, `00557d60`, `005d08d0` | `bf6ec0`, `bf6ecc`, `bf3a00`, opções, item 0x30 | `V._ffbFrameEnd` (de `frameEnd11`, a cópia erguida é saltada) | EXACT · LUA VALIDATED · ROBLOX INTEGRATED | alta | L1 3000 vetores, L2 5400 blocos originais, L4 7 cenários |
+| `00550070` | controles do jogador ativos / suspensos (`bf6eb8`) | `00550a50` @00550b07, `00550930`, `00550b30`, `00550a10`, `0057ab00` / `0057ab90` | `0054fed0`, `00550030` | `bf6eb8`, `bf6ebb` | `V.setControlsSuspended`, `enterTrack`, troca de vínculo | EXACT · LUA VALIDATED · ROBLOX INTEGRATED | alta | L1 1728 casos (estado + sequência de chamadas) |
+| `0054fed0` | eixo do FF = vínculo do controle 7; libera / adquire | `00550070`, `00550490` | `0057b1e0` → `0057aff0`, `00550280`, `005d0820`, `005f79a0` (`00550000` / `00550060`) | `bf6ebb`, `bf6ebc`, `74c95c`, `d37d83` | `configure` | EXACT (decisões) + ADAPTER (dispositivo) | alta | L1 (tipos 0 / 1 / 3; 2 / 4 formatam nomes de teclas no front end) |
+| `00550030` / `00550680` | força zero / liberação no fim da sessão | `00550070`, `00550000` / `00572cb0`, `00573bc0` | `005d08a0` (sem efeito), `005d08d0` / `00550060` | `bf6ebb` | `zeroForce` / `V.endSession` | EXACT | alta | L1 |
+| `00550270` / `00550290` / `005502d0` / `005502b0` | opções FF liga, força, amortecimento, latência (mensagens 8..11) | `005bb010..40` ← `0043f1d0` (controls.cfg) | — | `bf6f1c`, `74c9a4`, `bf6f24`, `bf6f20` | `V.setForceFeedbackOptions` | EXACT | alta | L1 464 vetores |
+| `005d08d0` → `005d2260` → `005d3010` | força constante DirectInput (`_ftol(força × 10000)`, `SetParameters`) | bloco FFB, `00550030` | DirectInput | `f5d4f0`, `f5d414` | `deviceForce` → sink / `forceFeedbackState` | ADAPTER (conversão EXACT) | alta | L1 507 forças |
+| `005d0820` / `005d0840` / `005d0870` / `005d2bb0` | capacidade / aquisição / liberação / criação do efeito | `0054fed0`, `00550000`, `00550060` | DirectInput | — | `setForceFeedbackDevice{capable, acquire}` | ADAPTER | — | Roblox: HUD + motores do gamepad |
+| `005f79a0` | pedido ao thread de primeiro plano | `0054fed0`, `00550680` | `00550000` / `00550060` | `7559d8..e0` | chamada direta (caminho `005f79de`) | ADAPTER | — | harness: `jmp 005f79de` |
+
+---
+
 # Mapa de recuperação — Stage 12 (cadeia de direção)
 
 Base: Stage 11 (3.10.0-stage11). Evidências: `recovery/stage12/` (Ghidra `evidence/ev1..ev14` com `FUNCS.txt`, listas
@@ -39,7 +69,7 @@ diferencial traseiro, não da direção (correção no `SETUP_MAP.md`).
 | assistência de direção > 0 (linha de corrida `bd7960` via `car+0x5ae`) | `setSteeringOptions` → erro | NOT PORTED (sistema de pista) |
 | modo ARCADE (bit 25: limitador + remapeamento + chassi 0 no build `004233a0`) | `setSteeringOptions{yawLimiter = true}` → erro (só validação) | NOT PORTED como opção de produção; o ramo da direção é EXACT (cenário `yawlimit`) |
 | replay / rede (`005beac0`, quantização de `bf6360`) | — | NOT PORTED (sem replay) |
-| FFB / torque de direção (`00554d30` e `bf6ec4..bf6ef0` não portados; o bloco FFB de `00554520` já foi erguido no Stage 11 e fica inerte: `bf6ebb` nunca escrito (0), `005d08d0` = `ret`) | `NR2003CupFrameCode*` `XF[0x554520]` (bloco inerte) | **Stage 13** (saída / ativação; interface em `STAGE12_RECOVERY.md` §8) |
+| FFB / torque de direção | **Stage 13**: `NR2003CupFFB` (`00554d30`, bloco FFB, `00550070` / `0054fed0`; ver o mapa do Stage 13 acima) | EXACT · LUA VALIDATED (Stage 13) |
 
 ---
 
@@ -93,7 +123,7 @@ nem no original executado.
 | objeto de colisão do sistema de pista (`c7e75c`, 9 partes) | `hostBlocks` | partes zeradas: o host não simula deformação de malha (PROVISIONAL) — zonas de canto 0–3 e 5 só mudam quando destruídas |
 | campo de série `car+0x596` | `V.setSeriesField` | PROVISIONAL = 1 (valor real do roster não recuperado; só habilita dano de colisão) |
 | `005547a0` (registro de replay), `00592dc0` (sincronização de dano), `00557650` (som), `005d08d0` (FFB), `005f58d0` (ponto de pista) | builtins do lift | sem pista/áudio/replay/FFB na bancada |
-| `00554d30` (estatísticas de FFB por tick, Stage 7 não portado) | — | só o bloco de FFB de `00554520` lê as saídas, desligado (`bf6ebb` = 0) |
+| `00554d30` (estatísticas de FFB por tick) | Stage 13: `NR2003CupFFB` (`V._ffbTick`) | portado no Stage 13; o bloco FFB de `00554520` é avaliado pelo `NR2003CupFFB` (a cópia erguida é saltada) |
 | eventos de teste `DamageTestImpact` / `PitTyresTest` | `CupChassisAdapter.stage11TestEvents` | só teste (a bancada não tem paredes nem pit) |
 
 ## Mapeado / pendente (fora do Stage 11)

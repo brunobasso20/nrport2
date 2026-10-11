@@ -1,0 +1,11 @@
+00550680  a0bb6ebf00             mov al, byte ptr [0xbf6ebb]  ; [bf6ebb] f32=0 u32=0
+00550685  84c0                   test al, al
+00550687  741d                   je 0x5506a6  ; [5506a6] f32=-5.70210259e-29 u32=909090c3
+00550689  e8a214fbff             call 0x501b30  ; [501b30] f32=-0.000115090283 u32=b8f15ca0
+0055068e  6a00                   push 0
+00550690  6a00                   push 0
+00550692  6860005500             push 0x550060  ; [550060] f32=-0.932565749 u32=bf6ebca1
+00550697  e804730a00             call 0x5f79a0  ; [5f79a0] f32=1.35884473e-39 u32=ecbe8
+0055069c  83c40c                 add esp, 0xc
+0055069f  c605bb6ebf0000         mov byte ptr [0xbf6ebb], 0  ; [bf6ebb] f32=0 u32=0
+005506a6  c3                     ret 

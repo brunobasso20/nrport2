@@ -1,3 +1,37 @@
+# 3.12.0-stage13 — Stage 13: torque de direção / force feedback original do NR2003 Cup
+
+- Base: Stage 12.1 publicado (3.11.1-stage12.1, `5d9f5ee`). Física, cadeia de direção e estágios 6/7–12.1
+  **inalterados**: o FFB é uma saída de apresentação (prova dinâmica: duas máquinas originais em passo, FFB ligado ×
+  desligado, só as células do FFB diferem).
+- Imagem do executável restaurada a partir do projeto Ghidra do OpenNR2003 (`TChapman500/OpenNR2003`) com
+  `ExportMemoryPy.py`; conferida contra `recovery/vehicle_core/00400000.bin` e as fixtures L1 do Stage 12 (byte a byte).
+- Novo `NR2003CupFFB` (portado à mão do x86, `recovery/stage13`): `00554d30` por tick (estatísticas dos pneus
+  dianteiros), bloco FFB do fim de quadro `00554520` (latência / amortecimento / força / item 0x30 cru → força constante
+  −1..1), `00550070` / `0054fed0` / `00550030` / `00550680`, setters das mensagens 8..11, camada de dispositivo (ADAPTER do
+  DirectInput: capacidade, aquisição, sink com `_ftol(força × 10000)`). Aritmética **x87 exata** (significando de 64 bits
+  arredondado para −∞ em cada operação; caminho rápido em double quando exato): o modelo double dos estágios anteriores
+  erra um bit em 197 de 26 568 chamadas reais do original.
+- `NR2003CupDriver`: `00554d30` no lugar original do `005539c0` (@00553a64); o ramo não dirigido do `005524f0` também com
+  `bf6eb8` (controles suspensos). `NR2003CupFrame` (+ `recovery/stage11/frame_host.luau`): o bloco FFB é avaliado logo após
+  o `00554520` erguido (a cópia erguida, modelo double, é saltada) e a colocação do carro roda `00550070(0)` (@00550b07).
+  `NR2003CupVehicle`: instala o módulo e a API (`setForceFeedbackOptions`, `setForceFeedbackDevice`,
+  `forceFeedbackState`, `setControlsSuspended`, `selectActiveControls`).
+- Achados: o FFB só lê estatísticas dos pneus dianteiros e o item 0x30 (sem o override de baixa velocidade); o efeito só
+  é adquirido com o controle 7 num eixo analógico; as opções só chegam pelo controls.cfg (`0043f1d0`, único chamador dos
+  remetentes); o clamp de 1500 do `00554d30` não pega NaN (correção do relatório do Stage 12).
+- Adaptador: atributos `ForceFeedback`, `ForceFeedbackStrength`, `ForceFeedbackDamping`, `ForceFeedbackLatency`,
+  `ForceFeedbackDevice`; sem piloto = `00550070(1)`; saída `FFBForce` / `FFBMagnitude` / `FFBActive` + telemetria `ffb`.
+  Cliente: linha `FFB` no painel e motor grande do gamepad com |força| (apresentação). `CupTune.driver`: FFB ligado com os
+  valores da imagem, dispositivo presente, `ffbRumble`.
+- Testes: suíte 13 40/40 (L1 bit a bit; L2 21 168 + 5 400 chamadas originais bit a bit; L3 32 reinícios do Stage 12; L4
+  7 cenários no envelope de 14 gêmeos com a sequência de chamadas ao dispositivo idêntica; L5 7 erros + modelo double
+  detectados), adaptador 77/77, `Stage13SelfTest` 11 (+1 completo), mock do `PATCH_STAGE13` 22/22, regressão 6/7–12 e
+  mocks dos patches inalterados. As entregas do Stage 12 e 12.1 continuam congeladas (refeitas byte a byte dos commits
+  publicados; `build_stage12_1.py` / `make_patch12_1_mock.py` agora leem `5d9f5ee`).
+- Entrega: `PATCH_STAGE13.lua` / `PART1..2` + `INSTALL` / `NR2003_Patch_Stage13.rbxmx` / `PATCH_STAGE13_ROLLBACK.lua`
+  (base Stage 12.1 conferida módulo a módulo, backup só dos 6 módulos alterados + marcadores dos 2 novos, fonte na mesma
+  instância, re-execução segura, reversão automática e manual verificada, nunca salva o place).
+
 # 3.11.1-stage12.1 — Stage 12.1: trava 360°, relação 12:1, momentum por dispositivo
 
 - Base: Stage 12 publicado (3.11.0-stage12, `b531e60`). A cadeia de direção original e todos os estágios anteriores

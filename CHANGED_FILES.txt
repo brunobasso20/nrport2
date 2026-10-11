@@ -1,3 +1,40 @@
+# Stage 13 (3.12.0-stage13) — arquivos novos/alterados em relação ao pacote Stage 12.1 (3.11.1-stage12.1)
+# (lista completa com sha256: MANIFEST.json; diferença: tools/stage13_changes.json)
+PATCH_STAGE13.lua                          (novo; Command Bar, sobre o Stage 12.1 publicado, arquivo único ~316 KB)
+PATCH_STAGE13_PART1..2.lua, PATCH_STAGE13_INSTALL.lua (novos; mesma instalação em partes para a Command Bar)
+PATCH_STAGE13_ROLLBACK.lua                 (novo; reversão verificada para o Stage 12.1 a partir do backup do patch)
+NR2003_Patch_Stage13.rbxmx                 (novo; Insert from File + require(workspace.NR2003_Patch_Stage13)())
+STAGE13_RECOVERY.md, STAGE13_FFB_STATE_MAP.md, STAGE13_VALIDATION.md, STAGE13_RESULT.md (novos: relatórios)
+core/NR2003Cup/NR2003CupFFB.lua            (novo: force feedback ORIGINAL portado à mão do x86, aritmética x87 exata)
+core/NR2003Cup/NR2003CupDriver.lua         (alterado: 00554d30 por tick em tickInputs; portão bf6eb8 no ramo não dirigido)
+core/NR2003Cup/NR2003CupFrame.lua          (alterado: bloco FFB original após o 00554520 erguido; 00550070(0) na colocação)
+core/NR2003CupVehicle.lua                  (alterado: instala NR2003CupFFB; API de force feedback / controles suspensos)
+core/CupTune.lua                           (alterado: CupTune.driver ffbEnabled / ffbStrength / ffbDamping / ffbLatency /
+                                            ffbDevice / ffbRumble = padrões da bancada)
+roblox/CupChassisAdapter.lua               (alterado: opções e dispositivo por atributo, piloto fora = controles suspensos,
+                                            atributos FFBForce / FFBMagnitude / FFBActive, telemetria ffb)
+roblox/Client.client.lua                   (alterado: linha FFB no painel T, motor grande do gamepad = |força|)
+roblox/Stage13SelfTest.lua                 (novo, gerado)
+recovery/stage11/frame_host.luau           (alterado: mesmas linhas do Stage 13 do NR2003CupFrame, para a suíte do Stage 11)
+tests/stage13/run.luau                     (novo: suíte do Stage 13, L1-L5 + comportamento)
+tests/stage13/fixtures/*.lua               (novos, do código original: units + 7 cenários)
+tests/stage13/patch13_mock.luau            (novo, gerado)
+tests/stage13/RESULTS_STAGE13.txt, REGRESSION_STAGE13.txt (novos: saídas da suíte e da regressão completa)
+tests/stage13/dev/*.luau                   (novos: diagnósticos)
+tests/stage67/adapter_mock.luau            (regenerado: checks do Stage 13 + Stage13SelfTest)
+recovery/stage13/**                        (novo: harness, cenários, geradores, fixtures JSON, prova sem realimentação,
+                                            listagens Capstone, README)
+tools/build_stage13.py, tools/selftest13_template.lua, tools/make_patch13_mock.py, tools/patch13_mock_tail.luau,
+tools/run_stage13_tests.sh, tools/run_stage13_tests.ps1, tools/update_manifest_stage13.py (novos)
+tools/build_stage12_1.py, tools/make_patch12_1_mock.py (alterados: entregas do Stage 12.1 congeladas no commit 5d9f5ee)
+tools/adapter_mock_body.luau, tools/make_adapter_mock.py (alterados: checks do Stage 13)
+tools/stage12_1_manifest_files.json, tools/stage13_changes.json (novos: base de comparação do manifesto)
+PORT_MAP.md, CORE_API.md, ROADMAP_STATUS.md, CHANGELOG.md, README_PT.md, VALIDACAO.md, MANIFEST.json,
+NEXT_PROMPT_STAGE14.txt, CHANGED_FILES.txt (alterados/novos: seção do Stage 13)
+Inalterados: física e direção dos Stages 6-12.1 (NR2003CupImage*, JIT*, Core, Aero, Setup*, Build*, Garage, Steering);
+roblox/Server.server.lua, DriverConfig.lua, Cockpit.lua, RenderSnapshot.lua, RenderPresentation.lua, VisualRig.lua;
+PATCH_STAGE6_7/8/9/10/11/12/12_1 (congelados).
+
 # Stage 12.1 (3.11.1-stage12.1) — arquivos novos/alterados em relação ao pacote Stage 12 (3.11.0-stage12)
 # (lista completa com sha256: MANIFEST.json; diferença: tools/stage12_1_changes.json)
 PATCH_STAGE12_1.lua                        (novo; Command Bar, sobre o Stage 12 publicado, arquivo único ~275 KB)
