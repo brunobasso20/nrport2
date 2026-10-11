@@ -1,5 +1,6 @@
-Continue from the Stage 12 package (3.11.0-stage12). Stages 1-12 are implemented; Stages 9, 10, 11 and 12 still need the
-manual Roblox Studio validation listed in VALIDACAO.md (Stage 12: 15 items) before Stage 13 starts.
+Continue from the Stage 12.1 package (3.11.1-stage12.1). Stages 1-12 are implemented; Stage 12 was validated in Roblox
+Studio by the user (2026-10-11); Stages 9, 10, 11 and the Stage 12.1 increment still need the manual Roblox Studio
+validation listed in VALIDACAO.md (Stage 12.1: 10 items) before Stage 13 starts.
 
 Facts to keep:
 - Mode NR2003_CUP runs the ORIGINAL NR2003 Cup vehicle core generated from NR2003.exe. Stage 6/7 image and callbacks,
@@ -13,6 +14,11 @@ Facts to keep:
   Ackermann, no bump steer, no steering rate (states 16 / 22 never written). Cockpit wheel = 005662d0
   clamp(-(ratio * car[0x1554]), +-2.79 rad). Steering mode "provisional" (controls.steer = road-wheel target) is used
   ONLY by the Stage 6-11 regression suites and self-tests (one line each).
+- Stage 12.1 host options (NOT original, documented in STAGE12_RESULT.md; nil / 360 = the original bit for bit):
+  lockDegrees (replaces only the x pi constant of the 00551e80 tail; 360 = pi), cockpitLimit ("original" 2.79 rad /
+  "lock"), momentumKeys / momentumAxis (momentum per input device through the original setter 005500c0 at each frame
+  start). Bench defaults in CupTune.driver: lock 360, garage setup ratio 12 (original garage pipeline), keys = image
+  rate 0.033, axis = momentum 0, cockpit wheel up to the lock. A future mouse steering enters as an axis (steerAxis).
 - Refused in production (errors): steering assistance > 0 (needs the track racing line) and the ARCADE driving mode
   (race settings bit 25: also selects car chassis spec 0 at build, 004233a0, not ported). The bit-25 branch itself is
   validated (setSteeringOptions(opts, true), scenario yawlimit).

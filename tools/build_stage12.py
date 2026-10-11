@@ -10,12 +10,16 @@ FNV-1a 32 hash of the shipped Stage 11 source, or of the Stage 12 source on a re
 changes (ServerStorage.NR2003Backup_Stage12, created once, never overwritten), updates sources IN PLACE (no folder is
 replaced, nothing is destroyed except on rollback of modules this patch added), edits the large Stage 6-11 self-tests by
 one anchored line instead of re-shipping them, runs the self-tests, and reverts by itself on any failure. It never
-saves the place."""
+saves the place.
+Since Stage 12.1 the Stage 12 deliverables are FROZEN: every source this builder ships (and the Stage 12 self-test) is
+read from the published Stage 12 commit STAGE12_COMMIT, so a rebuild reproduces the published files byte for byte and
+the working tree's newer sources are shipped by tools/build_stage12_1.py (incremental 12 -> 12.1 patch)."""
 import json, hashlib, subprocess, re
 from pathlib import Path
 from xml.sax.saxutils import escape
 root = Path(__file__).resolve().parents[1]
 BASE_COMMIT = '626eabe'            # Stage 11 baseline import (3.10.0-stage11)
+STAGE12_COMMIT = 'b531e60'         # published Stage 12 (3.11.0-stage12): the sources this builder ships, frozen
 VERSION = '3.11.0-stage12'
 
 
@@ -41,6 +45,7 @@ def lua_value(v):
 def read(p): return p.read_text(encoding='utf-8')
 def write(p, s): p.write_text(s, encoding='utf-8', newline='\n')
 def base(path): return subprocess.run(['git', 'show', '%s:%s' % (BASE_COMMIT, path)], cwd=root, capture_output=True, check=True).stdout.decode('utf-8')
+def published(path): return subprocess.run(['git', 'show', '%s:%s' % (STAGE12_COMMIT, path)], cwd=root, capture_output=True, check=True).stdout.decode('utf-8')
 
 
 def fnv(s):
@@ -50,32 +55,9 @@ def fnv(s):
     return h
 
 
-# ------------------------------------------------------------------ self-test golden subset
-def golden():
-    js = root / 'recovery/stage12/fixtures_json'
-    U = json.loads(read(js / 'units.json'))
-    g = {}
-    g['axis'] = U['axis'][::12]                         # 100 of 1200
-    g['input'] = U['input'][::16]                       # 242 of 3872
-    g['ratio'] = U['ratio']                             # 192
-    g['tail'] = U['tail'][::12]                         # 175 of 2100
-    g['linUI'] = U['setters']['linUI']
-    g['momentum'] = U['setters']['momentum']
-    scen = []
-    for name, quick in (('keys', 4), ('linear', 4), ('ratio32', 4)):
-        d = json.loads(read(js / ('%s.json' % name)))
-        starts = d['start']
-        pick = [starts[i] for i in range(0, len(starts), max(1, len(starts) // 16))][:16]
-        scen.append(dict(name=name, steer=d['law'].get('steer'), ratio=d['law'].get('ratio'), quick=quick,
-                         start=[dict(frame=s['frame'], beforeRuns=s['beforeRuns'], before=s['before'], afterRuns=s['afterRuns'],
-                                     after=s['after'], controls=s['controls']) for s in pick]))
-    g['scenarios'] = scen
-    return lua_value(g)
-
-
-template = read(root / 'tools/selftest12_template.lua')
-selftest = template.replace('__GOLDEN__', golden())
-write(root / 'roblox/Stage12SelfTest.lua', selftest)
+# ------------------------------------------------------------------ self-test (published Stage 12; its generator is now
+# tools/build_stage12_1.py, which writes roblox/Stage12SelfTest.lua with the Stage 12.1 checks)
+selftest = published('roblox/Stage12SelfTest.lua')
 
 # ------------------------------------------------------------------ what the patch changes
 C = root / 'core/NR2003Cup'
@@ -100,7 +82,7 @@ EDITS = []
 for name, path in (('Stage67SelfTest', 'roblox/Stage67SelfTest.lua'), ('Stage8SelfTest', 'roblox/Stage8SelfTest.lua'),
                    ('Stage9SelfTest', 'roblox/Stage9SelfTest.lua'), ('Stage10SelfTest', 'roblox/Stage10SelfTest.lua'),
                    ('Stage11SelfTest', 'roblox/Stage11SelfTest.lua')):
-    old, new = base(path), read(root / path)
+    old, new = base(path), published(path)
     # the single changed line: find it
     ol, nl = old.split('\n'), new.split('\n')
     assert len(ol) == len(nl), path
@@ -110,11 +92,11 @@ for name, path in (('Stage67SelfTest', 'roblox/Stage67SelfTest.lua'), ('Stage8Se
 
 items = []
 for folder, name, path in REPLACE:
-    old, new = base(path), read(root / path)
+    old, new = base(path), published(path)
     items.append(dict(folder=folder, name=name, source=new, oldLen=len(old.encode()), oldHash=fnv(old),
                       newLen=len(new.encode()), newHash=fnv(new)))
 for folder, name, path in ADD:
-    new = selftest if path is None else read(root / path)
+    new = selftest if path is None else published(path)
     items.append(dict(folder=folder, name=name, source=new, oldLen=None, oldHash=None, newLen=len(new.encode()), newHash=fnv(new)))
 for it in items:
     assert len(it['source']) < 199000, '%s.%s is %d characters (Script.Source limit 200000)' % (it['folder'], it['name'], len(it['source']))

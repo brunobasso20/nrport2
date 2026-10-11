@@ -5,7 +5,8 @@
 -- What it checks (subset of tests/stage12/run.luau): the ORIGINAL steering functions vector by vector (00552d00,
 -- 00552720, 00554fb0, the 00551e80 tail, the option setters), frame starts loaded from the original's traced state
 -- compared bit for bit, full lock at rest (pi / 7 with the low-speed override), options / garage ratio survive reset,
--- steering assistance refused, the provisional mode kept for the Stage 6-11 suites only.
+-- steering assistance refused, the provisional mode kept for the Stage 6-11 suites only; Stage 12.1 host options (lock
+-- 360 = the original bit for bit, lock 540, cockpit draw limit "lock", momentum 0 for an axis, range refusals).
 local Core=script.Parent.Parent.Core
 local Vehicle=require(Core.NR2003CupVehicle)
 local G=__GOLDEN__
@@ -157,6 +158,31 @@ function M.run(full)
     check("steering assistance > 0 refused (needs the NR2003 track racing line)",not pcall(V.setSteeringOptions,{assist=50}))
     check("arcade driving mode (race bit 25: also chassis spec 0 at build, 004233a0) refused",not pcall(V.setSteeringOptions,{yawLimiter=true})
         and V.steeringOptions().drivingMode=="simulation")
+    -- Stage 12.1 host options (NOT original; nil / 360 = the original): steering lock, cockpit draw limit, momentum per device
+    do
+        local function fullLeft(opts)
+            V.clearSteeringOptions();V.reset()
+            if opts then V.setSteeringOptions(opts) end
+            for _=1,8*60 do V.drive({throttle=0,clutch=1,steerAxis=-1},FLAT) end
+            return V.steeringState(),V.steeringOptions()
+        end
+        local a=fullLeft(nil)
+        local b,ob=fullLeft({lockDegrees=360})
+        check("12.1: lock 360 deg (180 per side) = the original x pi: identical target, hubs and cockpit angle",
+            a.target==b.target and a.hubLF==b.hubLF and a.hubRF==b.hubRF and a.wheelAngle==b.wheelAngle and ob.lockDegrees==360)
+        local c=fullLeft({cockpitLimit="lock",momentumAxis=0})
+        check("12.1: cockpit limit 'lock' = -180 deg at full left (original draw limit 160 deg); axis momentum 0 = rate 1, same target",
+            c.target==a.target and math.abs(c.wheelAngle+math.pi)<2e-5 and rf32(0x74c990)==1,
+            string.format("wheel %.1f deg, rate %.4f",math.deg(c.wheelAngle),rf32(0x74c990)))
+        local d=fullLeft({lockDegrees=540,cockpitLimit="lock"})
+        local k540=fb(bits(math.rad(270)))
+        check("12.1: lock 540 deg: full input -> target f32(3 pi / 2) / 7 at rest (same 00551e80 tail, other constant)",
+            d.target==fd(k540/7) and math.abs(d.wheelAngle+k540)<2e-5,string.format("target %.6f",d.target))
+        check("12.1: out-of-range host options refused (lock 0, keys momentum 101, cockpit limit 'x')",
+            not pcall(V.setSteeringOptions,{lockDegrees=0}) and not pcall(V.setSteeringOptions,{momentumKeys=101})
+            and not pcall(V.setSteeringOptions,{cockpitLimit="x"}))
+        V.clearSteeringOptions();V.reset()
+    end
     if full then
         local function run(n,k0)
             local out={}

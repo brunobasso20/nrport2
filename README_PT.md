@@ -1,4 +1,45 @@
-# OpenNR2003 para Roblox — Stage 12 (cadeia de direção original)
+# OpenNR2003 para Roblox — Stage 12.1 (direção original: trava 360°, relação 12:1, momentum por dispositivo)
+
+## Aplicar o Stage 12.1 sobre o Stage 12
+
+1. Studio, **fora do Play**, na **Command Bar**, sobre a bancada **Stage 12 publicada** (se ainda estiver no Stage 11,
+   aplique antes o `PATCH_STAGE12.lua`, seção abaixo) — escolha UMA das formas:
+   - **Um arquivo**: `PATCH_STAGE12_1.lua` (~275 KB) inteiro na Command Bar, Enter.
+   - **Em partes**: `PATCH_STAGE12_1_PART1.lua`, `PATCH_STAGE12_1_PART2.lua` (guardam as fontes em
+     `ServerStorage.NR2003Stage12_1Staging`) e por fim `PATCH_STAGE12_1_INSTALL.lua`.
+   - **Arquivo de modelo**: *Insert from File* → `NR2003_Patch_Stage12_1.rbxmx`; na Command Bar
+     `require(workspace.NR2003_Patch_Stage12_1)()` e apague o ModuleScript inserido.
+2. O instalador confere o Stage 12 **módulo por módulo** (tamanho + hash da fonte publicada; recusa base diferente ou
+   módulo editado localmente — forçar só com `_G.NR2003_PATCH12_1_FORCE = true`), faz backup **só** dos 5 módulos que
+   muda em `ServerStorage.NR2003Backup_Stage12_1` (criado uma vez), atualiza a fonte **na mesma instância**
+   (`Core.NR2003Cup.NR2003CupSteering`, `Core.CupTune`, `Roblox.CupChassisAdapter`, `Roblox.Stage12SelfTest`,
+   `NR2003Client`; nada é criado nem apagado), roda os auto-testes 6/7..12 e **reverte tudo** se algo falhar.
+   Re-executar é seguro. **O place não é salvo**: salve você mesmo. Reverter: `PATCH_STAGE12_1_ROLLBACK.lua` (volta ao
+   Stage 12; para ir ao Stage 11, depois rode `PATCH_STAGE12_ROLLBACK.lua`).
+3. Output esperado: auto-testes 6/7..11, `[NR2003 Stage 12 self-test] 17 passed, 0 failed (… s)` e `Stage 12.1 aplicado`.
+4. Padrões da bancada (`Core.CupTune.driver`, os atributos do `TestCar` mandam, valem no reset **R**):
+
+| O quê | Padrão | Atributo | Original? |
+|---|---|---|---|
+| Trava do volante | **360°** (180° por lado) | `SteeringLockDegrees` | 360 = a constante π da cauda de `00551e80` (o NR2003 já é 360° com qualquer relação); outro valor = extensão |
+| Relação do setup (item 0x30) | **12:1** | `Setup_steeringRatio` (12..32) | sim: garagem original (o setup do Cup vem com 18); 7:1 abaixo de 32 km/h pelo override original (`SteeringLowSpeedOverride`) |
+| Momentum das teclas A/D | taxa da imagem **0,033/quadro** + seno (suave) | `SteeringMomentumKeys` (0..100; **0 = 0 → 100 % instantâneo, como no NR2003 com controls.cfg**) | valores do executável; troca por dispositivo = extensão |
+| Momentum do eixo (gamepad / mouse) | **0** (direto, sem rampa e sem seno) | `SteeringMomentumAxis` (0..100) | idem |
+| Limite do volante desenhado | **a trava** (±180°) | `CockpitWheelClamp` = `"lock"` / `"original"` (±160°, `005662d0`) | `"original"` = original |
+
+5. Painel **T**, linha `DIREÇÃO (+ = dir.)`: todos os ângulos com + = direita (alvo, cubos, rodas e volante). Parado com
+   **A** a fundo: `entrada -1.000  relação 7.0:1  alvo -25.71°  cubos -25.59/-25.84°  rodas ≈ -25.4°  volante -180°`;
+   acima de 64 km/h: alvo **-15.00°** (π/12), relação 12.0:1, volante -180°.
+
+Por que as teclas são suaves se no NR2003 elas vão de 0 a 100 %: as duas coisas são o NR2003. Sem controls.cfg o
+executável usa a taxa da sua imagem (0,033 por quadro + seno); quem salva os controles no menu grava momentum 0, e aí a
+entrada pula de 0 a 100 % num quadro. A física depois da entrada é a mesma cadeia original nos dois casos — muda só o
+tempo que a entrada leva para chegar. A bancada deixa as teclas suaves e o eixo direto (o futuro volante por mouse entra
+como eixo, como o gamepad); para jogar como o NR2003 com controls.cfg: `SteeringMomentumKeys = 0`.
+
+---
+
+# Histórico — Stage 12 (cadeia de direção original)
 
 ## Aplicar o Stage 12 sobre o Stage 11
 

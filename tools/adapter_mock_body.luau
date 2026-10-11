@@ -379,8 +379,9 @@ if ctl.core.V.applySetup then
 	for f = 1, 60 do ctl:step(dt, input) end
 	check("stage 10: car runs on the rebuilt setup (no fault, loads positive)", ctl.fault == nil and ctl:telemetry().wheels ~= nil, tostring(ctl.fault))
 	car:SetAttribute("Setup_springLF", nil); car:SetAttribute("Setup_camberLF", nil); car:SetAttribute("Setup_trackBarRR", nil)
+	car:SetAttribute("Setup_steeringRatio", 18) -- Stage 12.1: the bench default ratio is 12; 18 = the shipped Cup setup
 	ctl:reset()
-	check("stage 10: attributes removed -> shipped default image (structure 'image')", car:GetAttribute("SetupStructure") == "image"
+	check("stage 10: attributes removed (shipped steering ratio 18) -> shipped default image (structure 'image')", car:GetAttribute("SetupStructure") == "image"
 		and ctl.core.V.setupStructure() == "image")
 end
 -- ===== Stage 11: ORIGINAL per-frame runtime (fuel, thermal, wear, damage) through the adapter =====
@@ -442,14 +443,17 @@ end
 -- ===== Stage 12: ORIGINAL steering chain through the adapter (device layer -> core 00552720 / 00554fb0 / 005539c0) =====
 if ctl.core.V.steeringState then
 	local RS = mockRequire({ref = "Roblox.RenderSnapshot"})
-	local S12KEYS = {"SteeringLinearity", "SteeringMomentum", "SteeringLowSpeedOverride", "Setup_steeringRatio"}
+	local S12KEYS = {"SteeringLinearity", "SteeringMomentum", "SteeringLowSpeedOverride", "Setup_steeringRatio", "SteeringLockDegrees",
+		"SteeringMomentumKeys", "SteeringMomentumAxis", "CockpitWheelClamp"}
 	for _, k in ipairs(S12KEYS) do car:SetAttribute(k, nil) end
 	ctl:reset()
 	local s0 = ctl:telemetry().steering
-	check("stage 12: reset applies the original steering defaults (mode original, setup ratio 18:1 item 0x30, linearity 0, rate 0.033 / frame, cockpit angle flag)",
-		s0 ~= nil and s0.mode == "original" and car:GetAttribute("SteeringRatioApplied") == 18 and car:GetAttribute("SteeringLinearityApplied") == 0
+	check("stage 12.1: reset applies the bench defaults (setup ratio 12:1 through the ORIGINAL garage build, lock 360 deg = original x pi, linearity 0, keys rate 0.033 / frame, cockpit angle flag)",
+		s0 ~= nil and s0.mode == "original" and car:GetAttribute("SteeringRatioApplied") == 12 and car:GetAttribute("SetupStructure") == "natural"
+		and car:GetAttribute("SteeringLockApplied") == 360 and car:GetAttribute("SteeringLinearityApplied") == 0
 		and math.abs(car:GetAttribute("SteeringRateApplied") - 0.033) < 1e-6 and car:GetAttribute("CockpitWheelAngle") == true,
-		s0 and string.format("%s ratio %s linearity %s rate %s", s0.mode, tostring(car:GetAttribute("SteeringRatioApplied")),
+		s0 and string.format("%s ratio %s (%s) lock %s linearity %s rate %s", s0.mode, tostring(car:GetAttribute("SteeringRatioApplied")),
+			tostring(car:GetAttribute("SetupStructure")), tostring(car:GetAttribute("SteeringLockApplied")),
 			tostring(car:GetAttribute("SteeringLinearityApplied")), tostring(car:GetAttribute("SteeringRateApplied"))) or "no steering telemetry")
 	-- analog axis full left at rest (gamepad / wheel): both controls bound to one axis, 7:1 override -> pi / 7
 	input = {throttle = 0, brake = 0, handbrake = 0, clutch = 0, steerAnalog = true, steerAxis = -1}
@@ -457,8 +461,10 @@ if ctl.core.V.steeringState then
 	local s1 = ctl:telemetry().steering
 	local snap = ctl:renderSnapshot(1, 0, 1)
 	local okEnc, dec = pcall(function() return RS.decode(RS.encode(snap)) end)
-	check("stage 12: analog axis -1 at rest -> road-wheel target pi / 7 (18:1 -> 7:1 below 8.94 m/s), cockpit wheel -2.79 rad (005662d0 clamp) in Cockpit + render snapshot",
-		math.abs(s1.target - math.pi / 7) < 1e-6 and s1.ratioNow == 7 and not s1.digital and math.abs(s1.wheelAngle + 2.79) < 1e-6
+	local rateAxis = ctl.core.V.steeringOptions().steerRate
+	check("stage 12.1: analog axis -1 at rest -> road-wheel target pi / 7 (12:1 -> 7:1 below 8.94 m/s), axis momentum 0 (rate 1), cockpit wheel -180 deg (full lock) in Cockpit + render snapshot",
+		math.abs(s1.target - math.pi / 7) < 1e-6 and s1.ratioNow == 7 and not s1.digital and math.abs(s1.wheelAngle + math.pi) < 2e-5
+		and rateAxis == 1
 		and _G_lastWheelAngle == s1.wheelAngle and snap.steer == s1.wheelAngle and RS.hasFlag(snap.flags, RS.FLAG_WHEEL_ANGLE)
 		and okEnc and math.abs(dec.steer - s1.wheelAngle) < 1e-3,
 		string.format("target %.6f ratio %.3f wheel %.4f (cockpit %s, snapshot %.4f) digital %s", s1.target, s1.ratioNow, s1.wheelAngle,
@@ -476,8 +482,10 @@ if ctl.core.V.steeringState then
 	input = {throttle = 0, brake = 0, handbrake = 0, clutch = 0, steerLeft = 0, steerRight = 1}
 	for f = 1, 120 do ctl:step(dt, input) end
 	local s2 = ctl:telemetry().steering
-	check("stage 12: steer-right key -> digital control 8 = 1.0 -> road-wheel target -pi / 7 at rest", s2.digital and s2.right == 1 and s2.left == 0
-		and math.abs(s2.target + math.pi / 7) < 1e-6, string.format("target %.6f right %s digital %s", s2.target, tostring(s2.right), tostring(s2.digital)))
+	local rateKeys = ctl.core.V.steeringOptions().steerRate
+	check("stage 12.1: steer-right key -> digital control 8 = 1.0 -> road-wheel target -pi / 7 at rest; keys use the image rate 0.033 (smooth)",
+		s2.digital and s2.right == 1 and s2.left == 0 and math.abs(s2.target + math.pi / 7) < 1e-6 and math.abs(rateKeys - 0.033) < 1e-6,
+		string.format("target %.6f right %s digital %s rate %.4f", s2.target, tostring(s2.right), tostring(s2.digital), rateKeys))
 	-- legacy client (input.steer only) = keys
 	input = {throttle = 0, brake = 0, handbrake = 0, clutch = 0, steer = -1}
 	for f = 1, 120 do ctl:step(dt, input) end
@@ -500,11 +508,22 @@ if ctl.core.V.steeringState then
 		string.format("linearity %s rate %s ratio %s target %.6f (pi * 0.5^1.8 / 25 = %.6f)", tostring(car:GetAttribute("SteeringLinearityApplied")),
 			tostring(car:GetAttribute("SteeringRateApplied")), tostring(car:GetAttribute("SteeringRatioApplied")), s4.target, want))
 	check("stage 12: no physics fault", ctl.fault == nil, tostring(ctl.fault))
+	-- Stage 12.1 attributes: lock 540, original cockpit limit, axis momentum 40
+	for _, k in ipairs(S12KEYS) do car:SetAttribute(k, nil) end
+	car:SetAttribute("SteeringLockDegrees", 540); car:SetAttribute("CockpitWheelClamp", "original"); car:SetAttribute("SteeringMomentumAxis", 0)
+	ctl:reset()
+	input = {throttle = 0, brake = 0, handbrake = 0, clutch = 0, steerAnalog = true, steerAxis = -1}
+	for f = 1, 60 do ctl:step(dt, input) end
+	local s6 = ctl:telemetry().steering
+	local f = buffer.create(4); buffer.writef32(f, 0, math.rad(270)); local k540 = buffer.readf32(f, 0)
+	check("stage 12.1: SteeringLockDegrees=540 -> full input target = f32(3 pi / 2) / 7 at rest; CockpitWheelClamp='original' -> 005662d0 limit -2.79 rad",
+		math.abs(s6.target - k540 / 7) < 1e-6 and math.abs(s6.wheelAngle + 2.79) < 1e-6 and car:GetAttribute("SteeringLockApplied") == 540,
+		string.format("target %.6f (want %.6f) wheel %.4f", s6.target, k540 / 7, s6.wheelAngle))
 	for _, k in ipairs(S12KEYS) do car:SetAttribute(k, nil) end
 	ctl:reset()
 	local o5 = ctl.core.V.steeringOptions()
-	check("stage 12: attributes removed -> original defaults again (linearity 0, rate 0.033, override on, ratio 18)", o5.linearity == 0
-		and math.abs(o5.steerRate - 0.033) < 1e-6 and o5.lowSpeedOverride and o5.setupRatio == 18)
+	check("stage 12.1: attributes removed -> bench defaults again (linearity 0, rate 0.033, override on, ratio 12, lock 360)", o5.linearity == 0
+		and math.abs(o5.steerRate - 0.033) < 1e-6 and o5.lowSpeedOverride and o5.setupRatio == 12 and o5.lockDegrees == 360)
 	input = {throttle = 0, brake = 0, steer = 0, handbrake = 0, clutch = 0}
 end
 -- the Studio self-test modules themselves (quick mode), as the patches run them after installing
