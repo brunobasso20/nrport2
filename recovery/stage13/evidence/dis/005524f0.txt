@@ -1,0 +1,55 @@
+005524f0  51                     push ecx
+005524f1  53                     push ebx
+005524f2  56                     push esi
+005524f3  e8582a0000             call 0x554f50  ; [554f50] f32=8.35295118e-33 u32=a2d7be8
+005524f8  d95c2408               fstp dword ptr [esp + 8]
+005524fc  e8ff850000             call 0x55ab00  ; [55ab00] f32=-3.64298272 u32=c06926a1
+00552501  50                     push eax
+00552502  e8690a0100             call 0x562f70  ; [562f70] f32=1.93132542e-36 u32=4244c8b
+00552507  d944240c               fld dword ptr [esp + 0xc]
+0055250b  d81d98e56e00           fcomp dword ptr [0x6ee598]  ; [6ee598] f32=2.5 u32=40200000
+00552511  8bf0                   mov esi, eax
+00552513  83c404                 add esp, 4
+00552516  33db                   xor ebx, ebx
+00552518  dfe0                   fnstsw ax
+0055251a  f6c405                 test ah, 5
+0055251d  7b1c                   jnp 0x55253b  ; [55253b] f32=1.18011864e-38 u32=8080e8
+0055251f  e8ec800000             call 0x55a610  ; [55a610] f32=-3.65379143 u32=c069d7b8
+00552524  39700c                 cmp dword ptr [eax + 0xc], esi
+00552527  740c                   je 0x552535  ; [552535] f32=4.70774273e+28 u32=6f181d89
+00552529  e8e2800000             call 0x55a610  ; [55a610] f32=-3.65379143 u32=c069d7b8
+0055252e  8bc8                   mov ecx, eax
+00552530  e8cb680100             call 0x568e00  ; [568e00] f32=5.06949651e-37 u32=32c818b
+00552535  891d186fbf00           mov dword ptr [0xbf6f18], ebx  ; [bf6f18] f32=0 u32=0
+0055253b  e880800000             call 0x55a5c0  ; [55a5c0] f32=-3.62235284 u32=c067d4a1
+00552540  83f803                 cmp eax, 3
+00552543  0f8551010000           jne 0x55269a  ; [55269a] f32=7.37953023e+21 u32=63c805c7
+00552549  381db86ebf00           cmp byte ptr [0xbf6eb8], bl  ; [bf6eb8] f32=0 u32=0
+0055254f  0f8545010000           jne 0x55269a  ; [55269a] f32=7.37953023e+21 u32=63c805c7
+00552555  e8b6800000             call 0x55a610  ; [55a610] f32=-3.65379143 u32=c069d7b8
+0055255a  39700c                 cmp dword ptr [eax + 0xc], esi
+0055255d  0f8537010000           jne 0x55269a  ; [55269a] f32=7.37953023e+21 u32=63c805c7
+00552563  6a03                   push 3
+00552565  e8d6890200             call 0x57af40  ; [57af40] f32=1.93095807e-36 u32=424448b
+0055256a  83c404                 add esp, 4
+0055256d  84c0                   test al, al
+0055256f  7409                   je 0x55257a  ; [55257a] f32=5.63615951e+28 u32=6f361d38
+00552571  c605366fbf0001         mov byte ptr [0xbf6f36], 1  ; [bf6f36] f32=0 u32=0
+00552578  eb1a                   jmp 0x552594  ; [552594] f32=2.86450251e+28 u32=6eb91d38
+0055257a  381d366fbf00           cmp byte ptr [0xbf6f36], bl  ; [bf6f36] f32=0 u32=0
+00552580  740c                   je 0x55258e  ; [55258e] f32=5.63619729e+28 u32=6f361d88
+00552582  8b8608150000           mov eax, dword ptr [esi + 0x1508]
+00552588  898618150000           mov dword ptr [esi + 0x1518], eax
+0055258e  881d366fbf00           mov byte ptr [0xbf6f36], bl  ; [bf6f36] f32=0 u32=0
+00552594  381db96ebf00           cmp byte ptr [0xbf6eb9], bl  ; [bf6eb9] f32=0 u32=0
+0055259a  7416                   je 0x5525b2  ; [5525b2] f32=9.90785277e-40 u32=ac9e8
+0055259c  c705ac6ebf000000803f   mov dword ptr [0xbf6eac], 0x3f800000  ; [bf6eac] f32=0 u32=0
+005525a6  c705b06ebf0000000000   mov dword ptr [0xbf6eb0], 0  ; [bf6eb0] f32=0 u32=0
+005525b0  eb16                   jmp 0x5525c8  ; [5525c8] f32=1.21935387e-40 u32=153e8
+005525b2  e8c90a0000             call 0x553080  ; [553080] f32=-4.04939318 u32=c08194a1
+005525b7  d91dac6ebf00           fstp dword ptr [0xbf6eac]  ; [bf6eac] f32=0 u32=0
+005525bd  e82e0f0000             call 0x5534f0  ; [5534f0] f32=nan u32=ffef0be8
+005525c2  d91db06ebf00           fstp dword ptr [0xbf6eb0]  ; [bf6eb0] f32=0 u32=0
+005525c8  e853010000             call 0x552720  ; [552720] f32=-3.79534467e+24 u32=e848ec83
+005525cd  d91dc863bf00           fstp dword ptr [0xbf63c8]  ; [bf63c8] f32=0 u32=0
+005525d3  e818080000             call 0x552df0  ; [552df0] f32=4.50094791e+25 u32=6a14ec83

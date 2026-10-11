@@ -1,0 +1,35 @@
+0043f4f0  8900                   mov dword ptr [eax], eax
+0043f4f2  890d204e8900           mov dword ptr [0x894e20], ecx  ; [894e20] f32=0 u32=0
+0043f4f8  d91c24                 fstp dword ptr [esp]
+0043f4fb  e8b01a1300             call 0x570fb0  ; [570fb0] f32=-32074.2031 u32=c6fa9468
+0043f500  a0754d8900             mov al, byte ptr [0x894d75]  ; [894d75] f32=0 u32=0
+0043f505  50                     push eax
+0043f506  a2f4c57200             mov byte ptr [0x72c5f4], al  ; [72c5f4] f32=1.40129846e-45 u32=1
+0043f50b  e8d01a1300             call 0x570fe0  ; [570fe0] f32=-23194.2031 u32=c6b53468
+0043f510  a0484d8900             mov al, byte ptr [0x894d48]  ; [894d48] f32=0 u32=0
+0043f515  50                     push eax
+0043f516  a2244e8900             mov byte ptr [0x894e24], al  ; [894e24] f32=0 u32=0
+0043f51b  e8f01a1300             call 0x571010  ; [571010] f32=-31642.2031 u32=c6f73468
+0043f520  a0804d8900             mov al, byte ptr [0x894d80]  ; [894d80] f32=0 u32=0
+0043f525  50                     push eax
+0043f526  a2494d8900             mov byte ptr [0x894d49], al  ; [894d49] f32=0 u32=0
+0043f52b  e8d0181300             call 0x570e00  ; [570e00] f32=-31622.2031 u32=c6f70c68
+0043f530  db05e04d8900           fild dword ptr [0x894de0]  ; [894de0] f32=0 u32=0
+0043f536  8b15e04d8900           mov edx, dword ptr [0x894de0]  ; [894de0] f32=0 u32=0
+0043f53c  83c40c                 add esp, 0xc
+0043f53f  8915ecc57200           mov dword ptr [0x72c5ec], edx  ; [72c5ec] f32=7.00649232e-44 u32=32
+0043f545  d91c24                 fstp dword ptr [esp]
+0043f548  e8e3181300             call 0x570e30  ; [570e30] f32=-18646.2031 u32=c691ac68
+0043f54d  db05ac4d8900           fild dword ptr [0x894dac]  ; [894dac] f32=0 u32=0
+0043f553  a1ac4d8900             mov eax, dword ptr [0x894dac]  ; [894dac] f32=0 u32=0
+0043f558  a3104e8900             mov dword ptr [0x894e10], eax  ; [894e10] f32=0 u32=0
+0043f55d  d91c24                 fstp dword ptr [esp]
+0043f560  e8fb181300             call 0x570e60  ; [570e60] f32=-18458.2031 u32=c6903468
+0043f565  db05784d8900           fild dword ptr [0x894d78]  ; [894d78] f32=0 u32=0
+0043f56b  8b0d784d8900           mov ecx, dword ptr [0x894d78]  ; [894d78] f32=0 u32=0
+0043f571  890d144e8900           mov dword ptr [0x894e14], ecx  ; [894e14] f32=0 u32=0
+0043f577  d91c24                 fstp dword ptr [esp]
+0043f57a  e811191300             call 0x570e90  ; [570e90] f32=-20998.2031 u32=c6a40c68
+0043f57f  8b15444d8900           mov edx, dword ptr [0x894d44]  ; [894d44] f32=0 u32=0
+0043f585  be01000000             mov esi, 1
+0043f58a  8915f8c57200           mov dword ptr [0x72c5f8], edx  ; [72c5f8] f32=1.40129846e-45 u32=1

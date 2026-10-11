@@ -1,0 +1,17 @@
+00550070  53                     push ebx
+00550071  8a5c2408               mov bl, byte ptr [esp + 8]
+00550075  84db                   test bl, bl
+00550077  7505                   jne 0x55007e  ; [55007e] f32=-0.93255043 u32=bf6ebba0
+00550079  e852feffff             call 0x54fed0  ; [54fed0] f32=-4.8355902e-31 u32=8d1cec83
+0055007e  a0bb6ebf00             mov al, byte ptr [0xbf6ebb]  ; [bf6ebb] f32=0 u32=0
+00550083  84c0                   test al, al
+00550085  7410                   je 0x550097  ; [550097] f32=2.84904714e+28 u32=6eb81d88
+00550087  84db                   test bl, bl
+00550089  740c                   je 0x550097  ; [550097] f32=2.84904714e+28 u32=6eb81d88
+0055008b  6a00                   push 0
+0055008d  6a00                   push 0
+0055008f  e89cffffff             call 0x550030  ; [550030] f32=-0.932565749 u32=bf6ebca1
+00550094  83c408                 add esp, 8
+00550097  881db86ebf00           mov byte ptr [0xbf6eb8], bl  ; [bf6eb8] f32=0 u32=0
+0055009d  5b                     pop ebx
+0055009e  c3                     ret 

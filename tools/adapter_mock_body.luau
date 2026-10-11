@@ -526,6 +526,55 @@ if ctl.core.V.steeringState then
 		and math.abs(o5.steerRate - 0.033) < 1e-6 and o5.lowSpeedOverride and o5.setupRatio == 12 and o5.lockDegrees == 360)
 	input = {throttle = 0, brake = 0, steer = 0, handbrake = 0, clutch = 0}
 end
+-- Stage 13: ORIGINAL force feedback through the adapter (bench defaults: FF on with the image values, device present)
+if ctl.core.V.setForceFeedbackOptions then
+	local FFKEYS = {"ForceFeedback", "ForceFeedbackStrength", "ForceFeedbackDamping", "ForceFeedbackLatency", "ForceFeedbackDevice"}
+	ctl:reset()
+	local fo = ctl.core.V.forceFeedbackOptions()
+	check("stage 13: reset applies the bench defaults (FF on, strength 80, damping 0, latency 0 = image values; ForceFeedbackApplied)",
+		fo.enabled and fo.strength == 80 and fo.damping == 0 and fo.latency == 0 and car:GetAttribute("ForceFeedbackApplied") == true)
+	input = {throttle = 1, brake = 0, handbrake = 0, clutch = 0, steerLeft = 0, steerRight = 0}
+	for f = 1, 90 do ctl:step(dt, input) end
+	local t1 = ctl:telemetry().ffb
+	check("stage 13: keys -> effect never acquired (0054fed0 needs an analog axis): FFBActive false, FFBForce 0",
+		t1 ~= nil and not t1.acquired and car:GetAttribute("FFBActive") == false and car:GetAttribute("FFBForce") == 0)
+	input = {throttle = 1, brake = 0, handbrake = 0, clutch = 0, steerAnalog = true, steerAxis = 0.05}
+	for f = 1, 300 do ctl:step(dt, input); if f == 20 or f == 120 then ctl:shift(1) end end
+	local t2 = ctl:telemetry().ffb
+	local fF, fM = car:GetAttribute("FFBForce"), car:GetAttribute("FFBMagnitude")
+	check("stage 13: analog axis -> acquired (0054fed0), FFBActive, FFBForce = the original constant force sent to the device (= core state, |force| <= 1), FFBMagnitude = trunc(force x 10000)",
+		t2.acquired and t2.effect and car:GetAttribute("FFBActive") == true and type(fF) == "number" and fF ~= 0 and math.abs(fF) <= 1
+		and fF == t2.force and fM == (fF >= 0 and math.floor(fF * 10000) or -math.floor(-fF * 10000)),
+		string.format("force %.4f magnitude %s slip %.5f moment %.2f speed %.1f km/h", fF or 0, tostring(fM), t2.slip, t2.moment, ctl:telemetry().speed))
+	local realDriver13 = ctl.access.driver
+	ctl.access.driver = function() return nil end
+	for f = 1, 30 do ctl:step(dt, input) end
+	local t3 = ctl:telemetry().ffb
+	check("stage 13: no driver seated -> ORIGINAL 00550070(1): controls suspended, FFBActive false, force 0 (005524f0 not-driven branch)",
+		t3.suspended and car:GetAttribute("FFBActive") == false and car:GetAttribute("FFBForce") == 0)
+	ctl.access.driver = realDriver13
+	for f = 1, 60 do ctl:step(dt, input) end
+	local t4 = ctl:telemetry().ffb
+	check("stage 13: driver seated again -> 00550070(0): active, force from the block again", not t4.suspended and t4.acquired
+		and car:GetAttribute("FFBActive") == true and t4.force ~= 0)
+	car:SetAttribute("ForceFeedbackStrength", 40); car:SetAttribute("ForceFeedbackDamping", 100); car:SetAttribute("ForceFeedbackLatency", 250)
+	ctl:reset()
+	local fo2 = ctl.core.V.forceFeedbackOptions()
+	check("stage 13: ForceFeedbackStrength / Damping / Latency attributes -> ORIGINAL setters at reset (controls.cfg integers)",
+		fo2.enabled and fo2.strength == 40 and fo2.damping == 100 and fo2.latency == 250)
+	car:SetAttribute("ForceFeedback", false)
+	ctl:reset()
+	for f = 1, 60 do ctl:step(dt, input) end
+	local t5 = ctl:telemetry().ffb
+	check("stage 13: ForceFeedback = false -> FF off (00550270), never acquired, no force", not t5.enabled and not t5.acquired
+		and car:GetAttribute("ForceFeedbackApplied") == false and car:GetAttribute("FFBActive") == false)
+	for _, k in ipairs(FFKEYS) do car:SetAttribute(k, nil) end
+	ctl:reset()
+	local fo3 = ctl.core.V.forceFeedbackOptions()
+	check("stage 13: attributes removed -> bench defaults again", fo3.enabled and fo3.strength == 80 and fo3.damping == 0 and fo3.latency == 0)
+	check("stage 13: no physics fault with the FFB on", ctl.fault == nil, tostring(ctl.fault))
+	input = {throttle = 0, brake = 0, steer = 0, handbrake = 0, clutch = 0}
+end
 -- the Studio self-test modules themselves (quick mode), as the patches run them after installing
 local ST = mockRequire({ref = "Roblox.Stage67SelfTest"})
 local stOk = ST.run(false)
@@ -556,6 +605,11 @@ if SOURCES["Roblox.Stage12SelfTest"] then
 	local ST12 = mockRequire({ref = "Roblox.Stage12SelfTest"})
 	check("Roblox/Stage12SelfTest.run(false) passes (what PATCH_STAGE12 executes)", (ST12.run(false)))
 	check("Roblox/Stage12SelfTest.run(true) passes (full: all embedded snapshots, determinism)", (ST12.run(true)))
+end
+if SOURCES["Roblox.Stage13SelfTest"] then
+	local ST13 = mockRequire({ref = "Roblox.Stage13SelfTest"})
+	check("Roblox/Stage13SelfTest.run(false) passes (what PATCH_STAGE13 executes)", (ST13.run(false)))
+	check("Roblox/Stage13SelfTest.run(true) passes (full: determinism, checkpoint / restore)", (ST13.run(true)))
 end
 print(string.format("\nadapter mock: %d passed, %d failed", passed, failed))
 if failed > 0 then error("adapter mock tests failed") end

@@ -1,3 +1,48 @@
+# Force feedback — API do Stage 13 (núcleo NR2003 Cup)
+
+O force feedback é o **código original** portado à mão do x86 (`NR2003CupFFB`, aritmética x87 exata: significando de 64
+bits arredondado para −∞ em cada operação, gravações f32 para −∞): `00554d30` por tick (estatísticas dos pneus
+dianteiros), o bloco FFB do fim de quadro `00554520` (latência, amortecimento, força, relação do setup) e o controle /
+aquisição `00550070` / `0054fed0` / `00550680`. É uma **saída de apresentação**: nada volta para a física
+(`STAGE13_RECOVERY.md` §9). As células estão em `STAGE13_FFB_STATE_MAP.md`.
+
+```lua
+local car = Vehicle.new()
+-- opções = os valores do controls.cfg (mensagens 8..11 do original; nil = valor da imagem: FF desligado, 80, 0, 0)
+car:setForceFeedbackOptions({enabled = true, strength = 80, damping = 0, latency = 0})   -- 0..100 / 0..100 / 0..250 ms
+car:forceFeedbackOptions()          --> {enabled, strength, damping, latency} (células bf6f1c / 74c9a4 / bf6f24 / bf6f20)
+-- camada de dispositivo do host (ADAPTER do DirectInput): capable = há saída FF para o eixo de direção; acquire = resultado
+-- da aquisição (padrão true); sink(axis, force, magnitude) a cada força enviada (magnitude = _ftol(force * 10000))
+car:setForceFeedbackDevice({capable = true, sink = function(axis, force, magnitude) end})
+car:startSession(weather, opts)     -- a colocação do carro roda o 00550070(0) original (eixo do FF pelo vínculo do controle 7)
+car:step({throttle = 0.5, clutch = 1, steerAxis = 0.1}, planes)   -- eixo analógico: o 0054fed0 adquire o efeito
+car:forceFeedbackState()            --> enabled, acquired (bf6ebb), suspended (bf6eb8), effect (host), axis (bf6ebc),
+                                    --   directionSign (74c95c), force (-1..1, último enviado), magnitude (DirectInput),
+                                    --   blockRan (o bloco rodou no último fim de quadro), frames, calls, slip (bf6ec4),
+                                    --   moment (bf6ed0), fy (bf6ec8), load (74c960), previousSlip (bf6ec0),
+                                    --   filtered (bf6ecc), strength, damping, latency, setupRatio, airspeed
+car:setControlsSuspended(true)      -- 00550070(1): 005524f0 toma o ramo não dirigido, bloco FFB desligado, força zero
+car:setControlsSuspended(false)     -- 00550070(0): ativo de novo (eixo do FF configurado de novo)
+car:selectActiveControls()          -- 00550070(0) sobre o vínculo atual (fgmsgSelectActiveControls)
+car:endSession()                    -- 00550680: libera o efeito
+```
+
+* **Aquisição:** só com o controle 7 num **eixo analógico** (`steerAxis`, ou `steerDigital = false`), FF ligado e
+  dispositivo capaz — como o original. Com teclas o efeito nunca é adquirido e não há força. Quando o tipo de vínculo do
+  controle 7 muda com o FF ligado / adquirido (teclas ↔ eixo), o núcleo roda `00550070(0)` (o caminho do menu de
+  controles do jogo).
+* **Sinal:** o do valor que o original entrega ao DirectInput (força constante de um eixo, `rglDirection` 0: o sinal da
+  magnitude dá o sentido); a força satura em ±1 (|ecc| ≥ relação · 1600 / força).
+* `reset()` mantém as opções; `checkpoint()` / `restore()` incluem o estado do dispositivo do host.
+* Somente teste: `V.x87` (aritmética), `V.ffbStatsOriginal`, `V.ffbFrameOriginal`, `V._ffbTrace`, `V._ffbHostState`,
+  `V._ffbModel(model, mutation)` (modelo double / erros deliberados das suítes).
+
+Adaptador Roblox (`CupChassisAdapter`): atributos do `TestCar` `ForceFeedback` (bool), `ForceFeedbackStrength`,
+`ForceFeedbackDamping`, `ForceFeedbackLatency`, `ForceFeedbackDevice` (padrões em `CupTune.driver`: ligado, valores da
+imagem, dispositivo presente); sem piloto no banco = `setControlsSuspended(true)`; saída em atributos `FFBForce`,
+`FFBMagnitude`, `FFBActive` e na telemetria (`ffb`); o cliente mostra a linha `FFB` e, com gamepad, aciona o motor grande
+com |força| (apresentação, `CupTune.driver.ffbRumble`).
+
 # Direção — API do Stage 12 / 12.1 (núcleo NR2003 Cup)
 
 A cadeia de direção é o **código original** portado à mão do x86 (`NR2003CupSteering` + linhas do Stage 12 em

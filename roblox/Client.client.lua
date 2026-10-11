@@ -2,6 +2,7 @@ local Players=game:GetService("Players")
 local RunService=game:GetService("RunService")
 local CAS=game:GetService("ContextActionService")
 local UIS=game:GetService("UserInputService")
+local HapticService=game:GetService("HapticService")
 local player=Players.LocalPlayer
 local package=game:GetService("ReplicatedStorage"):WaitForChild("NR2003Lab")
 local Config=require(package.Roblox.DriverConfig)
@@ -54,9 +55,11 @@ local aeroLine=label(panel,"Aero",180,30,11);aeroLine.Text="";aeroLine.TextColor
 local s11Line=label(panel,"Stage11",212,30,11);s11Line.Text="";s11Line.TextColor3=Color3.fromRGB(236,200,140)
 -- Stage 12: steering line (ORIGINAL steering cells read by the server adapter at telemetry rate; display only)
 local steerLine=label(panel,"Stage12",246,16,11);steerLine.Text="";steerLine.TextColor3=Color3.fromRGB(190,172,244)
-local hint=label(panel,"Controls",265,50,11)
+-- Stage 13: force-feedback line (ORIGINAL FFB cells + the constant force sent to the device; display only)
+local ffbLine=label(panel,"Stage13",263,16,11);ffbLine.Text="";ffbLine.TextColor3=Color3.fromRGB(244,172,190)
+local hint=label(panel,"Controls",282,50,11)
 hint.Text="W/S acelerar/frear   A/D direção (gamepad: analógico esquerdo)   E/Q marchas\nShift embreagem   Espaço freio de mão   X sair\nT painel   G contatos   H render diag   V câmera   R reposicionar"
-local status=label(panel,"Status",314,16,11);status.Text="Tune de teste | contato por raycast"
+local status=label(panel,"Status",331,16,11);status.Text="Tune de teste | contato por raycast"
 local renderInfo=Instance.new("TextLabel");renderInfo.Name="RenderDiagnostics";renderInfo.AnchorPoint=Vector2.new(1,0)
 renderInfo.Position=UDim2.new(1,-16,0,20);renderInfo.Size=UDim2.fromOffset(390,142);renderInfo.BackgroundColor3=Color3.fromRGB(17,24,34)
 renderInfo.BackgroundTransparency=0.08;renderInfo.BorderSizePixel=0;renderInfo.TextColor3=Color3.fromRGB(225,232,240)
@@ -150,6 +153,13 @@ telemetry.OnClientEvent:Connect(function(data)
             sd.digital and "teclas" or "eixo",sd.input or 0,sd.ratioNow or 0,-math.deg(sd.target or 0),-math.deg(sd.hubLF or 0),-math.deg(sd.hubRF or 0),
             math.deg(data.roadWheelAngle or 0),math.deg(data.steeringWheelAngle or 0))
     else steerLine.Text="" end
+    local fb=data.ffb
+    if fb then
+        ffbLine.Text=fb.enabled and string.format("FFB %s  força %+.3f (DI %+d)  deslize %+.4f  momento %+.1f  filtro %+.1f | força %g amort %g lat %g ms",
+            fb.acquired and (fb.suspended and "suspenso" or "ativo (eixo)") or "inativo (teclas / sem dispositivo)",fb.force or 0,fb.magnitude or 0,
+            fb.slip or 0,fb.moment or 0,fb.filtered or 0,fb.strength or 0,fb.damping or 0,fb.latency or 0)
+            or "FFB desligado (atributo ForceFeedback)"
+    else ffbLine.Text="" end
     if data.mode=="NR2003_CUP" then
         status.Text=data.fault and "Física pausada; veja Output. R reinicia." or string.format("acel %.2f | pedal freio %.2f -> núcleo %.2f | viés %d%% | embr %.2f | lim %s%s",
             data.throttleIn or 0,data.brakePedal or 0,data.brakeCore or data.brakeIn or 0,data.brakeBias or 74,data.clutchIn or 0,data.limiter and "ON" or "off",data.collision and " | colisão" or "")
@@ -157,6 +167,25 @@ telemetry.OnClientEvent:Connect(function(data)
         status.Text=data.fault and "Física pausada; veja Output. R reinicia." or string.format("Motor %.0f Nm | embreagem Δ %.0f rad/s",data.torque,data.clutchSlip)
     end
 end)
+-- Stage 13 presentation (NOT original): the ORIGINAL constant force -> large motor of the active gamepad, |force| 0..1
+local rumbleGamepad=nil
+local function setRumble(gp,v)
+    if gp then pcall(function() HapticService:SetMotor(gp,Enum.VibrationMotor.Large,v) end) end
+end
+local function stopRumble() setRumble(rumbleGamepad,0);rumbleGamepad=nil end
+local function updateRumble()
+    if presentationTune.driver and presentationTune.driver.ffbRumble==false then return end
+    local last=UIS:GetLastInputType()
+    local gp=(last.Name:sub(1,7)=="Gamepad" and UIS:GetGamepadConnected(last)) and last or nil
+    if gp~=rumbleGamepad then stopRumble() end
+    if gp==nil then return end
+    local ok,supported=pcall(function() return HapticService:IsVibrationSupported(gp) and HapticService:IsMotorSupported(gp,Enum.VibrationMotor.Large) end)
+    if not (ok and supported) then return end
+    rumbleGamepad=gp
+    local f=car:GetAttribute("FFBForce")
+    local v=(car:GetAttribute("FFBActive")==true and type(f)=="number") and math.clamp(math.abs(f),0,1) or 0
+    setRumble(gp,v)
+end
 local diagTimer=0
 local function updateRenderDiag(dt)
     if not renderDiag then return end
@@ -177,7 +206,7 @@ local function frame(dt)
             bind();savedCameraType=workspace.CurrentCamera.CameraType;savedCameraSubject=workspace.CurrentCamera.CameraSubject
             savedFieldOfView=workspace.CurrentCamera.FieldOfView
         else
-            unbind();renderDiag=false;renderInfo.Visible=false
+            unbind();renderDiag=false;renderInfo.Visible=false;stopRumble()
             if savedCameraType then workspace.CurrentCamera.CameraType=savedCameraType end
             if savedCameraSubject and savedCameraSubject.Parent then workspace.CurrentCamera.CameraSubject=savedCameraSubject end
             if savedFieldOfView then workspace.CurrentCamera.FieldOfView=savedFieldOfView end
@@ -186,8 +215,9 @@ local function frame(dt)
     updateRenderDiag(dt)
     if not driving then return end
     header.Visible=expanded;for _,r in ipairs(rows) do r.Visible=expanded end
-    aeroLine.Visible=expanded;s11Line.Visible=expanded;steerLine.Visible=expanded
-    hint.Visible=expanded;status.Visible=expanded;panel.Size=UDim2.fromOffset(600,expanded and 334 or 76)
+    aeroLine.Visible=expanded;s11Line.Visible=expanded;steerLine.Visible=expanded;ffbLine.Visible=expanded
+    hint.Visible=expanded;status.Visible=expanded;panel.Size=UDim2.fromOffset(600,expanded and 352 or 76)
+    updateRumble()
     local camera=workspace.CurrentCamera
     if cameraMode==1 then
         camera.CameraType=Enum.CameraType.Scriptable;camera.FieldOfView=savedFieldOfView or 70
@@ -226,5 +256,5 @@ end
 local renderName="NR2003_Presentation"
 RunService:BindToRenderStep(renderName,Enum.RenderPriority.Camera.Value-1,frame)
 script.Destroying:Connect(function()
-    RunService:UnbindFromRenderStep(renderName);presentation:destroy();unbind()
+    RunService:UnbindFromRenderStep(renderName);presentation:destroy();unbind();stopRumble()
 end)

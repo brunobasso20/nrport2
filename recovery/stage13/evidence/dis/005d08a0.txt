@@ -1,0 +1,14 @@
+005d08a0  a0f0d4f500             mov al, byte ptr [0xf5d4f0]  ; [f5d4f0] f32=0 u32=0
+005d08a5  84c0                   test al, al
+005d08a7  7426                   je 0x5d08cf  ; [5d08cf] f32=-8.26791428e+12 u32=d4f0a0c3
+005d08a9  a014d4f500             mov al, byte ptr [0xf5d414]  ; [f5d414] f32=0 u32=0
+005d08ae  84c0                   test al, al
+005d08b0  741d                   je 0x5d08cf  ; [5d08cf] f32=-8.26791428e+12 u32=d4f0a0c3
+005d08b2  8b442410               mov eax, dword ptr [esp + 0x10]
+005d08b6  8b4c240c               mov ecx, dword ptr [esp + 0xc]
+005d08ba  8b542408               mov edx, dword ptr [esp + 8]
+005d08be  89442410               mov dword ptr [esp + 0x10], eax
+005d08c2  894c240c               mov dword ptr [esp + 0xc], ecx
+005d08c6  89542408               mov dword ptr [esp + 8], edx
+005d08ca  e941190000             jmp 0x5d2210  ; [5d2210] f32=-3.71416459e+24 u32=e844a051
+005d08cf  c3                     ret 

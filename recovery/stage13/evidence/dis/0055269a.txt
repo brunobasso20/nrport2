@@ -1,0 +1,22 @@
+0055269a  c705c863bf0000000000   mov dword ptr [0xbf63c8], 0  ; [bf63c8] f32=0 u32=0
+005526a4  891d146fbf00           mov dword ptr [0xbf6f14], ebx  ; [bf6f14] f32=0 u32=0
+005526aa  c7058cc9740000000000   mov dword ptr [0x74c98c], 0  ; [74c98c] f32=1 u32=3f800000
+005526b4  c7058863bf0000000000   mov dword ptr [0xbf6388], 0  ; [bf6388] f32=0 u32=0
+005526be  c705846ebf0000000000   mov dword ptr [0xbf6e84], 0  ; [bf6e84] f32=0 u32=0
+005526c8  c705bc63bf0000000000   mov dword ptr [0xbf63bc], 0  ; [bf63bc] f32=0 u32=0
+005526d2  c7058c63bf0000000000   mov dword ptr [0xbf638c], 0  ; [bf638c] f32=0 u32=0
+005526dc  c7059063bf0000000000   mov dword ptr [0xbf6390], 0  ; [bf6390] f32=0 u32=0
+005526e6  c705ac6ebf000000803f   mov dword ptr [0xbf6eac], 0x3f800000  ; [bf6eac] f32=0 u32=0
+005526f0  c705b06ebf0000000000   mov dword ptr [0xbf6eb0], 0  ; [bf6eb0] f32=0 u32=0
+005526fa  e8c17e0000             call 0x55a5c0  ; [55a5c0] f32=-3.62235284 u32=c067d4a1
+005526ff  83f803                 cmp eax, 3
+00552702  7405                   je 0x552709  ; [552709] f32=1.23883257e+28 u32=6e201d88
+00552704  e837dfffff             call 0x550640  ; [550640] f32=1.87844729e-35 u32=5c7c033
+00552709  881d206ebf00           mov byte ptr [0xbf6e20], bl  ; [bf6e20] f32=0 u32=0
+0055270f  881d216ebf00           mov byte ptr [0xbf6e21], bl  ; [bf6e21] f32=0 u32=0
+00552715  881d226ebf00           mov byte ptr [0xbf6e22], bl  ; [bf6e22] f32=0 u32=0
+0055271b  5e                     pop esi
+0055271c  5b                     pop ebx
+0055271d  59                     pop ecx
+0055271e  c3                     ret 
+0055271f  90                     nop 

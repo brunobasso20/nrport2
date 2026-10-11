@@ -29,6 +29,8 @@ if (root / 'roblox/Stage11SelfTest.lua').exists():
     bundle['Roblox.Stage11SelfTest'] = src(root / 'roblox/Stage11SelfTest.lua')
 if (root / 'roblox/Stage12SelfTest.lua').exists():
     bundle['Roblox.Stage12SelfTest'] = src(root / 'roblox/Stage12SelfTest.lua')
+if (root / 'roblox/Stage13SelfTest.lua').exists():
+    bundle['Roblox.Stage13SelfTest'] = src(root / 'roblox/Stage13SelfTest.lua')
 def long_string(text):
     eq = '='
     while (']' + eq + ']') in text: eq += '='

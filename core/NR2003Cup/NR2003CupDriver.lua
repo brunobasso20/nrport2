@@ -22,7 +22,9 @@
 --   00551e80 tail squares it and ramps it per tick into bf636c -> 005b2b90 -> brake cell e84480,
 --   which the ORIGINAL generated force code (005610b0 x4 + 00561040) turns into wheel torque.
 -- Stage 9: frame start calls V._aeroFrame (005637e0 subset, NR2003CupAero) before frameStart.
--- Not ported (documented): replay/telemetry recording, FFB, auto-shift 005536b0 (transmission
+-- Stage 13: tickInputs runs the ORIGINAL 00554d30 (V._ffbTick, NR2003CupFFB) at its slot @00553a64; frameStart takes
+-- the 005524f0 not-driven branch while bf6eb8 (player controls suspended, 00550070) is set.
+-- Not ported (documented): replay/telemetry recording, auto-shift 005536b0 (transmission
 -- mode 0), H-pattern mode (bf6f0c 1/2), ignition states driven by 005524f0/0057af40(0x19),
 -- throttle/clutch device processing (00552df0/005534f0 - Stage 7 host values).
 return function(V)
@@ -247,7 +249,9 @@ return function(V)
 	-- (Stage 6/7 contract, kept for regression fixtures). driver = false -> 005524f0 'not driven'.
 	local function frameStart(c)
 		local N = ri32(0xbf6e9c)
-		if c.driver == false then
+		-- Stage 13: 005524f0 @00552549 also takes the not-driven branch while the player controls are suspended
+		-- (bf6eb8, written by the ORIGINAL 00550070: NR2003CupFFB.setControlsSuspended / car placement)
+		if c.driver == false or r8(0xbf6eb8) ~= 0 then
 			notDriven()
 		else
 			if c.brakeControl ~= nil then
@@ -317,6 +321,9 @@ return function(V)
 		wf64(0xbf6ef8, rf64(0xbf6ef8) + rf32(0x74fd74))
 		wf32d(0xbf6ea4, zadd(rf32(0xbf6394), rf32(0xbf6ea4)))
 		wf32d(0xbf63c0, zadd(rf32(0xbf6e88), rf32(0xbf63c0)))
+		-- Stage 13 (@00553a64): ORIGINAL 00554d30 front tyre statistics for the force feedback (NR2003CupFFB)
+		local ffb = V._ffbTick
+		if ffb then ffb() end
 		wf32d(0xbf6360, zadd(rf32(0xbf63c0), -rf32(0xc086b0)))
 		w32(0xbf6368, r32(0xbf6ea4))
 		wf32d(0xbf6364, zadd(rf32(0xc086b4), rf32(0xbf63c0)))

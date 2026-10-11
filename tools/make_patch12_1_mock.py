@@ -25,6 +25,8 @@ def base(path): return subprocess.run(['git', 'show', '626eabe:' + path], cwd=ro
 
 
 rd = lambda f: (root / f).read_text(encoding='utf-8')
+# Since Stage 13 the Stage 12.1 sources are read from the published Stage 12.1 commit (the working tree is Stage 13)
+def published121(path): return subprocess.run(['git', 'show', '5d9f5ee:' + path], cwd=root, capture_output=True, check=True).stdout.decode('utf-8')
 src = {n: rd(f) for n, f in (('PATCH67', 'PATCH_STAGE6_7.lua'), ('PATCH8', 'PATCH_STAGE8.lua'), ('PATCH9', 'PATCH_STAGE9.lua'),
                              ('PATCH10', 'PATCH_STAGE10.lua'), ('PATCH11', 'PATCH_STAGE11.lua'), ('PATCH12', 'PATCH_STAGE12.lua'),
                              ('ROLLBACK12', 'PATCH_STAGE12_ROLLBACK.lua'), ('PATCH121', 'PATCH_STAGE12_1.lua'),
@@ -48,7 +50,7 @@ for key, path in (('ReplicatedStorage.NR2003Lab.Core.NR2003Cup.NR2003CupSteering
                   ('ReplicatedStorage.NR2003Lab.Roblox.CupChassisAdapter', 'roblox/CupChassisAdapter.lua'),
                   ('StarterPlayer.StarterPlayerScripts.NR2003Client', 'roblox/Client.client.lua'),
                   ('ReplicatedStorage.NR2003Lab.Roblox.Stage12SelfTest', 'roblox/Stage12SelfTest.lua')):
-    new += '\t[%r] = %s,\n' % (key, lua_str(rd(path)))
+    new += '\t[%r] = %s,\n' % (key, lua_str(published121(path)))
 new += '}\n'
 out = ''.join(long_string(n, s) for n, s in src.items()) + split + st5 + new + head + tail
 (root / 'tests/stage12').mkdir(parents=True, exist_ok=True)

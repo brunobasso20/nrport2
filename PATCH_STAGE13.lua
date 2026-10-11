@@ -1,0 +1,2886 @@
+-- PATCH_STAGE13 — NR2003 Roblox port, estágio 13 (torque de direção / force feedback ORIGINAL do NR2003)
+-- Cole na Command Bar do Studio, FORA do Play, sobre a bancada Stage 12.1 publicada (ou Insert from File do .rbxmx; ou as
+-- partes + INSTALL). O patch NÃO salva o place: salve você mesmo depois de conferir.
+-- Novos: Core.NR2003Cup.NR2003CupFFB (00554d30 / bloco FFB de 00554520 / 00550070 + 0054fed0 / setters, aritmética x87
+-- exata), Roblox.Stage13SelfTest.
+-- Alterados (fonte atualizada no lugar, mesma instância): Core.NR2003Cup.NR2003CupDriver, Core.NR2003Cup.NR2003CupFrame,
+-- Core.NR2003CupVehicle, Core.CupTune, Roblox.CupChassisAdapter, NR2003Client.
+-- Física: inalterada (o FFB não realimenta nada). Saída: a força constante original (-1..1) em atributos do carro
+-- (FFBForce / FFBMagnitude / FFBActive), linha FFB no painel e motores do gamepad (apresentação).
+-- Segurança: confere o Stage 12.1 módulo por módulo (tamanho + hash da fonte publicada), backup SÓ do que muda em
+-- ServerStorage.NR2003Backup_Stage13 (criado uma vez, nunca sobrescrito), re-executar é seguro, auto-testes 6/7..13 no
+-- fim e reversão automática se algo falhar. Reversão manual: PATCH_STAGE13_ROLLBACK.lua.
+assert(not game:GetService("RunService"):IsRunning(),"Pare o Play antes do patch")
+local RS=game:GetService("ReplicatedStorage")
+local SS=game:GetService("ServerScriptService")
+local SP=game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts")
+local storage=game:GetService("ServerStorage")
+local SES=game:GetService("ScriptEditorService")
+local pkg=assert(RS:FindFirstChild("NR2003Lab"),"NR2003Lab ausente: instale a bancada Stage 12.1 antes")
+local stage=pkg:GetAttribute("NR2003Stage")
+assert(stage=="12.1" or stage=="13","este patch exige a bancada Stage 12.1 (NR2003Stage = "..tostring(stage).."): aplique antes PATCH_STAGE12_1")
+local CoreF=assert(pkg:FindFirstChild("Core"),"NR2003Lab.Core ausente")
+local RobloxF=assert(pkg:FindFirstChild("Roblox"),"NR2003Lab.Roblox ausente")
+local cupFolder=assert(CoreF:FindFirstChild("NR2003Cup"),"Core.NR2003Cup ausente")
+for _,n in ipairs({"NR2003CupCore","NR2003CupFrame","NR2003CupGarage","NR2003CupBuild","NR2003CupAero","NR2003CupSteering"}) do
+    assert(cupFolder:FindFirstChild(n),"Core.NR2003Cup."..n.." ausente (Stage 12.1 requerido)")
+end
+local function setSource(s,src)
+    if #src<200000 then s.Source=src else SES:UpdateSourceAsync(s,function() return src end) end
+end
+-- FNV-1a 32 of the source bytes; h * 0x01000193 mod 2^32 = h * 0x193 + (h mod 256) * 2^24 (exact in double precision)
+local function fnv(src)
+    local h=0x811c9dc5
+    for i=1,#src do
+        h=bit32.bxor(h,string.byte(src,i))
+        h=(h*0x193+bit32.band(h,0xff)*0x1000000)%4294967296
+    end
+    return h
+end
+local FOLDERS={NR2003Cup=cupFolder,Core=CoreF,Roblox=RobloxF,Server=SS,Client=SP}
+local function find(folder,name) return FOLDERS[folder]:FindFirstChild(name) end
+local ITEMS={}
+local function item(folder,name,class,oldLen,oldHash,newLen,newHash,source)
+    ITEMS[#ITEMS+1]={folder=folder,name=name,class=class,oldLen=oldLen,oldHash=oldHash,newLen=newLen,newHash=newHash,source=source}
+end
+item("NR2003Cup","NR2003CupDriver","ModuleScript",25020,1689364345,25607,4100876898,[=[
+--!native
+--!optimize 2
+-- NR2003 Cup driver layer + tick sequencing (Stage 7). Installs V.drive / V.componentPose on a
+-- runtime created by NR2003CupCore. Every float32 store goes through V.wf32d (IEEE single,
+-- rounding toward -inf: NR2003 bg task FPU CW 0x077f, 0055cef0 -> 00567704(1,3)).
+--
+-- Per 36 Hz task frame (005b2190 -> 00551e80 tail, player car):
+--   pedals/axes -> bf6390/bf6eac/bf6eb0, throttle^2/brake^2 targets, per-tick ramps (/N),
+--   shift request (00552450/00552480).  Steering (Stage 12, NR2003CupSteering): ORIGINAL 00552720
+--   (005524f0 -> bf63c8) and the 00551e80 tail (linearity, x pi, 00554fb0 ratio -> road-wheel target);
+--   steering mode "provisional" keeps the Stage 6-11 host road-wheel target for the regression suites.
+-- Per 288 Hz tick (005b2190 loop body):
+--   005539c0 input composition (ramps, toe c086b0/c086b4, brake/clutch ramps, lifted 00553d70
+--   shift FSM + auto clutch 005542f0, gear, rev limiter engine+0x438 with 006f5a3c hysteresis),
+--   005b2b90 predictor+solve, 005b2cb0 export, tires (00578da0 -> 0055e1e0 x4), 005b2bd0 forces,
+--   005b2be0 corrector+solve, export, tires (00578de0), forces, 005b2c00 commit.
+-- Per frame end (00554520): V._frameEnd. Stages 6-10: 0051aac0 cut-timer subset (core); Stage 11:
+-- the ORIGINAL 00554520 + 00549c40 lifted (NR2003CupFrame, "frozen" runtime mode = the subset).
+-- Stage 8 (brake input chain, per frame, 005524f0 player branch):
+--   raw brake control (0057af30 control table) -> 00552d00 axis limiter -> 00553080 pedal
+--   processing (auto-hold below 0.8 m/s, key ramp, braking help 00550130) -> bf6eac; the
+--   00551e80 tail squares it and ramps it per tick into bf636c -> 005b2b90 -> brake cell e84480,
+--   which the ORIGINAL generated force code (005610b0 x4 + 00561040) turns into wheel torque.
+-- Stage 9: frame start calls V._aeroFrame (005637e0 subset, NR2003CupAero) before frameStart.
+-- Stage 13: tickInputs runs the ORIGINAL 00554d30 (V._ffbTick, NR2003CupFFB) at its slot @00553a64; frameStart takes
+-- the 005524f0 not-driven branch while bf6eb8 (player controls suspended, 00550070) is set.
+-- Not ported (documented): replay/telemetry recording, auto-shift 005536b0 (transmission
+-- mode 0), H-pattern mode (bf6f0c 1/2), ignition states driven by 005524f0/0057af40(0x19),
+-- throttle/clutch device processing (00552df0/005534f0 - Stage 7 host values).
+return function(V)
+	local rf32, r32, ri32, w32, r8, w8 = V.rf32, V.r32, V.ri32, V.w32, V.r8, V.w8
+	local wf32d, fd, rf64, wf64 = V.wf32d, V.fd, V.rf64, V.wf64
+	local wf32 = V.wf32
+	local callx, tires, export, frameEnd, popF = V._callx, V._tires, V._export, V._frameEnd, V._popF
+	local M, BASE = V.memory(), V.base
+	local TPF, ENGINE, ROOT, INPUTS = V.TPF, V.ENGINE, V.ROOT, V.INPUTS
+	local abs, sqrt, atan2 = math.abs, math.sqrt, math.atan2
+	-- exact-zero sums signed as under round-toward-negative (CW 0x077f; IEEE 754: x + (-x) = -0). Stage 12 change
+	-- record C1 (STAGE12_RESULT.md): used by the driver-layer sums of 005539c0 and of the 00551e80 tail
+	local function zadd(x, y)
+		local r = x + y
+		if r == 0 and not (x == 0 and y == 0 and 1 / x > 0 and 1 / y > 0) then return -0.0 end
+		return r
+	end
+	local function zsub(x, y) return zadd(x, -y) end
+	local function plainSub(x, y) return x - y end
+
+	---------------------------------------------------------------------------------------------
+	-- Stage 8: ORIGINAL brake input chain (hand port of x87 code; float32 stores round toward
+	-- -inf like every store of the simulation task, intermediates in double).
+	---------------------------------------------------------------------------------------------
+	local CTRL_RAW, CTRL_TYPE = 0xd35b18, 0xd37cc8 -- 0057af30: f32 [d35b18+10n]; 0057af60: i32 [d37cc8+29n]
+	local BRAKE_CTL, THROTTLE_CTL = 6, 5
+	-- .rdata constants read from the image (same cells the original reads)
+	local K_ONE, K_ZERO = rf32(0x6e97d8), rf32(0x6ea454) -- 1.0, 0.0
+	local K_AXIS_LOW, K_AXIS_FAST = rf32(0x6ee390), 0x74c99c -- 0.025, release factor cell (2.5)
+	local K_HOLD_SPEED, K_THROTTLE_ON = rf32(0x6efb28), rf32(0x6e9824) -- 0.8 m/s, 0.2
+	local K_FLAT, K_HOLD = rf32(0x6f5a30), rf32(0x6efac8) -- 0.0087266 rad, 0.98
+	local K_RAMP_UP = rf32(0x6f53c0) -- 1/12 per frame
+	local K_SLOPE = rf64(0x6f5a28) -- 0.363636... (qword)
+	local K_HALF, K_REL_FAST, K_REL_SLOW = rf32(0x6ea44c), rf32(0x6f4614), rf32(0x6f5a24) -- 0.5, 0.125, 1/24
+	local K_HELP_SPEED, K_HELP_SLIP = rf32(0x6ea68c), rf32(0x6efbf0) -- 11 m/s, 12.5
+	local K_1_5, K_R, K_F = rf32(0x6ea494), rf32(0x6f5a20), rf32(0x6f5a18) -- 1.5, -4/9, -20/33
+	local K_2_1, K_R2, K_FLOOR, K_LOWHELP = rf32(0x6f5a1c), rf32(0x6f5a14), rf32(0x6ef640), rf32(0x6ed020) -- 2.1, 2/3, 0.3, 0.9
+	local K_02 = 0.20000000298023224 -- literal 0x3e4ccccd (00553080 @0055323f)
+	local K_PI = rf32(0x6f4a4c) -- 3.14159274 (005f74c0)
+	local K_GIMBAL = rf64(0x6ef4c8) -- 0.01 (qword, 005f74c0)
+
+	-- 00552d00(n): axis value with per-axis slew limit (controls 5..8). Returns the x87 value.
+	local function axis(n)
+		local raw = rf32(CTRL_RAW + 10 * n) -- 0057af30 (FLD dword; the FST copy is the same float)
+		local ecx, edx
+		if n == 5 then ecx, edx = 2, 1 elseif n == 6 then ecx, edx = 3, 2
+		elseif n == 7 then ecx, edx = 0, 0 elseif n == 8 then ecx, edx = 1, 0 else return raw end
+		local rate = rf32(0x74c990 + 4 * edx)
+		if not (rate < K_ONE or rate ~= rate) then return raw end -- FCOMP 1.0; AND 0x100; JZ ret
+		if not (raw >= K_AXIS_LOW or raw ~= raw) then rate = rate * rf32(K_AXIS_FAST) end -- TEST AH,5; JP
+		local prev = rf32(0xbf639c + 4 * ecx)
+		local v
+		if raw <= prev or raw ~= raw or prev ~= prev then -- AND 0x4100; JNZ
+			v = zsub(prev, rate) -- FSUBR (Stage 12 C2: an exact-zero step is -0 under RC-down, stored 80000000)
+			if not (v >= raw or v ~= v or raw ~= raw) then v = raw end -- TEST AH,5; JP keep
+		else
+			v = rate + prev -- FADD
+			if not (v <= raw or v ~= v or raw ~= raw) then v = raw end -- AND 0x4100; JNZ keep
+		end
+		wf32d(0xbf639c + 4 * ecx, v) -- FST dword (state), ST0 keeps the x87 value
+		if edx == 0 then -- steering axes only: FMUL 1.570796326793946 (9.5e-13 below pi/2); FSIN
+			-- Stage 12 C2: for a state of exactly 1.0 the x87 FSIN under RC-down returns 1 - 2^-64 (the true value is
+			-- 1 - 4.5e-25; hardware-verified, recovery/stage12/evidence/reports/verify-input.md), stored as 3f7fffff; double
+			-- sin gives 1.0. 1 - 2^-53 reproduces every stored result (f32 store, a8 - a7 with the other control).
+			-- Every other f32 state gives the same stored f32 as the x87 (exhaustive scan).
+			if v == 1 then v = 1 - 2 ^ -53 else v = math.sin(v * rf64(0x6f5a00)) end
+		end
+		return v
+	end
+
+	-- 00554f50: vehicle speed |v| from the exported state block, cached in bf6f44 (float32).
+	-- The original recomputes when the timer-interrupt count changes; the state block does not
+	-- change inside a frame start, so recomputing on every call returns the same value.
+	local function speed()
+		local vz, vy, vx = rf32(0xbf6d54), rf32(0xbf6d4c), rf32(0xbf6d44)
+		wf32d(0xbf6f44, sqrt((vz * vz + vy * vy) + vx * vx))
+		return rf32(0xbf6f44)
+	end
+
+	-- 005f7570 = 005f6e40 (quaternion xyzw -> row-major 3x3, float32 stores) + 005f74c0 (angles).
+	-- Returns the three float32 outputs (out1, out2, out3) in the original order.
+	local function attitude(q)
+		local x, y, z, w = rf32(q), rf32(q + 4), rf32(q + 8), rf32(q + 12)
+		local w2 = w + w
+		local wx, wy, wz = w2 * x, w2 * y, w2 * z
+		local ww = fd(w2 * w)
+		local x2 = x + x
+		local e0, e4 = fd(x2 * y), fd(x2 * z)
+		local y2 = y + y
+		local e8, ec = fd(y2 * z), fd(y2 * y)
+		local e10 = fd((z * z) + (z * z))
+		local m0 = fd((x2 * x + ww) - K_ONE)
+		local m1 = fd(e0 - wz)
+		local m2 = fd(e4 + wy)
+		local m3 = fd(e0 + wz)
+		local m4 = fd((ec + ww) - K_ONE)
+		local m5 = fd(e8 - wx)
+		local m6 = fd(e4 - wy)
+		local m7 = fd(e8 + wx); local _ = m7
+		local m8 = fd((e10 + ww) - K_ONE); local _2 = m8
+		local a1 = fd(atan2(m3, m0))
+		local c = sqrt(m0 * m0 + m3 * m3)
+		local a2 = fd(atan2(-m6, c))
+		local a3
+		if c >= K_GIMBAL or c ~= c then
+			local ic = K_ONE / c
+			local nA, B = -(ic * m3), ic * m0
+			local Y = -(B * m5 + nA * m2)
+			local X = B * m4 + nA * m1
+			a3 = fd(atan2(Y, X))
+		else
+			local r = a1 - atan2(m5, m2)
+			a3 = fd(r)
+			if not (m6 <= K_ZERO or m6 ~= m6) then a3 = fd(K_PI - r) end
+		end
+		return a1, a2, a3
+	end
+
+	-- 00550130: braking help option (bf6f04), disabled per car by flag 0x20000000 at
+	-- 0055a680()+0x4c (inServer() = false offline; simulation runs inBackground()).
+	local function brakingHelp()
+		if bit32.band(r32(0xc0692a + 0x4c), 0x20000000) ~= 0 then return false end
+		return r8(0xbf6f04) ~= 0
+	end
+
+	-- 00553080: processed brake pedal (returned as the x87 value; 005524f0 stores it to bf6eac)
+	local function pedal()
+		-- 005c2d20([c08194]) is the online-session state; offline host -> 0 (ADAPTER), so the
+		-- driver kind comes from 005672e0 -> 0055a730 = [c067e0] (1 -> brake fully applied)
+		local r
+		if ri32(0xc067e0) == 1 then r = K_ONE else r = fd(axis(BRAKE_CTL)) end
+		local spd = speed()
+		local hold = false
+		if not (spd >= K_HOLD_SPEED or spd ~= spd) then
+			if rf32(0xbf6390) < K_THROTTLE_ON then hold = true
+			elseif ri32(0x74c97c) == 1 then hold = true end -- neutral
+		end
+		if hold then
+			local _, a2, a3 = attitude(0xbf6d58)
+			local pa = abs(a2)
+			if not (pa >= K_FLAT or pa ~= pa) then
+				if r >= K_HOLD or r ~= r then return r end
+				local v = rf32(0xbf6eac) + K_RAMP_UP
+				if v < K_HOLD or v == K_HOLD then return v end
+				return K_HOLD
+			end
+			local h
+			local pr = abs(a3)
+			if pr <= K_ZERO or pr ~= pr then h = K_02
+			else
+				local q = pa * K_SLOPE / pr
+				if not (q <= K_ONE or q ~= q) then q = K_ONE end
+				h = fd((K_ONE - q) * K_HOLD)
+				if not (h >= K_THROTTLE_ON or h ~= h) then h = K_02 end
+			end
+			if not (r >= h or r ~= r or h ~= h) then
+				local v = rf32(0xbf6eac) + K_RAMP_UP
+				if v < h or v == h then return v end
+				return h
+			end
+		end
+		-- 0055327b: button/key binding (0057af60(6)) -> per-frame ramp toward the key state
+		if ri32(CTRL_TYPE + 29 * BRAKE_CTL) ~= 1 then
+			local t = fd(axis(THROTTLE_CTL))
+			local p = rf32(0xbf6eac)
+			local v
+			if not (p >= r or p ~= p or r ~= r) then v = p + K_RAMP_UP
+			elseif p <= r or p ~= p or r ~= r then v = r
+			elseif t >= K_HALF or t ~= t then v = p - K_REL_FAST
+			else v = p - K_REL_SLOW end
+			if v >= K_ZERO or v ~= v then
+				if not (v <= K_ONE or v ~= v) then v = K_ONE end
+			else v = K_ZERO end
+			r = fd(v)
+		end
+		-- 0055332c: braking help (driving aid) while the pedal is rising
+		if brakingHelp() then
+			local p = rf32(0xbf6eac)
+			if p > r or p ~= p or r ~= r then return r end
+			local s = speed()
+			if s <= K_HELP_SPEED or s ~= s then return r * K_LOWHELP end
+			local s0, s1, s2, s3 = rf32(0xbf3cd4), rf32(0xbf470d), rf32(0xbf5146), rf32(0xbf5b7f)
+			local A, B = s0, s2
+			if not (s1 <= A or s1 ~= s1 or A ~= A) then A = s1 end
+			if not (s3 <= B or s3 ~= s3 or B ~= B) then B = s3 end
+			local mn = s0
+			if not (s1 >= mn or s1 ~= s1 or mn ~= mn) and s1 ~= K_ZERO then mn = s1 end
+			if not (s2 >= mn or s2 ~= s2 or mn ~= mn) and s2 ~= K_ZERO then mn = s2 end
+			if not (s3 >= mn or s3 ~= s3 or mn ~= mn) and s3 ~= K_ZERO then mn = s3 end
+			if not (mn <= K_HELP_SLIP or mn ~= mn) then return r end
+			local x = (B - K_1_5) * K_R
+			local y = fd((A - K_2_1) * K_F)
+			if not (x < y) then x = y end
+			if not (x < K_ZERO or x ~= x) then x = (K_1_5 - B) * K_R2 end
+			x = x * K_REL_FAST + rf32(0xbf6eac)
+			if not (x >= K_FLOOR or x ~= x) then x = K_FLOOR end
+			if x <= r or x ~= x or r ~= r then return x end
+			return r
+		end
+		return r
+	end
+	V.brakePedalOriginal = pedal -- exposed for the bit-level tests (tests/stage8)
+	V.attitudeOriginal = attitude
+	V.axisOriginal = axis
+
+	-- 005524f0 'car not driven' branch (another car / no driver): pedal held at 1.0
+	local function notDriven()
+		for _, a in ipairs({0xbf63c8, 0xbf6f14, 0x74c98c, 0xbf6388, 0xbf6e84, 0xbf63bc, 0xbf638c, 0xbf6390, 0xbf6eb0}) do w32(a, 0) end
+		w32(0xbf6eac, 0x3f800000)
+		w8(0xbf6e20, 0); w8(0xbf6e21, 0); w8(0xbf6e22, 0)
+	end
+
+	-- frame start: 005524f0 (driver devices) + 00551e80 tail for the player car.
+	-- controls: throttle pedal 0..1, clutch = engagement 0..1 (1 = pedal up), shiftUp/shiftDown =
+	-- sequential shift keys. Steering (Stage 12): steerLeft/steerRight (controls 7/8, 0..1) + steerDigital,
+	-- or steerAxis (-1..1, + right); steer = road-wheel target (rad, + = left) only in the steering mode
+	-- "provisional" (Stage 6-11 contract, regression suites).
+	-- Brake (Stage 8): brakeControl = raw brake control value 0..1 of the input device (keyboard
+	-- 0/1 or pedal axis), brakeDigital = key/button binding (default true; false = analog axis),
+	-- throttleControl/throttleDigital = raw throttle control (key release-rate choice in 00553080).
+	-- Without brakeControl, controls.brake is injected directly as the processed pedal bf6eac
+	-- (Stage 6/7 contract, kept for regression fixtures). driver = false -> 005524f0 'not driven'.
+	local function frameStart(c)
+		local N = ri32(0xbf6e9c)
+		-- Stage 13: 005524f0 @00552549 also takes the not-driven branch while the player controls are suspended
+		-- (bf6eb8, written by the ORIGINAL 00550070: NR2003CupFFB.setControlsSuspended / car placement)
+		if c.driver == false or r8(0xbf6eb8) ~= 0 then
+			notDriven()
+		else
+			if c.brakeControl ~= nil then
+				local bc = math.clamp(tonumber(c.brakeControl) or 0, 0, 1)
+				wf32(CTRL_RAW + 10 * BRAKE_CTL, bc)
+				w32(CTRL_TYPE + 29 * BRAKE_CTL, c.brakeDigital == false and 1 or 0)
+				local tc = c.throttleControl
+				if tc == nil then tc = c.throttle or 0 end
+				wf32(CTRL_RAW + 10 * THROTTLE_CTL, math.clamp(tonumber(tc) or 0, 0, 1))
+				w32(CTRL_TYPE + 29 * THROTTLE_CTL, c.throttleDigital == false and 1 or 0)
+				if r8(0xbf6eb9) ~= 0 then -- 005524f0: car held (bf6eb9)
+					w32(0xbf6eac, 0x3f800000); w32(0xbf6eb0, 0)
+				else
+					wf32d(0xbf6eac, pedal()) -- ORIGINAL 00553080 (reads the previous frame's bf6390)
+					wf32d(0xbf6eb0, c.clutch or 0)
+				end
+			else
+				wf32d(0xbf6eac, c.brake or 0)
+				wf32d(0xbf6eb0, c.clutch or 0)
+			end
+			-- Stage 12: bf63c8 = ORIGINAL 00552720 (steering devices), NR2003CupSteering
+			if V._steerDevices then V._steerDevices(c) end
+			wf32d(0xbf6390, c.throttle or 0)
+		end
+		for w = 0, 3 do -- per-frame tire accumulators cleared by 00551e80 (bf3ccc.., bf4705.., ...)
+			local t = 0xbf3a20 + w * 0xa39
+			w32(t + 0x2ac, 0); w32(t + 0x2b0, 0); w32(t + 0x2b4, 0); w32(t + 0x2b8, 0)
+			w32(t + 0x2d0, 0); w32(t + 0x2d4, 0); w32(t + 0x2bc, 0); w32(t + 0x2c0, 0)
+		end
+		-- Stage 12: road-wheel target of the ORIGINAL 00551e80 tail (linearity, x pi, / 00554fb0 ratio), or the
+		-- Stage 6-11 PROVISIONAL host target in the steering mode "provisional" (regression suites only)
+		local target = V._steerTail and V._steerTail(c)
+		local provisional = target == nil
+		if provisional then target = c.steer or 0 end
+		wf32d(0xbf63b8, target)
+		w32(0xbf6e38, r32(0xbf6eb0))
+		w32(0xbf63c0, r32(0xbf6e80)); w32(0xbf636c, r32(0xbf6e64))
+		w32(0xbf6ea4, r32(0xbf6e60)); w32(0xbf6e14, r32(0xbf6e68))
+		local thr, brk = rf32(0xbf6390), rf32(0xbf6eac)
+		wf32d(0xbf6e30, thr * thr); wf32d(0xbf6e34, brk * brk)
+		-- ramps (/N): the original tail signs exact-zero differences under RC-down (x - x = -0); the provisional
+		-- mode keeps the Stage 6-11 arithmetic of its golden data (Python hand port of the tail)
+		local sub = provisional and plainSub or zsub
+		wf32d(0xbf6e88, sub(target, rf32(0xbf6e80)) / N)
+		wf32d(0xbf6394, sub(rf32(0xbf6e30), rf32(0xbf6e60)) / N)
+		wf32d(0xbf6358, sub(rf32(0xbf6e34), rf32(0xbf6e64)) / N)
+		local cl = sub(rf32(0xbf6eb0), rf32(0xbf6e68))
+		buffer.copy(M, 0xbf6e58 - BASE, M, 0xbf6e28 - BASE, 36) -- rep movsd bf6e28 -> bf6e58 (9 dwords)
+		wf32d(0xbf6e50, cl / N)
+		wf32d(0xbf6e80, target)
+		-- sequential shift request (bf6f0c == 0, transmission mode 0074c974 ~= 0); the 'not driven'
+		-- branch of 005524f0 clears the shift keys (bf6e20/21/22)
+		if c.driver ~= false and ri32(0xbf6f0c) ~= 2 and ri32(0xbf63cc) == 0 and ri32(0x74c974) ~= 0 and ri32(0xbf6f0c) == 0 then
+			local d = (c.shiftUp and 1 or 0) - (c.shiftDown and 1 or 0)
+			local st = ri32(0xbf6ea0)
+			if d ~= 0 and (st == 0 or st == 3 or st == 4) then
+				w32(0xbf63cc, d > 0 and 1 or 5); w32(0xbf6e98, 0)
+			end
+		end
+	end
+
+	-- 005539c0 input composition (player car; replay/telemetry recording not ported)
+	-- Stage 12 (scoped correction, STAGE12_RESULT.md change record C1): the steering / pedal composition sums
+	-- (@00553a40..00553ab5) sign exact-zero sums as the x87 under RC-down; until Stage 11 they returned
+	-- +0 where the original stores -0 (e.g. +0 + -0 at rest). Only the sign of a zero changes.
+	local function tickInputs()
+		wf64(0xbf6ef8, rf64(0xbf6ef8) + rf32(0x74fd74))
+		wf32d(0xbf6ea4, zadd(rf32(0xbf6394), rf32(0xbf6ea4)))
+		wf32d(0xbf63c0, zadd(rf32(0xbf6e88), rf32(0xbf63c0)))
+		-- Stage 13 (@00553a64): ORIGINAL 00554d30 front tyre statistics for the force feedback (NR2003CupFFB)
+		local ffb = V._ffbTick
+		if ffb then ffb() end
+		wf32d(0xbf6360, zadd(rf32(0xbf63c0), -rf32(0xc086b0)))
+		w32(0xbf6368, r32(0xbf6ea4))
+		wf32d(0xbf6364, zadd(rf32(0xc086b4), rf32(0xbf63c0)))
+		wf32d(0xbf636c, zadd(rf32(0xbf636c), rf32(0xbf6358)))
+		local c = zadd(rf32(0xbf6e50), rf32(0xbf6e14))
+		wf32d(0xbf6e14, c); wf32d(0xbf6370, c)
+		callx(0x553d70) -- lifted original: shift FSM, throttle blip/cut, auto clutch (005542f0)
+		wf32d(0xbf6374, ri32(0x74c97c))
+		-- rev limiter (005539c0): engine+0x438 (Cup 9300 rpm), band = max * 006f5a3c
+		local maxr = rf32(ENGINE + 0x438)
+		callx(0x554f10) -- lifted original rpm (state[34] * 9.5493, clamp 300..32000)
+		local rpm = popF()
+		local rpm32 = fd(rpm)
+		local band = fd(maxr * rf32(0x6f5a3c))
+		if maxr < rpm or ((maxr - band) < rpm32 and r8(0xbf6f3c) ~= 0) then
+			w32(0xbf6368, 0); w8(0xbf6f3c, 1)
+		elseif not ((maxr - band) < rpm32) then
+			w8(0xbf6f3c, 0)
+		end
+	end
+
+	-- one 288 Hz tick. contacts: 4 planes or function(phase) -> 4 planes (see core tires()).
+	-- Stage 9: the per-frame car update 005637e0 (aero factors, airspeed, drafting) runs in
+	-- 0055bfd0 before 005b2190 starts the frame; V._aeroFrame is installed by NR2003CupAero and
+	-- does nothing until a session is started (post-build state of Stages 6-8).
+	-- Stage 11 (integration point): the task loop increments getBGCount before the frame
+	-- (V._frameStart11) and the frame end is looked up at run time (V._frameEnd): NR2003CupFrame
+	-- replaces the Stage 6-10 subset by the ORIGINAL 00554520 + 00549c40.
+	-- the frame start of the 36 Hz task frame (task loop counter, 005637e0 aero subset, 005524f0 + 00551e80);
+	-- also called alone by the Stage 12 frame-start snapshot tests
+	local function frameStartAll(controls)
+		if V._frameStart11 then V._frameStart11() end
+		if V._aeroFrame then V._aeroFrame() end
+		frameStart(controls)
+	end
+	V._frameStartOnly = frameStartAll
+	function V.drive(controls, contacts)
+		if V.tick % TPF == 0 then frameStartAll(controls) end
+		w32(0xe8441c, V.tick % TPF)
+		w8(0xe843fc, 1)
+		tickInputs()
+		callx(0x5b2b90, ROOT, INPUTS); export()
+		tires(contacts, 1); callx(0x5b2bd0)
+		w8(0xe843fc, 0)
+		callx(0x5b2be0); export()
+		tires(contacts, 2); callx(0x5b2bd0)
+		callx(0x5b2c00)
+		V.tick += 1
+		if V.tick % TPF == 0 then V._frameEnd() end
+	end
+
+	-- component world transforms (vehicle-world axes) through the record pointer fields
+	-- (+0x32d position, +0x339 row-major body->world 3x3) used by the original export/render paths.
+	-- Records: 0 chassis, 4 lfhub, 5 lfwheel, 7 rfhub, 8 rfwheel, 9 raxle, 10 lrwheel, 11 rrwheel.
+	local POSP, ROTP = {}, {}
+	for r = 0, 15 do
+		local rec = ROOT + r * 0x505
+		POSP[r] = { r32(rec + 0x32d), r32(rec + 0x331), r32(rec + 0x335) }
+		local rot = {}
+		for k = 0, 8 do rot[k + 1] = r32(rec + 0x339 + 4 * k) end
+		ROTP[r] = rot
+	end
+	function V.componentPose(r, pos, rot)
+		pos = pos or table.create(3, 0); rot = rot or table.create(9, 0)
+		local p, q = POSP[r], ROTP[r]
+		pos[1], pos[2], pos[3] = rf32(p[1]), rf32(p[2]), rf32(p[3])
+		for k = 1, 9 do rot[k] = rf32(q[k]) end
+		return pos, rot
+	end
+
+	-- engine/drivetrain readouts (original cells)
+	function V.engineRpm() return rf32(0xbf6d40 + 4 * 34) * 9.549296585513721 end -- state[34] rad/s
+	function V.gearIndex() return ri32(0x74c97c) end      -- 0 = R, 1 = N, 2.. = 1st..
+	function V.gearCount() return ri32(ENGINE + 0x444) end -- Cup: 4
+	function V.revLimiter() return r8(0xbf6f3c) ~= 0 end
+	function V.inputs()
+		return rf32(0xbf6360), rf32(0xbf6364), rf32(0xbf6368), rf32(0xbf636c), rf32(0xbf6370), rf32(0xbf6374)
+	end
+
+	---------------------------------------------------------------------------------------------
+	-- Stage 8: brake setup + read-only brake/tire observation (original cells, no side effects)
+	---------------------------------------------------------------------------------------------
+	local SETUP_BIAS = 0xc055c0 + 4 * 0x28 -- active setup item 0x28 (00557d60(0x28)): front fraction
+	local BIAS_DESC = 0x6edf78 -- setup descriptor of item 0x28: int min/max/step/default (50/90/1/74 %)
+	local KB = {} -- per-wheel brake torque cells (0055e9b0 -> c0850c..c08518, JIT cells)
+	local RR = {} -- per-wheel rolling-resistance torque cells (0054cab0 -> c081f4..c08200)
+	local BRAKE_CELL, DRAG0, DRAG2, RATE
+	local WHEEL_RECORD = {[0] = 5, 8, 10, 11} -- lfwheel, rfwheel, lrwheel, rrwheel (00561090/1230/1250/1270)
+	local OMEGA, INERTIA = {}, {}
+	-- the cell addresses are allocated by the car build (emitter cells); Stage 10 rebuilds the car for a
+	-- garage setup (NR2003CupGarage), possibly with the generic callback structure whose constant cells
+	-- differ: the garage re-binds them after every rebuild (V._bindDriverCells)
+	local function bindCells()
+		for w = 0, 3 do KB[w] = r32(0xc0850c + 4 * w); RR[w] = r32(0xc081f4 + 4 * w) end
+		BRAKE_CELL = r32(0xe84480) -- e84474[3]: core brake input written by 005b2b90 from bf636c
+		DRAG0, DRAG2, RATE = r32(0x74e798), r32(0x74e79c), r32(0x74fda0) -- 10, 1e-4, 288 (005610b0)
+		for w = 0, 3 do
+			local rec = ROOT + WHEEL_RECORD[w] * 0x505
+			OMEGA[w] = r32(rec + 0x395)   -- spin joint velocity cell (velocity +0x385, axis 4)
+			INERTIA[w] = r32(rec + 0x195) -- articulated spin inertia cell (mass matrix +0x125, [4][4])
+		end
+	end
+	bindCells()
+	V._bindDriverCells = bindCells
+	local scratch = buffer.create(4)
+
+	-- garage brake bias (front %, integer 50..90) -> setup item 0x28 -> runtime cells, exactly as
+	-- the original car build does: toInternal 00423de0 (pct * 0.01f, x87 default CW = nearest),
+	-- then 0055e9b0 @0055f314: Kb[LF]=Kb[RF]=fd(maxT*b), Kb[LR]=Kb[RR]=fd(maxT*fd(1-b)),
+	-- maxT = car spec +0x1bc via slot +0x582 (Cup 3800 N*m). The original has no in-car brake bias
+	-- adjustment (0055e6d0 is unreferenced): apply after reset(), before driving.
+	function V.setBrakeBias(percent)
+		local lo, hi = ri32(BIAS_DESC + 2), ri32(BIAS_DESC + 6)
+		local p = math.clamp(math.floor((tonumber(percent) or ri32(BIAS_DESC + 14)) + 0.5), lo, hi)
+		buffer.writef32(scratch, 0, rf32(0x6ea4a4)); local k = buffer.readf32(scratch, 0)
+		buffer.writef32(scratch, 0, p * k)
+		wf32(SETUP_BIAS, buffer.readf32(scratch, 0))
+		local b, maxT = rf32(SETUP_BIAS), rf32(0xc12030 + 0x582)
+		local front, rest = fd(maxT * b), fd(K_ONE - b)
+		local rear = fd(maxT * rest)
+		wf32(KB[0], front); wf32(KB[1], front); wf32(KB[2], rear); wf32(KB[3], rear)
+		return p
+	end
+	function V.brakeBias()
+		local b = rf32(SETUP_BIAS)
+		return b, math.floor(b * 100 + 0.5), rf32(0xc12030 + 0x582)
+	end
+
+	-- brake chain readout: processed pedal (bf6eac), frame target pedal^2 (bf6e34), per-tick ramp
+	-- value (bf636c) and the core brake cell (e84480) used by the force code
+	function V.brakeState()
+		return rf32(0xbf6eac), rf32(0xbf6e34), rf32(0xbf636c), rf32(BRAKE_CELL)
+	end
+
+	-- brake temperature of wheel w (K): XOR-obfuscated storage of the tire object (+0x26c ^ +0x274),
+	-- evolved per frame by 0054f260 inside 0054d610 (Stage 11: frozen at the build value)
+	function V.brakeTemperature(w)
+		local t = 0xbf3a20 + w * 0xa39
+		buffer.writeu32(scratch, 0, bit32.bxor(r32(r32(t + 0x26c)), r32(r32(t + 0x274))))
+		return buffer.readf32(scratch, 0)
+	end
+
+	-- per-wheel observation of the last tire + forces pass (w: 0 LF, 1 RF, 2 LR, 3 RR)
+	--   torque   : friction/brake torque recorded by the original 0055e450..0055e480 (tire +0x268)
+	--   kb       : brake torque per unit core brake input (setup cells)
+	--   brakeCap : core brake input * kb (brake share of the 00561040 capacity)
+	--   dragCap  : 10 + 1e-4*omega^2 + rolling-resistance torque (rest of the capacity)
+	--   omega    : wheel spin rate relative to its hub/axle (rad/s); inertia = articulated Iyy
+	--   fx/fy/fz : tire outputs (+0x2d8/+0x2dc/+0x2e0, tire frame), vx: contact longitudinal
+	--              velocity (+0x2f0), vslip: tread - ground (+0x2ec), tread: |band speed| (+0x2cc)
+	function V.wheelBrake(w, out)
+		out = out or {}
+		local t = 0xbf3a20 + w * 0xa39
+		local core, kb, om = rf32(BRAKE_CELL), rf32(KB[w]), rf32(OMEGA[w])
+		out.torque = rf32(t + 0x268); out.kb = kb; out.brakeCap = core * kb
+		out.dragCap = rf32(DRAG0) + om * om * rf32(DRAG2) + rf32(RR[w])
+		out.omega = om; out.inertia = rf32(INERTIA[w]); out.rate = rf32(RATE)
+		out.fx = rf32(t + 0x2d8); out.fy = rf32(t + 0x2dc); out.fz = rf32(t + 0x2e0)
+		out.vx = rf32(t + 0x2f0); out.vslip = rf32(t + 0x2ec); out.tread = rf32(t + 0x2cc)
+		out.rollingTorque = rf32(RR[w])
+		out.temperature = V.brakeTemperature(w)
+		-- presentation-only lock indicator: tread speed ~ 0 while the contact still slides
+		out.locked = abs(out.vx) > 0.5 and out.tread < 0.05 * abs(out.vx)
+		return out
+	end
+	return V
+end
+]=])
+item("NR2003Cup","NR2003CupFrame","ModuleScript",18600,2779562858,19469,3109773798,[=[
+--!optimize 2
+-- GENERATED by recovery/stage11/gen_stage11.py from recovery/stage11/frame_host.luau; do not edit.
+-- Stage 11: the ORIGINAL per-frame runtime systems of the NR2003 Cup car (fuel, mass, tyre thermal / pressure /
+-- wear / failure, brake temperature, engine thermal / damage / failure, random failures, collision damage), run
+-- by code lifted from NR2003.exe (NR2003CupFrameCode*) on the core memory, in the order of the simulation task:
+--
+--   task loop 005f78f0       ++getBGCount (0x7559bc) before the frame                       V._frameStart11
+--   0055bfd0 -> 005637e0     aero factors / airspeed / drafting (Stage 9, NR2003CupAero)      V._aeroFrame
+--   005b2190                 00551e80 frame start, 8 x 288 Hz ticks (Stages 6-8)               NR2003CupDriver
+--             -> 00554520    FRAME END (whole ORIGINAL function, lifted):                     V._frameEnd
+--                  00551ce0 attitude filter, [005547a0 world/replay record: host], bf3a00 = airspeed,
+--                  radiator air factor (1 - grille tape, damage) -> 0051a830, 0051aac0 engine (ignition and
+--                  misfire, fuel burn, water / oil temperature and level, wear and failure), 0051c3d0 random
+--                  component failures, 005605c0 fuel mass -> fuel component record, 00551990 car snapshot +
+--                  per tyre 0054d610 (thermal zones, hot pressure, wear 0054e9f0, brake temperature 0054f260)
+--   0055bfd0 -> 00549c40     collision damage of the records of this frame (lifted)
+--
+-- Host boundary (ADAPTER, documented in STAGE11_RECOVERY.md, identical in the Unicorn reference harness
+-- recovery/stage11/orig_stage11.py): 005547a0 / 00592dc0 / 00557650 / 005d08d0 return immediately (track and
+-- replay recorders, multiplayer damage sync, collision sound, force feedback: Stage 13 evaluates the FFB block in
+-- NR2003CupFFB and delivers 005d08d0 to the host device layer); 005f58d0 (track point) copies the
+-- point and clears the track-query fields (no track loaded); the car world record (car+0x5ae) is posed from the
+-- exported state like 005543f0 does (position, 005f5a60 rotation, 005f5ac0 velocities) before the frame end.
+-- Pure Luau: no Instances.
+local CODE_PARTS, DATA_PARTS = 4, 1
+local band = bit32.band
+local ru, wu, rf, wf = buffer.readu32, buffer.writeu32, buffer.readf32, buffer.writef32
+
+local B64 = {}
+do
+	local chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+	for i = 1, 64 do B64[string.byte(chars, i)] = i - 1 end
+end
+local function b64into(dst, off, s)
+	local o = off
+	for i = 1, #s, 4 do
+		local a, b, c, d = string.byte(s, i, i + 3)
+		local x = B64[a] * 262144 + B64[b] * 4096 + (c ~= 61 and B64[c] or 0) * 64 + (d ~= 61 and B64[d] or 0)
+		buffer.writeu8(dst, o, bit32.rshift(x, 16)); o += 1
+		if c ~= 61 then buffer.writeu8(dst, o, band(bit32.rshift(x, 8), 0xff)); o += 1 end
+		if d ~= 61 then buffer.writeu8(dst, o, band(x, 0xff)); o += 1 end
+	end
+	return o - off
+end
+
+local CAR = 0xc12030
+local ENGINE = CAR + 0xc
+local DAMAGE = CAR + 0x1493          -- car vtable slots 1/2 (00592db0): damage object
+local TIRE0, TIRE_STRIDE = 0xbf3a20, 0xa39
+local BGCOUNT = 0x7559bc             -- getBGCount (005f7cb0)
+-- getIntCount (005f7cd0): timer-interrupt counter, a host clock. ADAPTER (same convention as the Stage 8 harness,
+-- orig_brake.INTCOUNT): +1 per frame at the frame start. Read by the lifted 00567660 (tyre / continuous contact
+-- records 0054a8d0: table row copy + getIntCount stamp at car+0x1323); the Stage 8 speed cache (00554f50) is
+-- recomputed in Luau and ignores it
+local INTCOUNT = 0x7559c4
+local RNG = 0xf6eae4                 -- rndInt (005f5670) state of stream 0 (+4: stream 1)
+local SETTINGS = 0xc0692a            -- race settings (0055a680)
+local FRAME_STACK = 0xf7e000
+local HOST = 0xf7f100
+local TOBJ = HOST + 0x680            -- Stage 9 car world record block (0x32c bytes)
+local S11 = 0xf7a000                 -- Stage 11 host blocks (unreferenced BSS): contact objects, body proxies, vectors
+local KEYS, BODY, OTHER, VEC = S11, S11 + 0x80, S11 + 0x280, S11 + 0x480
+-- ADAPTER host geometry: the car's collision object of the track system (c7e75c; built by the unrecovered track
+-- collision code when the car is placed in the world, null in the bench): container + 9 parts (+0x18..+0x24 wheel
+-- parts, +0x28..+0x38 deformable body parts), read by the original damage code 0054b0d0 / 00549860 / 0054a8d0 /
+-- 00577cb0. No collision-mesh deformation is simulated by the host: zeroed parts (PROVISIONAL; Unicorn reference identical)
+local COLL, COLL_PARTS, COLL_OBJ, HOST_SIZE = S11 + 0x500, S11 + 0x540, 0xc7e75c, 0x7c8
+
+-- V: core with driver (NR2003CupDriver), aero (NR2003CupAero) and garage (NR2003CupGarage) installed
+return function(V, codeParts, dataParts)
+	assert(#codeParts == CODE_PARTS, "NR2003CupFrameCode: expected " .. CODE_PARTS .. " parts, found " .. #codeParts)
+	assert(#dataParts == DATA_PARTS, "NR2003CupFrameData: expected " .. DATA_PARTS .. " parts, found " .. #dataParts)
+	local M, BASE = V.memory(), V.base
+	local PRISTINE = V._pristine()
+
+	-- image supplement: cells of the original post-build memory that only the Stage 11 code touches
+	local zbuf = buffer.create(4096)
+	local SUPPLEMENT = 0
+	for _, d in ipairs(dataParts) do
+		for _, z in ipairs(d.zero) do
+			local off, len = z[1], z[2]
+			while len > 0 do
+				local n = math.min(len, 4096)
+				buffer.copy(PRISTINE, off, zbuf, 0, n); off += n; len -= n
+			end
+			SUPPLEMENT += z[2]
+		end
+		for _, x in ipairs(d.data) do SUPPLEMENT += b64into(PRISTINE, x[1], x[2]) end
+	end
+
+	local ctx = {M = M, base = BASE, F = {}, R = table.create(10, 0), XF = {}}
+	for _, p in ipairs(codeParts) do p(ctx) end
+	local XF, R = ctx.XF, ctx.R
+
+	local function r32(a) return ru(M, a - BASE) end
+	local function w32(a, v) wu(M, a - BASE, band(v)) end
+	local function rf32(a) return rf(M, a - BASE) end
+	local function wf32(a, v) wf(M, a - BASE, v) end
+	local S = buffer.create(8)
+	local function f2u(x) buffer.writef32(S, 0, x); return buffer.readu32(S, 0) end
+	local function u2f(u) buffer.writeu32(S, 0, u); return buffer.readf32(S, 0) end
+
+	-- call an ORIGINAL lifted function (cdecl args, optional ECX for thiscall) on the Stage 11 register file
+	local function callx(addr, ecx, ...)
+		local args = { ... }
+		local n = #args
+		local esp = FRAME_STACK - 4 * (n + 1)
+		for k = 1, n do w32(esp + 4 * k, args[k]) end
+		w32(esp, 0)
+		for k = 1, 7 do R[k] = 0 end
+		R[8] = esp; R[9] = 0; R[10] = 0
+		if ecx then R[3] = ecx end
+		table.clear(ctx.F)
+		local f = XF[addr]
+		if not f then error(string.format("NR2003 Stage 11: %08x not lifted", addr)) end
+		f()
+		assert(R[8] == esp + 4 * (n + 1) - 4 * n or R[8] == esp + 4, "NR2003 Stage 11: unbalanced stack")
+		return R[1]
+	end
+	V._callx11 = callx
+
+	-------------------------------------------------------------------------------------------------------------
+	-- mode: "original" = the ORIGINAL frame end and collision frame (production); "frozen" = the Stage 6-10 frame
+	-- end (0051aac0 cut-timer subset only: every Stage 11 state held at its post-build value), kept ONLY to
+	-- compare against the Stage 6-10 golden data, which were produced by the original code with that frame end.
+	-------------------------------------------------------------------------------------------------------------
+	local mode = "original"
+	local frozenFrameEnd = V._frameEnd
+	local session11 = nil      -- Stage 11 session options applied at startSession (survive reset)
+
+	local function ensureWorldRecord()
+		if r32(CAR + 0x5ae) == 0 then
+			wf32(TOBJ + 0x24, 0); wf32(TOBJ + 0x28, 0); wf32(TOBJ + 0x2c, 1)
+			w32(CAR + 0x5ae, TOBJ)
+		end
+	end
+	-- 005543f0 without the track query: world record <- exported state (position, rotation, velocities)
+	local function syncWorldRecord()
+		ensureWorldRecord()
+		local rec = r32(CAR + 0x5ae)
+		w32(rec, r32(0xbf6d40)); w32(rec + 4, r32(0xbf6d48)); w32(rec + 8, r32(0xbf6d50))
+		callx(0x5f5a60, nil, rec, 0xbf6d58)
+		local v = VEC + 0x60
+		w32(v, r32(0xbf6d44)); w32(v + 4, r32(0xbf6d4c)); w32(v + 8, r32(0xbf6d54))
+		callx(0x5f5ac0, nil, rec, v, 0xbf6d68)
+	end
+	local function hostBlocks()
+		for a = S11, S11 + HOST_SIZE - 4, 4 do w32(a, 0) end
+		for k = 0, 7 do w32(KEYS + 16 * k + 4, BODY) end
+		w32(BODY + 0x1a4, 0); w32(OTHER + 0x1a4, 1)
+		for k = 0, 8 do w32(COLL + 0x18 + 4 * k, COLL_PARTS + 0x48 * k) end
+		w32(COLL_OBJ, COLL)
+	end
+
+	local function frameStart11()
+		if mode ~= "original" then return end
+		w32(BGCOUNT, r32(BGCOUNT) + 1)
+		w32(INTCOUNT, r32(INTCOUNT) + 1)
+	end
+	local function frameEnd11()
+		if mode ~= "original" then frozenFrameEnd(); return end
+		syncWorldRecord()
+		-- Stage 13: the force-feedback block of 00554520 (0055464c..0055479d) is evaluated by NR2003CupFFB in exact x87
+		-- arithmetic right after the lifted function (V._ffbFrameEnd: where the block ends the function); the lifted copy
+		-- (IEEE double intermediates) is skipped by presenting bf6ebb = 0, its only reader in 00554520 / 00549c40
+		local ffb = V._ffbFrameEnd
+		if ffb then
+			local acquired = buffer.readu8(M, 0xbf6ebb - BASE)
+			buffer.writeu8(M, 0xbf6ebb - BASE, 0)
+			callx(0x554520, nil)
+			buffer.writeu8(M, 0xbf6ebb - BASE, acquired)
+			ffb()
+		else
+			callx(0x554520, nil)
+		end
+		-- ADAPTER: the car is in the race order of the session (race-order ring car+4 / car+8, recovered in Stage 9;
+		-- the Stage 6/7 build leaves it 0). car+4 != 0 gates the collision damage of 00549c40 (00549290 body damage,
+		-- 0054a330 wheel / tyre impact states). One-car ring (links -> car+4) around 00549c40 only, as in the Unicorn
+		-- reference (orig_stage11.race_order): car+4 != 0 would also enable the per-tick render copy 005543f0.
+		local l4, l8 = r32(CAR + 4), r32(CAR + 8)
+		w32(CAR + 4, CAR + 4); w32(CAR + 8, CAR + 4)
+		callx(0x549c40, nil)
+		w32(CAR + 4, l4); w32(CAR + 8, l8)
+	end
+	V._frameStart11 = frameStart11
+	V._frameEnd = frameEnd11
+
+	function V.setRuntimeMode(m)
+		assert(m == "original" or m == "frozen", "runtime mode must be 'original' or 'frozen'")
+		mode = m
+	end
+	function V.runtimeMode() return mode end
+
+	-------------------------------------------------------------------------------------------------------------
+	-- race options and session (simulation task paths)
+	-------------------------------------------------------------------------------------------------------------
+	-- race option 'damage' (settings +0x4c bits 22..23): ORIGINAL 00547e90 -> damage scale bef700 = {0, .15, .6, 1}
+	function V.setDamageLevel(level)
+		level = math.clamp(math.floor(tonumber(level) or 3), 0, 3)
+		w32(SETTINGS + 0x4c, bit32.bor(band(r32(SETTINGS + 0x4c), bit32.bnot(bit32.lshift(3, 22))), bit32.lshift(level, 22)))
+		callx(0x547e90, nil, level)
+		return level, rf32(0xbef700)
+	end
+	-- race option fuel / tyre consumption rate (settings +0x50 bits 0..1 -> x1..x4, read by 0051aac0 / 0054e9f0)
+	function V.setConsumptionRate(rate)
+		rate = math.clamp(math.floor(tonumber(rate) or 0), 0, 3)
+		w32(SETTINGS + 0x50, bit32.bor(band(r32(SETTINGS + 0x50), bit32.bnot(3)), rate))
+		return rate + 1
+	end
+	-- roster series field of the player car (car+0x596): collision damage needs it nonzero (PROVISIONAL host input)
+	function V.setSeriesField(v) w32(CAR + 0x596, math.floor(tonumber(v) or 1)) end
+	-- rndSeed (005f5650) of stream 0, the stream used by every physics random draw (misfire, failures, damage)
+	function V.setRandomSeed(seed) w32(RNG, band(math.floor(tonumber(seed) or 0))) end
+	function V.randomState() return r32(RNG), r32(RNG + 4) end
+
+	-- ORIGINAL 00550a50 subset (car placed on the track by the simulation task): 00563080(car, 1) damage repair,
+	-- 00550c40 engine init, 00550c60 fuel load, 005512d0 four new tyres (00550f10), car+0x1518 = 0, 00550070(0)
+	-- (Stage 13, NR2003CupFFB), bf6eb9 = 0
+	function V.enterTrack()
+		ensureWorldRecord()
+		callx(0x563080, nil, CAR, 1)
+		callx(0x550c40, nil)
+		callx(0x550c60, nil)
+		callx(0x5512d0, nil)
+		w32(CAR + 0x1518, 0)
+		-- Stage 13 (@00550b07): ORIGINAL 00550070(0), player controls active + FF axis setup (NR2003CupFFB)
+		if V._ffbEnterTrack then V._ffbEnterTrack() end
+		buffer.writeu8(M, 0xbf6eb9 - BASE, 0)
+	end
+	-- ORIGINAL 00433610(chassis type car+0x58e): the collision-damage zone tree (00433660, nodes from the static pool
+	-- *bf39d4 via 00547e60), built in the game by the car-model load 00432d90; without it every zone lookup (0054a710)
+	-- returns -1 and no collision damage exists. Built once per car load (table 00890490 is checked first).
+	function V.buildDamageZones()
+		callx(0x433610, nil, r32(CAR + 0x58e))
+		return r32(0x890490) ~= 0
+	end
+	local function applySession11()
+		hostBlocks()
+		V.buildDamageZones()
+		V.setSeriesField(session11.series)
+		if session11.damageLevel ~= nil then V.setDamageLevel(session11.damageLevel) end
+		if session11.consumptionRate ~= nil then V.setConsumptionRate(session11.consumptionRate) end
+		if session11.seed ~= nil then V.setRandomSeed(session11.seed) end
+		V.enterTrack()
+	end
+	-- startSession(weather, opts): Stage 9 weather (005a3c00) then, in "original" mode, the Stage 11 session: race
+	-- options (opts.damageLevel 0..3, opts.consumptionRate 0..3, nil = post-build values), opts.series (car+0x596,
+	-- default 1), opts.seed (stream 0 state, nil = post-build), then the car is placed on the track (enterTrack)
+	local baseStart, baseEnd, baseReset = V.startSession, V.endSession, V.reset
+	function V.startSession(weather, opts)
+		local r = baseStart(weather)
+		if mode == "original" then
+			opts = opts or {}
+			session11 = {series = opts.series or 1, damageLevel = opts.damageLevel, consumptionRate = opts.consumptionRate, seed = opts.seed}
+			applySession11()
+		end
+		return r
+	end
+	function V.endSession()
+		session11 = nil
+		baseEnd()
+	end
+	-- reset = the car reloaded from the reset image (post-build); in an active Stage 11 session it is placed on
+	-- the track again (00550a50: repaired, engine and fuel re-initialised, new tyres), like a restart
+	function V.reset()
+		baseReset()
+		if session11 ~= nil and mode == "original" then applySession11() end
+	end
+
+	-------------------------------------------------------------------------------------------------------------
+	-- events
+	-------------------------------------------------------------------------------------------------------------
+	-- ORIGINAL 0054a760 collision record entry (called by the track contact code 00576e00 / 0057xxxx). The host
+	-- (Roblox geometry query) supplies the contact; NR2003 evaluates the damage (0054a8d0 -> 0054aa20 immediately
+	-- for tyre / flagged contacts, 00549c40 -> 00549290 at the end of the frame). rec = {magnitude (impact
+	-- magnitude in the units of the contact code), material (self, 0x13 = tyre), flags (0x2000000), surface (other
+	-- material id), point (world), localPoint (car frame, zone lookup), otherLocal, velocity, normal, p9, speed,
+	-- key 0..7 (contact object), other = true (contact with another car: body proxy index 1)}
+	local function vec(a, v)
+		v = v or {0, 0, 0}
+		wf32(a, v[1] or 0); wf32(a + 4, v[2] or 0); wf32(a + 8, v[3] or 0)
+	end
+	function V.collision(rec)
+		assert(type(rec) == "table" and rec.magnitude, "collision record needs a magnitude")
+		vec(VEC, rec.point); vec(VEC + 12, rec.localPoint); vec(VEC + 24, rec.otherLocal)
+		vec(VEC + 36, rec.velocity); vec(VEC + 48, rec.normal or {0, 0, 1})
+		local key = math.clamp(math.floor(rec.key or 0), 0, 7)
+		callx(0x54a760, nil, KEYS + 16 * key, f2u(rec.magnitude), band((rec.flags or 0) + (rec.material or 0x13)),
+			rec.surface or 1, VEC, VEC + 12, VEC + 24, VEC + 36, rec.p9 or 0, f2u(rec.speed or 0),
+			rec.other and OTHER or 0, VEC + 48)
+	end
+	-- ORIGINAL 00550f10 pit tyre change for wheels (0 LF, 1 RF, 2 LR, 3 RR): cold pressure from the setup, wear 0,
+	-- temperatures = session air temperature e0b834 (sun-heated) + 11 C, tyre state reset, 0054d610 run once
+	function V.pitTyres(wheels)
+		for _, w in ipairs(wheels or {0, 1, 2, 3}) do callx(0x550f10, nil, w) end
+	end
+
+	-------------------------------------------------------------------------------------------------------------
+	-- telemetry (reads the ORIGINAL cells; no duplicate state)
+	-------------------------------------------------------------------------------------------------------------
+	local function pf32(a) return u2f(bit32.bxor(r32(r32(a)), r32(r32(a + 8)))) end
+	local function pf64(a)
+		local p0, p2 = r32(a), r32(a + 8)
+		buffer.writeu32(S, 0, bit32.bxor(r32(p0), r32(p2))); buffer.writeu32(S, 4, bit32.bxor(r32(p0 + 4), r32(p2 + 4)))
+		return buffer.readf64(S, 0)
+	end
+	local function damageComponent(n)
+		-- 005486a0: packed component n of the damage word +8 (table 006f56b8, stride 21 bytes)
+		local e = 0x6f56b8 + n * 0x15
+		local shift, mask, flag = band(r32(e), 31), r32(e + 4), buffer.readu8(M, e + 8 - BASE)
+		local v = band(bit32.rshift(r32(DAMAGE + 8), shift), mask)
+		if flag == 0 then return v / mask end
+		if v == mask then return rf32(0x6ea4a0) end
+		return v / (mask - 1)
+	end
+	V.damageComponentOriginal = damageComponent
+	function V.stage11State(out)
+		out = out or {}
+		local fuel = pf64(ENGINE + 0x50c)
+		local spec = r32(CAR + 0x58a)
+		local fuelRec = r32(0xc08234)
+		out.mode = mode
+		out.fuel = {kg = fuel, massRecord = rf32(r32(fuelRec + 0x125)), inertiaRecord = rf32(r32(fuelRec + 0x179)),
+			specInertiaPerKg = rf32(spec + 0x28)}
+		out.engine = {water = pf32(ENGINE + 0x4a4), oil = pf32(ENGINE + 0x4d4), coolantLevel = rf32(ENGINE + 0x4a0),
+			oilLevel = rf32(ENGINE + 0x49c), power = rf32(ENGINE + 0x554), cutTimer = rf32(ENGINE + 0x550),
+			radiator = {rf32(ENGINE + 0x470), rf32(ENGINE + 0x474), rf32(ENGINE + 0x478), rf32(ENGINE + 0x47c), rf32(ENGINE + 0x480)},
+			heat = {rf32(ENGINE + 0x494), rf32(ENGINE + 0x498)}, overRev = rf32(ENGINE + 0x508), wear = rf32(ENGINE + 0x558),
+			life = rf32(ENGINE + 0x55c), blown = rf32(ENGINE + 0x560), flags = r32(ENGINE + 0x548), x4d0 = rf32(ENGINE + 0x4d0)}
+		out.tyres = out.tyres or {}
+		for w = 0, 3 do
+			local t = TIRE0 + w * TIRE_STRIDE
+			local o = out.tyres[w + 1] or {}
+			o.coldPressure = rf32(t); o.pressure = rf32(t + 0x2a0)
+			o.surface = {pf32(t + 0x160), pf32(t + 0x18c), pf32(t + 0x1b8)}
+			o.carcass = {pf32(t + 0x1e4), pf32(t + 0x210), pf32(t + 0x23c)}
+			o.wear = pf32(t + 0x74); o.gripWear = rf32(t + 0xcc); o.brake = pf32(t + 0x26c)
+			o.state = band(bit32.rshift(buffer.readu16(M, DAMAGE + 2 - BASE), 2 * w), 3)
+			o.wheel = band(bit32.rshift(buffer.readu16(M, DAMAGE - BASE), 6 + 2 * w), 3)
+			out.tyres[w + 1] = o
+		end
+		local zones = {}
+		for k = 0, 10 do zones[k + 1] = rf32(DAMAGE + 0x10 + 4 * k) end
+		local broken = {}
+		for k = 0, 8 do broken[k + 1] = buffer.readu8(M, 0xc086e0 + k - BASE) end
+		out.damage = {words = {r32(DAMAGE), r32(DAMAGE + 4), r32(DAMAGE + 8), r32(DAMAGE + 0xc)}, zones = zones,
+			tyre = {rf32(DAMAGE + 0x3c), rf32(DAMAGE + 0x40), rf32(DAMAGE + 0x44), rf32(DAMAGE + 0x48)},
+			radiator = rf32(DAMAGE + 0x4c), oil = rf32(DAMAGE + 0x50), fuel = rf32(DAMAGE + 0x54), engine = rf32(DAMAGE + 0x58),
+			x5c = rf32(DAMAGE + 0x5c), x60 = rf32(DAMAGE + 0x60), failures = buffer.readu8(M, DAMAGE + 0xe - BASE),
+			brokenFlags = broken, scale = rf32(0xbef700), series = r32(CAR + 0x596)}
+		out.airspeed = rf32(0xbf3a00); out.ambient = rf32(0x74c954); out.bgCount = r32(BGCOUNT); out.intCount = r32(INTCOUNT)
+		out.random = r32(RNG)
+		return out
+	end
+	V._stage11Supplement = SUPPLEMENT
+	buffer.copy(M, 0, PRISTINE, 0, V.imageSize)   -- the supplement is part of the reset image
+	V.reset()
+	return V
+end
+]=])
+item("Core","NR2003CupVehicle","ModuleScript",9070,588044759,10193,1159174214,[=[
+-- Stage 6/7 vehicle core: the ORIGINAL NR2003 Cup car running in Luau.
+-- Core.NR2003Cup holds code generated from NR2003.exe (recovery/stage6_7/gen_runtime.py):
+--   NR2003CupImage1..n : memory image after the game's own car build (spec, setup defaults,
+--                        tire/engine init, component graph, JIT cells, tables)
+--   NR2003CupCore      : machine state + 86 lifted x86 natives + host primitives
+--   NR2003CupJIT1..n   : the x87 callbacks NR2003 generates at car build, translated
+--   NR2003CupDriver    : 005b2190 tick order, 00551e80/005539c0 driver layer (hand port)
+--   NR2003CupAero      : Stage 9 session air (005a3c00), per-frame aero factors (005637e0),
+--                        drafting (005afd80), aero setup items, aero telemetry (hand port)
+--   NR2003CupSetup(+Data): Stage 10 garage setup: descriptors c05150, unit converters, garage API (hand port)
+--   NR2003CupBuild, NR2003CupBuildCode1..n, NR2003CupBuildData1..n: Stage 10 ORIGINAL car-build sequence
+--                        (setup -> runtime parameters) lifted from the exe, run on the core memory
+--   NR2003CupGarage    : Stage 10 applySetup / setup inspection (orchestration only)
+--   NR2003CupJITG1..n  : Stage 10 callbacks of the generic (setup-invariant) structure, translated
+--   NR2003CupSteering  : Stage 12 ORIGINAL steering chain (00552720, 00551e80 tail, 00554fb0, options)
+--   NR2003CupFFB       : Stage 13 ORIGINAL force feedback (00554d30, FFB block of 00554520, 0054fed0 / 00550070,
+--                        options), exact x87 arithmetic; output = the DirectInput constant force (ADAPTER)
+-- This module only assembles them and exposes a numeric API (no Instances, no Roblox types).
+-- Axes: NR2003 vehicle-world frame (+X forward, +Y left, +Z up, metres, seconds) fixed at reset.
+local M={};M.__index=M
+
+local function collect(get,prefix)
+    local list={}
+    for k=1,32 do
+        local m=get(prefix..k)
+        if m==nil then break end
+        list[#list+1]=m
+    end
+    return list
+end
+local function merge(parts)
+    assert(#parts>0,"NR2003CupImage parts missing")
+    local p=parts[1]
+    local image={base=p.base,size=p.size,stackTop=p.stackTop,host=p.host,windows={}}
+    for _,part in ipairs(parts) do
+        assert(part.base==image.base and part.size==image.size,"mismatched image part")
+        for _,w in ipairs(part.windows) do image.windows[#image.windows+1]=w end
+    end
+    assert(#parts==p.parts,"image has "..tostring(p.parts).." parts, found "..#parts)
+    return image
+end
+-- get(name) -> module value or nil
+function M.fromLoader(get)
+    local image=merge(collect(get,"NR2003CupImage"))
+    local jit=collect(get,"NR2003CupJIT")
+    assert(#jit>0,"NR2003CupJIT modules missing")
+    local V=get("NR2003CupDriver")(get("NR2003CupCore")(image,jit))
+    local aero=get("NR2003CupAero") -- Stage 9 (absent in a Stage 6/7/8 install)
+    if aero then aero(V) end
+    -- Stage 11 (absent in a Stage 6..10 install). Installed before the garage: its image supplement becomes part
+    -- of the reset image that the garage snapshots (applySetup of the default setup restores that image)
+    local frame=get("NR2003CupFrame")
+    if frame then
+        frame(V,collect(get,"NR2003CupFrameCode"),collect(get,"NR2003CupFrameData"))
+    end
+    local build=get("NR2003CupBuild") -- Stage 10 (absent in a Stage 6/7/8/9 install)
+    if build then
+        local Setup=get("NR2003CupSetup")(get("NR2003CupSetupData"))
+        local B=build(V,collect(get,"NR2003CupBuildCode"),collect(get,"NR2003CupBuildData"))
+        get("NR2003CupGarage")(V,Setup,B,collect(get,"NR2003CupJITG"))
+    end
+    -- Stage 12 (absent in a Stage 6..11 install): ORIGINAL steering chain; installed last so that its option
+    -- re-application wraps every reset (garage rebuilds included)
+    local steering=get("NR2003CupSteering")
+    if steering then steering(V) end
+    -- Stage 13 (absent in a Stage 6..12 install): ORIGINAL force feedback; installed after the steering chain (it
+    -- follows the control-7 binding written by the steering device layer) and after the frame end (its hooks)
+    local ffb=get("NR2003CupFFB")
+    if ffb then ffb(V) end
+    return setmetatable({V=V,state=table.create(45,0),pos={0,0,0},rot={1,0,0,0,1,0,0,0,1}},M)
+end
+function M.new(folder)
+    folder=folder or (script and script.Parent:FindFirstChild("NR2003Cup"))
+    assert(folder,"Core.NR2003Cup folder missing")
+    return M.fromLoader(function(name)
+        local m=folder:FindFirstChild(name)
+        return m and require(m) or nil
+    end)
+end
+
+function M:reset() self.V.reset() end
+function M:tick() return self.V.tick end
+-- controls: {throttle, clutch(engagement), shiftUp, shiftDown,
+--   steerLeft/steerRight (Stage 12: raw steering controls 7/8, 0..1) + steerDigital (true = keys/buttons,
+--   false = analog axis), or steerAxis (-1..1, + right: one analog axis split as the original device layer),
+--   steer (road-wheel rad, + left: PROVISIONAL Stage 6-11 contract, only in the steering mode "provisional"),
+--   brakeControl (Stage 8: raw brake device value 0..1 -> ORIGINAL 00552d00/00553080 chain),
+--   brakeDigital (true = key/button binding, false = analog axis), throttleControl/throttleDigital,
+--   driver (false -> 005524f0 'not driven': brake held at 1.0),
+--   brake (no brakeControl: processed pedal injected directly, Stage 6/7 contract)}
+-- contacts: 4 planes {nx,ny,nz,d,gvx,gvy,gvz,surface,grip} or function(phase) -> planes
+function M:step(controls,contacts) self.V.drive(controls,contacts) end
+-- Stage 8 brake API (original cells; see CORE_API.md)
+function M:setBrakeBias(percent) return self.V.setBrakeBias(percent) end
+function M:brakeBias() return self.V.brakeBias() end
+function M:brakeState() return self.V.brakeState() end
+function M:wheelBrake(i,out) return self.V.wheelBrake(i,out) end
+function M:brakeTemperature(i) return self.V.brakeTemperature(i) end
+-- Stage 9 aero API (original cells; see CORE_API.md). Without startSession the core keeps its
+-- post-build state (no air: rho = 0), the condition of every Stage 6/7/8 fixture.
+--   weather = {temperatureF, windSpeedMph, windDirection 0..7, conditions 0..3, night, trackNorth,
+--              humidity, pressureInHg}  (nil fields = original defaults)
+-- Stage 11: opts = {damageLevel 0..3, consumptionRate 0..3, series (car+0x596), seed} (see CORE_API.md)
+function M:startSession(weather,opts) return self.V.startSession(weather,opts) end
+function M:endSession() self.V.endSession() end
+function M:sessionActive() return self.V.sessionActive() end
+function M:weather() return self.V.weather() end
+function M:setDraftEnvironment(env) self.V.setDraftEnvironment(env) end
+function M:setTrackNormal(n) self.V.setTrackNormal(n) end
+function M:aeroFactors() return self.V.aeroFactors() end
+function M:setAeroSetup(s) return self.V.setAeroSetup(s) end
+function M:aeroSetup() return self.V.aeroSetup() end
+function M:aeroState(out) return self.V.aeroState(out) end
+-- Stage 10 setup API (see CORE_API.md / SETUP_MAP.md). A setup is a raw array [0..183] in the
+-- original c055c0 representation; edit it with M:setupModule() (Setup.set/step/display/...).
+function M:setupModule() return self.V.Setup end
+function M:defaultSetup() return self.V.Setup.cupGarageDefault() end
+function M:setup() return self.V.setup() end
+function M:applySetup(s) return self.V.applySetup(s) end
+function M:setupReport() return self.V.setupReport() end
+function M:setupDump(out) return self.V.setupDump(out) end
+-- Stage 11 runtime systems (ORIGINAL frame end; see CORE_API.md). Mode "original" (default, production) or
+-- "frozen" (the Stage 6-10 frame end, only for comparisons with the Stage 6-10 golden data).
+function M:setRuntimeMode(m) self.V.setRuntimeMode(m) end
+function M:runtimeMode() return self.V.runtimeMode() end
+function M:stage11State(out) return self.V.stage11State(out) end
+function M:collision(rec) self.V.collision(rec) end
+function M:pitTyres(wheels) self.V.pitTyres(wheels) end
+function M:enterTrack() self.V.enterTrack() end
+function M:setDamageLevel(level) return self.V.setDamageLevel(level) end
+function M:setConsumptionRate(rate) return self.V.setConsumptionRate(rate) end
+function M:setRandomSeed(seed) self.V.setRandomSeed(seed) end
+function M:randomState() return self.V.randomState() end
+-- Stage 12 steering API (ORIGINAL chain; see CORE_API.md / STAGE12_STEERING_STATE_MAP.md)
+function M:setSteeringMode(m) self.V.setSteeringMode(m) end
+function M:steeringMode() return self.V.steeringMode() end
+function M:setSteeringOptions(o) return self.V.setSteeringOptions(o) end
+function M:steeringOptions() return self.V.steeringOptions() end
+function M:steeringState(out) return self.V.steeringState(out) end
+function M:steeringWheelAngle() return self.V.steeringWheelAngle() end
+-- Stage 13 force feedback API (ORIGINAL chain; see CORE_API.md / STAGE13_FFB_STATE_MAP.md)
+function M:setForceFeedbackOptions(o) return self.V.setForceFeedbackOptions(o) end
+function M:forceFeedbackOptions() return self.V.forceFeedbackOptions() end
+function M:setForceFeedbackDevice(d) self.V.setForceFeedbackDevice(d) end
+function M:forceFeedbackState(out) return self.V.forceFeedbackState(out) end
+function M:setControlsSuspended(flag) self.V.setControlsSuspended(flag) end
+function M:controlsSuspended() return self.V.controlsSuspended() end
+function M:selectActiveControls() self.V.selectActiveControls() end
+function M:readState() return self.V.state(self.state) end
+function M:componentPose(record,pos,rot) return self.V.componentPose(record,pos,rot) end
+function M:contactOut(i) return self.V.contactOut(i) end
+function M:resetContactBlock(i,x,y,z) self.V.resetContactBlock(i,x,y,z) end
+function M:translate(dx,dy,dz) self.V.translate(dx,dy,dz) end
+function M:checkpoint() return self.V.checkpoint() end
+function M:restore(c) self.V.restore(c) end
+function M:engineRpm() return self.V.engineRpm() end
+function M:gearIndex() return self.V.gearIndex() end
+function M:gearCount() return self.V.gearCount() end
+function M:revLimiter() return self.V.revLimiter() end
+function M:inputs() return self.V.inputs() end
+-- Stage 5 HUD numbering: -1 R, 0 N, 1.. forward
+function M.displayGear(index) return index-1 end
+return M
+]=])
+item("Core","CupTune","ModuleScript",4911,116976927,5569,669310955,[=[
+-- NR2003 Cup (series 0, chassis type 2 "spdway") HOST/PRESENTATION geometry for Stage 6/7.
+-- The physics does NOT read this table: mass, inertia, suspension, tires, engine, drivetrain,
+-- setup and aero all live inside the original NR2003 memory image (Core.NR2003Cup).
+-- Values here only place Roblox parts, aim contact queries and drive the cockpit visuals.
+-- Sources (original component records 0x727290 + i*0x505, after the original build path):
+--   lfsusp/rfsusp offset (1.2070, +-0.7684, -0.0982) m; raxle offset (-1.5870, 0, -0.2577);
+--   lr/rr wheel offset in raxle (0, +-0.7684, 0.1042); wheel centre height at rest 0.3541/0.3509 m
+--   (record +0x32d world-position cells, car settled on a flat plane).
+-- Everything marked PROVISIONAL is a Roblox-side choice, not NR2003 data.
+local U=require(script and script.Parent.MathUtil or "core.MathUtil")
+local Base=require(script and script.Parent.TestTune or "core.TestTune")
+local T={
+    name="NR2003 Cup (original image)",version="3.6.0-stage7",originalCalibration=true,
+    physics="NR2003_CUP: original 45-state core (Core.NR2003Cup)",
+    reference={series=0,chassisType=2,spec="0x7238e0",tireProfiles="0x8b0c00",setup="descriptor defaults (c03350/c055c0)"},
+    fixedStep=1/288,gravity=9.80665,
+    metresPerStud=Base.metresPerStud,          -- same scale as the Stage 5 bench model
+    kilogramsPerMassUnit=Base.kilogramsPerMassUnit,
+    mass=1715,                                 -- static wheel-load sum / g (display only)
+    chassisSize=Base.chassisSize,
+    wheelbase=1.2070+1.5870,frontTrack=2*0.7684,rearTrack=2*0.7684,
+    frontZ=-1.2070,rearZ=1.5870,               -- Roblox chassis frame: -Z forward
+    -- VisualRig places hubs at (x, mountY - springFreeLength + compression, z); the Cup adapter
+    -- sends compression = wheel-centre height relative to the chassis reference (record cells).
+    mountY=0,springFreeLength=0,initialCompression=0,
+    restCentre={front=0.3541-0.4174,rear=0.3509-0.4174},
+    wheelRadius=0.354,wheelWidth=Base.wheelWidth,   -- loaded radius at rest (presentation)
+    -- contact query (PROVISIONAL host choice): ray from wheel centre + up*rayAbove, length rayLength
+    contactQuery={rayAbove=0.55,rayLength=1.45,maximumSlopeCos=0.25,noContactPlane=1000},
+    -- host collision box (PROVISIONAL): chassis part box raised so its floor keeps the Stage 5
+    -- bench clearance (~0.55 m) and ramps/kerbs are handled by the tires, not by the boundary
+    collision={raise=0.32},
+    -- steering: only the presentation fields (camber of the visual rig) are still read; the steering itself is the
+    -- ORIGINAL chain since Stage 12 (NR2003CupSteering)
+    steering=U.copy(Base.steering),
+    -- Stage 12.1 driver defaults of the Roblox bench (car attributes override them at every reset, see
+    -- CupChassisAdapter.initialize). The core default without these options is the original executable.
+    --   steeringLockDegrees  steering-wheel rotation lock to lock at full input: 360 = the ORIGINAL x pi (180 deg per
+    --                        side, 00551e80); other values are a NON-ORIGINAL extension (attribute SteeringLockDegrees)
+    --   setupSteeringRatio   garage item 0x30 (12..32) used when the car has no Setup_steeringRatio attribute, applied
+    --                        through the ORIGINAL garage pipeline (the shipped Cup setup has 18)
+    --   momentumKeys         steering momentum (0..100, original setter 005500c0) while the keys drive the steering;
+    --                        nil = the executable's image rate 0.033 / frame (smooth keys, no controls.cfg)
+    --   momentumAxis         the same while an analog axis (gamepad / mouse) drives it: 0 = no slew and no sine (the
+    --                        front-end default of a saved controls.cfg)
+    --   cockpitLimit         cockpit wheel draw limit: "lock" = the full lock (180 deg per side at 360), "original" =
+    --                        the 005662d0 limit 2.79 rad (160 deg)
+    driver={steeringLockDegrees=360,setupSteeringRatio=12,momentumKeys=nil,momentumAxis=0,cockpitLimit="lock",
+        -- Stage 13 bench defaults (car attributes override): force feedback ON with the image values of the executable
+        -- (strength 80, damping 0, latency 0 = no controls.cfg), FF output present (HUD + gamepad motors). The original
+        -- default without controls.cfg is OFF; the effect still needs the steering on an analog axis (0054fed0)
+        ffbEnabled=true,ffbStrength=nil,ffbDamping=nil,ffbLatency=nil,ffbDevice=true,
+        -- presentation only (NOT original): the constant force drives the large motor of the active gamepad with |force|
+        -- (Roblox has no directional force feedback); false = HUD only
+        ffbRumble=true},
+    engine={gears=4,limiterRPM=9300},          -- engine+0x444 / engine+0x438 (display)
+    environment={ambientC=26.6667},            -- e0b830 (tire thermal frozen: Stage 11)
+    adapter=U.copy(Base.adapter),
+}
+T.steering.ackermann=0; T.steering.toe=0; T.steering.camber=0 -- toe comes from c086b0/c086b4
+function T.new()
+    local p=U.copy(T); p.new=nil
+    p.corners={
+        {name="FL",x=-0.7684,z=-1.2070,front=true,side=-1,record=5,hub=4,state={angle=17,rate=18,travel=13}},
+        {name="FR",x=0.7684,z=-1.2070,front=true,side=1,record=8,hub=7,state={angle=23,rate=24,travel=19}},
+        {name="RL",x=-0.7684,z=1.5870,front=false,side=-1,record=10,state={angle=29,rate=30,travel=25}},
+        {name="RR",x=0.7684,z=1.5870,front=false,side=1,record=11,state={angle=31,rate=32,travel=25}},
+    }
+    return p
+end
+return T
+]=])
+item("Roblox","CupChassisAdapter","ModuleScript",33593,1789175741,37708,2918153274,[=[
+-- Stage 13: the ORIGINAL force feedback runs inside the core (00554d30 front tyre statistics per tick, the FFB block of the
+-- frame end 00554520, 0054fed0 / 00550070 FF axis and controls; exact x87 arithmetic). Options = the controls.cfg values
+-- (attributes ForceFeedback bool, ForceFeedbackStrength 0..100, ForceFeedbackDamping 0..100, ForceFeedbackLatency
+-- 0..250 ms; absent = CupTune.driver bench defaults, then the original image values: off, 80, 0, 0). ForceFeedbackDevice
+-- (bool) = the host offers an FF output for the steering axis (ADAPTER for DirectInput: the HUD + gamepad motors on the
+-- client); the effect is acquired by the ORIGINAL 0054fed0 only while the steering is on an analog axis. No driver seated
+-- = player controls suspended (ORIGINAL 00550070(1)). The output (the original constant force -1..1 and the DirectInput
+-- magnitude _ftol(force x 10000)) is published as car attributes FFBForce / FFBMagnitude / FFBActive; nothing feeds back.
+-- Stage 12: the ORIGINAL steering chain runs inside the core (00552720 device processing, linearity, x pi,
+-- 00554fb0 setup ratio item 0x30 with the low-speed override, per-tick ramp + toe -> prescribed hub coordinates).
+-- The adapter is only the device layer (0057abc0 equivalent): keys -> digital steering controls 7 / 8, an analog
+-- axis (gamepad / wheel, normalised -1..1 by Roblox) -> both controls split by sign. Driver options from car
+-- attributes: SteeringLinearity (controls.cfg value 0..100), SteeringMomentum (0..100, 0 = no slew),
+-- SteeringLowSpeedOverride (bool); absent = the original values when no controls.cfg was loaded. (The arcade
+-- driving mode and steering assistance are not ported: the core refuses them.) The cockpit wheel draws the ORIGINAL 005662d0 angle; front wheels use the solver poses.
+-- Stage 11: the ORIGINAL per-frame runtime systems run inside the core (fuel burn and fuel mass, tyre thermal /
+-- hot pressure / wear / failure, brake temperature, engine thermal / damage / failure, random failures, collision
+-- damage). The adapter only starts the Stage 11 session with the race options (car attributes RaceDamageLevel 0..3,
+-- RaceConsumptionRate 0..3, RosterSeries, RandomSeed; Stage11Runtime="frozen" = Stage 6-10 frame end for A/B),
+-- offers TEST-ONLY event injection (DamageTestImpact = magnitude of one ORIGINAL collision record at the front
+-- bumper, PitTyresTest = ORIGINAL 00550f10 x4) and reads telemetry from the original cells. No state is kept here.
+-- Stage 10: garage setup at initialize/reset (car attributes Setup_<item> in display units, e.g.
+-- Setup_springLF = 1700, Setup_camberLF = -2.5; legacy SetupBrakeBias/SetupGrilleTape/SetupSpoiler map to
+-- items brakeBias/grilleTape/spoilerAngle). Each value goes through the ORIGINAL garage function 005581d0
+-- (snap to the step grid + clamp), and the setup is applied by the ORIGINAL car build (core:applySetup).
+-- Rebuild only when the setup changed; the rebuilt car is the core's reset image.
+-- Stage 9: session air + aero setup at initialize/reset (car attributes), per-frame track normal and
+-- test-only phantom draft (aeroHostInputs), aero telemetry. The aero forces themselves are computed
+-- by the ORIGINAL core (00561a80/00561b70); the host applies no aero force.
+-- Stage 6/7 host for mode NR2003_CUP: the ORIGINAL NR2003 Cup vehicle core owns all 45 states
+-- (chassis, LF/RF suspension + hub + wheel, rear axle + LR/RR wheels, engine, clutch, output
+-- shaft, head). Roblox only supplies contact planes (raycasts at the core's own wheel positions),
+-- driver controls, and presentation. Nothing rendered feeds back into the core.
+-- No ApplyImpulse / AssemblyMass / Roblox rigid-body integration for this car.
+local Core=script.Parent.Parent.Core
+local Vehicle=require(Core.NR2003CupVehicle)
+local CupTune=require(Core.CupTune)
+local Surface=require(Core.Surface)
+local Fixed=require(Core.NR2003FixedStep)
+local U=require(Core.MathUtil)
+local Visual=require(script.Parent.VisualRig)
+local SeatAccess=require(script.Parent.SeatAccess)
+local Cockpit=require(script.Parent.Cockpit)
+local RenderSnapshot=require(script.Parent.RenderSnapshot)
+local M={};M.__index=M
+
+-- NR2003 vehicle-world (+X fwd, +Y left, +Z up) <-> Roblox origin-local (+X right, +Y up, -Z fwd)
+local function toLocal(x,y,z) return Vector3.new(-y,z,-x) end
+local function fromLocal(v) return -v.Z,-v.X,v.Y end
+-- R' = B R B^T for a row-major NR2003 body->world matrix
+local function localRotation(r)
+    return r[5],-r[6],r[4],
+        -r[8],r[9],-r[7],
+        r[2],-r[3],r[1]
+end
+
+function M.new(car,tune,remote)
+    local cup=CupTune.new()
+    local self=setmetatable({car=car,root=car.Chassis,tune=cup,benchTune=tune,telemetryTimer=0,debugVisible=false,
+        fault=nil,renderSpin={},lastRenderSnapshotTime=nil,renderTeleport=true,pendingShift=0,steeringOut={},
+        planes={},inContact={},wheelPose={},contactPoints={},scratchPos={0,0,0},scratchRot={1,0,0,0,1,0,0,0,1},ffbOut={}},M)
+    for j=1,4 do
+        self.planes[j]={0,0,1,0,0,0,0,1,1};self.inContact[j]=false
+        self.wheelPose[j]={pos={0,0,0},rot={1,0,0,0,1,0,0,0,1},compression=0,steer=0,angle=0,rate=0}
+        self.contactPoints[j]={point=Vector3.zero,grounded=false}
+    end
+    self.spawn=car:GetPivot();self.oldAnchored=self.root.Anchored;self.oldCollide=self.root.CanCollide
+    car:SetAttribute("NR2003CorePoseOwner",true);car:SetAttribute("PhysicsMode","NR2003_CUP")
+    car:SetAttribute("NR2003Tune","CupTune")
+    car:SetAttribute("CockpitWheelAngle",true) -- Stage 12: render snapshots carry the ORIGINAL steering-wheel angle
+    self.root.Anchored=true;self.root.CanCollide=false
+    self.root.AssemblyLinearVelocity=Vector3.zero;self.root.AssemblyAngularVelocity=Vector3.zero
+    local params=RaycastParams.new();params.FilterType=Enum.RaycastFilterType.Exclude
+    params.FilterDescendantsInstances={car};params.RespectCanCollide=true;params.IgnoreWater=false
+    self.params=params
+    self.visual=Visual.new(car,cup);self.access=SeatAccess.new(car,remote);Cockpit.ensure(car,cup)
+    self.core=Vehicle.new(Core:WaitForChild("NR2003Cup"))
+    self:initialize()
+    return self
+end
+
+-- numeric frame: origin on the ground under the spawn pose (the core starts at z=0.42 m)
+function M:groundOrigin(pivot)
+    local hit=workspace:Raycast(pivot.Position+pivot.UpVector*2,-pivot.UpVector*60,self.params)
+    local rot=pivot-pivot.Position
+    if hit then return CFrame.new(hit.Position)*rot end
+    return CFrame.new(pivot.Position-pivot.UpVector*(0.42/self.tune.metresPerStud))*rot
+end
+function M:worldPoint(x,y,z) return self.origin:PointToWorldSpace(toLocal(x,y,z)/self.tune.metresPerStud) end
+function M:worldVector(x,y,z) return self.origin:VectorToWorldSpace(toLocal(x,y,z)) end
+function M:numericPoint(p)
+    local x,y,z=fromLocal(self.origin:PointToObjectSpace(p)*self.tune.metresPerStud);return x,y,z
+end
+function M:numericVector(v) local x,y,z=fromLocal(self.origin:VectorToObjectSpace(v));return x,y,z end
+
+-- Stage 10: garage setup from the car attributes (nil when the core has no Stage 10 modules)
+local LEGACY_SETUP={brakeBias="SetupBrakeBias",grilleTape="SetupGrilleTape",spoilerAngle="SetupSpoiler"}
+function M:garageSetup()
+    local Setup=self.core.V.Setup
+    if not Setup then return nil end
+    local s=Setup.cupGarageDefault()
+    for i=0,70 do
+        if Setup.adjustable(i) then
+            local name=Setup.ITEM[i].name
+            local v=self.car:GetAttribute("Setup_"..name)
+            if not U.finite(v) and LEGACY_SETUP[name] then v=self.car:GetAttribute(LEGACY_SETUP[name]) end
+            if U.finite(v) then Setup.set(s,i,v) end
+        end
+    end
+    -- Stage 12.1: bench default of the garage steering ratio (item 0x30) when no Setup_steeringRatio attribute is set
+    local ratio=self.tune.driver and self.tune.driver.setupSteeringRatio
+    if U.finite(ratio) and not U.finite(self.car:GetAttribute("Setup_steeringRatio")) then Setup.set(s,"steeringRatio",ratio) end
+    return s
+end
+function M:applyGarageSetup(s)
+    local key=table.concat(s,",",0,183)
+    if key==self.appliedSetupKey then return end
+    local ok,rep=self.core:applySetup(s)
+    self.car:SetAttribute("SetupStructure",rep.structure);self.car:SetAttribute("SetupApplySeconds",rep.seconds)
+    if ok then
+        self.appliedSetupKey=key;self.car:SetAttribute("SetupError",nil)
+        local d=self.core:setupDump()
+        local r=d.runtime
+        print(string.format("[NR2003 Stage 10] setup aplicado (%s, %.2f s): molas %.0f/%.0f/%.0f/%.0f N/m, freio %.0f/%.0f N*m, marchas %.3f/%.3f/%.3f/%.3f x %.3f",
+            rep.structure,rep.seconds or 0,r.springRate[1],r.springRate[2],r.springRate[3],r.springRate[4],r.brakeTorque[1],r.brakeTorque[3],
+            r.gearRatio[3],r.gearRatio[4],r.gearRatio[5],r.gearRatio[6],r.finalDrive))
+    else
+        self.car:SetAttribute("SetupError",tostring(rep.firstViolation))
+        warn("NR2003 Stage 10: setup não representável, mantido o anterior ("..tostring(rep.firstViolation)..")")
+    end
+end
+function M:initialize()
+    self.origin=self:groundOrigin(self.spawn)
+    -- Stage 12: the steering options are re-read from the attributes at every initialize/reset
+    if self.core.V.clearSteeringOptions then self.core.V.clearSteeringOptions() end
+    if self.core.V.clearForceFeedbackOptions then self.core.V.clearForceFeedbackOptions() end
+    self.core:reset()
+    local function num(name) local v=self.car:GetAttribute(name);return U.finite(v) and v or nil end
+    local garage=self:garageSetup()
+    if garage then
+        -- Stage 10: the whole garage setup through the ORIGINAL build (brake bias, tape and spoiler included)
+        self:applyGarageSetup(garage)
+        self.brakeBias=select(2,self.core:brakeBias())
+        self.car:SetAttribute("BrakeBiasApplied",self.brakeBias)
+        local tape,spoiler=self.core:aeroSetup()
+        self.car:SetAttribute("GrilleTapeApplied",tape);self.car:SetAttribute("SpoilerApplied",spoiler)
+    else
+        -- Stage 8: garage brake bias (setup item 0x28, % front, 50..90). Car attribute SetupBrakeBias;
+        -- absent = shipped Cup default (74). Applied at build/reset only, like the original garage.
+        local bias=self.car:GetAttribute("SetupBrakeBias")
+        if U.finite(bias) then self.brakeBias=self.core:setBrakeBias(bias) else self.brakeBias=select(2,self.core:brakeBias()) end
+        self.car:SetAttribute("BrakeBiasApplied",self.brakeBias)
+        -- Stage 9: garage aero items read at run time by the original aero (00410280): grille tape
+        -- (item 0x3b, % 0..100 step 5) and rear spoiler (item 0x3d, deg 45..70). Absent = Cup defaults.
+        local tape,spoiler=self.core:setAeroSetup({grilleTape=num("SetupGrilleTape"),spoiler=num("SetupSpoiler")})
+        self.car:SetAttribute("GrilleTapeApplied",tape);self.car:SetAttribute("SpoilerApplied",spoiler)
+    end
+    local tape,spoiler=self.core:aeroSetup()
+    -- Stage 9: session start 005a3c00 = race weather settings (ADAPTER: car attributes standing for
+    -- the race options; absent = original defaults 70 F, no wind, conditions 0, daytime). TrackNorth
+    -- (rad) stands for the track's north angle (bdbcf8) in the core frame. AeroSession=false keeps the
+    -- Stage 6/7/8 post-build state (no air) for A/B comparison.
+    self.core:setDraftEnvironment(nil);self.core:setTrackNormal(nil)
+    -- Stage 11: production = "original" runtime; Stage11Runtime="frozen" keeps the Stage 6-10 frame end (A/B only)
+    local frozen=self.car:GetAttribute("Stage11Runtime")=="frozen"
+    if self.core.V.setRuntimeMode then self.core:setRuntimeMode(frozen and "frozen" or "original") end
+    -- Stage 12: ORIGINAL steering chain + driver options (ORIGINAL setters 005502f0 / 005500c0 / 00550110)
+    if self.core.V.setSteeringMode then
+        self.core:setSteeringMode("original")
+        local function flag(name) local v=self.car:GetAttribute(name);if type(v)=="boolean" then return v end;return nil end
+        -- Stage 12.1 bench options (CupTune.driver defaults; attributes override): steering lock, momentum per device,
+        -- cockpit wheel draw limit. Lock 360 = the original constant; the others are host choices (STAGE12_RESULT.md)
+        local d=self.tune.driver or {}
+        local function pick(name,default) local v=num(name);if v~=nil then return v end;return default end
+        local clamp=self.car:GetAttribute("CockpitWheelClamp")
+        if clamp~="original" and clamp~="lock" then clamp=d.cockpitLimit end
+        local o=self.core:setSteeringOptions({linearity=num("SteeringLinearity"),momentum=num("SteeringMomentum"),
+            lowSpeedOverride=flag("SteeringLowSpeedOverride"),lockDegrees=pick("SteeringLockDegrees",d.steeringLockDegrees),
+            momentumKeys=pick("SteeringMomentumKeys",d.momentumKeys),momentumAxis=pick("SteeringMomentumAxis",d.momentumAxis),
+            cockpitLimit=clamp})
+        self.car:SetAttribute("SteeringLinearityApplied",o.linearity);self.car:SetAttribute("SteeringRateApplied",o.steerRate)
+        self.car:SetAttribute("SteeringRatioApplied",o.setupRatio);self.car:SetAttribute("SteeringLockApplied",o.lockDegrees)
+        print(string.format("[NR2003 Stage 12] direção original: relação %g:1 (item 0x30), trava %g° (%g° por lado), override baixa velocidade %s, linearidade %.2f, taxa %.4f/quadro (teclas %s, eixo %s), volante até %g°",
+            o.setupRatio,o.lockDegrees,o.lockDegrees/2,o.lowSpeedOverride and "on" or "off",o.linearity,o.steerRate,
+            o.momentumKeys==nil and "imagem" or tostring(o.momentumKeys),o.momentumAxis==nil and "imagem" or tostring(o.momentumAxis),
+            o.cockpitLimitDegrees))
+    end
+    -- Stage 13: ORIGINAL force feedback options (messages 8..11 = controls.cfg values) and the host FF device, set before
+    -- the car is placed on the track (00550a50 -> 00550070(0) -> 0054fed0)
+    self.controlsSuspended=nil
+    if self.core.V.setForceFeedbackOptions then
+        local d=self.tune.driver or {}
+        local function boolAttr(name,default) local v=self.car:GetAttribute(name);if type(v)=="boolean" then return v end;return default end
+        local function range(name,hi,default)
+            local v=num(name);if v==nil then v=default end
+            if v==nil then return nil end
+            return math.clamp(math.floor(v),0,hi)            -- the front-end slider ranges (0043ef90 / 0043efe0 / 0043f030)
+        end
+        self.core:setForceFeedbackDevice({capable=boolAttr("ForceFeedbackDevice",d.ffbDevice==true)})
+        local o=self.core:setForceFeedbackOptions({enabled=boolAttr("ForceFeedback",d.ffbEnabled),
+            strength=range("ForceFeedbackStrength",100,d.ffbStrength),damping=range("ForceFeedbackDamping",100,d.ffbDamping),
+            latency=range("ForceFeedbackLatency",250,d.ffbLatency)})
+        self.car:SetAttribute("ForceFeedbackApplied",o.enabled)
+        print(string.format("[NR2003 Stage 13] force feedback original %s: força %g, amortecimento %g, latência %g ms, dispositivo %s (efeito adquirido pelo 0054fed0 só com o eixo analógico)",
+            o.enabled and "ligado" or "desligado",o.strength,o.damping,o.latency,boolAttr("ForceFeedbackDevice",d.ffbDevice==true) and "sim" or "não"))
+    end
+    if self.car:GetAttribute("AeroSession")==false then
+        self.core:endSession();self.weather=nil
+    else
+        -- Stage 11 session options (race options of the original; absent = post-build values: damage scale 1.0,
+        -- consumption x1, random stream state of the build). RosterSeries stands for the roster series field
+        -- car+0x596 (PROVISIONAL host input, 1 = collision damage evaluated). The car is then placed on the
+        -- track by the ORIGINAL 00550a50 subset (repair, engine and fuel init, four new tyres).
+        self.weather=self.core:startSession({temperatureF=num("WeatherTemperatureF"),windSpeedMph=num("WeatherWindMph"),
+            windDirection=num("WeatherWindDirection"),conditions=num("WeatherConditions"),night=self.car:GetAttribute("WeatherNight")==true,
+            trackNorth=num("TrackNorth")},{damageLevel=num("RaceDamageLevel"),consumptionRate=num("RaceConsumptionRate"),
+            series=num("RosterSeries"),seed=num("RandomSeed")})
+    end
+    self.stage11Out={}
+    self.car:SetAttribute("AirDensityApplied",self.weather and self.weather.density or 0)
+    self.aeroOut={};self.trackNormal=nil;self.draftTest=false
+    local w=self.weather
+    if w then
+        print(string.format("[NR2003 Stage 9] sessão: %d F, condições %d, %s, vento %d mph dir %d -> ar %.2f C, rho %.7g kg/m3, vento (%.3f, %.3f) m/s | fita %d%%, aerofólio %d°",
+            w.temperatureF,w.conditions,w.night and "noite" or "dia",w.windSpeedMph,w.windDirection,w.densityTemperatureC,w.density,w.wind[1],w.wind[2],tape,spoiler))
+    else
+        print("[NR2003 Stage 9] AeroSession=false: estado pós-build (sem ar, rho = 0)")
+    end
+    self.renderSpin={};self.lastRenderSnapshotTime=nil;self.renderTeleport=true
+    for j=1,4 do self.inContact[j]=false end
+    self.pendingShift=0
+    local controller=self
+    local stepper={state={tick=0}}
+    function stepper:step(input) controller:tickCore(input);self.state.tick=controller.core:tick() end
+    function stepper:checkpoint() return {core=controller.core:checkpoint(),origin=controller.origin,contact=table.clone(controller.inContact)} end
+    function stepper:restore(c)
+        controller.core:restore(c.core);controller.origin=c.origin;controller.inContact=table.clone(c.contact)
+        self.state.tick=controller.core:tick();controller:pose(true)
+    end
+    self.stepper=stepper
+    self.runner=Fixed.new(stepper,96)
+    self.contactFn=function(phase) return self:contacts(phase) end
+    self:pose(true)
+end
+
+-- contact planes at the CURRENT wheel positions of the core (called by the core twice per tick,
+-- like 00578da0 / 00578de0). Plane: n.x + d = 0 in vehicle-world axes (0055e1e0 arguments).
+function M:contacts(phase)
+    local t=self.tune;local q=t.contactQuery;local mps=t.metresPerStud
+    local occupant=self.car.DriverSeat.Occupant
+    self.params.FilterDescendantsInstances=occupant and {self.car,occupant.Parent} or {self.car}
+    local _,crot=self.core:componentPose(0,self.scratchPos,self.scratchRot)
+    local ux,uy,uz=crot[3],crot[6],crot[9]                      -- chassis +Z in vehicle-world
+    local upWorld=self:worldVector(ux,uy,uz)
+    for j,c in ipairs(t.corners) do
+        local w=self.wheelPose[j]
+        local p=self.core:componentPose(c.record,w.pos,w.rot)
+        local origin=self:worldPoint(p[1]+ux*q.rayAbove,p[2]+uy*q.rayAbove,p[3]+uz*q.rayAbove)
+        local hit=workspace:Raycast(origin,-upWorld*(q.rayLength/mps),self.params)
+        local plane=self.planes[j]
+        if hit and hit.Normal:Dot(upWorld)>q.maximumSlopeCos then
+            local nx,ny,nz=self:numericVector(hit.Normal)
+            local px,py,pz=self:numericPoint(hit.Position)
+            -- (+0 normalises signed zeros from the axis permutation; the track code passes +0)
+            plane[1],plane[2],plane[3],plane[4]=nx+0,ny+0,nz+0,-(nx*px+ny*py+nz*pz)+0
+            local gx,gy,gz=0,0,0
+            if hit.Instance:IsA("BasePart") then
+                gx,gy,gz=self:numericVector(hit.Instance:GetVelocityAtPosition(hit.Position)*mps)
+            end
+            plane[5],plane[6],plane[7]=gx+0,gy+0,gz+0
+            local attr=hit.Instance:GetAttribute("NRSurface")
+            plane[8]=U.finite(attr) and math.clamp(math.floor(attr),0,16) or (Surface.indices[hit.Material.Name] or 1)
+            local grip=hit.Instance:GetAttribute("NRGripMultiplier")
+            plane[9]=U.finite(grip) and math.clamp(grip,0,4) or 1
+            if not self.inContact[j] then self.core:resetContactBlock(j-1,px,py,pz) end -- 005778a0 pair init
+            self.inContact[j]=true
+        else
+            -- no geometry under the wheel: plane far below (tire separates). PROVISIONAL: the original
+            -- simply has no contact pair for that wheel.
+            plane[1],plane[2],plane[3]=ux,uy,uz
+            plane[4]=-(ux*p[1]+uy*p[2]+uz*p[3])+q.noContactPlane
+            plane[5],plane[6],plane[7],plane[8],plane[9]=0,0,0,1,1
+            self.inContact[j]=false
+        end
+    end
+    return self.planes
+end
+
+-- Stage 12 host device layer (0057abc0 equivalent, ADAPTER): the raw steering controls of the frame. Keys -> steer
+-- left / right key bindings (digital controls 7 / 8 = 1.0 while held); an analog axis (input.steerAnalog) -> one axis
+-- bound to both controls (negative half -> 7, positive half -> 8). A legacy client (input.steer only) = keys.
+local function steerControls(controls,input)
+    local axis=input.steerAxis
+    if input.steerAnalog==true and U.finite(axis) then
+        controls.steerAxis=U.clamp(axis,-1,1)
+        return
+    end
+    local left,right=input.steerLeft,input.steerRight
+    if not U.finite(left) and not U.finite(right) and U.finite(input.steer) then
+        left=input.steer<0 and 1 or 0;right=input.steer>0 and 1 or 0
+    end
+    controls.steerLeft=U.finite(left) and U.clamp(left,0,1) or 0
+    controls.steerRight=U.finite(right) and U.clamp(right,0,1) or 0
+    controls.steerDigital=true
+end
+M.steerControls=steerControls
+
+function M:tickCore(input)
+    local frame=self.core:tick()%8==0
+    -- Stage 8: the brake goes through the ORIGINAL input chain (00552d00/00553080 -> bf6eac).
+    -- The bench client sends keyboard keys (S/W = 0/1): NR2003 key binding (0057af60 digital).
+    -- brakeAxis=true in the input selects the analog-axis binding for real pedals/triggers.
+    -- No driver seated = 005524f0 'car not driven' branch (pedal held at 1.0).
+    local controls
+    if self:driver()==nil then
+        controls={driver=false,throttle=0,clutch=0}
+    else
+        local throttle=U.clamp(input.throttle or 0,0,1)
+        controls={throttle=throttle,throttleControl=throttle,throttleDigital=input.throttleAxis~=true,
+            brakeControl=U.clamp(input.brake or 0,0,1),brakeDigital=input.brakeAxis~=true,
+            clutch=1-U.clamp(input.clutch or 0,0,1)}
+        steerControls(controls,input)
+    end
+    if frame and self.pendingShift~=0 and controls.driver~=false then
+        controls.shiftUp=self.pendingShift>0;controls.shiftDown=self.pendingShift<0;self.pendingShift=0
+    end
+    if frame and self.weather then self:aeroHostInputs() end
+    -- Stage 13: no driver seated = player controls suspended (ORIGINAL 00550070(1): 005524f0 not-driven branch, FFB block
+    -- gated, zero force); a driver seated = 00550070(0). Applied between frames, where the original drains its messages
+    local suspended=controls.driver==false
+    if frame and self.core.V.setControlsSuspended and suspended~=self.controlsSuspended then
+        self.controlsSuspended=suspended;self.core:setControlsSuspended(suspended)
+    end
+    self.core:step(controls,self.contactFn)
+    if self.core:tick()%8==0 and self.weather then self:stage11TestEvents() end
+    self:pose(false)
+end
+
+-- Stage 11 TEST ADAPTER (not an NR2003 feature): one-shot attributes to exercise the ORIGINAL event paths on the
+-- bench, which has no walls / other cars / pit lane. Applied after a frame end (where the original track contact code
+-- would have entered the record during the frame).
+--   DamageTestImpact = magnitude -> ORIGINAL 0054a760 record: front bumper point (car frame +2.4 m x), wall
+--                      normal against the car's heading, wall material 1; evaluated by 00549c40 at the next frame end
+--   PitTyresTest = true          -> ORIGINAL 00550f10 for the four wheels (pit tyre change)
+function M:stage11TestEvents()
+    local impact=self.car:GetAttribute("DamageTestImpact")
+    if U.finite(impact) and impact>0 then
+        self.car:SetAttribute("DamageTestImpact",nil)
+        local st=self.core:readState()
+        local p,r=self.core:componentPose(0,self.scratchPos,self.scratchRot)
+        self.core:collision({magnitude=impact,material=0x10,surface=1,point={p[1]+2.4*r[1],p[2]+2.4*r[4],p[3]+2.4*r[7]},
+            localPoint={2.4,0,0.3},velocity={st[2],st[4],st[6]},normal={-r[1],-r[4],-r[7]},speed=math.abs(st[2]*r[1]+st[4]*r[4]+st[6]*r[7])})
+        print(string.format("[NR2003 Stage 11] TESTE: registro de colisão original (magnitude %.0f) na frente do carro",impact))
+    end
+    if self.car:GetAttribute("PitTyresTest")==true then
+        self.car:SetAttribute("PitTyresTest",nil)
+        self.core:pitTyres({0,1,2,3})
+        print("[NR2003 Stage 11] TESTE: troca dos 4 pneus pelo 00550f10 original")
+    end
+end
+
+-- Stage 9 per-frame host inputs of the aero, set before the frame's first tick (005637e0 order):
+--  * track-object surface normal (0051370a -> car track object +0x24, used by 00561a80 to project the
+--    wind): ADAPTER = mean normal of the grounded contact planes (core frame). Airborne: unchanged.
+--  * drafting (005afd80): no other cars on the bench, so no race-order ring (factors stay 1.0).
+--    TEST ADAPTER only: attribute DraftTestGap (m, > 0) puts a phantom car that far ahead on a straight
+--    line along the core +X axis (lap distance = x, lateral = y + DraftTestLateral, same velocity as
+--    the player, Cup wake), to exercise the ORIGINAL drafting code. Not an NR2003 feature.
+function M:aeroHostInputs()
+    local nx,ny,nz,n=0,0,0,0
+    for j=1,4 do
+        if self.inContact[j] then local p=self.planes[j];nx+=p[1];ny+=p[2];nz+=p[3];n+=1 end
+    end
+    if n>0 then
+        local m=math.sqrt(nx*nx+ny*ny+nz*nz)
+        if m>1e-6 then self.trackNormal={nx/m,ny/m,nz/m};self.core:setTrackNormal(self.trackNormal) end
+    end
+    local gap=self.car:GetAttribute("DraftTestGap")
+    if U.finite(gap) and gap>0 then
+        local st=self.core:readState()
+        local lat=self.car:GetAttribute("DraftTestLateral");lat=U.finite(lat) and lat or 0
+        local L=5000
+        local other={lapDistance=(st[1]+gap)%L,lateral=st[3]+lat,vx=st[2],vy=st[4],vz=st[6]}
+        self.core:setDraftEnvironment({trackLength=L,lapDistance=st[1]%L,lateral=st[3],ahead={other},behind={other}})
+        self.draftTest=true
+    elseif self.draftTest then
+        self.core:setDraftEnvironment(nil);self.draftTest=false
+    end
+end
+
+-- chassis pose from the core (+ host collision boundary). PROVISIONAL collision: a Blockcast of
+-- the chassis box; on a hit the core is translated back through the ORIGINAL state import
+-- 005b4560 (positions only). Momentum/velocity is not changed: NR2003 body collision response
+-- (car-wall/car-car penalty forces) is not recovered yet.
+function M:pose(teleport)
+    local p,r=self.core:componentPose(0,self.scratchPos,self.scratchRot)
+    local mps=self.tune.metresPerStud
+    local function target()
+        local lp=toLocal(p[1],p[2],p[3])/mps
+        local r00,r01,r02,r10,r11,r12,r20,r21,r22=localRotation(r)
+        return self.origin*CFrame.new(lp.X,lp.Y,lp.Z,r00,r01,r02,r10,r11,r12,r20,r21,r22)
+    end
+    local cf=target()
+    if not teleport and self.rootCF then
+        local delta=cf.Position-self.rootCF.Position
+        if delta.Magnitude>1e-6 then
+            local cast=self.rootCF*CFrame.new(0,self.tune.collision.raise/mps,0)
+            local hit=workspace:Blockcast(cast,self.root.Size,delta,self.params)
+            if hit then
+                local allowed=self.rootCF.Position+delta.Unit*math.max(0,hit.Distance-0.01)
+                local ax,ay,az=self:numericPoint(allowed)
+                local tx,ty,tz=self:numericPoint(cf.Position)
+                self.core:translate(ax-tx,ay-ty,az-tz) -- takes effect in the core's next tick
+                cf=cf-cf.Position+allowed;self.collision=true
+            else self.collision=false end
+        end
+    end
+    self.rootCF=cf
+end
+
+function M:wheels()
+    local _,cr=self.core:componentPose(0,self.scratchPos,self.scratchRot)
+    local cp=self.scratchPos;local st=self.core:readState()
+    for j,c in ipairs(self.tune.corners) do
+        local w=self.wheelPose[j]
+        local p,r=self.core:componentPose(c.record,w.pos,w.rot)
+        local dx,dy,dz=p[1]-cp[1],p[2]-cp[2],p[3]-cp[3]
+        w.compression=cr[3]*dx+cr[6]*dy+cr[9]*dz              -- centre height in chassis frame
+        -- spin axis (wheel +Y column) in chassis frame -> road-wheel yaw (Stage 5 sign: + right)
+        local ax=cr[1]*r[2]+cr[4]*r[5]+cr[7]*r[8]
+        local ay=cr[2]*r[2]+cr[5]*r[5]+cr[8]*r[8]
+        w.steer=math.atan2(ax,ay)
+        w.angle=st[c.state.angle+1];w.rate=st[c.state.rate+1]
+    end
+    return self.wheelPose
+end
+
+function M:driver() return self.access:driver() end
+function M:requestEntry(player) return self.access:request(player) end
+function M:exit(player) return self.access:exit(player) end
+function M:shift(delta) if U.finite(delta) and delta~=0 then self.pendingShift=delta>0 and 1 or -1 end end
+function M:step(elapsed,input)
+    self.access:step();self.telemetryTimer=self.telemetryTimer+elapsed
+    if self.fault then return end
+    local ok,reason=pcall(function()
+        self.runner:advance(elapsed,input,nil)
+        self.car:PivotTo(self.rootCF)
+        self.car:SetAttribute("CoreTick",self.core:tick());self.car:SetAttribute("CoreCollision",self.collision==true)
+        local wheels=self:wheels()
+        for j=1,4 do
+            local _,_,_,px,py,pz=self.core:contactOut(j-1)
+            self.contactPoints[j].point=self:worldPoint(px,py,pz);self.contactPoints[j].grounded=self.inContact[j]
+        end
+        self.visual:update({wheels=wheels},self.contactPoints,self.debugVisible)
+        Cockpit.updateAngle(self.car,self:steeringWheelAngle())
+        -- Stage 13: the ORIGINAL constant force (005d08d0 -> 005d3010) for the client presentation (HUD, gamepad motors)
+        if self.core.V.forceFeedbackState then
+            local f=self.core:forceFeedbackState(self.ffbOut)
+            self.car:SetAttribute("FFBForce",f.force);self.car:SetAttribute("FFBMagnitude",f.magnitude)
+            self.car:SetAttribute("FFBActive",f.acquired and f.effect and not f.suspended)
+        end
+    end)
+    if not ok then self.fault=tostring(reason);self.car:SetAttribute("PhysicsFault",self.fault);warn("NR2003 Cup core paused: "..self.fault) end
+end
+
+-- Stage 12 presentation: the ORIGINAL steering-wheel angle of the car model (005662d0: clamp(-(00554fb0() *
+-- car[0x1554]), +-2.79 rad), + = clockwise seen by the driver (right turn)); 0 without the Stage 12 core
+function M:steeringWheelAngle()
+    if self.core.V.steeringWheelAngle then return self.core:steeringWheelAngle() end
+    return 0
+end
+
+function M:kinematics()
+    local st=self.core:readState()
+    local _,r=self.core:componentPose(0,self.scratchPos,self.scratchRot)
+    local linear=self:worldVector(st[2],st[4],st[6])/self.tune.metresPerStud
+    local bx,by,bz=st[11],st[12],st[13]                          -- body rates
+    local angular=self:worldVector(r[1]*bx+r[2]*by+r[3]*bz,r[4]*bx+r[5]*by+r[6]*bz,r[7]*bx+r[8]*by+r[9]*bz)
+    return linear,angular
+end
+
+function M:renderSnapshot(seq,time,vehicleId)
+    local cf=self.root.CFrame
+    local px,py,pz,r00,r01,r02,r10,r11,r12,r20,r21,r22=cf:GetComponents()
+    local qx,qy,qz,qw=RenderSnapshot.quatFromMatrix(r00,r01,r02,r10,r11,r12,r20,r21,r22)
+    local linear,angular=self:kinematics()
+    local dt=self.lastRenderSnapshotTime and math.max(0,time-self.lastRenderSnapshotTime) or 0
+    local wheels={}
+    for j,w in ipairs(self.wheelPose) do
+        local spin=RenderSnapshot.unwrapSpin(self.renderSpin[j],w.angle,w.rate,dt)
+        self.renderSpin[j]=spin
+        local localPoint=cf:PointToObjectSpace(self.contactPoints[j].point)
+        wheels[j]={comp=w.compression,steer=w.steer,spin=spin,cx=localPoint.X,cy=localPoint.Y,cz=localPoint.Z,
+            grounded=self.contactPoints[j].grounded}
+    end
+    local flags=(self.renderTeleport and RenderSnapshot.FLAG_TELEPORT or 0)+RenderSnapshot.FLAG_WHEEL_ANGLE
+    self.renderTeleport=false;self.lastRenderSnapshotTime=time
+    return {vehicleId=vehicleId or 1,seq=seq,flags=flags,tick=self.core:tick(),time=time,
+        px=px,py=py,pz=pz,qx=qx,qy=qy,qz=qz,qw=qw,
+        lx=linear.X,ly=linear.Y,lz=linear.Z,ax=angular.X,ay=angular.Y,az=angular.Z,
+        steer=self:steeringWheelAngle(),wheels=wheels}
+end
+
+function M:telemetry()
+    local st=self.core:readState()
+    local linear=self:kinematics()
+    local _,r=self.core:componentPose(0,self.scratchPos,self.scratchRot)
+    local forward=st[2]*r[1]+st[4]*r[4]+st[6]*r[7]
+    local lf,rf,thr,brk,clu,gearIn=self.core:inputs()
+    local wheels={}
+    -- Stage 11: ORIGINAL runtime state (read-only view of the core cells)
+    local s11=self.core.V.stage11State and self.core:stage11State(self.stage11Out) or nil
+    for j,c in ipairs(self.tune.corners) do
+        local fx,fy,fz=self.core:contactOut(j-1)
+        local travel=st[c.state.travel+1]
+        local w=self.wheelPose[j]
+        -- Stage 8: original per-wheel brake/tire cells (no side effects on the core)
+        local b=self.core:wheelBrake(j-1)
+        local ty=s11 and s11.tyres[j]
+        wheels[j]={name=c.name,load=self.inContact[j] and fz or 0,compression=travel,
+            slip=b.vslip/math.max(math.abs(b.vx),2),
+            omega=w.rate,temperature=ty and ty.surface[2]-273.15 or self.tune.environment.ambientC,grounded=self.inContact[j],
+            tyreSurfaceK=ty and ty.surface,tyreCarcassK=ty and ty.carcass,tyrePressure=ty and ty.pressure,
+            tyreWear=ty and ty.wear,tyreGrip=ty and ty.gripWear,tyreState=ty and ty.state,
+            surface=self.planes[j][8],out1={fx,fy,fz},
+            brakeTorque=b.torque,brakeCapacity=b.brakeCap,dragCapacity=b.dragCap,locked=b.locked,
+            fx=b.fx,fy=b.fy,fz=b.fz,slipVelocity=b.vslip,brakeTemperatureK=b.temperature}
+    end
+    local pedal,target,tickValue,coreBrake=self.core:brakeState()
+    local gear=self.core:gearIndex()
+    -- Stage 9: ORIGINAL 00561b70 evaluated at the current state (read-only; see CORE_API.md)
+    local a=self.core:aeroState(self.aeroOut)
+    local tape,spoiler=self.core:aeroSetup()
+    local aero={session=a.session,density=a.density,q=a.q,drag=a.drag,downforce=a.downforce,
+        front=a.downforceFront,rear=a.downforceRear,side=a.side,mx=a.mx,my=a.my,mz=a.mz,
+        factorDrag=a.factorDrag,factorFront=a.factorFront,factorRear=a.factorRear,airspeed=a.airspeedBody,
+        yaw=a.yaw,pitch=a.pitch,rideHeight=a.rideHeightFront,proximity=a.groundProximity,stall=a.stall,
+        windX=a.wind[1],windY=a.wind[2],grilleTape=tape,spoiler=spoiler,draftTest=self.draftTest==true}
+    return {speed=linear.Magnitude*self.tune.metresPerStud*3.6,rpm=self.core:engineRpm(),
+        gear=Vehicle.displayGear(gear),gearIndex=gear,wheels=wheels,torque=0,
+        clutchSlip=st[35]-st[37],limiter=self.core:revLimiter(),
+        throttleIn=thr,brakeIn=brk,clutchIn=clu,lfSteer=lf,rfSteer=rf,
+        brakePedal=pedal,brakeTarget=target,brakeTick=tickValue,brakeCore=coreBrake,brakeBias=self.brakeBias,
+        droppedTime=0,fault=self.fault,mode="NR2003_CUP",tick=self.core:tick(),backlog=self.runner.accumulator,
+        chassisStateCount=45,chassisIntegration="NR2003 original JIT (005b39a0/005b3180/005b3e50/005b2fb0)",
+        collision=self.collision==true,aero=aero,
+        stage11=s11 and {mode=s11.mode,fuelKg=s11.fuel.kg,fuelRecordKg=s11.fuel.massRecord,water=s11.engine.water,oil=s11.engine.oil,
+            coolantLevel=s11.engine.coolantLevel,oilLevel=s11.engine.oilLevel,power=s11.engine.power,life=s11.engine.life,
+            overRev=s11.engine.overRev,damageScale=s11.damage.scale,engineDamage=s11.damage.engine,leakRadiator=s11.damage.radiator,
+            leakOil=s11.damage.oil,leakFuel=s11.damage.fuel,zones=s11.damage.zones,failures=s11.damage.failures,
+            broken=s11.damage.brokenFlags,airspeed=s11.airspeed,ambientK=s11.ambient} or nil,
+        -- Stage 12: hubSteerAngle = mean prescribed hub coordinate q (states 15 / 21, + = left; the original car[0x1554]),
+        -- a rotation about the inclined steering axis (caster 2.455 deg, inclination 9.215 deg); roadWheelAngle = mean
+        -- front wheel yaw measured from the solver wheel poses (+ = right, Stage 5 sign; about -0.99 q, no Ackermann)
+        hubSteerAngle=st[16]*0.5+st[22]*0.5,roadWheelAngle=(self.wheelPose[1].steer+self.wheelPose[2].steer)*0.5,
+        steeringWheelAngle=self:steeringWheelAngle(),steering=self:steeringTelemetry(),ffb=self:forceFeedbackTelemetry()}
+end
+-- Stage 13 force-feedback telemetry (original cells + the last device output, see STAGE13_FFB_STATE_MAP.md)
+function M:forceFeedbackTelemetry()
+    if not self.core.V.forceFeedbackState then return nil end
+    local f=self.core:forceFeedbackState(self.ffbOut)
+    return {enabled=f.enabled,acquired=f.acquired,suspended=f.suspended,effect=f.effect,force=f.force,magnitude=f.magnitude,
+        slip=f.slip,moment=f.moment,filtered=f.filtered,load=f.load,strength=f.strength,damping=f.damping,latency=f.latency,
+        axis=f.axis}
+end
+-- Stage 12 steering telemetry (original cells, see STAGE12_STEERING_STATE_MAP.md); nil without the Stage 12 core
+function M:steeringTelemetry()
+    if not self.core.V.steeringState then return nil end
+    local s=self.core:steeringState(self.steeringOut)
+    return {left=s.left,right=s.right,digital=s.digital,input=s.input,shaped=s.shaped,ratio=s.ratio,ratioNow=s.ratioNow,
+        target=s.target,current=s.current,lf=s.lf,rf=s.rf,hubLF=s.hubLF,hubRF=s.hubRF,wheelAngle=s.wheelAngle,
+        sensitivity=s.sensitivity,mode=s.mode}
+end
+function M:reset()
+    self.car:PivotTo(self.spawn);self.fault=nil;self.car:SetAttribute("PhysicsFault",nil)
+    self.rootCF=nil;self:initialize();self.car:PivotTo(self.rootCF)
+end
+function M:destroy()
+    self.access:destroy();self.car:SetAttribute("NR2003CorePoseOwner",nil)
+    self.root.Anchored=self.oldAnchored;self.root.CanCollide=self.oldCollide
+end
+return M
+]=])
+item("Client","NR2003Client","LocalScript",16064,1723780329,18023,4247357387,[=[
+local Players=game:GetService("Players")
+local RunService=game:GetService("RunService")
+local CAS=game:GetService("ContextActionService")
+local UIS=game:GetService("UserInputService")
+local HapticService=game:GetService("HapticService")
+local player=Players.LocalPlayer
+local package=game:GetService("ReplicatedStorage"):WaitForChild("NR2003Lab")
+local Config=require(package.Roblox.DriverConfig)
+local Tune=require(package.Core.TestTune)
+local RenderPresentation=require(package.Roblox.RenderPresentation)
+local remote=package:WaitForChild("Input");local telemetry=package:WaitForChild("Telemetry")
+local renderState=package:WaitForChild("RenderState")
+local car=workspace:WaitForChild("NR2003LabWorld"):WaitForChild("TestCar")
+local seat=car:WaitForChild("DriverSeat");local root=car:WaitForChild("Chassis")
+-- Stage 6/7: NR2003_CUP presents the car with the Cup geometry (CupTune); other modes keep TestTune
+local modeName=require(package.Roblox.ModeConfig).mode
+local presentationTune=(modeName=="NR2003_CUP" and package.Core:FindFirstChild("CupTune")) and require(package.Core.CupTune).new() or Tune.new()
+local presentation=RenderPresentation.new(car,presentationTune,renderState)
+local keys={};local driving=false;local sendTimer=0;local cameraMode=1;local expanded=true;local renderDiag=false
+local savedCameraType,savedCameraSubject,savedFieldOfView
+local gui=Instance.new("ScreenGui");gui.Name="NR2003LabHUD";gui.ResetOnSpawn=false
+gui.Parent=player:WaitForChild("PlayerGui")
+local entry=Instance.new("TextLabel");entry.Name="EntryStatus";entry.Size=UDim2.fromOffset(560,42)
+entry.Position=UDim2.new(.5,-280,1,-70);entry.BackgroundColor3=Color3.fromRGB(17,24,34)
+entry.TextColor3=Color3.fromRGB(240,245,250);entry.TextSize=16;entry.TextWrapped=true
+entry.Font=Enum.Font.Gotham;entry.Visible=false;entry.Parent=gui
+local entryUntil=0
+remote.OnClientEvent:Connect(function(message)
+    if type(message)=="table" and message.kind=="seat" then
+        entry.Text=tostring(message.message);entryUntil=os.clock()+5;entry.Visible=true
+    end
+end)
+UIS.InputBegan:Connect(function(input,processed)
+    if processed or UIS:GetFocusedTextBox() or input.KeyCode~=Enum.KeyCode.F then return end
+    local character=player.Character;local hrp=character and character:FindFirstChild("HumanoidRootPart")
+    if hrp and (hrp.Position-seat.Position).Magnitude<=Config.entryDistanceStuds then remote:FireServer({kind="enter"}) end
+end)
+local panel=Instance.new("Frame");panel.Name="Telemetry";panel.Position=UDim2.new(0,16,0,70)
+panel.Size=UDim2.fromOffset(460,250);panel.BackgroundColor3=Color3.fromRGB(17,24,34)
+panel.BackgroundTransparency=0.08;panel.BorderSizePixel=0;panel.Visible=false;panel.Parent=gui
+local corner=Instance.new("UICorner");corner.CornerRadius=UDim.new(0,8);corner.Parent=panel
+local function label(parent,name,y,height,size)
+    local l=Instance.new("TextLabel");l.Name=name;l.Position=UDim2.fromOffset(14,y)
+    l.Size=UDim2.new(1,-28,0,height);l.BackgroundTransparency=1
+    l.TextColor3=Color3.fromRGB(225,232,240);l.TextXAlignment=Enum.TextXAlignment.Left
+    l.Font=Enum.Font.Code;l.TextSize=size;l.TextWrapped=false;l.Parent=parent;return l
+end
+local title=label(panel,"Title",10,22,17);title.Text="NR2003 / bancada de física";title.TextColor3=Color3.fromRGB(94,197,255)
+local gauge=label(panel,"Gauges",38,28,22);gauge.Text="0 km/h | 900 rpm | 1"
+local header=label(panel,"Header",80,18,13);header.Text="RODA   CARGA N  CURSO mm  SLIP %  PNEU °C"
+local rows={};for j=1,4 do rows[j]=label(panel,"Wheel"..j,98+(j-1)*20,20,13) end
+-- Stage 9: aero line (ORIGINAL 00561b70 evaluated by the server adapter at telemetry rate)
+local aeroLine=label(panel,"Aero",180,30,11);aeroLine.Text="";aeroLine.TextColor3=Color3.fromRGB(150,214,160)
+-- Stage 11: runtime systems line (ORIGINAL cells read by the server adapter at telemetry rate; display only)
+local s11Line=label(panel,"Stage11",212,30,11);s11Line.Text="";s11Line.TextColor3=Color3.fromRGB(236,200,140)
+-- Stage 12: steering line (ORIGINAL steering cells read by the server adapter at telemetry rate; display only)
+local steerLine=label(panel,"Stage12",246,16,11);steerLine.Text="";steerLine.TextColor3=Color3.fromRGB(190,172,244)
+-- Stage 13: force-feedback line (ORIGINAL FFB cells + the constant force sent to the device; display only)
+local ffbLine=label(panel,"Stage13",263,16,11);ffbLine.Text="";ffbLine.TextColor3=Color3.fromRGB(244,172,190)
+local hint=label(panel,"Controls",282,50,11)
+hint.Text="W/S acelerar/frear   A/D direção (gamepad: analógico esquerdo)   E/Q marchas\nShift embreagem   Espaço freio de mão   X sair\nT painel   G contatos   H render diag   V câmera   R reposicionar"
+local status=label(panel,"Status",331,16,11);status.Text="Tune de teste | contato por raycast"
+local renderInfo=Instance.new("TextLabel");renderInfo.Name="RenderDiagnostics";renderInfo.AnchorPoint=Vector2.new(1,0)
+renderInfo.Position=UDim2.new(1,-16,0,20);renderInfo.Size=UDim2.fromOffset(390,142);renderInfo.BackgroundColor3=Color3.fromRGB(17,24,34)
+renderInfo.BackgroundTransparency=0.08;renderInfo.BorderSizePixel=0;renderInfo.TextColor3=Color3.fromRGB(225,232,240)
+renderInfo.Font=Enum.Font.Code;renderInfo.TextSize=13;renderInfo.TextXAlignment=Enum.TextXAlignment.Left;renderInfo.TextYAlignment=Enum.TextYAlignment.Top
+renderInfo.TextWrapped=false;renderInfo.Visible=false;renderInfo.Parent=gui
+local renderCorner=Instance.new("UICorner");renderCorner.CornerRadius=UDim.new(0,8);renderCorner.Parent=renderInfo
+local function isDriver()
+    local h=player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+    return h and h.SeatPart==seat
+end
+local bindings={
+    {"Gas","Acelerar",Enum.KeyCode.W,Enum.KeyCode.Up},{"Brake","Frear",Enum.KeyCode.S,Enum.KeyCode.Down},
+    {"Left","←",Enum.KeyCode.A,Enum.KeyCode.Left},{"Right","→",Enum.KeyCode.D,Enum.KeyCode.Right},
+    {"Handbrake","Mão",Enum.KeyCode.Space},{"Clutch","Embreagem",Enum.KeyCode.LeftShift},
+    {"UpGear","+ marcha",Enum.KeyCode.E},{"DownGear","− marcha",Enum.KeyCode.Q},
+    {"Reset","Reset",Enum.KeyCode.R},{"Debug","Contato",Enum.KeyCode.G},
+    {"Details","Painel",Enum.KeyCode.T},{"Camera","Câmera",Enum.KeyCode.V},{"RenderDiag","Render",Enum.KeyCode.H},{"Exit","Sair",Enum.KeyCode.X},
+}
+local function action(name,state)
+    if not isDriver() then return Enum.ContextActionResult.Pass end
+    name=name:gsub("NR2003_","")
+    if state==Enum.UserInputState.Begin then
+        keys[name]=true
+        if name=="UpGear" then remote:FireServer({kind="shift",delta=1})
+        elseif name=="DownGear" then remote:FireServer({kind="shift",delta=-1})
+        elseif name=="Reset" then remote:FireServer({kind="reset"})
+        elseif name=="Debug" then remote:FireServer({kind="debug"})
+        elseif name=="Exit" then remote:FireServer({kind="exit"})
+        elseif name=="Details" then expanded=not expanded
+        elseif name=="Camera" then cameraMode=cameraMode%3+1
+        elseif name=="RenderDiag" then renderDiag=not renderDiag;renderInfo.Visible=renderDiag end
+    elseif state==Enum.UserInputState.End or state==Enum.UserInputState.Cancel then keys[name]=nil end
+    return Enum.ContextActionResult.Sink
+end
+local function bind()
+    for i,b in ipairs(bindings) do
+        local codes={};for j=3,#b do table.insert(codes,b[j]) end
+        CAS:BindActionAtPriority("NR2003_"..b[1],action,i<=8,2100,table.unpack(codes))
+        CAS:SetTitle("NR2003_"..b[1],b[2])
+        if i<=8 then CAS:SetPosition("NR2003_"..b[1],UDim2.new(1,-80-((i-1)%4)*78,1,-90-math.floor((i-1)/4)*75)) end
+    end
+end
+local function unbind() for _,b in ipairs(bindings) do CAS:UnbindAction("NR2003_"..b[1]) end;keys={} end
+UIS.WindowFocusReleased:Connect(function() keys={} end)
+telemetry.OnClientEvent:Connect(function(data)
+    if not driving then return end
+    title.Text=data.mode=="NR2003_CUP" and "NR2003 Cup / núcleo original 45 estados · estágios 6-8"
+        or (data.mode=="NR2003_CORE" and "NR2003 / chassi numérico · estágio 5 estabilizado" or "NR2003 / adaptador Roblox")
+    local gear=data.gear==-1 and "R" or (data.gear==0 and "N" or tostring(data.gear))
+    gauge.Text=string.format("%3.0f km/h | %4.0f rpm | %s",data.speed,data.rpm,gear)
+    local cup=data.mode=="NR2003_CUP" and data.brakePedal~=nil
+    header.Text=cup and "RODA   CARGA N  CURSO mm  SLIP %  FREIO Nm" or "RODA   CARGA N  CURSO mm  SLIP %  PNEU °C"
+    for j,w in ipairs(data.wheels) do
+        if cup then
+            rows[j].Text=string.format("%s   %7.0f  %8.1f  %6.1f  %7.0f%s",w.name,w.load,w.compression*1000,w.slip*100,math.abs(w.brakeTorque or 0),w.locked and " TRAV" or "")
+            rows[j].TextColor3=w.locked and Color3.fromRGB(255,96,96) or (w.grounded and Color3.fromRGB(216,228,237) or Color3.fromRGB(246,147,106))
+        else
+            rows[j].Text=string.format("%s   %7.0f  %8.1f  %6.1f  %7.1f",w.name,w.load,w.compression*1000,w.slip*100,w.temperature)
+            rows[j].TextColor3=w.grounded and Color3.fromRGB(216,228,237) or Color3.fromRGB(246,147,106)
+        end
+    end
+    local a=data.aero
+    if a then
+        if a.session then
+            aeroLine.Text=string.format("AERO rho %.4f  q %5.0f Pa  arrasto %5.0f N  downforce %5.0f N (D %5.0f / T %5.0f)\nfatores %.3f/%.3f/%.3f%s  alt. diant. %4.0f mm  fita %d%%  aerofólio %d°  yaw %.1f°",
+                a.density,a.q,a.drag,a.downforce,a.front,a.rear,a.factorDrag,a.factorFront,a.factorRear,a.draftTest and " (vácuo TESTE)" or "",
+                a.rideHeight*1000,a.grilleTape,a.spoiler,math.deg(a.yaw))
+        else
+            aeroLine.Text="AERO sem sessão (AeroSession=false): estado pós-build, rho = 0, sem forças aero"
+        end
+    else aeroLine.Text="" end
+    local s=data.stage11
+    if s and s.mode=="original" then
+        local t={}
+        for j,w in ipairs(data.wheels) do
+            t[j]=string.format("%s %3.0f°C %4.1fpsi %3.0f%%%s",w.name,(w.temperature or 0),w.tyrePressure or 0,100*(w.tyreWear or 0),
+                (w.tyreState or 0)>=2 and " FURADO" or "")
+        end
+        local zmax=0;for _,z in ipairs(s.zones or {}) do zmax=math.max(zmax,z) end
+        s11Line.Text=string.format("COMB %.2f kg  água %.1f°C  óleo %.1f°C  pot %.3f  dano mot %.2f vaz %.2f/%.2f/%.2f carroc %.2f\n%s | freio %.0f/%.0f/%.0f/%.0f°C",
+            s.fuelKg,s.water,s.oil,s.power,s.engineDamage,s.leakRadiator,s.leakOil,s.leakFuel,zmax,table.concat(t,"  "),
+            (data.wheels[1].brakeTemperatureK or 273.15)-273.15,(data.wheels[2].brakeTemperatureK or 273.15)-273.15,
+            (data.wheels[3].brakeTemperatureK or 273.15)-273.15,(data.wheels[4].brakeTemperatureK or 273.15)-273.15)
+    elseif s then
+        s11Line.Text="ESTÁGIO 11 congelado (Stage11Runtime=frozen): combustível/térmica/desgaste/dano nos valores pós-build"
+    else s11Line.Text="" end
+    local sd=data.steering
+    if sd and sd.mode=="original" then
+        -- all angles shown with one sign convention, + = right (the simulation cells are + = left: negated here)
+        steerLine.Text=string.format("DIREÇÃO %s (+ = dir.)  entrada %+.3f  relação %.1f:1  alvo %+.2f°  cubos %+.2f/%+.2f°  rodas %+.2f°  volante %+.0f°",
+            sd.digital and "teclas" or "eixo",sd.input or 0,sd.ratioNow or 0,-math.deg(sd.target or 0),-math.deg(sd.hubLF or 0),-math.deg(sd.hubRF or 0),
+            math.deg(data.roadWheelAngle or 0),math.deg(data.steeringWheelAngle or 0))
+    else steerLine.Text="" end
+    local fb=data.ffb
+    if fb then
+        ffbLine.Text=fb.enabled and string.format("FFB %s  força %+.3f (DI %+d)  deslize %+.4f  momento %+.1f  filtro %+.1f | força %g amort %g lat %g ms",
+            fb.acquired and (fb.suspended and "suspenso" or "ativo (eixo)") or "inativo (teclas / sem dispositivo)",fb.force or 0,fb.magnitude or 0,
+            fb.slip or 0,fb.moment or 0,fb.filtered or 0,fb.strength or 0,fb.damping or 0,fb.latency or 0)
+            or "FFB desligado (atributo ForceFeedback)"
+    else ffbLine.Text="" end
+    if data.mode=="NR2003_CUP" then
+        status.Text=data.fault and "Física pausada; veja Output. R reinicia." or string.format("acel %.2f | pedal freio %.2f -> núcleo %.2f | viés %d%% | embr %.2f | lim %s%s",
+            data.throttleIn or 0,data.brakePedal or 0,data.brakeCore or data.brakeIn or 0,data.brakeBias or 74,data.clutchIn or 0,data.limiter and "ON" or "off",data.collision and " | colisão" or "")
+    else
+        status.Text=data.fault and "Física pausada; veja Output. R reinicia." or string.format("Motor %.0f Nm | embreagem Δ %.0f rad/s",data.torque,data.clutchSlip)
+    end
+end)
+-- Stage 13 presentation (NOT original): the ORIGINAL constant force -> large motor of the active gamepad, |force| 0..1
+local rumbleGamepad=nil
+local function setRumble(gp,v)
+    if gp then pcall(function() HapticService:SetMotor(gp,Enum.VibrationMotor.Large,v) end) end
+end
+local function stopRumble() setRumble(rumbleGamepad,0);rumbleGamepad=nil end
+local function updateRumble()
+    if presentationTune.driver and presentationTune.driver.ffbRumble==false then return end
+    local last=UIS:GetLastInputType()
+    local gp=(last.Name:sub(1,7)=="Gamepad" and UIS:GetGamepadConnected(last)) and last or nil
+    if gp~=rumbleGamepad then stopRumble() end
+    if gp==nil then return end
+    local ok,supported=pcall(function() return HapticService:IsVibrationSupported(gp) and HapticService:IsMotorSupported(gp,Enum.VibrationMotor.Large) end)
+    if not (ok and supported) then return end
+    rumbleGamepad=gp
+    local f=car:GetAttribute("FFBForce")
+    local v=(car:GetAttribute("FFBActive")==true and type(f)=="number") and math.clamp(math.abs(f),0,1) or 0
+    setRumble(gp,v)
+end
+local diagTimer=0
+local function updateRenderDiag(dt)
+    if not renderDiag then return end
+    diagTimer=diagTimer+dt;if diagTimer<0.25 then return end;diagTimer=0
+    local s=presentation:stats()
+    renderInfo.Text=string.format(" RENDER / PRESENTATION ONLY\n sim %6.1f Hz   snapshot %5.1f Hz   recv %5.1f Hz\n render %5.1f FPS  delay %5.1f ms   buffer %d\n drops %d   out-of-order %d   resets %d\n extrap episodes %d   max %.1f ms\n mode %-7s alpha %.3f   active %s",
+        s.serverTickHz or 0,s.serverSnapshotHz or 0,s.recvHz or 0,s.renderFPS or 0,(s.delay or 0)*1000,s.buffer or 0,
+        s.dropped or 0,s.outOfOrder or 0,s.resets or 0,s.extrapEpisodes or 0,(s.maxExtrapSeen or 0)*1000,
+        tostring(s.mode),s.alpha or 0,tostring(s.active))
+end
+local function frame(dt)
+    presentation:update() -- MUST precede every camera path; render state never feeds physics.
+    entry.Visible=os.clock()<entryUntil
+    local nowDriving=isDriver() and true or false
+    if nowDriving~=driving then
+        driving=nowDriving;panel.Visible=driving
+        if driving then
+            bind();savedCameraType=workspace.CurrentCamera.CameraType;savedCameraSubject=workspace.CurrentCamera.CameraSubject
+            savedFieldOfView=workspace.CurrentCamera.FieldOfView
+        else
+            unbind();renderDiag=false;renderInfo.Visible=false;stopRumble()
+            if savedCameraType then workspace.CurrentCamera.CameraType=savedCameraType end
+            if savedCameraSubject and savedCameraSubject.Parent then workspace.CurrentCamera.CameraSubject=savedCameraSubject end
+            if savedFieldOfView then workspace.CurrentCamera.FieldOfView=savedFieldOfView end
+        end
+    end
+    updateRenderDiag(dt)
+    if not driving then return end
+    header.Visible=expanded;for _,r in ipairs(rows) do r.Visible=expanded end
+    aeroLine.Visible=expanded;s11Line.Visible=expanded;steerLine.Visible=expanded;ffbLine.Visible=expanded
+    hint.Visible=expanded;status.Visible=expanded;panel.Size=UDim2.fromOffset(600,expanded and 352 or 76)
+    updateRumble()
+    local camera=workspace.CurrentCamera
+    if cameraMode==1 then
+        camera.CameraType=Enum.CameraType.Scriptable;camera.FieldOfView=savedFieldOfView or 70
+        local look=root.Position+Vector3.new(0,2,0)
+        local behind=root.Position-root.CFrame.LookVector*24+Vector3.new(0,10,0)
+        camera.CFrame=camera.CFrame:Lerp(CFrame.lookAt(behind,look+root.CFrame.LookVector*8),1-math.exp(-8*dt))
+    elseif cameraMode==2 and seat:FindFirstChild("CockpitCamera") then
+        camera.CameraType=Enum.CameraType.Scriptable;camera.FieldOfView=Config.cockpitFieldOfView
+        camera.CFrame=seat.CockpitCamera.WorldCFrame
+    else
+        camera.CameraType=Enum.CameraType.Custom;camera.CameraSubject=seat;camera.FieldOfView=savedFieldOfView or 70
+    end
+    sendTimer=sendTimer+dt
+    if sendTimer>=1/30 then
+        sendTimer=sendTimer%(1/30)
+        -- Stage 12: raw steering controls (the NR2003 device layer 0057abc0 on the server side splits them into
+        -- controls 7 / 8): keys A/D or arrows = key bindings (digital); a gamepad thumbstick (last input from a
+        -- gamepad) = one analog axis, already normalised -1..1 by Roblox (deadzone: DriverConfig, 0 = none)
+        local axis,analog=nil,false
+        local last=UIS:GetLastInputType()
+        if last.Name:sub(1,7)=="Gamepad" and UIS:GetGamepadConnected(last) then
+            for _,o in ipairs(UIS:GetGamepadState(last)) do
+                if o.KeyCode==Enum.KeyCode.Thumbstick1 then
+                    axis=o.Position.X
+                    if math.abs(axis)<(Config.gamepadSteerDeadzone or 0) then axis=0 end
+                    analog=true
+                end
+            end
+        end
+        local left,right=keys.Left and 1 or 0,keys.Right and 1 or 0
+        remote:FireServer({kind="input",throttle=keys.Gas and 1 or 0,brake=keys.Brake and 1 or 0,
+            steer=analog and axis or (right-left),handbrake=keys.Handbrake and 1 or 0,clutch=keys.Clutch and 1 or 0,
+            steerLeft=left,steerRight=right,steerAxis=axis,steerAnalog=analog})
+    end
+end
+local renderName="NR2003_Presentation"
+RunService:BindToRenderStep(renderName,Enum.RenderPriority.Camera.Value-1,frame)
+script.Destroying:Connect(function()
+    RunService:UnbindFromRenderStep(renderName);presentation:destroy();unbind();stopRumble()
+end)
+]=])
+item("NR2003Cup","NR2003CupFFB","ModuleScript",nil,nil,30938,3259516721,[=[
+--!native
+--!optimize 2
+-- Stage 13: the ORIGINAL NR2003 force feedback (steering torque) of the player car, hand port of the x86
+-- (recovered in recovery/stage13, STAGE13_RECOVERY.md). A presentation output: nothing here feeds the physics or the
+-- steering chain (Stage 12 evidence ffbinterface.md + Stage 13 dynamic proof).
+--
+-- Producers (Stage 6/7 core, unchanged): the front tyre callback 0055e180 -> 00554e70 accumulates per front wheel
+-- (slot 0 LF, 1 RF), twice per tick (predictor + corrector): n 74c964+4i, A bf6ed4+4i += c085dc (relaxed lateral slip
+-- state), B bf6edc+4i += |Fz| + 0.01, C bf6ee4+4i += Fy, D bf6eec+4i += 0.1 * (r x F).z + c081ec (aligning moment).
+-- Per 288 Hz tick, 005539c0 @00553a64 (V._ffbTick, called by NR2003CupDriver.tickInputs):
+--   00554d30  l = B_LF / (B_LF + B_RF) (only when n_LF > 0 and the sum > 0), a = 1/n_LF, b = 1/n_RF ->
+--             74c960 = min(B_RF b + B_LF a, 1500) (no reader), bf6ec4 = (1 - l) A_RF b + l A_LF a (slip),
+--             bf6ec8 = C_RF b + C_LF a (no reader), bf6ed0 = D_RF b + D_LF a (moment); n, A, B, C, D <- 0
+-- Per 36 Hz frame, FFB block of the frame end 00554520 (0055464c..0055479d; V._ffbFrameEnd, called by
+-- NR2003CupFrame right after the lifted 00554520, whose own copy of the block is skipped):
+--   gate bf6ebb (FF effect acquired) != 0 and bf6eb8 (player controls suspended) == 0
+--   d = (ec4 - ec0) * 36 ; ec0 = ec4 ; q = ec4 + d * (latency bf6f20 * 0.001) * (1 - 20 / (airspeed bf3a00 + 20))
+--   m = |ec4| > 1e-5 ? q / ec4 * ed0 : ed0 ; ecc = (m - damping bf6f24 * d + ecc) * 0.5
+--   out = clamp(ecc * strength 74c9a4 / (setup item 0x30 * 1600), -1, 1) -> 005d08d0(axis bf6ebc, out)
+--   005d08d0 -> 005d2260 -> 005d3010: DirectInput constant force (one axis, rglDirection 0, autocentre off)
+--   lMagnitude = _ftol(out * 10000), SetParameters(DIEP_TYPESPECIFICPARAMS | DIEP_START): the ADAPTER output here.
+-- Controls / device (simulation side, ORIGINAL): 00550070(flag) (bf6eb8 = flag; flag 0 -> 0054fed0 FF axis setup from
+-- the control-7 binding: axis binding + FF on (bf6f1c) + capable device -> acquired bf6ebb = 1, axis bf6ebc), 00550030
+-- (zero force), 00550680 (release). bf6eb8 is ALSO the 005524f0 player-branch gate (@00552549, NR2003CupDriver).
+-- Options (messages 8..11, sent only by the controls.cfg loader 0043f1d0): 00550270 on/off bf6f1c, 00550290 strength
+-- 74c9a4, 005502d0 damping bf6f24, 005502b0 latency bf6f20 (controls.cfg integers converted by fild / fstp dword).
+--
+-- Arithmetic: the simulation task runs the x87 with CW 0x077f (64-bit precision, round toward -inf). The FFB code is
+-- evaluated in EXACT x87 arithmetic (X87 below: every operation rounded to a 64-bit significand toward -inf, every
+-- f32 store rounded toward -inf), not in IEEE double: an exact intermediate within double rounding of an f32 boundary
+-- (e.g. f32 a + a tiny negative b: double returns a, the x87 a value below a) would otherwise change a stored bit.
+-- Exact fast path in double when every operation is exact (checked by TwoSum / Dekker TwoProduct), limb arithmetic
+-- otherwise. Pure Luau: no Instances.
+return function(V)
+	local rf32, r32, ri32, w32, r8, w8, wf32 = V.rf32, V.r32, V.ri32, V.w32, V.r8, V.w8, V.wf32
+	local floor, huge = math.floor, math.huge
+	local frexp, ldexp = math.frexp, math.ldexp
+
+	---------------------------------------------------------------------------------------------------------
+	-- X87: exact 64-bit-significand arithmetic, round toward -inf (x87 CW 0x077f). A value is a pair (h, l) of doubles,
+	-- h + l exact, h = the value truncated toward zero to 53 significant bits, l the rest (same sign, |l| < ulp(h)).
+	---------------------------------------------------------------------------------------------------------
+	local TWO32, TWO31 = 4294967296, 2147483648
+	local function unpack(h, l)
+		-- nonzero finite -> sign, exponent e (2^e <= |v| < 2^(e+1)), significand m = m1 * 2^32 + m0 in [2^63, 2^64)
+		local s = 0
+		if h < 0 then s = 1; h = -h; l = -l end
+		local _, ex = frexp(h)
+		local H, L = ldexp(h, 64 - ex), ldexp(l, 64 - ex)
+		local m1 = floor(H / TWO32)
+		return s, ex - 1, m1, (H - m1 * TWO32) + L
+	end
+	local function pack(s, e, m1, m0)
+		local low = m0 % 2048
+		local h, l = ldexp(m1 * TWO32 + (m0 - low), e - 63), ldexp(low, e - 63)
+		if s == 1 then return -h, -l end
+		return h, l
+	end
+	-- the magnitude m (+ a nonzero remainder when inexact) rounded toward -inf for the sign s
+	local function round(s, e, m1, m0, inexact)
+		if inexact and s == 1 then
+			m0 += 1
+			if m0 == TWO32 then
+				m0 = 0; m1 += 1
+				if m1 == TWO32 then m1 = TWO31; e += 1 end
+			end
+		end
+		return pack(s, e, m1, m0)
+	end
+	-- IEEE 754 sign of an exact zero sum under round toward -inf: +0 only for (+0) + (+0)
+	local function zeroSum(a, b)
+		if a == 0 and b == 0 and 1 / a > 0 and 1 / b > 0 then return 0 end
+		return -0.0
+	end
+	local function addSlow(ah, al, bh, bl)
+		if ah == 0 then
+			if bh == 0 then return zeroSum(ah, bh), 0 end
+			return bh, bl
+		end
+		if bh == 0 then return ah, al end
+		local sa, ea, a1, a0 = unpack(ah, al)
+		local sb, eb, b1, b0 = unpack(bh, bl)
+		if eb > ea or (eb == ea and (b1 > a1 or (b1 == a1 and b0 > a0))) then
+			sa, ea, a1, a0, sb, eb, b1, b0 = sb, eb, b1, b0, sa, ea, a1, a0
+		end
+		-- B aligned to A with a 32-bit guard limb (y1, y0, yg) + sticky (bits shifted out below the guard limb)
+		local d = ea - eb
+		local y1, y0, yg, sticky = b1, b0, 0, false
+		if d >= 96 then
+			y1, y0, yg, sticky = 0, 0, 0, true
+		else
+			while d >= 32 do
+				sticky = sticky or yg ~= 0
+				yg = y0; y0 = y1; y1 = 0; d -= 32
+			end
+			if d > 0 then
+				local p, q = 2 ^ d, 2 ^ (32 - d)
+				local r1, r0, rg = y1 % p, y0 % p, yg % p
+				sticky = sticky or rg ~= 0
+				yg = (yg - rg) / p + r0 * q
+				y0 = (y0 - r0) / p + r1 * q
+				y1 = (y1 - r1) / p
+			end
+		end
+		local z1, z0, zg
+		if sa == sb then
+			zg = yg; z0 = a0 + y0; z1 = a1 + y1
+			if z0 >= TWO32 then z0 -= TWO32; z1 += 1 end
+			if z1 >= TWO32 then
+				local c0, cg = z0 % 2, zg % 2
+				sticky = sticky or cg ~= 0
+				zg = (zg - cg) / 2 + c0 * TWO31
+				local c1 = z1 % 2
+				z0 = (z0 - c0) / 2 + c1 * TWO31
+				z1 = (z1 - c1) / 2
+				ea += 1
+			end
+		else
+			-- |A| - |B|; with sticky the true |B| exceeds (y1, y0, yg) by less than one guard unit: subtract one more
+			-- unit, the remaining fraction (0, 1) is the (nonzero) remainder
+			zg = -yg; z0 = a0 - y0; z1 = a1 - y1
+			if sticky then zg -= 1 end
+			if zg < 0 then zg += TWO32; z0 -= 1 end
+			if z0 < 0 then z0 += TWO32; z1 -= 1 end
+			if z1 == 0 and z0 == 0 and zg == 0 and not sticky then return -0.0, 0 end
+			while z1 < TWO31 do
+				local t0, tg = floor(z0 / TWO31), floor(zg / TWO31)
+				z1 = z1 * 2 + t0
+				z0 = (z0 - t0 * TWO31) * 2 + tg
+				zg = (zg - tg * TWO31) * 2
+				ea -= 1
+			end
+		end
+		return round(sa, ea, z1, z0, zg ~= 0 or sticky)
+	end
+	local function add(ah, al, bh, bl)
+		if al == 0 and bl == 0 then
+			local s = ah + bh
+			if s ~= s or s == huge or s == -huge then return s, 0 end
+			local bb = s - ah
+			if (ah - (s - bb)) + (bh - bb) == 0 then          -- TwoSum error 0: exact
+				if s == 0 then return zeroSum(ah, bh), 0 end
+				return s, 0
+			end
+		end
+		return addSlow(ah, al, bh, bl)
+	end
+	local function sub(ah, al, bh, bl) return add(ah, al, -bh, -bl) end
+	local SPLIT = 134217729 -- 2^27 + 1 (Dekker)
+	local function prodErr(a, b, p)
+		local t = SPLIT * a
+		local a1 = t - (t - a)
+		local a2 = a - a1
+		t = SPLIT * b
+		local b1 = t - (t - b)
+		local b2 = b - b1
+		return ((a1 * b1 - p) + a1 * b2 + a2 * b1) + a2 * b2
+	end
+	local function limbs16(m1, m0)
+		local x3, x1 = floor(m1 / 65536), floor(m0 / 65536)
+		return m0 - x1 * 65536, x1, m1 - x3 * 65536, x3
+	end
+	local function mulSlow(ah, al, bh, bl)
+		local sa, ea, a1, a0 = unpack(ah, al)
+		local sb, eb, b1, b0 = unpack(bh, bl)
+		local x0, x1, x2, x3 = limbs16(a1, a0)
+		local y0, y1, y2, y3 = limbs16(b1, b0)
+		local t = x0 * y0
+		local p0 = t % 65536; t = (t - p0) / 65536 + x0 * y1 + x1 * y0
+		local p1 = t % 65536; t = (t - p1) / 65536 + x0 * y2 + x1 * y1 + x2 * y0
+		local p2 = t % 65536; t = (t - p2) / 65536 + x0 * y3 + x1 * y2 + x2 * y1 + x3 * y0
+		local p3 = t % 65536; t = (t - p3) / 65536 + x1 * y3 + x2 * y2 + x3 * y1
+		local p4 = t % 65536; t = (t - p4) / 65536 + x2 * y3 + x3 * y2
+		local p5 = t % 65536; t = (t - p5) / 65536 + x3 * y3
+		local p6 = t % 65536
+		local p7 = (t - p6) / 65536
+		local s, e = (sa + sb) % 2, ea + eb
+		local m1, m0, inexact
+		if p7 >= 32768 then                                     -- product in [2^127, 2^128)
+			m1, m0 = p7 * 65536 + p6, p5 * 65536 + p4
+			inexact = p3 ~= 0 or p2 ~= 0 or p1 ~= 0 or p0 ~= 0
+			e += 1
+		else                                                    -- [2^126, 2^127): one bit left
+			local c5, c3 = floor(p5 / 32768), floor(p3 / 32768)
+			m1 = (p7 * 65536 + p6) * 2 + c5
+			m0 = ((p5 - c5 * 32768) * 65536 + p4) * 2 + c3
+			inexact = (p3 - c3 * 32768) ~= 0 or p2 ~= 0 or p1 ~= 0 or p0 ~= 0
+		end
+		return round(s, e, m1, m0, inexact)
+	end
+	local function mul(ah, al, bh, bl)
+		if al == 0 and bl == 0 then
+			local p = ah * bh
+			if p == 0 or p ~= p or p == huge or p == -huge then return p, 0 end
+			if prodErr(ah, bh, p) == 0 then return p, 0 end
+		end
+		if ah == 0 or bh == 0 then return ah * bh, 0 end          -- exact zero: sign = xor of the signs (h holds the sign)
+		return mulSlow(ah, al, bh, bl)
+	end
+	local function divSlow(ah, al, bh, bl)
+		local sa, ea, a1, a0 = unpack(ah, al)
+		local sb, eb, b1, b0 = unpack(bh, bl)
+		local e = ea - eb
+		local r1, r0 = a1, a0
+		if a1 < b1 or (a1 == b1 and a0 < b0) then
+			r0 *= 2; r1 *= 2
+			if r0 >= TWO32 then r0 -= TWO32; r1 += 1 end
+			e -= 1
+		end
+		local q1, q0 = 0, 0
+		for i = 1, 64 do
+			local bit = 0
+			if r1 > b1 or (r1 == b1 and r0 >= b0) then
+				bit = 1
+				r0 -= b0; r1 -= b1
+				if r0 < 0 then r0 += TWO32; r1 -= 1 end
+			end
+			if i <= 32 then q1 = q1 * 2 + bit else q0 = q0 * 2 + bit end
+			r0 *= 2; r1 *= 2
+			if r0 >= TWO32 then r0 -= TWO32; r1 += 1 end
+		end
+		return round((sa + sb) % 2, e, q1, q0, r1 ~= 0 or r0 ~= 0)
+	end
+	local function div(ah, al, bh, bl)
+		if al == 0 and bl == 0 then
+			local q = ah / bh
+			if q == 0 or q ~= q or q == huge or q == -huge then return q, 0 end
+			local p = q * bh
+			if p == ah and prodErr(q, bh, p) == 0 then return q, 0 end
+		end
+		if ah == 0 then return ah / bh, 0 end
+		return divSlow(ah, al, bh, bl)
+	end
+	-- FST dword: the value rounded toward -inf to binary32 (returned as the double holding it)
+	local SB = buffer.create(4)
+	local function f32(h, l)
+		buffer.writef32(SB, 0, h)
+		local f = buffer.readf32(SB, 0)
+		if f - h > l then                                       -- f > h + l
+			local u = buffer.readu32(SB, 0)
+			if f > 0 then u -= 1 elseif f == 0 then u = 0x80000001 else u += 1 end
+			buffer.writeu32(SB, 0, u)
+			f = buffer.readf32(SB, 0)
+		end
+		return f
+	end
+	local X87 = {add = add, sub = sub, mul = mul, div = div, f32 = f32}
+	V.x87 = X87 -- exposed for the Stage 13 arithmetic vectors (tests/stage13)
+
+	---------------------------------------------------------------------------------------------------------
+	-- cells (original addresses) and .rdata constants (the cells the original reads)
+	---------------------------------------------------------------------------------------------------------
+	local N_LF, N_RF = 0x74c964, 0x74c968
+	local A_LF, A_RF, B_LF, B_RF = 0xbf6ed4, 0xbf6ed8, 0xbf6edc, 0xbf6ee0
+	local C_LF, C_RF, D_LF, D_RF = 0xbf6ee4, 0xbf6ee8, 0xbf6eec, 0xbf6ef0
+	local LOAD, SLIP, FY, MOMENT = 0x74c960, 0xbf6ec4, 0xbf6ec8, 0xbf6ed0
+	local PREV, FILT = 0xbf6ec0, 0xbf6ecc
+	local SUSPENDED, ACQUIRED, AXIS, DIRSIGN = 0xbf6eb8, 0xbf6ebb, 0xbf6ebc, 0x74c95c
+	local FF_ON, STRENGTH, DAMPING, LATENCY = 0xbf6f1c, 0x74c9a4, 0xbf6f24, 0xbf6f20
+	local AIRSPEED = 0xbf3a00                                  -- |v - wind| copied by 00554520 @0055455f
+	local SETUP_RATIO = 0xc055c0 + 4 * 0x30                    -- 00557d60(0x30), ECX c055c0: raw item, no override
+	local SIMULATED = 0xbf6e04                                 -- 00551880(): player vehicle simulated
+	local REC7 = 0xd37cb8 + 29 * 7                             -- control-7 (steer left) binding record (0057b1e0(7))
+	local K_ZERO, K_ONE, K_MONE = rf32(0x6ea454), rf32(0x6e97d8), rf32(0x6ea4a8) -- 0, 1, -1
+	local K_LOADMAX = rf32(0x6f5878)                           -- 1500
+	local K_V0 = rf32(0x6ecfc8)                                -- 20
+	local K_MS = rf32(0x6ea67c)                                -- 0.001 (f32)
+	local K_EPS = rf32(0x6ea480)                               -- 1e-5 (f32)
+	local K_HALF = rf32(0x6ea44c)                              -- 0.5
+	local K_SCALE = rf32(0x6f5a44)                             -- 1600
+	local K_DI = rf32(0x6f5214)                                -- 10000 (005d3010)
+	local RATE = 36                                            -- 005f7c50 taskGetRate (lifter builtin B_taskGetRate)
+	local LOAD_MAX_BITS = 0x44bb8000                           -- mov dword [74c960], 1500.0 (immediate)
+
+
+	---------------------------------------------------------------------------------------------------------
+	-- host device layer (ADAPTER: the DirectInput module 005d0xxx / 005d2xxx; no simulation memory)
+	---------------------------------------------------------------------------------------------------------
+	local device = {capable = false, acquire = true} -- 005d0820 FF support of the bound axis / 005d0840 acquisition result
+	local effect = false                             -- f5d414: constant-force effect acquired (005d2bb0)
+	local sink = nil                                 -- host callback(axis, force, magnitude) per 005d3010 SetParameters
+	local last = {axis = 0, force = 0, magnitude = 0, frames = 0, calls = 0, block = false}
+	-- every 005d08d0 call of the ORIGINAL code (force as passed: f32, before the device conversion)
+	local trace = nil                                -- tests: table receiving {kind, axis, value}
+	local function deviceForce(axis, force)          -- 005d08d0(axis, force)
+		last.calls += 1
+		if trace then table.insert(trace, {"force", axis, force}) end
+		if not effect then return end                 -- [f5d4f0] DirectInput up and [f5d414] effect acquired
+		local x = force * K_DI                         -- fld dword ; fmul dword 10000 (exact: 24 x 14 bits)
+		local mag = x >= 0 and floor(x) or -floor(-x)  -- _ftol (truncation toward zero)
+		last.axis, last.force, last.magnitude = axis, force, mag
+		if sink then sink(axis, force, mag) end
+	end
+	local function deviceAcquire(axis)                -- 00550000 on the FG thread: 005d0840(axis) -> f5d414
+		if trace then table.insert(trace, {"acquire", axis}) end
+		if not device.capable then return false end
+		local ok = device.acquire ~= false
+		if ok then effect = true end
+		return ok
+	end
+	local function deviceRelease(axis)                -- 00550060 on the FG thread: 005d0870(axis)
+		if trace then table.insert(trace, {"release", axis}) end
+		if device.capable then effect = false end
+	end
+
+	---------------------------------------------------------------------------------------------------------
+	-- simulation-side controls / FF setup (ORIGINAL; 005f79a0 FG requests run synchronously: ADAPTER)
+	---------------------------------------------------------------------------------------------------------
+	local function band8(x) return bit32.band(math.floor(tonumber(x) or 0), 0xff) end
+	local configuredKind = nil -- control-7 binding type at the last 0054fed0 (host bookkeeping, see V._steerDevices)
+	-- 00550030: condition effects (005d08a0: no effect exists, no-op) + zero constant force
+	local function zeroForce() deviceForce(r32(AXIS), 0) end
+	-- 0054fed0: FF axis = the control-7 binding (0057aff0 fields: +0x10 type, +0x14 axis, +0x1c direction)
+	local function configure()
+		local kind = ri32(REC7 + 0x10)
+		configuredKind = kind
+		if kind ~= 1 then                                         -- not an analog axis: release
+			if r8(ACQUIRED) ~= 0 then deviceRelease(r32(AXIS)); w8(ACQUIRED, 0) end
+			return
+		end
+		local axis = r32(REC7 + 0x14)
+		-- axis name "<n><" / "<n>>" (table 0074fc68, axis < 16) or "?" (0074fd52): 74c95c = (char after digits) == '>' ? -1 : 1
+		local sign = (bit32.band(axis, 0x7fffffff) < 16 and r8(REC7 + 0x1c) ~= 0) and -1 or 1
+		if r8(ACQUIRED) ~= 0 then
+			if not (r8(FF_ON) ~= 0 and r32(AXIS) == axis) then  -- 00550280() ; cmp bf6ebc, axis
+				deviceRelease(r32(AXIS)); w8(ACQUIRED, 0)
+			end
+		end
+		w32(DIRSIGN, sign); w32(AXIS, axis)
+		if r8(ACQUIRED) ~= 0 or r8(FF_ON) == 0 then return end
+		if not device.capable then return end                     -- 005d0820(axis)
+		if deviceAcquire(axis) then                               -- 005f79a0(00550000, &ok): ok -> 00550030
+			zeroForce()
+			w8(ACQUIRED, 1)
+		end
+	end
+	-- 00550070(flag): flag 0 = player controls active (FF axis set up), 1 = suspended (force zeroed); bf6eb8 = flag
+	local function controls(flag)
+		flag = band8(flag)
+		if flag == 0 then configure() end
+		if r8(ACQUIRED) ~= 0 and flag ~= 0 then zeroForce() end
+		w8(SUSPENDED, flag)
+	end
+	-- 00550680: release at the end of the session (00572cb0 / 00573bc0)
+	local function release()
+		if r8(ACQUIRED) ~= 0 then deviceRelease(r32(AXIS)); w8(ACQUIRED, 0) end
+	end
+
+
+	---------------------------------------------------------------------------------------------------------
+	-- 00554d30 (per tick): front tyre statistics of the last tick's passes; clears the accumulators
+	---------------------------------------------------------------------------------------------------------
+	local function makeStats(add, sub, mul, div, f32, mu)
+		return function()
+			local nL, nR = ri32(N_LF), ri32(N_RF)
+			local bL, bR = rf32(B_LF), rf32(B_RF)
+			local ah, al, l = K_ZERO, 0, 0                          -- 00554d75: fld 0.0 ; mov dword [esp], 0
+			if nL > 0 then
+				local sh, sl = add(bR, 0, bL, 0)                    -- fld B_RF ; fadd B_LF
+				local sx = f32(sh, sl)                              -- fst dword [esp]
+				if sh > 0 then                                      -- fcomp 0.0 ; and 0x4100 ; jne (sum <= 0 or NaN)
+					ah, al = div(K_ONE, 0, nL, 0)                   -- fild n_LF ; fdivr 1.0
+					l = f32(div(bL, 0, sx, 0))                      -- fld B_LF ; fdiv dword [esp] ; fstp dword [esp]
+				end
+			end
+			local bh, bl = K_ZERO, 0
+			if nR > 0 then bh, bl = div(K_ONE, 0, nR, 0) end        -- fild n_RF ; fdivr 1.0 (else fld 0.0)
+			-- 74c960 = B_RF b + B_LF a (fst), > 1500 -> 1500 (NaN kept)
+			local t1h, t1l = mul(bR, 0, bh, bl)
+			local t2h, t2l = mul(bL, 0, ah, al)
+			local vh, vl = add(t1h, t1l, t2h, t2l)
+			wf32(LOAD, f32(vh, vl))
+			if (vh > K_LOADMAX or (vh == K_LOADMAX and vl > 0)) and not (mu and mu("noclamp", true)) then w32(LOAD, LOAD_MAX_BITS) end
+			-- bf6ec4 = ((1 - l) A_RF) b + (A_LF l) a
+			local oh, ol = sub(K_ONE, 0, l, 0)
+			local ph, pl = mul(oh, ol, rf32(A_RF), 0)
+			ph, pl = mul(ph, pl, bh, bl)
+			local qh, ql = mul(rf32(A_LF), 0, l, 0)
+			qh, ql = mul(qh, ql, ah, al)
+			local slip = f32(add(ph, pl, qh, ql))
+			if mu then slip = f32(mu("slip", slip), 0) end
+			wf32(SLIP, slip)
+			-- bf6ec8 = C_RF b + C_LF a ; bf6ed0 = D_RF b + D_LF a
+			ph, pl = mul(rf32(C_RF), 0, bh, bl)
+			qh, ql = mul(rf32(C_LF), 0, ah, al)
+			wf32(FY, f32(add(ph, pl, qh, ql)))
+			ph, pl = mul(rf32(D_RF), 0, bh, bl)
+			qh, ql = mul(rf32(D_LF), 0, ah, al)
+			local moment = f32(add(ph, pl, qh, ql))
+			if mu then moment = f32(mu("moment", moment), 0) end
+			wf32(MOMENT, moment)
+			-- integer MOV 0 (00554ddf..00554e59)
+			w32(N_LF, 0); w32(N_RF, 0); w32(B_LF, 0); w32(B_RF, 0); w32(C_LF, 0); w32(C_RF, 0)
+			w32(D_LF, 0); w32(D_RF, 0); w32(A_LF, 0); w32(A_RF, 0)
+		end
+	end
+
+	---------------------------------------------------------------------------------------------------------
+	-- FFB block of the frame end 00554520 (0055464c..0055479d)
+	---------------------------------------------------------------------------------------------------------
+	local function makeBlock(add, sub, mul, div, f32, mu)
+		return function()
+			if r8(ACQUIRED) == 0 or r8(SUSPENDED) ~= 0 then return end
+			local ec4, ec0 = rf32(SLIP), rf32(PREV)
+			local dh, dl = sub(ec4, 0, ec0, 0)                        -- fld ec4 ; fsub ec0
+			w32(PREV, r32(SLIP))                                      -- ec0 = ec4 (MOV)
+			local d = f32(mul(RATE, 0, dh, dl))                       -- fild rate ; fmulp ; fstp dword [esp]
+			local th, tl = add(rf32(AIRSPEED), 0, K_V0, 0)            -- fld airspeed ; fadd 20
+			th, tl = div(K_V0, 0, th, tl)                             -- fdivr 20
+			th, tl = sub(K_ONE, 0, th, tl)                            -- fsubr 1.0
+			local uh, ul = mul(rf32(LATENCY), 0, K_MS, 0)             -- fld latency ; fmul 0.001
+			th, tl = mul(th, tl, uh, ul)                              -- fmulp st(1)
+			th, tl = mul(th, tl, d, 0)                                -- fmul dword [esp] (d)
+			local q = f32(add(th, tl, ec4, 0))                        -- fadd ec4 ; fstp dword [esp+0xc]
+			if mu then q = f32(mu("q", q), 0) end
+			local mh, ml
+			local a = math.abs(ec4)                                   -- and 0x7fffffff
+			if not (a < K_EPS or a == K_EPS or a ~= a) then           -- fcomp 1e-5 ; and 0x4100 ; jne
+				mh, ml = div(q, 0, ec4, 0)                            -- fld q ; fdiv ec4
+				mh, ml = mul(mh, ml, rf32(MOMENT), 0)                 -- fmul ed0
+			else
+				mh, ml = rf32(MOMENT), 0                              -- fld ed0
+			end
+			local xh, xl = mul(rf32(DAMPING), 0, d, 0)                -- fld damping ; fmul d
+			if mu then xh, xl = mu("damping", xh), 0 end
+			local yh, yl = sub(mh, ml, xh, xl)                        -- fsubp st(1)
+			yh, yl = add(yh, yl, rf32(FILT), 0)                       -- fadd ecc
+			yh, yl = mul(yh, yl, K_HALF, 0)                           -- fmul 0.5
+			local ecc = f32(yh, yl)                                   -- fst [esp+0x10] ; fstp ecc
+			wf32(FILT, ecc)
+			local ratio = rf32(SETUP_RATIO)
+			if mu then ratio = mu("ratio", ratio) end
+			local rh, rl = mul(ratio, 0, K_SCALE, 0)                  -- fld item 0x30 ; fmul 1600
+			rh, rl = div(rf32(STRENGTH), 0, rh, rl)                   -- fdivr strength
+			local out = f32(mul(rh, rl, ecc, 0))                      -- fmul ecc ; fstp dword [esp]
+			if mu then out = f32(mu("out", out), 0) end
+			if K_ONE < out then out = K_ONE                           -- fcomp ; test ah,5 ; jp
+			elseif K_MONE > out then out = K_MONE end                 -- fcomp ; and 0x4100 ; jne
+			last.block = true
+			last.frames += 1
+			deviceForce(r32(AXIS), out)                               -- 005d08d0(bf6ebc, out)
+		end
+	end
+
+	-- the arithmetic of the two routines: exact x87 (production) or, TEST ONLY (V._ffbModel), the IEEE double model of the
+	-- Stage 6-12 lifter convention (intermediates in double, round to nearest; f32 stores toward -inf) and a deliberate
+	-- mapping error mu(stage, value) -> value (level 5 of tests/stage13)
+	local fd = V.fd
+	local function dadd(ah, _, bh, _) local r = ah + bh; if r == 0 then return zeroSum(ah, bh), 0 end; return r, 0 end
+	local function dsub(ah, _, bh, _) return dadd(ah, 0, -bh, 0) end
+	local function dmul(ah, _, bh, _) return ah * bh, 0 end
+	local function ddiv(ah, _, bh, _) return ah / bh, 0 end
+	local function dstore(h, _) return fd(h) end
+	local stats, frameBlock
+	local function build(model, mu)
+		if model == "double" then
+			stats, frameBlock = makeStats(dadd, dsub, dmul, ddiv, dstore, mu), makeBlock(dadd, dsub, dmul, ddiv, dstore, mu)
+		else
+			stats, frameBlock = makeStats(add, sub, mul, div, f32, mu), makeBlock(add, sub, mul, div, f32, mu)
+		end
+	end
+	build("x87", nil)
+	V._ffbModel = function(model, mu) build(model or "x87", mu) end
+	V.ffbStatsOriginal = function() stats() end
+	V.ffbFrameOriginal = function() frameBlock() end
+
+	-- integration points (NR2003CupDriver.tickInputs @00553a64 / NR2003CupFrame after the lifted 00554520)
+	function V._ffbTick() stats() end
+	function V._ffbFrameEnd()
+		last.block = false
+		if r8(SIMULATED) == 0 then return end                     -- 0055452a: whole frame end gated by 00551880
+		frameBlock()
+	end
+
+	---------------------------------------------------------------------------------------------------------
+	-- options (messages 8..11; controls.cfg integers, front-end ranges 0..100 / 0..100 / 0..250)
+	---------------------------------------------------------------------------------------------------------
+	local options = nil
+	local function applyOptions()
+		if options == nil then return end
+		local o = options
+		if o.enabled ~= nil then w8(FF_ON, o.enabled and 1 or 0) end                          -- 00550270
+		if o.strength ~= nil then wf32(STRENGTH, math.clamp(floor(o.strength), 0, 100)) end  -- 00550290
+		if o.damping ~= nil then wf32(DAMPING, math.clamp(floor(o.damping), 0, 100)) end     -- 005502d0
+		if o.latency ~= nil then wf32(LATENCY, math.clamp(floor(o.latency), 0, 250)) end     -- 005502b0
+	end
+	-- opts: enabled (bool, FF on/off), strength (0..100, image 80), damping (0..100, image 0), latency (ms 0..250,
+	-- image 0); nil = keep the image value (no controls.cfg). Values survive reset(). The FF axis is set up again at
+	-- once (the front end re-selects the active controls when it returns to the car: 00550070(0)).
+	function V.setForceFeedbackOptions(opts)
+		opts = opts or {}
+		local function range(name, hi)
+			local v = opts[name]
+			if v ~= nil and not (type(v) == "number" and v >= 0 and v <= hi) then
+				error(string.format("NR2003 Stage 13: %s must be a number 0..%d (got %s)", name, hi, tostring(v)))
+			end
+		end
+		range("strength", 100); range("damping", 100); range("latency", 250)
+		if opts.enabled ~= nil and type(opts.enabled) ~= "boolean" then error("NR2003 Stage 13: enabled must be a boolean") end
+		options = {enabled = opts.enabled, strength = opts.strength, damping = opts.damping, latency = opts.latency}
+		applyOptions()
+		controls(r8(SUSPENDED))
+		return V.forceFeedbackOptions()
+	end
+	function V.clearForceFeedbackOptions() options = nil end
+	function V.forceFeedbackOptions()
+		return {enabled = r8(FF_ON) ~= 0, strength = rf32(STRENGTH), damping = rf32(DAMPING), latency = rf32(LATENCY)}
+	end
+	-- dev: {capable = bool (an FF device is bound to the steering axis: 005d0820), acquire = bool (005d0840 result,
+	-- default true), sink = function(axis, force, magnitude) called on every constant-force update}
+	function V.setForceFeedbackDevice(dev)
+		dev = dev or {}
+		local was = device.capable
+		device = {capable = dev.capable == true, acquire = dev.acquire ~= false}
+		if dev.sink ~= nil then sink = dev.sink end
+		if was and not device.capable and r8(ACQUIRED) ~= 0 then  -- device removed: DirectInput loses the effect
+			effect = false
+		end
+		controls(r8(SUSPENDED))
+	end
+	function V.setForceFeedbackSink(fn) sink = fn end
+	-- ORIGINAL 00550070: true = player controls suspended (005524f0 not-driven branch, FFB off, force zeroed)
+	function V.setControlsSuspended(flag) controls(flag and 1 or 0) end
+	function V.controlsSuspended() return r8(SUSPENDED) ~= 0 end
+	-- re-select the active controls (fgmsgSelectActiveControls: 00550070(0) on the current binding)
+	function V.selectActiveControls() controls(0) end
+	V._ffbControls = controls
+	V._ffbDeviceForce = deviceForce
+	V._ffbRelease = release
+	V._ffbTrace = function(t) trace = t end
+	-- TEST ONLY: raw host device state (capable, acquire result, effect acquired = f5d414) without the 00550070 that
+	-- setForceFeedbackDevice runs
+	V._ffbHostState = function(capable, acquire, eff)
+		if capable ~= nil then device = {capable = capable, acquire = acquire ~= false} end
+		if eff ~= nil then effect = eff end
+		return device.capable, device.acquire, effect
+	end
+
+	---------------------------------------------------------------------------------------------------------
+	-- lifecycle
+	---------------------------------------------------------------------------------------------------------
+	-- 00550a50 @00550b07 (car placed on the track): the options are simulation cells that the game keeps across car
+	-- placements; the port's reset reloads the image, so they are re-applied first
+	function V._ffbEnterTrack()
+		applyOptions()
+		controls(0)
+	end
+	local baseReset = V.reset
+	function V.reset()
+		effect = false                 -- the reloaded image has no acquired effect (bf6ebb 0): host side released
+		configuredKind = nil
+		last.force, last.magnitude, last.block = 0, 0, false
+		baseReset()
+		applyOptions()
+	end
+	-- checkpoint / restore: the host device state goes with the memory (bf6ebb / bf6ebc are in the memory; the effect
+	-- acquired by the device layer and the binding type of the last 0054fed0 are host-side)
+	local baseCheckpoint, baseRestore = V.checkpoint, V.restore
+	function V.checkpoint()
+		local c = baseCheckpoint()
+		c.ffb = {effect = effect, configuredKind = configuredKind, force = last.force, magnitude = last.magnitude,
+			axis = last.axis, block = last.block}
+		return c
+	end
+	function V.restore(c)
+		baseRestore(c)
+		local h = c.ffb
+		if h then
+			effect, configuredKind = h.effect, h.configuredKind
+			last.force, last.magnitude, last.axis, last.block = h.force, h.magnitude, h.axis, h.block
+		end
+	end
+	if V.endSession then
+		local baseEnd = V.endSession
+		function V.endSession()
+			release()                  -- 00550680 (session end)
+			baseEnd()
+		end
+	end
+	-- device layer (ADAPTER): the Roblox host re-binds controls 7 / 8 every frame (NR2003CupSteering.hostDevices); a change
+	-- of the control-7 binding type (keys <-> analog axis) is what the game's controls menu + fgmsgSelectActiveControls
+	-- produce, followed by 00550070(0). Run only while FF is on or acquired (otherwise 0054fed0 changes nothing
+	-- observable but bf6ebc / 74c95c).
+	if V._steerDevices then
+		local baseDevices = V._steerDevices
+		function V._steerDevices(c)
+			baseDevices(c)
+			if configuredKind ~= ri32(REC7 + 0x10) and (r8(FF_ON) ~= 0 or r8(ACQUIRED) ~= 0) then
+				controls(0)
+			end
+		end
+	end
+
+	---------------------------------------------------------------------------------------------------------
+	-- observation (original cells)
+	---------------------------------------------------------------------------------------------------------
+	function V.forceFeedbackState(out)
+		out = out or {}
+		out.enabled, out.acquired, out.suspended = r8(FF_ON) ~= 0, r8(ACQUIRED) ~= 0, r8(SUSPENDED) ~= 0
+		out.effect = effect
+		out.axis, out.directionSign = r32(AXIS), ri32(DIRSIGN)
+		out.force, out.magnitude = last.force, last.magnitude     -- last constant force sent to the device
+		out.blockRan = last.block                                  -- FFB block evaluated in the last frame end
+		out.frames, out.calls = last.frames, last.calls
+		out.slip, out.moment, out.fy, out.load = rf32(SLIP), rf32(MOMENT), rf32(FY), rf32(LOAD)
+		out.previousSlip, out.filtered = rf32(PREV), rf32(FILT)
+		out.strength, out.damping, out.latency = rf32(STRENGTH), rf32(DAMPING), rf32(LATENCY)
+		out.setupRatio, out.airspeed = rf32(SETUP_RATIO), rf32(AIRSPEED)
+		return out
+	end
+	return V
+end
+]=])
+item("Roblox","Stage13SelfTest","ModuleScript",nil,nil,160437,2806672334,[=[
+-- Stage 13 Studio self-test (edit mode or Play, server side). Golden values embedded below were produced by the
+-- ORIGINAL NR2003.exe code executed in Unicorn (recovery/stage13: gen_units13.py / gen_fixtures13.py):
+--   require(game.ReplicatedStorage.NR2003Lab.Roblox.Stage13SelfTest).run()      -- quick (~1-3 s)
+--   require(game.ReplicatedStorage.NR2003Lab.Roblox.Stage13SelfTest).run(true)  -- + determinism / checkpoint run
+-- What it checks (subset of tests/stage13/run.luau): the exact x87 arithmetic of the port (64-bit significand, round
+-- toward -inf) against the exact reference, the ORIGINAL 00554d30 and the FFB block of 00554520 vector by vector, the
+-- ORIGINAL 00550070 / 0054fed0 / 00550680 decisions with the device-call sequence, the option setters, the original's own
+-- 00554d30 / FFB-block calls traced in a closed-loop run (bit-exact), and the behaviour (keys never acquire the effect,
+-- an analog axis does, controls suspended = 005524f0 not-driven + FFB gated + zero force, options survive reset).
+local G={["x87"]={["add"]="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAACRJ0r+SJEmSAEhyvAAAAAAkSdK/kiRJkgBIcrwAAAAAvtkuQc4UWi4AALI9AAAAAFoIV8CQaoV6AMQPvQAAAAAF2S5BokCG6wDs2T0AAAAAJvNSQbXQLFQAQPI9AAAAAKK/3baf5+eFAABxswAAAAAm81JBtdAsVAA48j0AAAAApDKQQWzJsqMAgD4+AAAAAP//77//////ALSfvAAAAACkMpBBbMmynwCAPj4AAAAAmNajPojvDW0AAAAAAAAAAHlqw7nQzkf4AABMtgAAAACY1qM+h+8NbQD8XzsAAAAA//+/Pv////8A+G87AAAAACqHtD/G8SPDALBsPAAAAABKh7Q/xvEjwwCsbDwAAAAATR/CQOw6amAALHM9AAAAAGfoa7rjDya4ADAMtwAAAABNH8JA7DpqYAAocz0AAAAAHYrGQEcJRoIAMFA9AAAAAP//Tz//////ACT9OwAAAAAdisZARwlGogAgUD0AAAAAL/r2PcRpT2kAyJw6AAAAAFI7bLnU3bStAIADtgAAAAAv+vY9xGlPaQDAnDoAAAAANouMvy+JTW4AoC+8AAAAAP//f0LEHv//AGAGPwAAAAD//39Cix7//wBA9j4AAAAAXckkQhFT6joA4Ls+AAAAAI+Lsbh1KigTAGxqtQAAAABdySRCEVPqOgDQuz4AAAAA//9fvg/2//8AOPO6AAAAAHZ/2j0AXBDDAAAAAAAAAACA5V++s+U8iQA487oAAAAA+yn/QKOOhsIASKo9AAAAAP//z7sK/P//AHR5uAAAAAD7Kf9Ao46GwgBEqj0AAAAA//8fQNT1//8AQIk8AAAAAP//778QPP7/AAAAAAAAAAAAABxAUi4AAABAiTwAAAAAOFhCwunbtG8A5P6+AAAAAM8QozknrDUBAChWNgAAAAA4WELC6du0bwDk/r4AAAAA76udvUH7uWEAMDS6AAAAAP//nz4A0DH/AAAAAAAAAADi/58+Rm5CUwCA8joAAAAAITxzQeRIlfkAdCw+AAAAANl1SjsAgB/MAAAAAAAAAAAhPHNB5EiV+QB0LD4AAAAAOhGIvWRtBSAA+C+6AAAAAJPByz0GUnMWADRwOgAAAAB/QMo9MPtydADQXDoAAAAAPujEwCTK66EApHS9AAAAAPoW2bcAAABIAAAAAAAAAAA+6MTAJMrroQCodL0AAAAA0SbWwE/dw+AARI69AAAAAH08JEDwTnHcADTSPAAAAABKJNbAJk8IUQAgVL0AAAAA81jOQHrdKAsArHc9AAAAAP//L7j+////AEzatAAAAADzWM5Aet0oCwCodz0AAAAAG8IuP3q0Q2YAJN47AAAAAP0biMCk//3LACAPvQAAAAD9G4jAC5L1UABgAL0AAAAA5yL6wQC4sMEAAAAAAAAAAGHWSrZiZzUWAIjxsgAAAADnIvrBALiwwQAAAL4AAAAAmK1Zwa214wwAAMi9AAAAACuwNz8Kbum+AAByOwAAAACYrVnBosndDABg3L0AAAAAQAmrvdTDQcYA0EC6AAAAAFjt/DWfpAlgANCdMgAAAABACau91MNBxgDQQLoAAAAAyl2qwC+68XgAaF69AAAAAPBOIkEEpkoFAMjRPQAAAACSNCJBSrTROgCQxz0AAAAA+P8/vgAAAAAAAAAAAAAAABsaVbaW2IMoAMDQsgAAAAD4/z++AAAAAAAAQLoAAAAAkgouwVKxbVEAeN69AAAAAILIqD0I6KgoAAAoOgAAAACSCi7BUrFtUQBg270AAAAAPDebwIQ2ZUEAsCG9AAAAAEVSWrjuf3rqACDdtAAAAAA8N5vAhDZlQQDAIb0AAAAAOU/rv7TxL80AEHm8AAAAAAAAVsAAAAAAAAAAAAAAAACeNlbA41+acwAg+rwAAAAADfqlwIzssOMAKEC9AAAAAN1umLuIpqoeAPgwuAAAAAAN+qXAjOyw4wAwQL0AAAAAJgGuwAC3DgQAAAAAAAAAAIWWSEE43CsMAKDlPQAAAAAEj0hBitiqwgDQ8j0AAAAAjyB3QrYlTbgAfCs/AAAAADSEZLgAADQAAAAAAAAAAACPIHdCtiVNuAB4Kz8AAAAApsXSwW3Rx7IA2I6+AAAAAECW3z8AAAAAAAAAAAAAAACmxdLBLTuosgDYjr4AAAAArh7KQHDu7gIA1HU9AAAAAP//jzv/////AKQ+OAAAAACuHspAcO7uAgDUdT0AAAAAi5xJvwAA9DUAAAAAAAAAAJt5xcG6Io1YADByvgAAAACbecXBVzyNWADATL4AAAAAK1J8wTB558UAaCS+AAAAAENJHbr+VSoBANTAtgAAAAArUnzBMHnnxQBsJL4AAAAAah2zQekyk1QAQFo+AAAAABDJlkF/1ydKACxPPgAAAACuz7hBySgdZwDQWT4AAAAANqFoPvsZcyQA7BQ7AAAAAETv6DkrkHKTAGCQNgAAAAA2oWg++xlzJADsFDsAAAAArKv+wUiPb2UAwIi+AAAAAFE6XsEAjCYbAAAAAAAAAAA6s/7B61i2+QDAiL4AAAAA//8vPmw8tP8AyNw6AAAAAGfnKDZDcs8NAKCyMgAAAAD//y8+bDy0/wDI3DoAAAAA//8fvv////8AwM+6AAAAANi2P8IM8PVHABDhvgAAAADYtj/CDPD1RwAU4b4AAAAAkfrOQQgV1xUAzHw+AAAAAOUQRbnZyQTTALDjtQAAAACR+s5BCBXXFQDIfD4AAAAAvC9zwfSqv18AEB2+AAAAAPo+br4G22LVAAQRuwAAAAC8L3PBA6u/XwB4Ir4AAAAAlhxvvxAiH4wA7BK8AAAAAPNAlbqLGPcPAMhBtwAAAACWHG+/ECIfjADwErwAAAAA15awwDQNYtEAuGa9AAAAADLX4b0AAACSAAAAAAAAAADXlrDAww1i0QDYW70AAAAAFaFfQXTYnKcAoPk9AAAAAMVljbhcU8BVAJAbtQAAAAAVoV9BdNicpwCY+T0AAAAA///vPWrn3v8A+JE6AAAAAEM1Ej6V9i38ALDCOgAAAABDNRY+gtMp/ADszDoAAAAAgsR4PzoS9tMAhCc8AAAAAMPVvjkIDIJjAOxuNgAAAACCxHg/OhL20wCEJzwAAAAAjjbqwMZu5hgAfJC9AAAAAP//T0EA4P//AAAAAAAAAAAll09BREacxwC8/D0AAAAAOuK+wAkRrAMApGu9AAAAAAGMibb0hUs7AAABswAAAAA64r7ACRGsAwCoa70AAAAA8KBSwY1xUtEA/Au+AAAAADOCIUGCa+W9AKjcPQAAAACqcFDBHcSVWQBoAL4AAAAAxTytPdgA3sMARFs6AAAAAKHV67kA8MwkAAAAAAAAAADFPK092ADewwAMWzoAAAAA//9vv9V2Iv8AUPq7AAAAANDYJsEAAAAAAAAAAAAAAADQ2CbB////AQBI3r0AAAAAOTWMwKV4PBgAADe9AAAAAB2wQLhthz6aACD4tAAAAAA5NYzApXg8GAAEN70AAAAApihFwZHprqAAmOa9AAAAAFgmOUImWGmtAADDPgAAAAAuJjlCyBYcXACw1D4AAAAAld9SQM24/WcAgNE8AAAAALLdAjlx+8UxADCkNQAAAACV31JAzbj9ZwCA0TwAAAAASgK7vk7eKUQA4Ee7AAAAAP//bz7VEf//AADgOgAAAABKArq+v+UpRADoYLsAAAAACFpRQTY9YuAAAOg9AAAAACA+kbuoW3HxAAREuAAAAAAIWlFBNj1i4ADw5z0AAAAA53NUwNiG2F8AoPq8AAAAABbX9EFUlxSYAAitPgAAAAAW1/RBfJ33kgBArj4AAAAA7UVHQSyzNSEAgMQ9AAAAAE7rgDlD0/y8ALgzNgAAAADtRUdBLLM1IQCAxD0AAAAA6mQLwX+CvDMAyLS9AAAAAGNLYz5nVdMOAIQbOwAAAADqZAvBrH28MwCwub0AAAAAJ9btvk2xyagAQHe7AAAAAF8n/7dWCvSSAOCPtAAAAAAn1u2+TbHJqABQd7sAAAAA04qfQB43PmgArEY9AAAAAD+hcj5q3H6NAJgXOwAAAADTip9Abt9CaAAUQz0AAAAAa/GmwecLk3MA3Fq+AAAAAP//n7a9/v//AFA/swAAAABr8abB5wuTcwDgWr4AAAAAZD47P0Ujl60AGOs7AAAAAOjQEUIAAAC0AAAAAAAAAADo0BFCbAAAtAAwzz4AAAAAhU3hQZKkywoAAIM+AAAAAP//fzr/////APwvNwAAAACFTeFBkqTLCgAAgz4AAAAA//8fv+T6//8AoMa7AAAAAPjby8G88uG5AOh+vgAAAAD428vBvPbhuQDofr4AAAAA9P7WQdR4c+IAQGY+AAAAAIvc5bqrT8VsAECEtwAAAAD0/tZB1Hhz4gAwZj4AAAAAAXBlv/p71b0AmAK8AAAAAG+/P8AQjuVyAIjdvAAAAAAawD/AvHzz8gCA1bwAAAAA7nqQPVViFZoAIB86AAAAAC7Sw7ZnSNMCAFBZswAAAADuepA9VWIVmgAAHzoAAAAAicI4PmpN3SEAhOc6AAAAAP//P74YLNn/ABzougAAAADb9Ry+uHrvdwAAk7oAAAAA7yoOvwqMlKAAAKq7AAAAAC65Yjl0YGALAEAfNgAAAADvKg6/CoyUoAAAqrsAAAAA7U9EQgAAwPwAAAAAAAAAAHmsK0Lk2wVAADjJPgAAAAAMO0tC+XbBTAAgyT4AAAAAmgVJwp4udS8AsNS+AAAAAEdZabYahoKxACAdswAAAACaBUnCni51LwDA1L4AAAAAhA5QwZRbXkQAoAy+AAAAAJRd+b/wPnYsADCCvAAAAACEDlDBRqzUqQDAB74AAAAAuNTBPkdsjGEADHQ7AAAAACV5jjmFtbBGAHg6NgAAAAC41ME+R2yMYQAMdDsAAAAA///fvv////8A8I+7AAAAAPJDVz9BVLAPAAQFPAAAAADyI1c/QVSwDwAEBTwAAAAAAMAuwAAAAAAAAAAAAAAAADhJGjYgEJHJABzDMgAAAAAAwC7AAAAAAAAAAAAAAAAAbdepwNGxMy0AcFu9AAAAACKCur0HDsgGAGBDugAAAABt16nABrIzLQD8W70AAAAAV6KiwP8N1OwAgFC9AAAAAHsg5TfuBVVTABCBNAAAAABXoqLA/w3U7ACAUL0AAAAA//+fQeJO+v8A1Ec+AAAAAFf7iT1yrbm9AKglOgAAAAD//59B4k76/wDURz4AAAAAwCK8QdG8qP8ANGk+AAAAAA58azrYd77+AFAeNwAAAADAIrxB0byo/wA0aT4AAAAAJct/QrWjSJMAAN0+AAAAAP//z78zslL7ALBxvAAAAAAly39CtZ9IkwAA3T4AAAAAlIJZwYw5nOcAVAe+AAAAAP//7zqvl/P/ADCGNwAAAACUglnBjDmc5wBUB74AAAAAW4YuwMxqfkwApNy8AAAAAM2oX0D3QcfUAEQOPQAAAAAC2FtAnnQ3awBY9TwAAAAA//9vQv////8A0B8/AAAAAIkVKbcAjnpKAAAAAAAAAAD//29C/////wDMHz8AAAAAhhS/P3bbz3IAaFw8AAAAAIoxcb51Wsy4AGD6ugAAAACFFL8/6S+3XwB8ZTwAAAAAdJ4+PoiQH7cAAAAAAAAAACVR+bWYVz08AIBosgAAAAB0nj4+h5AftwD87zoAAAAA/GvivgAAAFgAAAAAAAAAAFx8Sj+OGByUAKzxOwAAAACsMko/jhi8ogCs8TsAAAAAXttSQB1Lb44AnAQ9AAAAAJhfsLiFRTWJANBHtQAAAABe21JAHUtvjgCYBD0AAAAA97wEQthw9kIAsL0+AAAAAFrnP8Gck5jiAADqvQAAAAD4uwRCFFwfCAAgpD4AAAAAe6e3wT6YHkgAYD6+AAAAAL6CUrsAm0N7AAAAAAAAAAB7p7fBPpgeSACAPr4AAAAABPYgwDV5VkEAUN68AAAAAHhs6j4qozH3ACB5OwAAAAAC9iDAwumOmgAM27wAAAAAAPC8vwAAAAAAAAAAAAAAAMUZyLakGlUNAKBGswAAAAAA8Ly/AAAAAAAAwLsAAAAA///vwfH///8ACJ6+AAAAAP//vz0n/v//AOBcOgAAAAD//+/B8f///wAInr4AAAAAIeZmwnShrhYAgAm/AAAAAPzQQbg5rLcGALzxtAAAAAAh5mbCdKGuFgCICb8AAAAAer9CwDw/jWUA4MC8AAAAAEoQDb+fyBO9AICouwAAAAB8v0LADeuRNgBg47wAAAAA//+vPQWW//8AkFk6AAAAAE4hrjokaqm1ADhTNwAAAAD//689I5b//wC4XToAAAAApMt9PuRCRI0AIC47AAAAAMTQ3L69ZFixABBruwAAAACWWdy+sVMjHwBMhLsAAAAA/ZcRvlJATJQAQLa6AAAAAGyvQjtrlpt/ALT6NwAAAAD9lxG+vD9MlAC0y7oAAAAA",["mul"]="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",["div"]="AADwPwAAAAAAAAAAAAAAAAAA8L8AAAAAAAAAAAAAAAAAAPC/AAAAAAAAAAAAAAAAJVXGvwAAAKAAAAAAAAAAADXyLT4AAAAgAAAAAAAAAABC3YfB4+vp/gAA970AAAAAD9rWQbo9fN4AaIg+AAAAAA/a1sG6PXzeAGiIvgAAAAAAAPC/AAAAAAAAAAAAAAAAKCGmvwAAAOAAAAAAAAAAAALSVMEAAAAAAAAAAAAAAACOAUE+dMYIpgCk/ToAAAAA//+PQP////8A6D89AAAAAP//j8D/////AOg/vQAAAAAAAPC/AAAAAAAAAAAAAAAA2DZCPwAAAMAAAAAAAAAAANbpEj8AAAAgAAAAAAAAAAAp0R5AFJ7r5QBgrDwAAAAAp5F0vbQwisIAiCi6AAAAAKeRdD20MIrCAIgoOgAAAAAAAPC/AAAAAAAAAAAAAAAAtHCRvgAAAKAAAAAAAAAAAA90yr8AAAAgAAAAAAAAAADZGLU+PFQFUwCIXTsAAAAAcGjdvUXJLpwAcGG6AAAAAHBo3T1FyS6cAHBhOgAAAAAAAPC/AAAAAAAAAAAAAAAAP1lLwQAAAGAAAAAAAAAAABrRsD4AAABgAAAAAAAAAAAwBYrCkWh9rwDAJr8AAAAAa/AmwXtM1uMACMa9AAAAAGvwJkF7TNbjAAjGPQAAAAAAAPC/AAAAAAAAAAAAAAAAx606vgAAAMAAAAAAAAAAAC/ADsAAAAAAAAAAAAAAAAA/wxs+KVHAcwAQojoAAAAAwa4ov6Ha8bwA2MC7AAAAAMGuKD+h2vG8ANjAOwAAAAAAAPC/AAAAAAAAAAAAAAAAgZlLPwAAACAAAAAAAAAAAEcio74AAABgAAAAAAAAAABCFJfA0wUJoAC4Rb0AAAAAPudiQW8SKjMAoPc9AAAAAD7nYsFvEiozAKD3vQAAAAAAAPC/AAAAAAAAAAAAAAAA0XvGwAAAAEAAAAAAAAAAAMus0r4AAAAAAAAAAAAAAABdQ+NBHHsPDwAYkj4AAAAAIXf3vo+/urIArK67AAAAACF39z6Pv7qyAKyuOwAAAAAAAPC/AAAAAAAAAAAAAAAAI9m2wAAAAOAAAAAAAAAAACn+d8EAAACAAAAAAAAAAAAveS4/tc/F5wCo3TsAAAAA//+vvxaP9f8A+F68AAAAAP//rz8Wj/X/APhePAAAAAAAAPC/AAAAAAAAAAAAAAAAP3dvPwAAAEAAAAAAAAAAAOQ4NEAAAACgAAAAAAAAAABg5Sg/KyswjQA41jsAAAAAy+ycvmmYj+IAAAC7AAAAAMvsnD5pmI/iAAAAOwAAAAAAAPC/AAAAAAAAAAAAAAAAk3g/PgAAACAAAAAAAAAAAJn5p8AAAADgAAAAAAAAAACmAIW9i6ZVSACQK7oAAAAAghJPPkDJJfsAAAAAAAAAAIIST75AySX7AAAAAAAAAAAAAPC/AAAAAAAAAAAAAAAAOeBHPgAAAKAAAAAAAAAAACUlnkAAAACgAAAAAAAAAABSWJk9aXNo4QDwNDoAAAAA//+vwaSJ5/8AAAAAAAAAAP//r0Gkief/AAAAAAAAAAAAAPC/AAAAAAAAAAAAAAAA3R5GvgAAACAAAAAAAAAAAJg1Mb4AAACgAAAAAAAAAADqkARAjA1LRQBAqjwAAAAApe2hwbAgct4AOEy+AAAAAKXtoUGwIHLeADhMPgAAAAAAAPC/AAAAAAAAAAAAAAAAQKcKPwAAAOAAAAAAAAAAAPQroL4AAADgAAAAAAAAAADOXlrAMeUQfgDY/bwAAAAAG/swwjhk2y0AuOi+AAAAABv7MEI4ZNstALjoPgAAAAAAAPC/AAAAAAAAAAAAAAAAi8vnwAAAAEAAAAAAAAAAAHJjsr4AAABAAAAAAAAAAABRtCRCJZ4dgABoxD4AAAAAAzlxPgC4qVYAAAAAAAAAAAM5cb4AuKlWAAAAAAAAAAAAAPC/AAAAAAAAAAAAAAAANMvwPgAAAOAAAAAAAAAAAO0pxL8AAABAAAAAAAAAAADbphq/iPdE+wC0yrsAAAAAGgHvPYCwivcAFJk6AAAAABoB772AsIr3ABSZugAAAAAAAPC/AAAAAAAAAAAAAAAAudNTwQAAAAAAAAAAAAAAALdHGkEAAAAgAAAAAAAAAABzJCjA7+zppQAw0bwAAAAARmUYQZT2pCcAEMI9AAAAAEZlGMGU9qQnABDCvQAAAAAAAPC/AAAAAAAAAAAAAAAAJx3vQAAAAAAAAAAAAAAAAFoIZD4AAACAAAAAAAAAAAC+2XhCytjkDQCkIT8AAAAAOT4Pwc9ahGUA6Ly9AAAAADk+D0HPWoRlAOi8PQAAAAAAAPC/AAAAAAAAAAAAAAAA6QPMwQAAAOAAAAAAAAAAACEhE0AAAABAAAAAAAAAAAClbqfBzHRH3gBgQ74AAAAA/fA/vgAAAEYAAAAAAAAAAP3wPz4AAABGAAAAAAAAAAAAAPC/AAAAAAAAAAAAAAAAR1jdwAAAAMAAAAAAAAAAAFZnET8AAADgAAAAAAAAAABj+rrB2G63MgA8bL4AAAAAXfvUQCC7QFIA4HQ9AAAAAF371MAgu0BSAOB0vQAAAAAAAPC/AAAAAAAAAAAAAAAAD08vvgAAAAAAAAAAAAAAAD4VpkAAAABAAAAAAAAAAAA6r3a9vkoHuwAQCroAAAAAu5zsP9Ea4TMAQIk8AAAAALuc7L/RGuEzAECJvAAAAAAAAPC/AAAAAAAAAAAAAAAAXUbFvgAAAKAAAAAAAAAAAAh0MkAAAACgAAAAAAAAAABNcoK+b6paUwDYMLsAAAAAHEPcvQAAAAAAAAAAAAAAABxD3D0AAAAAAAAAAAAAAAAAAPC/AAAAAAAAAAAAAAAA54N8PwAAAKAAAAAAAAAAALvJdcEAAABAAAAAAAAAAACt8PS9EWR9AQDAqroAAAAAx6SIwI1vpmcA8Cm9AAAAAMekiECNb6ZnAPApPQAAAAAAAPC/AAAAAAAAAAAAAAAA7YsevwAAAKAAAAAAAAAAADEUEj8AAADAAAAAAAAAAAC3CPu/iUittADYlrwAAAAAFhHLPa9qnHYAbHE6AAAAABYRy72vapx2AGxxugAAAAAAAPC/AAAAAAAAAAAAAAAAR8kpPwAAAEAAAAAAAAAAAHQnMb8AAAAAAAAAAAAAAAAmDei/9Lw9bAAwkbwAAAAA//9PQnMA4f8AgNc+AAAAAP//T8JzAOH/AIDXvgAAAAAAAPC/AAAAAAAAAAAAAAAA9CKhQAAAAMAAAAAAAAAAAL2ZAL8AAADgAAAAAAAAAABAhJDB8XqaGQBgH74AAAAAL0FWwQAAcLQAAAAAAAAAAC9BVkEAAHC0AAAAAAAAAAAAAPC/AAAAAAAAAAAAAAAArf9hQQAAAEAAAAAAAAAAAOSbxL4AAAAAAAAAAAAAAABy8ovCgoLG0wDwJb8AAAAApWZOwsV/MmAA6Ou+AAAAAKVmTkLFfzJgAOjrPgAAAAAAAPC/AAAAAAAAAAAAAAAAdTjNwAAAAAAAAAAAAAAAAF6FaL8AAAAAAAAAAAAAAAAFEVNB5d+YAQDcCT4AAAAAp+u4PqYEbEwANGc7AAAAAKfruL6mBGxMADRnuwAAAAAAAPC/AAAAAAAAAAAAAAAALkJawQAAACAAAAAAAAAAAN8ngz4AAABAAAAAAAAAAADB7sXCuo9MygDQa78AAAAAlXD3PgAAAAAAAAAAAAAAAJVw974AAAAAAAAAAAAAAAAAAPC/AAAAAAAAAAAAAAAAFKdxPwAAAEAAAAAAAAAAAMkAfL4AAADgAAAAAAAAAAAXLOTA31GF/QDMnb0AAAAAp7zYwKwk2X0AAAAAAAAAAKe82ECsJNl9AAAAAAAAAAAAAPC/AAAAAAAAAAAAAAAA5258vgAAACAAAAAAAAAAAETzur8AAACgAAAAAAAAAABi4bA+KITNRwDATjsAAAAAkLtSv5vOZRMA6AW8AAAAAJC7Uj+bzmUTAOgFPAAAAAAAAPC/AAAAAAAAAAAAAAAAktvtQAAAAEAAAAAAAAAAACJQFL4AAACAAAAAAAAAAACghMfCOceDUwC4aL8AAAAAijIXQkX5rGcAIMY+AAAAAIoyF8JF+axnACDGvgAAAAAAAPC/AAAAAAAAAAAAAAAAOrBAvgAAAKAAAAAAAAAAAOcBWEAAAADAAAAAAAAAAACKPta9RB4EGQCQc7oAAAAAZFZrwQAAAAAAAAAAAAAAAGRWa0EAAAAAAAAAAAAAAAAAAPC/AAAAAAAAAAAAAAAAI96zQQAAACAAAAAAAAAAAN92dcAAAACAAAAAAAAAAACjni3BI0C3dQBg3r0AAAAA///fPkRK4P8AoIM7AAAAAP//375ESuD/AKCDuwAAAAAAAPC/AAAAAAAAAAAAAAAA69vyvgAAAKAAAAAAAAAAAKzbfL4AAADAAAAAAAAAAACO6WRAz2zmGQDwAz0AAAAAt9BCvghAoGwAENm6AAAAALfQQj4IQKBsABDZOgAAAAAAAPC/AAAAAAAAAAAAAAAATBZIwQAAAOAAAAAAAAAAAEl6skEAAABgAAAAAAAAAAB124S/Rr03NQBwJ7wAAAAA//+/wF79//8AwDC9AAAAAP//v0Be/f//AMAwPQAAAAAAAPC/AAAAAAAAAAAAAAAA5u1iwQAAAAAAAAAAAAAAANE6474AAABgAAAAAAAAAAD/f29CeNTm0wD0ET8AAAAAeT2jPQQknfcAMEY6AAAAAHk9o70EJJ33ADBGugAAAAAAAPC/AAAAAAAAAAAAAAAAHTEdvgAAAIAAAAAAAAAAANkI574AAAAgAAAAAAAAAADjRiQ/FT8uZwDQzjsAAAAAaH49vvsEVFAAsOG6AAAAAGh+PT77BFRQALDhOgAAAAAAAPC/AAAAAAAAAAAAAAAAh59UQQAAAEAAAAAAAAAAAF7LCMEAAABgAAAAAAAAAADUnTrA+x8UrwCI5bwAAAAAPrQRP/rwv5MAHMQ7AAAAAD60Eb/68L+TABzEuwAAAAAAAPC/AAAAAAAAAAAAAAAAeG5MvgAAAKAAAAAAAAAAALdQ5sAAAADgAAAAAAAAAACjYlQ97HLCvwCw5jkAAAAAKrvjwYuBID0AWIi+AAAAACq740GLgSA9AFiIPgAAAAAAAPC/AAAAAAAAAAAAAAAA3mMJQQAAAGAAAAAAAAAAAKdlA0EAAAAAAAAAAAAAAACG8fQ/qtGbBwBgizwAAAAAP7kkwbT3wT0AgN69AAAAAD+5JEG098E9AIDePQAAAAAAAPC/AAAAAAAAAAAAAAAAufOvPgAAAGAAAAAAAAAAAMl6zz4AAADAAAAAAAAAAAB3PdA/VWyvsQA0hTwAAAAATgJfQcjJrDsAgNg9AAAAAE4CX8HIyaw7AIDYvQAAAAAAAPC/AAAAAAAAAAAAAAAA7YsGvwAAAGAAAAAAAAAAAM1gGkEAAADAAAAAAAAAAAASWtu9PGq40QCwj7oAAAAAMiG2PigOq4UA2Fw7AAAAADIhtr4oDquFANhcuwAAAAAAAPC/AAAAAAAAAAAAAAAAYDy1vwAAAAAAAAAAAAAAAM7Xgj8AAACAAAAAAAAAAAAlCCLAlW2YLQAY0LwAAAAAWM2twN+pLEgAADW9AAAAAFjNrUDfqSxIAAA1PQAAAAAAAPC/AAAAAAAAAAAAAAAAXPhpvgAAACAAAAAAAAAAAEKb1r8AAAAAAAAAAAAAAAB0YYI+6yTTgwDAFzsAAAAAksCqwHEdGAQAcEW9AAAAAJLAqkBxHRgEAHBFPQAAAAAAAPC/AAAAAAAAAAAAAAAANFPsvgAAACAAAAAAAAAAALDg4T4AAADgAAAAAAAAAACbWfm/I3n2pQCQiLwAAAAAFkY+wI/ImlYAwK28AAAAABZGPkCPyJpWAMCtPAAAAAAAAPC/AAAAAAAAAAAAAAAAaBfjQAAAAGAAAAAAAAAAADej074AAAAAAAAAAAAAAAAuHP/BK+WYFQCQor4AAAAA8/SOQRd18f0AcDk+AAAAAPP0jsEXdfH9AHA5vgAAAAAAAPC/AAAAAAAAAAAAAAAAFKihvwAAAEAAAAAAAAAAAPuINEAAAAAgAAAAAAAAAACtg1u/DERC5wDo+rsAAAAAFvD/vUvxL3kAMIq6AAAAABbw/z1L8S95ADCKOgAAAAAAAPC/AAAAAAAAAAAAAAAA/NvgvwAAAOAAAAAAAAAAABjy+j8AAADgAAAAAAAAAACNBdS/igNl6gBghrwAAAAA////Pf474f8AAIs6AAAAAP///73+O+H/AACLugAAAAAAAPC/AAAAAAAAAAAAAAAAia4rvgAAAOAAAAAAAAAAAJ3Xf8EAAACAAAAAAAAAAACl0Zs8jPdFkAC8STkAAAAAmEDIvusgG4EA6H27AAAAAJhAyD7rIBuBAOh9OwAAAAAAAPC/AAAAAAAAAAAAAAAA",["f32"]="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"},["stats"]="BwAAAAIAAABReFI8Mly6PDzoPEUrf/1EXQDhRlr2c0ZaBMJD+Nkhw8u4tERtprk7bEQ6Rjfwy8EBAAAABQAAAP7///8EWow+4XW/PcImZEfXGZhGhMcpxAMDoMajKzRFId2oQwCAu0QEbCg90NIHw+giEEQBAAAABQAAAAIAAABnKH6+e1LlvT0CRUbpYRFGRVx1xh7Vk8ac0HnEnNB5RACAu0RIXVa9k+dExpDjlUMBAAAABQAAAP7////AypI+FLx2vsrySXHK8klx/+ygRYVGO0aVY+BE0EtoQwCAu0T/3eo8mL2ARN2Cs0MBAAAA/////wIAAACnIysu6DY+Ps6mL0ZE35VFx6dixtrBHEZjbvXEwmhIxACAu0ToNr492sGcRcJoyMMBAAAAAgAAAAEAAAD5ll0+djALPmNZpyjgy0hGXpzLxV2pv8Y/v4HCa7gcxQCAu0R1MAs+6RzZxmi/HsUBAAAAAgAAAAIAAAChVmM+1ChAvvvYVUYu7I9FFvOyxqeRtEWUFPHC+pooNwCAu0T3bnM9rc4FxpMUccIBAAAABwAAAAQAAAD1dEU+bmcOPgAAAAAAAAAAKruYxvMSqMbARljCBH0TRQAAAABuZw498xKoxQR9E0QBAAAAAgAAAAIAAABsTLU9ERZ3PgCAu0QAgLtEOqk7RmRlY8adqwBF6Oi2xACAu0Qj3qg9qPCexKTclEMBAAAA/////wMAAAAAAACAAAAAgMZuQUa7znhGAAAAgAAAAAAAAAAAAAAAgACAu0QAAACAAAAAgAAAAIABAAAABAAAAAIAAABpkau9K0VWvim5K0adG3xGYUoPM44dusYWul3EiwwTRQCAu0RD1ZC9jh06xpCqbkQBAAAA/////wIAAABgHyo+/PotPgrXozwK16M8+lCORf3N6UZ8V+DEc8GawgrXIzz8+q09/c1pRnPBGsIBAAAA6AMAAAMAAADWoE49K6qSvqxikMasYhBGBrWhxizuo8XUCitFX513RACAu0SPjcO95pLaxJQTpUMBAAAAAgAAAAYAAABuKJe9r4fZvWI7dEahbYJFt6o1xrQZV0YTRMDEGtazRACAu0RTlQa99+5bxQtSBMQBAAAABwAAAAIAAACeZC4+kOEavozRpka6bN5FH5PfRuol+kTG2qTDt73awwCAu0Tu1yy6hQafRdTrhMMBAAAAAwAAAAIAAAA5igo82w6IvTcFnEYx/oFGmiHMxktunUY6i5vEOoubRACAu0SBKV68Ir+qRE1kT0MBAAAA/////wAAAAA/Vd09yrwgvcrySXHK8klxdNirxlUd4kbMNSBE5zaXRAAAAAAAAACAAAAAgAAAAAABAAAAAgAAAAQAAADMrjuvbnRJPgenCUVIvmFEdPSKxsndWUY/r6FEc0cWxdDepUSyT2o8BPqoxcB8NkIBAAAAAQAAAP7///8yD7m8KzM6PkOy1iIabxpGXNC+xn99CMTWip9EyNUORUOy1iLWooCZXNC+xtaKn0QBAAAAAgAAAAIAAACl/8s9o/WPvkhXjkYH14BG76ihxq7KkkWtgstEGykTqwCAu0TdgSa9h+z5xayCS0QBAAAAAQAAAP7///8H/cU9lBVqvgAAAAAAAAAAC+vjxnUk5UYmViVF+atPQwAAAAAAAACAAAAAgAAAAAABAAAAAgAAAAIAAACOFnu+fltJPQCAu0QAgLtE8FPWRa8tPUYucCZEr6KJQwCAu0Svv0i90ysURoVB60MBAAAAAAAAAAIAAAAAAACAAAAAgFXtUUZ5ppBGAAAAgAAAAAAAAAAAAAAAgACAu0QAAACAAAAAgAAAAIABAAAABwAAAAEAAABl/KC9T4wxPqEoikUOSI1FCHRHuo61ysYUKsZE6zAcRQCAu0RkKag9j7XKxn5YKkUBAAAA6AMAAAIAAABHb4m+9JaMPQrXozwK16M8BqSXRu6X1kTP0tZE7v+Dw+wqJDx8fYs8K3JbRPlHAsMBAAAA6AMAAAYAAABb2SS+DbywPKpJMMaqSbBFx/cNRtg618aRAtpEZ7/axOIMa0RmpWs7kHyPxfDUkcMBAAAAAwAAAAIAAACQ8Sy+b6WKPgsYXEYkEnxGSHJ7xhPekkYSLxRF4DMKRQCAu0SblTw9QTV8Rev97EQBAAAABQAAAAIAAAB+CJm9wDZNPn/ED0epsD9Gls1xxmUgqMai5bJE5KkCRQCAu0S1yWI8t3xYxmpxpkQBAAAAAwAAAAIAAABIUnY+ZpyXvXMzREaBSX1F3CGKxv3AwsUaLddEGi3XxACAu0RcTVM90sYMxmdzj8MBAAAABwAAAAYAAACJW0c+ZAwXvcrySXHK8klxyM/ZRU1szUZin9NEY4eUQwCAu0TcfDE8jBCoRZeukUMBAAAAAAAAAAIAAADLllK0B7BzPuP7OEaELutEU2Zzxvp35kbLnebEE2afRIQua0QHsPM9+ndmRhNmH0QBAAAA/////wAAAADv8EA+l6eSPh+H/iV0/yZGY/RzRq7TL8Z1TEDEfG8YRQAAAAAAAAAAAAAAgAAAAIABAAAAAgAAAAIAAACIego+6xXCPYDduUXsfW9G9+vERiCtskZKEdtEdUuMNACAu0TTQFk9i8y7RkoRW0QBAAAABwAAAAYAAABJbjC+0duAvgAAAAAAAAAAY66Bxmp0sca0nzLFhNYBRQAAAADCzyu9OJtsxQUerUMBAAAAAgAAAAIAAAB9XKy9H84XvQCAu0QAgLtEAQLMxsO1FsVawtrE01KvQwCAu0SNQ/i8uthexqbtLsQBAAAAAgAAAAQAAAAAAACAAAAAgIEiJ0ZUU19FAAAAgAAAAAAAAAAAAAAAgACAu0QAAACAAAAAgAAAAIABAAAABAAAAAIAAACekdm90azdvYLilUa3xhlGQdc9sU1NnUY0mZ/E2r3jRACAu0R0DxO9TE0dRkDxE0QBAAAAAwAAAAEAAAC7+Zi+XJ8XvgrXozwK16M8No8rRon5IkbzzCPBrjPyww102jwum/29RSlcRnzo88MBAAAAAQAAAAIAAAAWt3m+11h+vrcvD8a3L49F4mukRjcFCUU9WXDEJAQsRACAu0TXWP69NwWJRCQErEMBAAAAAAAAAAMAAADVcC0+t5jivcitDkad8eZFpaoTRomPtEYnBAXB2JTPxACAu0R6EBe9Yb/wRTtjCsQBAAAAAgAAAAIAAABhais+aCmsPXTPR0b4NIVFpQ00xgBio0YzkN/EpJDlRACAu0T1FJY9W7aSRSAOwEEBAAAA/////wQAAADwTnC+ZJ6yvPTkIUZsmztGHOcKRrCfasZHnHBER5xwxACAu0RknrK7sJ9qxUeccMMBAAAAAgAAAAAAAABbGhw+1ZxsPcrySXHK8klxkiWNRuaQo8YrNi7FY6wexQCAu0RbGhw9kiUNRis2rsQBAAAABAAAAAIAAABtVZOk4CINPnQonEVHcXtG5mzBxtFX1saC2JPEt2YrRQCAu0SSY1c9IoebxpZwhkQBAAAAAgAAAAIAAADP2sI9xuKOPoh1mS6vCihGqlcAxS0648bHXxrFICwqxQCAu0TF4g4+I0VzxvRFIsUBAAAAAgAAAAIAAAC2g8U8tAfEvG5PW0bwG4NGf6eQRutp98MNexTFi9idNACAu0SMVYa618kMRg17lMQBAAAAAwAAAAIAAABCY4G+G+cCvQAAAAAAAAAAy/IqRYa9AMX2l+3EOz0KRQAAAAAb54K8hr2AxDs9ikQBAAAAAgAAAAIAAAB+JtA8SmQ1PgCAu0QAgLtEld5tRgCKTsY0+ABFCckrxQCAu0QZaU89qKR6RFRDq8MBAAAAAgAAAAMAAAAAAACAAAAAgK/2dkZlgEBGAAAAgAAAAAAAAAAAAAAAgACAu0QAAACAAAAAgAAAAIABAAAABAAAAAAAAAAPPoI+Vi0tPtXSJUZHvzNEx56stmp5t8awzgPF5m5qxACAu0QO9XM9x56stbDOA8QBAAAAAgAAAAEAAADiv8s8UK+APgrXozwK16M8GwQYRbNlncUCsv1ED5QmRY/C9TxPDQc+WcluxY8AZkUBAAAAAgAAAAYAAAAMNEw+bOphvq9kk8avZBNGQQnkRiDrSUatbhtFEUDDRACAu0RInBa9v5wGRbUqgkMBAAAAAgAAAAIAAABOhCC+enoYvXCcwUWrL0lGSz7oRWal9kULwLnDrs2jRACAu0Rawxu92HHvRVa76kMBAAAAAgAAAAAAAADW5yY+LwRvvqpxXUYcoZNFxwS5RkYoQ8WMMvFEqaLMRACAu0TBW3o9xwQ5RowycUQBAAAAAgAAAAIAAADXYOY9xV5VPm4dmUb2A45GkdBRRmvgg0YYr6pEGK+qxACAu0T1bqI9s8hsRgAAAIABAAAAAgAAAP7///+GNNq9fLCVvsrySXHK8klxAwsGxo1i1sYLEBPFRGoHxQCAu0SGNNq8AwuGxQsQk8QBAAAABQAAAAIAAAC71guiV5vHvSBJ7kWxUFBGiMCYxi3C7EXpP4dDS0v0RACAu0SP9v28YKL0wtfogEQBAAAABAAAAP7///9UXJe+kT6IPiUgCSKMgYxGACHgRkbTAUYiI1DElNeNRCUgCSESuBOZACHgRSIjUMMBAAAAAgAAAAIAAACx1ss9NUYAvoHVY0b3FZVGEfeYxgDuD0YObwhCCCTItACAu0S9i2S8IgCixQ1viEEBAAAA6AMAAAEAAADN4wi+HmyGvgAAAAAAAAAAaGGDxeCYuEZKPCBFi4wDxQAAAAAebIa+4Ji4RouMA8UBAAAAAgAAAAIAAAAq8Q2+kAYfPQCAu0QAgLtEVmETRgkz28Y1uXLEuhLUxACAu0QMX8y8XoIRxqu3psQBAAAABQAAAAAAAAAAAACAAAAAgEW6LkbMlohEAAAAgAAAAAAAAAAAAAAAgACAu0QAAACAAAAAgAAAAIABAAAA6AMAAP7///+hnZa8qUdGvpvUw0Wm1pJGpbU8uM0R08ZYtCzFWVYYRcmHyED0QZq2FD1Bs3HZMMABAAAA6AMAAP7///8LUP+9KCuCvgrXozwK16M8l8i1RU0L0EX5Db/E7/NYRKzFpzdYuIK4dyW6QNCjw78BAAAA6AMAAAAAAACyX3m8DzWCvmzvUsRs79JDx7yhRop3nMZqlj/EuAYrRQAAAIAAAACAAAAAgAAAAIABAAAAAgAAAAQAAACyAVW+CYYvPp8sYkbSHEVF9q4MRqnZz0UIDQvF6mPYxACAu0QSM5+9YKXARQMmwcQBAAAA6AMAAAYAAABA6iE+SCe6vcgWQkWFZIFEYYySRv9ECkY2/JbEfqijQgOhL0PEbnC7QbS6RIHiRkEBAAAAAQAAAAMAAADLYYM+u6N6Paa7m0Y0VBtGHHXwxWg42EYlZ4rEJWeKRACAu0QdRzY+ZVi/RIeJOMQBAAAAAAAAAP7///+MGtc91R2CvsrySXHK8klxunKqxvMR3UZl96NE/HBbxAAAAAAAAACAAAAAgAAAAIABAAAABwAAAAIAAADS65KkmgKZvihpikZMVk1GbLGkRmzmxkY89hFFySxcRACAu0Q0U4K9ivR1RoZ+QUQBAAAA6AMAAAIAAAAjfBk+2lpFvjlyfC+ea5ZGHXXcRkwdrsWcRxbFYLdAQQCAu0TaWsW9zVksxdKLZ0ABAAAAAgAAAAIAAAAqhye9nT8LvibWmEaGvzdF1Q84RkVgvMZFAhzEK0Y6sgCAu0Qradq8tbDAxUYCnMMBAAAA/////wYAAABfvAk+RTJ6vQAAAAAAAAAAPchcRl+G7UWX3Q9FtZ9hRAAAAAAuzCa8lFmeRHhqFkMBAAAAAgAAAAIAAABM/Rk+6pazuwCAu0QAgLtEUeTRxhuv6URDGbTEnhMsRQCAu0SUYBQ9YElDxvkNJEQBAAAAAgAAAAEAAAAAAACAAAAAgJKsBEb9e3BGAAAAgAAAAAAAAAAAAAAAgACAu0QAAACAAAAAgAAAAIABAAAAAgAAAAEAAAAZ+Ze+43RuPo1LPkZivelFkEVbrjBEccYX+MXEIrsLRQCAu0QuDVu7MURxxjh6tEQBAAAAAgAAAP7////cDJi9wdoHPgrXozwK16M8KZgDRlS0T0bQrwRFtTUIRQrXIzzcDJi8KZiDRdCvhEQBAAAABAAAAAQAAAARY/69YpVMvW/LSMZvy8hFY/rNRsFtkEbk5ePD2ZAxxQCAu0RilUy8wW2QRdmQMcQBAAAAAgAAAAIAAAAWPMe9IaeFvr6bl0Xy+JtGzRbUxpQkHkYGRd5ERFDuxACAu0Thheq9gwQFxvBZgMIBAAAAAwAAAP7///9NZog+DeiJPbhQZUV74JhEeUCBxscpq0a2QNRDSEWMxHrgmERMZog991WsxXmADUMBAAAAAwAAAAIAAADjtCW+aVK2PXAHC0bD6I5GOcRbRi1vwsaBZt/EgWbfRACAu0R9bEk8ilvyxQDvlEMBAAAA/////wIAAADAd2k9OH4OvsrySXHK8klxk9oMRn5lGMYmEwTF1RaEQwCAu0Q4fo69fmWYxdUWBEMBAAAAAgAAAAQAAAAWgH2tsGRlPn4psEWnyZVGGAfixoFamcb8nANE3yCeQwCAu0SbRTE9LVqXxjMlq0MBAAAAAgAAAAQAAAA/ncs9rE2KPXPUhCVdgYZF3idJRimMy8ZZtetE5X8BxF2BhkSsTYo8wBKZwl9VS0QBAAAAAgAAAAIAAAAjv+K9IJ/2veUaEEXh6VhGF9o+Rj+qt0X3q2NDeUFCuACAu0RyynO9m1cNRvOr40IBAAAA6AMAAAYAAABkx049+itTPgAAAAAAAAAA01CPxixQskbo0BtFjAc1RAAAAAD7xww9OsBtRWVf8UIBAAAAAgAAAAIAAAAoHtu9tzkiPQCAu0QAgLtE06j5xTXOP8Zx0yrFiA4yRQCAu0RNAYq8UFEexuBiZ0IBAAAAAgAAAAEAAAAAAACAAAAAgBk6lEY8fGFFAAAAgAAAAAAAAAAAAAAAgACAu0QAAACAAAAAgAAAAIABAAAA6AMAAAAAAADA9/e93s9lvtc9nkTl8YdFnMpbuEDcPcIQ3hfFOGTURBMKoj8q8eS3AxFhsyODG8ABAAAAAgAAAAQAAAAmPYo+kDX7vQrXozwK16M8UVSkRfyMJ0ZH4qHEqAmGQ4/CdTzorFU9pvClRRIhEcQBAAAABQAAAAIAAAAw1z0+587UvbCEYsWwhOJEuxyIRvtp4cYytMJDuE2GxLCEYkTnzlS9+2lhxrhNBsQBAAAABAAAAAEAAAA5t3i+SpHlPS8sX0YNGYJGP69FwacEwcYPqwbF57vFxACAu0R4UQQ91QrBxriIBMUBAAAAAgAAAAIAAABcnWG+eHT2Pei2+EZFzyVGdxidRmU+1sbFWrdEYy2TxACAu0R2Z4q9uJdkxYi1EEMBAAAAAwAAAAIAAABT+N+9gwoWvjKZlkUUjxtGCE+gxp/BTkYm6YREJumExACAu0Te53q9y6Jfw942McMBAAAA6AMAAP7///8eZxS+EGJvPsrySXHK8klx6C3pxgYeBkai2fnE+sL3RACAu0To9pe4kMbuwbfY/78BAAAABQAAAAAAAABcdY2zZ7vCPMysQUZu2RNG1e25RrqYQ0RoE9BEar8NxQCAu0T4WQCyQ76URex1pkMBAAAAAQAAAAQAAADigb+9bldUvXm6KSYMVFlGEQs9xuJKtMam4anEsoUnxQCAu0RvV1S8QZiLxn+k/cQBAAAAAgAAAAIAAAButWs+RIglvhhXREauHg1Gx1PixsRzvcadVALEN0eeMgCAu0Rm1Qc9xuPPxp1UgsMBAAAAAwAAAAAAAAA6KJu9d+mDvQAAAAAAAAAA3zJ/RmKhrUV+9R5FLo/3RAAAAAAAAACAAAAAAAAAAAABAAAAAgAAAAIAAADa11c+t6J4vACAu0QAgLtE+f2Dxm8gRcbEKtpEI8jSxACAu0SuTUg9MY5mxiBU7EEBAAAAAQAAAAYAAAAAAACAAAAAgPaMakbw33dGAAAAgAAAAAAAAAAAAAAAgACAu0QAAACAAAAAgAAAAIABAAAABAAAAAIAAACMeI8+Ds8/voSwzUWNX4FGdNcjLDoLgEU7eANFLewKxQCAu0Q15UC9OgsARR9gEsQBAAAABAAAAAQAAAA4kNw9xbcVPArXozwK16M8XvA3xVN/vUXWdLlEs0ruRArXIzwwR288SA5DRMTfU0QBAAAABAAAAAYAAAC9+BY+zQ+svUAlj8ZAJQ9GwyLgxS6p7sW3hwRFDMUCRQCAu0RnamW8dBufxA9crkMBAAAAAgAAAAEAAACdloe+WxaXPlBvX0aDQuVEx4F6xn0lxMbRsuHE+D45RQCAu0Tvpau9+GIBx0PSAEUBAAAAAgAAAAYAAADvhR++BHwVvUwYZEYzEJhF53iLRmYwl8ZqthDF9TwhxQCAu0Rng3W93yayRWd1xsQBAAAABwAAAAEAAAB/Ogy+cbiLPhj5KkY4dyxGIy/LRT0mPEaNjYvEjY2LRACAu0TeWgI+mqlKRs07b0QBAAAAAgAAAAMAAACt6P29Mu1DvMrySXHK8klxvCJKxG+fxMYMP0bEoBMxQwCAu0Q5Hge9C2YJxse7qMMBAAAAAQAAAAQAAABF4SOuWsirPVRRSkbAQiBGOz1JRZfYE0aiUaZEpzFkwwCAu0Rc2xc86YquRRQwn0QBAAAAAwAAAP7///9UDx6+95IHvtqNXjOE/01Gn8wOxlk95kaYC7dEhYoZxZFelDIir2OqKmY+xXUP9EMBAAAAAgAAAAIAAAD8bKk9gt45PnVERkUAtYxGiR60RjVupkYqkRvEPDOCtgCAu0RjuKo9X0atRiuRm8MBAAAAAgAAAAIAAAA0sIo+UQdPPgAAAAAAAAAABbhURgqAiEUn1LFEwhY1xQAAAABRB889CoAIRcIWtcQBAAAAAgAAAAIAAADZ+4a+N/Q/vgCAu0QAgLtEzubaxgYVosZGDuDE11A/RACAu0T19ea96n2+xttlAMQBAAAABAAAAAAAAAAAAACAAAAAgPyoXEZkm5ZGAAAAgAAAAAAAAAAAAAAAgACAu0QAAACAAAAAgAAAAIABAAAABwAAAAAAAAAYR0M9VZKjPYWnPUXmvDtGpg0LrLedYsaEl/LBmGHpRHO/2EOl/rM6B+ueqrqfisABAAAAAgAAAAIAAAAbKU++iBPKvQrXozwK16M8ijmJxWRm/kWVgTnFylWGQwrXozxwGZq9tFnqRNy2qMQBAAAAAgAAAAEAAABpcE2+hQFCPDDhtsUw4TZFYVJ0RnTDsUbecz9ES0IsRQCAu0SFAUI8dMOxRktCLEUBAAAAAQAAAAYAAAAbJA++OUyRvsmEWEO4z2VGD5lFRnOd4sXTMHNEV1O6RACAu0TwOUe9mrYyRk2mmEQBAAAA6AMAAAEAAAB77Gw+NC7MPQ1r3kZeRxRGaTHBxqbab8axo2RDe3gFxACAu0Qems08kT1wxtlpBcQBAAAAAgAAAAYAAAD7diS+MP1svUC4Y0bwEodGaVh0RuuMoEauuTjErrk4RACAu0SW4Su9grAvRulMdsMBAAAAAwAAAAIAAAA9CTw8XDPxPMrySXHK8klximcQxivdFUT2nu3EWQRexACAu0SN8Bc8aM4txRO2hsQBAAAAAQAAAAIAAABv/RckyPWMvm8qnEY/KJdG80HDRvrS4kYAuIbD9mfSxACAu0SvqYq9uFUaR/vhisQBAAAAAgAAAAEAAACyn+q8kQdGvUyOtTR0d3dGuHiURonCw0aniMhE/HWJRACAu0SRB0a9cv8GR0+67UQBAAAAAgAAAAIAAACgR36+/uIsvp2lk0aLwiVGQ6xrRgGCMUadMsPE+IOFNQCAu0RbBOG9IpdORp0yQ8QBAAAAAAAAAP7///9aRRG+kLpJvAAAAAAAAAAAsoAJxiZKOcZanhBFyZKlQgAAAAAAAACAAAAAgAAAAAABAAAAAgAAAAIAAAA3T+O8uTTHvACAu0QAgLtElhMuQwDzosYVKP1ELBevRACAu0T4QVW82ZYhxqAf1kQBAAAAAwAAAAMAAAAAAACAAAAAgIRxHUbou8dFAAAAgAAAAAAAAAAAAAAAgACAu0QAAACAAAAAgAAAAIABAAAA/////wAAAAAZ6b68VQhhvqnImEb4AUBD4KqUrHJojEancR9F/Zo4xQAAAAAAAACAAAAAgAAAAIABAAAABwAAAAIAAACT6lU+O+ivOwrXozwK16M8ycTlxiuFqkYVkjBFlRc6RcOmUjxpO4U8db7RRXaK7EQBAAAAAAAAAAIAAABKoGk96095PmTfuMRk3zhE+XyixpcZGMaRhSbFffLyQ2TfuEPrT/k9lxmYxX3yckMBAAAAAgAAAAIAAAD0TJQ+Dq/pvdpEHkS9vUtGXyk0RvnxXkb3wjHFSIENRQCAu0SLZUO9rI1JRrwGkcMBAAAA/////wIAAABT6dq8H+FnvdWQ80aOYCJG4IHWRiV2t0b6LdrEk9tdQQCAu0Qf4ee8JXY3RpPb3UABAAAABQAAAAAAAACuKt69jfd6vhgS7kUrdAdGcE1zRmS8nsauJrZEria2xACAu0RQRCa8WaRCRYu4kUMBAAAAAgAAAAYAAAD8UWQ9mFZDvcrySXHK8klxGO4lxiy2wEYFR9BEdcQxxQCAu0QeNSM8ltKVxBiIs0MBAAAABAAAAAMAAACqVEGs2AZivrjMF0Wv3whDT35qw4In2UatcR3EdyVRxLE0I0SpnoC7g9oPRiYn2sMBAAAAAgAAAAEAAAAO/Uk+gY2YPkgKYiKTnp1FHc3GxVwkyEWnQzBFIT6nRACAu0SAjZg+m3tJReTAK0UBAAAAAgAAAAIAAAAp6Uy+Jh8VvpXGn0VquUlETayDxaV7RcSupiPFeHfvqwCAu0RuTsW9wlscxa+mo8QBAAAABwAAAAMAAAAi2pW+26ohPgAAAAAAAAAAGPfORvbdK8ZLEFPEf5o0xQAAAAB5jlc98ydlxf/NcMQBAAAAAgAAAAIAAACA2jw+tmWHvgCAu0QAgLtEYe2Wxix7tUZoAbbD2YwUxACAu0TY4aO8WG70RI2N78MBAAAAAgAAAAIAAAAAAACAAAAAgPVxFEV+1zhFAAAAgAAAAAAAAAAAAAAAgACAu0QAAACAAAAAgAAAAIABAAAABQAAAAMAAAD6RIu+0cd6vU6ppEX2EflFpRcpsrExjsZxyNzE4LMvRACAu0RBAgu9l5e9xRX37cIBAAAAAgAAAAQAAABI7qA7y3GPvgrXozwK16M866+lRpZW5kSmCLPEZN34RI/CdTxZagq9n+IsRtBnWsMBAAAABwAAAAEAAADCzWo+Ob4Svi/ogMYv6ABGMx+ZxtxU1EYywKnEznSTRACAu0Q5vhK+3FTURs50k0QBAAAAAAAAAAIAAADzj5G+F+BVvkNHoUP2vOlEgiDJxbLmosaNgb5E+SsbRPa8aUQX4NW9suYixvkrm0MBAAAA6AMAAAIAAABPpmk+0/VmvnwcE0b7JURFWyUwRjZKisZBcBHFBZ8bRQCAu0TxjuW8Hx0Kxo5Um0QBAAAABAAAAAIAAAAvdDy+ubURvM4uwUVagwZGu6FCw6Isx0YIjl9ECI5fxACAu0Squ7K8AGpGRgiOX8MBAAAAAgAAAAIAAACA+Uy9+EswvsrySXHK8klxVMq5RnpzYEZ0aM5EZRo7RACAu0RYimO9CAKVRtP6lUQBAAAAAQAAAP7///+jddAgj+yXPOXmj0VJUu5F7tbNxu6KzkYSc/bEOqNUwgCAu0Th9hwg7tbNxhJz9sQBAAAAAQAAAP7////ISTY+mB8DPanDYzXOpIFGbiXbRvZAiEYJ0SbF2AsNxKnDYzVSICAtbiXbRgnRJsUBAAAAAgAAAAIAAAC9oGe+P7UNPvkwD0ZqSidG4HS5xu6jRcae5sFEnpUFqQCAu0RyxHO8bCOOxp3mQUQBAAAAAgAAAAEAAACzf26+YVmCPgAAAAAAAAAA5AHFxk2bu8YEzdtEV7sLRQAAAABhWYI+TZu7xle7C0UBAAAAAgAAAAIAAAD3mFQ+6z/cvQCAu0QAgLtEsLAuxctkicYlX5FE/Fh1xACAu0QD8sw84TofxjiVtUIBAAAAAgAAAAIAAAAAAACAAAAAgEKSmEZpeRBFAAAAgAAAAAAAAAAAAAAAgACAu0QAAACAAAAAgAAAAIABAAAAAgAAAAIAAADssEk+ocPZPZUgekYkjJVGHdu/svaKg8ZU2gVFYLgMxQCAu0Q1Jpc994oDxoDBW8IBAAAABwAAAAIAAACYQGc+sFRCvgrXozwK16M8GWmlRkDeykZQzoJETgYDRMOmUjw8QgC92SB6RlfFzUMBAAAAAwAAAAEAAABMMAK+npktvjQZBMY0GYRFX7zHxtOMt8b1KgfEvzM3RQCAu0SemS2+04y3xr8zN0UBAAAABAAAAAIAAAChsIm+JkBbPrtBkEYrdKpFDyq4xscP4kX/p1TDgkzKxACAu0QiLeG8V0QOxQKXV8QBAAAA/////wQAAACHMV4+oDhzvO6vLkeT6mhGBkhmRYXjyUYxDRLEmdLZRACAu0SgOHO7hePJRZnS2UMBAAAAAgAAAAIAAAC6oPG9PmSTPnA8bUb37ItF/JPWRk6pmUZvjnBEb45wxACAu0T1T1G8pR64RgAAAIABAAAAAgAAAAQAAACRArU9BGrRvcrySXHK8klx56aExovLDsbLgiDF3xeaxACAu0Qemxg8ylkoxsMIx8QBAAAABwAAAAIAAAAgLtatBXXmPTkHTUb79ktFCsSwxod6sMVKLABECZDHRACAu0SPmTc8kz+9xYHfWUQBAAAABAAAAAMAAABUYe0865TsO/XC+i1OVm1GJkuFRlm758V/vybEOeQjxQCAu0ScuB07zDLgRMEagsQBAAAAAgAAAAIAAADyid48yyh2PkFLdkbtUOhExNPmxXoZmsUPMiVFoyM/MwCAu0REYss8n3bAxQ8ypUQBAAAABAAAAAIAAACojxo+udjqPQAAAAAAAAAAkJ2qROHL5cbRYK3Ec9y2QwAAAAC52Go94ctlxnPcNkMBAAAAAgAAAAIAAADqZYU+e/2LvQCAu0QAgLtELKjPRojZPUY1wChFf3YZRACAu0QWzUQ9eEqXRtQdz0QBAAAAAgAAAAIAAAAAAACAAAAAgPlQvUWP1JVGAAAAgAAAAAAAAAAAAAAAgACAu0QAAACAAAAAgAAAAIABAAAAAwAAAP7///8mZ289ijDoPJXvSUb/32JGEuNZto3ROEalTmHDj8+DRACAu0TXURY8DEKRtW40lsIBAAAAAQAAAAAAAACCGiK+8Bb1PQrXozwK16M8wTPHRDy//kXcMO3Efr3OwwrXozyCGqK9wTPHRNww7cQBAAAAAQAAAAQAAABRNzG+R+YyvjzShMY80gRG+51fxo2esUb6163DcouBxACAu0RH5jK9jZ6xRXKLgcMBAAAAAAAAAAEAAABevqq7T6WJvuAhikZtzF9GfgRtxfECu0UvlX7EYycRRACAu0RPpYm+8QK7RWMnEUQBAAAABAAAAAIAAAD9Opi8nbZnPg06HkcR+FJGZlfTxrCkC0blpuDEgj7QxACAu0SNK8s8bGUPxftIoMQBAAAAAgAAAAMAAABrc4y+zXYQPHsjW0ZeY9FFpzOFxW+0QMUkiTlFJIk5xQCAu0QbJLy9zG9FxYVh90MBAAAA/////wQAAACTFg4+NMQjPsrySXHK8klxGak3xsvHXsbQW6bDDdkCxQCAu0Q0xCM9y8dexQ3ZAsQBAAAAAwAAAAYAAADLxCUi3wVFPnUog0bjFGhGGBUDxuGceUUnz6lE78rLxACAu0TZoXY8piwFxdMZNUMBAAAABQAAAAMAAACgzG++XI3VPfGiEjOzFtBFptkrxqfqq0Z8bdRCR1NGRACAu0Q9Xg49aXugRZfWjkMBAAAAAgAAAAIAAABqm6i8JZ8cvWBa6EWtbTZGG7GsRreRC8aPyzjFROIwuACAu0Q7fIC8f9DNRZDLuMQBAAAAAgAAAAIAAAA4G+k9NiH4vQAAAAAAAAAArCPPRrm+mkYC4LfEBsBSRAAAAAA2IXi9ub4aRgbA0kMBAAAAAgAAAAIAAAClGns8Gm+NvgCAu0QAgLtEKsUSxtPPq0WTQSVFjgHVRACAu0RFloW9AnXzxC3hB0UBAAAAAgAAAAMAAAAAAACAAAAAgKn2gkZWOzJGAAAAgAAAAAAAAAAAAAAAgACAu0QAAACAAAAAgAAAAIABAAAAAgAAAAMAAABVgvk9P2uHvupBa0Z884JGg06qKxbwikTbnszE/vUdxQCAu0R9VZC8HUC5Qxeez8QBAAAAAwAAAP7///9i3Gk+SZAUvgrXozwK16M8kHuzxdE4o0YiCOlDB+dGRA102jtB6Bs9a0/vxMFaG0MBAAAAAgAAAAIAAAAFG8G9a/mwvdAHr8XQBy9FNLrSxZy54MRqpsZEQjk6xdAHr0Rr+TC9nLlgxEI5usQBAAAA6AMAAAIAAAB7K9q974mgvVx/ika3ICtGnffCRs6h7kWBtXfEMAB5RACAu0ScTXa8GDFwRVyB+EMBAAAAAQAAAAIAAAAEnYW9A+YlPvpTRUdRjYNGeD6/RMGsk8bk1Z/ElpuYQwCAu0QJ8eq85In3xXLCjMQBAAAAAAAAAAIAAABXpac52NWCPr8++kVa03tFB6pjRvViJsUkRQREJEUExACAu0TY1QI+9WKmxCRFhMMBAAAABwAAAAIAAAADwvO90ilYPsrySXHK8klxd/gOxclVe0aaSfnDNXUFxACAu0Q/VzU9dx/xRQISqcMBAAAAAgAAAAIAAADXpXOp1yGZPQBOGkbu32xGWtvORtBuvkbxFy/EPTcPRQCAu0SNdLk8FaXGRoHiRkQBAAAA//////7///9b6nS+8GM4vgEGEB9o+w9Goo8ORgjKtMZyCwxFOYUUQQAAAAAAAACAAAAAgAAAAAABAAAAAgAAAAIAAAAVZ8y8VHLtvbsqZkaoaIJFY+vGxqwwk8bmNZJEVdtPtACAu0R9ebi8CA6txuU1EkQBAAAA6AMAAAYAAACQMdi8PHHvuwAAAAAAAAAAwyLcxTV+ucZuDzhE+0kRRQAAAADToJ+68lJ3xfm3wUMBAAAAAgAAAAIAAAAtSHU+NXASPQCAu0QAgLtE0nidxmOCvEZcrAPFS8yMRACAu0Qd8ow9iEz4RNoY9cMBAAAAAgAAAP7///8AAACAAAAAgHwyR0bJApRGAAAAgAAAAAAAAAAAAAAAgACAu0QAAACAAAAAgAAAAIABAAAA/////wAAAACd2Ze9cUQtvolVKEY4GzxDyV06ME+P4cQ4RitFSDc7xQAAAAAAAACAAAAAgAAAAIABAAAA6AMAAAIAAACKHCU+n8hSvgrXozwK16M8FaLRxqNnosblIzVFdQZDxOwqJDwWdFK9+dIixnyTwcMBAAAAAgAAAAYAAACTF4A+NCgFPoDbk8WA2xNFxAsKRWqx1UaLA+XE59iURKokxUPvirE8RnaORYl2RkMBAAAA/////wQAAAD49hi+lwx5Pum1lkWYifhF7cS7xjLK6cYJSMVEWC47xQCAu0SXDHk9MsrpxVguO8QBAAAA6AMAAAIAAABheX8+oNQ7vuxmMUc7iWxG7z+ixd0T30bskCjFSeYoxQCAu0Q4TLq8GP9eRpg8qcQBAAAABAAAAP7///8aDmi8mH18PbyIGkZZ2X5DX+qcRrgst0bBwBBEwcAQxACAu0TKOWK7X+qcRcHAEEMBAAAAAgAAAAMAAABx9io9N+kavsrySXHK8klx00S8xrd+w8UA4jZFR/fXRACAu0QiInK88tlcxhff/kQBAAAABwAAAAIAAAAG8pStrMYdPhWnPUbaHOpFF9u+xpVgXEbs6rPE9pVzRACAu0Tb3PA8NKJeRZPGjEMBAAAAAwAAAAIAAAClsRE+cYWCvUxxESlC931GXzA1xikRmMYwmwBCzN4rRQCAu0RxhQK9nnZUxr81rUQBAAAAAgAAAAIAAACV2Yu9QM+gvZwuPkVd1hJGweLLxteiI0bNYBJDD1HVsACAu0TTrhu9qyL0xcxgkkIBAAAABQAAAAEAAAAmJsq9a2EPPgAAAAAAAAAAgDrZxmF1TEU64vbEVkLOQgAAAABrYQ8+YXVMRVZCzkIBAAAAAgAAAAIAAAB7CzS+xGN3vgCAu0QAgLtEBctoRmPAoUXokPxEA+S8xACAu0Sgt9W9m9UcRpSzfkMBAAAAAwAAAAIAAAAAAACAAAAAgOLFY0YHo25GAAAAgAAAAAAAAAAAAAAAgACAu0QAAACAAAAAgAAAAIABAAAAAQAAAAMAAADhPEA+0E1kPor/sUVcXw1GtLyhrYdwpMYpMRLFxlHlxACAu0Sw7/E9tUDbxXVpOMUBAAAAAwAAAAMAAABn/ms+Lj5FPgrXozwK16M8/eaYRqO/y8bALRRFhFI5xQ10WjyGaZA9EZcHxWsZRsMBAAAA6AMAAAIAAAD0NI6+VvhDvV8x78VfMW9F6qXkRq/aVMRCWwRFEf/4wwCAu0RW+MO8r9rUwxH/eMMBAAAABQAAAAIAAADHEnG+Z3N2PUumNEaIvwtGEyxiRtcSyUZszHvEKAsYQgCAu0TS91u82k52RvJuNsMBAAAA6AMAAAIAAADDJdI9Vo6IPv3930b+UxVG+b1BxP/6i0a2a/DEClEtxQCAu0QI3wg95fcLRpeOrcQBAAAAAQAAAAIAAADUv2O+BQEtvim+IEZpmMxFyupUxhMTisbaMeBD2jHgwwCAu0RO0Sy+736vxtoxYEMBAAAAAgAAAAAAAAAqgd+9ToYUvsrySXHK8klxntrmxox73Eb5rhxEKLorxQCAu0Qqgd+8ntpmxvmunEMBAAAA6AMAAAEAAAAsFCgnuPbavd9hBUbcVW5GphUaRYORqcbNmYhEnUhUxACAu0TIZIy9lYypxq0CVMQBAAAAAgAAAAAAAADRNQM9877APbU8EyE/k51FbrM4xcJ+gcbL7sFDsDgaQ7U8kyAsNPUXbrO4xMvuQUMBAAAAAgAAAAIAAABxx1C+nDWGvh9EjEYR7NNFLKm7xpaMakZbRRjFlkygrQCAu0RDIeG9wsWMxVxFmMQBAAAABQAAAAIAAADcwYu9ha/QOwAAAAAAAAAAD6fHRpRdfcbV5hBFUH3hQwAAAACFr1A7lF39xVB9YUMBAAAAAgAAAAIAAAB5NeI9wXV4PgCAu0QAgLtEOdNmxnooP8VhBx9FTw0lRQCAu0Q+yLQ9rE4LxlgKIkUBAAAA6AMAAAEAAAAAAACAAAAAgDgMTkW5mXdGAAAAgAAAAAAAAAAAAAAAgACAu0QAAACAAAAAgAAAAIABAAAABwAAAAEAAACwjz49/fgcvtSfaEYpfkNGeU+Su56fCEYRdj/ELyo5RQCAu0RG9oe9nZ8IRq5TMkUBAAAABwAAAAIAAAAmYlY+XEkWuwrXozwK16M8jwokxC1Wu8bg3jDFPEEsRcOmUjzenWs8Ic08xtNwc0QBAAAAAwAAAAIAAAAl4gU9sAZ4PjBfgcUwXwFFmzg9xtGQH0YAsxjFuWcRRDBfgUSwBvg90ZCfRblnkUMBAAAAAgAAAP7///8U/QO+NHsNPmy3+kMFhXxG3TnGxudYmUbvGJ9EwSgPRWy3ekN/NP663TlGxu8YH0QBAAAAAQAAAAIAAAC5MVg+Q3YfvOpnD0c4NT9G/oGCxt97wsWCBAvFedfSxACAu0Re5iA+etGaxmG6P8UBAAAAAQAAAAYAAAAJes09PBwmPROshkYJBalFF2PPxWS408YdIAtFHSALxQCAu0SWtZ89WEQuxjDg50QBAAAAAgAAAAMAAADHwoU9YobRvcrySXHK8klxGld9RUHJ5kXNPQHFB6JvwgCAu0SghD26hkOMRdO8g8QBAAAAAQAAAAEAAABJBcGmaGeEPaBavEV20dJFXHq3RuHj30biuerE9nb3QwCAu0Tv2gs9Hq9LRyXcrMQBAAAABQAAAAYAAAATbvi9ih3tvdq9CC2P11tGhQboxuEpJ8bg6CLECmMuRQCAu0SyE568clfxxRpap0MBAAAAAgAAAAIAAACW4Xq9OUXiPRg/VUYtpQJGn8kHRpDgbsYDZXrEFE5AMQCAu0SezQI74i1OxQNl+sMBAAAAAAAAAAIAAABfBE4+F+wFPAAAAAAAAAAAwWqtRnIbIcbRA4lEFzcKQwAAAAAX7IU7chuhxRc3ikIBAAAAAgAAAAIAAAB7XfO8h6HXvQCAu0QAgLtEI2hFRW4MWEbP7BZE5aw5xQCAu0RzPAq9O7MERrLxk8QBAAAA6AMAAAIAAAAAAACAAAAAgAPuq0VO40VFAAAAgAAAAAAAAAAAAAAAgACAu0QAAACAAAAAgAAAAIABAAAAAgAAAAQAAABS8FE+PHsyvsqImUYNePNEP6aGMxTG1kbXwvZE5IljRACAu0T49bY9FMbWRajSl0QBAAAABAAAAAIAAAD060c+1600vgrXozwK16M89cbBxqkv2sZ56rrCuZdJRI/CdTy6b6G8komdxhHpvUMBAAAAAQAAAAIAAACj3Ts+/yVaPuxC98XsQndFQoPkxvjVi0ahuONDgD4iRQCAu0T/Jdo9+NULRoA+okQBAAAAAwAAAP7////ULTA9ctuSPssxkEb2popE1OQVRmDGhEYQb0nE9zMqRQCAu0Sgll08xdtHRQtKhsMBAAAAAwAAAAIAAACfDBE9WQsMvjBny0YgmgdGFNfgxvpkEEbyXVJEBr1IRACAu0QUCge8dmSbxdN9KkQBAAAABQAAAP7///80jFS+pEeOvhTu1UX2YJdFVPvaxrzQ6EZIzMjESMzIRNwkq0RMJ8e8dy+vxW2joMMBAAAA/////wIAAADzlHg7WeQcvsrySXHK8klxh0AVxUEm/UVcujdFsQkYxQCAu0RZ5Jy9QSZ9RbEJmMQBAAAAAwAAAAIAAABCnvqxGfMcPtCXRkXgd5pGvbIgRloSKUWKCiBF1aDpxACAu0QOOIc9aWaVRZProcIBAAAAAQAAAAYAAABbFQi+nWIDPqXJXiXgo0BFYCSbxrAZAcajN+fECNHhxEBtAEQmLq88hOalxj1tBsUBAAAAAgAAAAIAAAD/xIS91gQ8vlToSkZkX0ZGxiekxip3vUUEMMPDnmHnMQCAu0RxB32995PpxQQwQ8MBAAAABwAAAAEAAABtStM9s0uZvgAAAAAAAAAA6nzDxgeyGsYccybEoUlhRAAAAACzS5m+B7IaxqFJYUQBAAAAAgAAAAIAAAA4GIm+2sIovQCAu0QAgLtEmHOjRnSH3MaUmlfE0V+NRACAu0SUMJ69cE9kxRxKBkMBAAAABwAAAAIAAAAAAACAAAAAgB44bUa/tgxGAAAAgAAAAAAAAAAAAAAAgACAu0QAAACAAAAAgAAAAIABAAAABwAAAAEAAAAgTgI9BkrCPTtGzkVvvitFm5DEruC1k0YR+hlFkeOHxACAu0ReuP4837WTRofKN8QBAAAABQAAAAIAAACXmXs+I5W6vArXozwK16M8T0vfxmUSS0bTw/dCmBOpxEFgZTxjopo8+31DRObhIsQBAAAAAgAAAAMAAABap1G+X/xNvoPpmMaD6RhGCqvnxq0RkMb4py9F833bQwCAu0TqUom9khfAxfdTEkMBAAAAAQAAAAIAAABc+hs+wvQbPiKEUkY1XlxFm1bPxuZvTMRBolBEyuX2wwCAu0SizAs+W4jSxs7oEkQBAAAAAQAAAAIAAABk5yq+rApTvmwEqkaQsOJFoHXPxthHY0Yu75xEndQBxQCAu0Thjhq+qqOWxojUWEMBAAAAAgAAAP7///90plK+DoiTPlGtZ0YTpJdG6RDExthuyUat4cnEreHJRACAu0RYdDa96RBExq3hScQBAAAABAAAAAYAAADd0iK93b4IvsrySXHK8klxOWDjRqDnNURWjCjFnrs2xQCAu0Sg3oO8YSrnRWAvkcQBAAAAAwAAAAQAAABoapazXNCJPh8JLkaOR5dG117HxlBPBMYHRxRD5COtwwCAu0Rp+i49uf0lxr+TFMIBAAAA6AMAAAMAAAD63XW+SGOYPqILRSKDkTJFPI5Yxi2PjsaK1i7FYIv4xFkXbkQKL8s9HYO+xUllJsQBAAAAAgAAAAIAAADnqca9GGKMvqMPkkZFJj5Gslo7xrXxfsbJrilF3AilLgCAu0Qd3qq9NCZdxsmuqUQBAAAAAgAAAP7///+jU449RfQmPgAAAAAAAAAAgDJVRsnrWMSu8t1EdNL8RAAAAAAAAAAAAAAAgAAAAAABAAAAAgAAAAIAAAARNhY9GHGsvACAu0QAgLtEVeuKRrYG/sV7NQfEV1bxRACAu0QU9n87T9OWRZm7LUQBAAAA6AMAAAQAAAAAAACAAAAAgHw7JUZE5odGAAAAgAAAAAAAAAAAAAAAgACAu0QAAACAAAAAgAAAAIABAAAABAAAAAEAAAA/xg481fuKPF0sHkbjc2NG5IwYqapTfUbmvh5FAmvyxACAu0TilzI8qVN9Ro8Lo8QBAAAAAQAAAAIAAADljoi+ENyBvQrXozwK16M8gYmnxrEoIUbU5LZCfYwWRY/C9Txnyhi+qn5+xsr6oUQBAAAAAgAAAAIAAACP5xS+BDM3vVXNlMZVzRRGIGTNRqsgY0aEhIpEhYHVwwCAu0QEM7e8qyDjRYWBVcMBAAAABAAAAAIAAAA2CUm+1IZIPebUHUbCVIhGU5G2xnQnfUUZYKrE6cMlRQCAu0ShOiO77I5uxcVXdkQBAAAA6AMAAAAAAAAstW8+a50nPYstDEdk5zpGYcJuRernqUbY7KPE/8HvxMuKD0JzGDg5UH10QADcp78BAAAAAgAAAAIAAABSnVg+nRELva/dVka9KTdGSETkxr6C5sYO8qhCDvKowgCAu0Sr3kk9g2PlxgAAAIABAAAAAwAAAAIAAAB22EU+WRUJPsrySXHK8klxGeeeRgh+jsax3cREbWd3RACAu0R+fYY9iToSxSzyfkQBAAAAAgAAAAEAAACiVKmoMHd4Pmg1cEbaVwVGhSKrxssykUZFPjtFASn7xACAu0R9YrE9IobuRfCq/8MBAAAAAgAAAAAAAABglYY+bWhMPkyFqjIORZZGAqyoxQ0/FUaKCQhExUw5REyFKjJyuBgqAqwoxYoJiEMBAAAAAgAAAAIAAADaWgI+938FPlc7WkYToytF1PPhxrZzYsa2l7fEqhX1rACAu0Qk34I92JapxreXN8QBAAAA/////wQAAABnIom+90cGvgAAAAAAAAAArtLUxt54wsaePItE09oQRQAAAAD3Rwa93njCxdPaEEQBAAAAAgAAAAIAAADC8yG+wQo6PgCAu0QAgLtEPkgkxg4jk8aVGbrEzH/ERACAu0T4t8A7LUdlxnBjJkIBAAAA/////wQAAAAAAACAAAAAgNMyXkbKR+JFAAAAgAAAAAAAAAAAAAAAgACAu0QAAACAAAAAgAAAAIABAAAAAgAAAP7///96HQA+FMeOPn0Gf0bEmXNFV+EjuX2smEawMA9FAMcbxACAu0Rg1k49V+GjuLAwj0QBAAAAAgAAAAAAAADT9+G9XgbJPQrXozwK16M8NeoWRri09sVeOSfEWcQiRQrXIzzT9+G8NeqWRV45p8MBAAAAAgAAAAEAAADOOFi+z9qXPR9RvcQfUT1E729kxgapy8bmLzrF3SSrxB9RPUTP2pc9BqnLxt0kq8QBAAAABQAAAAQAAADUE1G+AUNRuxlHjUb6qWZGuzibRQwWQcYOOgBFhgSTwwCAu0TmHLu8W/8CxY5oqEMBAAAAAgAAAAMAAACC9eG9tDG1PYMoHUZZi1FFFU0Qxv2Ds8bedNFEXEiAxACAu0QvRQu93tM/xpbe90MBAAAAAgAAAAYAAACSAp897IarvTPjOUbOAjBEakcfRhAXgcZgSuFEYErhxACAu0Rf7hI9FHASRZUxFkQBAAAA/////wMAAAC3lYo+/ouAPsrySXHK8klxUsybRp3Ro8WSZk3EstmyQgCAu0RSZas90mzaxJd37kEBAAAAAwAAAAIAAAB8Xo8yDvfkvcnoZ0YaIGdFxx40RqyIYkYB7jjF4P/ZxACAu0QirTa8mE4tRkZJ6MQBAAAAAgAAAAMAAABoczA9L/6BPq4lrCP0p1BFGKM8Rhp2mcbWJONEPtUUxaIai0TpUq09AKb/w3CZ5UIBAAAAAgAAAAIAAADZudq8waB0Pr2njkXxF4NGjjbkxgWk1sYZXB1F/nATuQCAu0SEdro9Sm3dxhhcnUQBAAAAAwAAAAYAAAB9OKg9QxsyvQAAAAAAAAAAR7E9xuCju0YPt4tEW8MjRQAAAACvee271S96Rc5Z2kMBAAAAAgAAAAIAAABdqmE+TMGPPgCAu0QAgLtEEvRCxbrzgsWpLp9E6IEqRQCAu0Q9SwA+w21kxTwZ+kQBAAAABwAAAP7///8AAACAAAAAgAuzBEY22nFFAAAAgAAAAAAAAAAAAAAAgAyol0QAAACAAAAAgAAAAIABAAAAAgAAAAIAAAA2jIe+Da7WvCS0V0YVDM5BKVzcqhITqsbHaoREqY+xxACAu0T9UQe+ExMqxoiTNMMBAAAAAgAAAAIAAAA5gpy9O2glvQrXozwK16M8C/xZRehCzkXFo8lEMLUMxQrXozxXNu+8dqCdRTaNn8MBAAAAAQAAAAAAAAD9eIy+iUyMPgDmYMYA5uBF2v+ixrtQ5UaLkaJEECYlRAAAAIAAAACAAAAAgAAAAAABAAAA6AMAAAEAAADE5lm+nm+Pvlf1YEbYHI9GqbmARh9smEUxIBNFxZ27xACAu0QhuSC+7++YRXFSu8QBAAAABAAAAAEAAADFD30+W6SUPhih2EVlaxBFAfrZRoqDLsYIGhzFSyAcxQCAu0REivM9Ew2Dxc0mQ8UBAAAABwAAAAIAAAAa1+e9PwStPBrLeEb2HmFGQaODw8DCGkXfPApF3zwKxQCAu0RbpGO7NA+WRIh7RcQBAAAABQAAAAIAAAAmmJY+sOtBvsrySXHK8klxc5OXxtO4W0bxoPbEvIYVxQCAu0Tx45K8IexERSDaxsQBAAAAAQAAAAIAAACOjZKuQCllPXqyFkaWwopG8lyNRu7s5EbTEPJEqDQiRACAu0Tsg5Q8adP/Rv5ODUUBAAAA/////wIAAAAumXs+KCsmPlLRgSN6mEpGRRt9RtIE0cVBxd9ENFKoRACAu0QoK6Y90gRRxTRSKEQBAAAAAgAAAAIAAACed1K9D+qIvm9ufUWTr2pGxzThxr3+jMUtH7lES+SzNwCAu0S5zeK9PDqCxi0fOUQBAAAAAgAAAAMAAAB3WlW+YQfKvQAAAAAAAAAAQZdaxXJXFEZlaR7EsUfDRAAAAACWrwa97clFRcsvAkQBAAAAAgAAAAIAAAAmcDK+JMxiPQCAu0QAgLtEhAfKxvHEEsafqvFEjrgxRQCAu0Q6evO8/7SJxu5GFUUBAAAABAAAAAIAAAAAAACAAAAAgKjUqETh/qZFAAAAgAAAAAAAAAAAAAAAgACAu0QAAACAAAAAgAAAAIABAAAAAgAAAAAAAADLMmA7N5scvhaQS0YaA5FFzWe1uWxK10ZQC6DEj3ApRACAu0TDUKU6zWc1uVALIMQBAAAAAQAAAAAAAAAv14O+cJPUvQrXozwK16M8zeEcxhtFcUaPnC9F6+MtRQrXozwv1wO+zeEcxo+cL0UBAAAABAAAAAIAAABQKT8+WiCwPe0mAcbtJoFFtPmjxuScLEZx2hvFO8YkQwCAu0RaIDA95JysRTvGpEIBAAAABQAAAAAAAAAURNE76o8kPeXqWEY86ZlGxGE/xrnpwMWWdDtDmzcwxQCAu0QbaQo6BBsZxd72FUIBAAAAAgAAAAAAAADyyGw9rcEsvhc470W6eh9FN2jLRGbfG0YabYtEVPXNxACAu0S1lrE8N2hLRBptC0QBAAAAAwAAAAYAAADY8QO+a1E2vvDEIEbok3BG2XjdRQ7HsUb1zoxE9c6MxACAu0Q3VA+9plfARZu+O0MBAAAABQAAAAIAAAB6Slc8TMMxPsrySXHK8klxexiAxQUm58Z28jbEEVovRQCAu0QoJTc9RfVzxp4OnUQBAAAAAQAAAAEAAAAaAYCoSLgIvtdi0UU2iPJFgkdhRU4f0EZJaIfBXTDAxACAu0Riv5K9PkjsRv9NwsQBAAAAAgAAAAEAAABVS9M97Dt+vr4QlTCXznRGvLYrRWyzk0Q4R/LEWUosRACAu0TsO36+FLUfRb75i8MBAAAAAgAAAAIAAAAt18W9q6olPtfgKEZ8UopGM8vpxs9Wm8bqiWNEct7DuQCAu0QdvwI9AZHCxuOJ40MBAAAAAQAAAAMAAAAxzCo+9+c+PgAAAAAAAAAA+o2Qxk/o4EajhBlFaM8WRQAAAACein49NPAVRooUSUQBAAAAAgAAAAIAAAAXtEo9sbV3PgCAu0QAgLtEdMWWxtK+R8aX6FjDUP8HRQCAu0RbMZU93aR6xo3hdEQBAAAA/////wIAAAAAAACAAAAAgFCd5kXX7CtEAAAAgAAAAAAAAAAAAAAAgNfsq0MAAACAAAAAgAAAAIABAAAABAAAAAIAAAC/0Pc83ySPvlivmkVl36tFeE5epzW/hsaqjyXFxDL9wwCAu0RtV4+9Nr8GxlvcZMQBAAAAAgAAAAYAAAC21Bm+r7ZVvQrXozwK16M8k27GRjmMjkURoo5EHyO0xA10Wjzwoyu9l09SRrgspUMBAAAAAAAAAAAAAABlfHQ+HdEHPluiVcVbotVElSIZxpvgykVaBLlEbjsRwwAAAIAAAAAAAAAAgAAAAIABAAAAAwAAAAAAAABP6KA9Ow0pvleo7EWfghFFgNvAxc6Ik8Z9lQjFiJKXwwCAu0R/GKQ8VpIAxaccNsQBAAAAAAAAAAIAAABpU5W+juOWviHUN0fXGnVGRYYaRvZ7LsF/8gfFpdYXxQCAu0SO4xa+9nuuwKXWl8QBAAAABQAAAP7///9DK0w+EqWGvldZlEaWbmFFyYi3xQNfrkYd5NTEHeTURACAu0QcQwk91NOSxBhQqsMBAAAABQAAAAMAAAB7OyG+RHtFvsrySXHK8klx3LGsxq0XgsbUmixFTJ4cRQCAu0S0JUS9Zc4bxkN0rUQBAAAA6AMAAP7///9I0daspQ+OvqmDZEW234tGrjzhxshG48YIhm7Ec4wbxab/aUAMN5WmiqTmwYY/dL8BAAAAAgAAAAIAAABwkoC+1OxgPv5aSy2SntVFIV6gxPoJrkZXNRzDGZxxwwCAu0TT7OA9FwQkRrjoRsMBAAAAAgAAAAIAAAA8kBa+5WMXvtNn40VHABtGM3YoRidX5Ma0al1Ef7NNuACAu0RVCpe9DhwQxrNq3UMBAAAAAQAAAAQAAAC5UjG9LTlDPQAAAAAAAAAA84SdRo5rk0ZE5N5EfOBeRAAAAAAtOUM8jmuTRXzgXkMBAAAAAgAAAAIAAADLdJA7DJc9vACAu0QAgLtErq+ORtmB9UQlbpHD2anJxACAu0RNueq6ywceRmMFbsQBAAAAAQAAAAMAAAAAAACAAAAAgKC6mUZzNoZGAAAAgAAAAAAAAAAAAAAAgACAu0QAAACAAAAAgAAAAIABAAAAAgAAAAMAAAB8CSk+IJu2PQgyjEbAeB9G7vgErgWcE0bIKy3FX8YbRQCAu0Qa0oE9BtBERWekCsQBAAAAAQAAAAQAAADaCEM9XBTEvQrXozwK16M8P5zWxkY0Nkb0FFDEn0k8xMzMzDxY/UE8t9W/xlwnf8QBAAAAAQAAAAAAAABR+Te+jPPrvVrqOMZa6rhFYtGbRjdDPcZDWP7EjxFKwgAAAIAAAACAAAAAgAAAAIABAAAA",["block"]="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",["controls"]={{{0,0,3,0,0,7,0,0,0,0},{0,0,7,85,0},{}},{{0,0,3,0,0,7,1,0,0,0},{0,0,7,85,0},{}},{{0,0,3,0,1,7,0,0,0,0},{0,0,7,85,0},{{2,7,0}}},{{0,0,3,0,1,7,1,0,0,0},{0,0,7,85,0},{{2,7,0}}},{{0,1,0,0,0,7,0,0,0,0},{0,0,0,1,0},{}},{{0,1,0,0,0,7,1,0,0,0},{0,0,0,1,0},{}},{{0,1,0,0,0,0,0,0,0,0},{0,0,0,1,0},{}},{{0,1,0,0,0,0,1,0,0,0},{0,0,0,1,0},{}},{{0,1,0,0,1,7,0,0,0,0},{0,0,0,1,0},{{2,7,0}}},{{0,1,0,0,1,7,1,0,0,0},{0,0,0,1,0},{{2,7,0}}},{{0,1,0,0,1,0,0,0,0,0},{0,0,0,1,0},{{2,0,0}}},{{0,1,0,0,1,0,1,0,0,0},{0,1,0,1,0},{}},{{0,1,0,1,0,7,0,0,0,0},{0,0,0,4294967295,0},{}},{{0,1,0,1,0,7,1,0,0,0},{0,0,0,4294967295,0},{}},{{0,1,0,1,0,0,0,0,0,0},{0,0,0,4294967295,0},{}},{{0,1,0,1,0,0,1,0,0,0},{0,0,0,4294967295,0},{}},{{0,1,0,1,1,7,0,0,0,0},{0,0,0,4294967295,0},{{2,7,0}}},{{0,1,0,1,1,7,1,0,0,0},{0,0,0,4294967295,0},{{2,7,0}}},{{0,1,0,1,1,0,0,0,0,0},{0,0,0,4294967295,0},{{2,0,0}}},{{0,1,0,1,1,0,1,0,0,0},{0,1,0,4294967295,0},{}},{{0,1,3,0,0,7,0,0,0,0},{0,0,3,1,0},{}},{{0,1,3,0,0,7,1,0,0,0},{0,0,3,1,0},{}},{{0,1,3,0,0,3,0,0,0,0},{0,0,3,1,0},{}},{{0,1,3,0,0,3,1,0,0,0},{0,0,3,1,0},{}},{{0,1,3,0,1,7,0,0,0,0},{0,0,3,1,0},{{2,7,0}}},{{0,1,3,0,1,7,1,0,0,0},{0,0,3,1,0},{{2,7,0}}},{{0,1,3,0,1,3,0,0,0,0},{0,0,3,1,0},{{2,3,0}}},{{0,1,3,0,1,3,1,0,0,0},{0,1,3,1,0},{}},{{0,1,3,1,0,7,0,0,0,0},{0,0,3,4294967295,0},{}},{{0,1,3,1,0,7,1,0,0,0},{0,0,3,4294967295,0},{}},{{0,1,3,1,0,3,0,0,0,0},{0,0,3,4294967295,0},{}},{{0,1,3,1,0,3,1,0,0,0},{0,0,3,4294967295,0},{}},{{0,1,3,1,1,7,0,0,0,0},{0,0,3,4294967295,0},{{2,7,0}}},{{0,1,3,1,1,7,1,0,0,0},{0,0,3,4294967295,0},{{2,7,0}}},{{0,1,3,1,1,3,0,0,0,0},{0,0,3,4294967295,0},{{2,3,0}}},{{0,1,3,1,1,3,1,0,0,0},{0,1,3,4294967295,0},{}},{{0,1,15,0,0,7,0,0,0,0},{0,0,15,1,0},{}},{{0,1,15,0,0,7,1,0,0,0},{0,0,15,1,0},{}},{{0,1,15,0,0,15,0,0,0,0},{0,0,15,1,0},{}},{{0,1,15,0,0,15,1,0,0,0},{0,0,15,1,0},{}},{{0,1,15,0,1,7,0,0,0,0},{0,0,15,1,0},{{2,7,0}}},{{0,1,15,0,1,7,1,0,0,0},{0,0,15,1,0},{{2,7,0}}},{{0,1,15,0,1,15,0,0,0,0},{0,0,15,1,0},{{2,15,0}}},{{0,1,15,0,1,15,1,0,0,0},{0,1,15,1,0},{}},{{0,1,15,1,0,7,0,0,0,0},{0,0,15,4294967295,0},{}},{{0,1,15,1,0,7,1,0,0,0},{0,0,15,4294967295,0},{}},{{0,1,15,1,0,15,0,0,0,0},{0,0,15,4294967295,0},{}},{{0,1,15,1,0,15,1,0,0,0},{0,0,15,4294967295,0},{}},{{0,1,15,1,1,7,0,0,0,0},{0,0,15,4294967295,0},{{2,7,0}}},{{0,1,15,1,1,7,1,0,0,0},{0,0,15,4294967295,0},{{2,7,0}}},{{0,1,15,1,1,15,0,0,0,0},{0,0,15,4294967295,0},{{2,15,0}}},{{0,1,15,1,1,15,1,0,0,0},{0,1,15,4294967295,0},{}},{{0,1,16,0,0,7,0,0,0,0},{0,0,16,1,0},{}},{{0,1,16,0,0,7,1,0,0,0},{0,0,16,1,0},{}},{{0,1,16,0,0,16,0,0,0,0},{0,0,16,1,0},{}},{{0,1,16,0,0,16,1,0,0,0},{0,0,16,1,0},{}},{{0,1,16,0,1,7,0,0,0,0},{0,0,16,1,0},{{2,7,0}}},{{0,1,16,0,1,7,1,0,0,0},{0,0,16,1,0},{{2,7,0}}},{{0,1,16,0,1,16,0,0,0,0},{0,0,16,1,0},{{2,16,0}}},{{0,1,16,0,1,16,1,0,0,0},{0,1,16,1,0},{}},{{0,1,16,1,0,7,0,0,0,0},{0,0,16,1,0},{}},{{0,1,16,1,0,7,1,0,0,0},{0,0,16,1,0},{}},{{0,1,16,1,0,16,0,0,0,0},{0,0,16,1,0},{}},{{0,1,16,1,0,16,1,0,0,0},{0,0,16,1,0},{}},{{0,1,16,1,1,7,0,0,0,0},{0,0,16,1,0},{{2,7,0}}},{{0,1,16,1,1,7,1,0,0,0},{0,0,16,1,0},{{2,7,0}}},{{0,1,16,1,1,16,0,0,0,0},{0,0,16,1,0},{{2,16,0}}},{{0,1,16,1,1,16,1,0,0,0},{0,1,16,1,0},{}},{{0,1,2147483650,0,0,7,0,0,0,0},{0,0,2147483650,1,0},{}},{{0,1,2147483650,0,0,7,1,0,0,0},{0,0,2147483650,1,0},{}},{{0,1,2147483650,0,0,2147483650,0,0,0,0},{0,0,2147483650,1,0},{}},{{0,1,2147483650,0,0,2147483650,1,0,0,0},{0,0,2147483650,1,0},{}},{{0,1,2147483650,0,1,7,0,0,0,0},{0,0,2147483650,1,0},{{2,7,0}}},{{0,1,2147483650,0,1,7,1,0,0,0},{0,0,2147483650,1,0},{{2,7,0}}},{{0,1,2147483650,0,1,2147483650,0,0,0,0},{0,0,2147483650,1,0},{{2,2147483650,0}}},{{0,1,2147483650,0,1,2147483650,1,0,0,0},{0,1,2147483650,1,0},{}},{{0,1,2147483650,1,0,7,0,0,0,0},{0,0,2147483650,4294967295,0},{}},{{0,1,2147483650,1,0,7,1,0,0,0},{0,0,2147483650,4294967295,0},{}},{{0,1,2147483650,1,0,2147483650,0,0,0,0},{0,0,2147483650,4294967295,0},{}},{{0,1,2147483650,1,0,2147483650,1,0,0,0},{0,0,2147483650,4294967295,0},{}},{{0,1,2147483650,1,1,7,0,0,0,0},{0,0,2147483650,4294967295,0},{{2,7,0}}},{{0,1,2147483650,1,1,7,1,0,0,0},{0,0,2147483650,4294967295,0},{{2,7,0}}},{{0,1,2147483650,1,1,2147483650,0,0,0,0},{0,0,2147483650,4294967295,0},{{2,2147483650,0}}},{{0,1,2147483650,1,1,2147483650,1,0,0,0},{0,1,2147483650,4294967295,0},{}},{{0,3,3,0,0,7,0,0,0,0},{0,0,7,85,0},{}},{{0,3,3,0,0,7,1,0,0,0},{0,0,7,85,0},{}},{{0,3,3,0,1,7,0,0,0,0},{0,0,7,85,0},{{2,7,0}}},{{0,3,3,0,1,7,1,0,0,0},{0,0,7,85,0},{{2,7,0}}},{{1,0,3,0,0,7,0,0,0,0},{1,0,7,85,0},{}},{{1,0,3,0,0,7,1,0,0,0},{1,0,7,85,0},{}},{{1,0,3,0,1,7,0,0,0,0},{1,1,7,85,0},{{0,7,0}}},{{1,0,3,0,1,7,1,0,0,0},{1,1,7,85,0},{{0,7,0}}},{{1,1,0,0,0,7,0,0,0,0},{1,0,7,85,0},{}},{{1,1,0,0,0,7,1,0,0,0},{1,0,7,85,0},{}},{{1,1,0,0,0,0,0,0,0,0},{1,0,0,85,0},{}},{{1,1,0,0,0,0,1,0,0,0},{1,0,0,85,0},{}},{{1,1,0,0,1,7,0,0,0,0},{1,1,7,85,0},{{0,7,0}}},{{1,1,0,0,1,7,1,0,0,0},{1,1,7,85,0},{{0,7,0}}},{{1,1,0,0,1,0,0,0,0,0},{1,1,0,85,0},{{0,0,0}}},{{1,1,0,0,1,0,1,0,0,0},{1,1,0,85,0},{{0,0,0}}},{{1,1,0,1,0,7,0,0,0,0},{1,0,7,85,0},{}},{{1,1,0,1,0,7,1,0,0,0},{1,0,7,85,0},{}},{{1,1,0,1,0,0,0,0,0,0},{1,0,0,85,0},{}},{{1,1,0,1,0,0,1,0,0,0},{1,0,0,85,0},{}},{{1,1,0,1,1,7,0,0,0,0},{1,1,7,85,0},{{0,7,0}}},{{1,1,0,1,1,7,1,0,0,0},{1,1,7,85,0},{{0,7,0}}},{{1,1,0,1,1,0,0,0,0,0},{1,1,0,85,0},{{0,0,0}}},{{1,1,0,1,1,0,1,0,0,0},{1,1,0,85,0},{{0,0,0}}},{{1,1,3,0,0,7,0,0,0,0},{1,0,7,85,0},{}},{{1,1,3,0,0,7,1,0,0,0},{1,0,7,85,0},{}},{{1,1,3,0,0,3,0,0,0,0},{1,0,3,85,0},{}},{{1,1,3,0,0,3,1,0,0,0},{1,0,3,85,0},{}},{{1,1,3,0,1,7,0,0,0,0},{1,1,7,85,0},{{0,7,0}}},{{1,1,3,0,1,7,1,0,0,0},{1,1,7,85,0},{{0,7,0}}},{{1,1,3,0,1,3,0,0,0,0},{1,1,3,85,0},{{0,3,0}}},{{1,1,3,0,1,3,1,0,0,0},{1,1,3,85,0},{{0,3,0}}},{{1,1,3,1,0,7,0,0,0,0},{1,0,7,85,0},{}},{{1,1,3,1,0,7,1,0,0,0},{1,0,7,85,0},{}},{{1,1,3,1,0,3,0,0,0,0},{1,0,3,85,0},{}},{{1,1,3,1,0,3,1,0,0,0},{1,0,3,85,0},{}},{{1,1,3,1,1,7,0,0,0,0},{1,1,7,85,0},{{0,7,0}}},{{1,1,3,1,1,7,1,0,0,0},{1,1,7,85,0},{{0,7,0}}},{{1,1,3,1,1,3,0,0,0,0},{1,1,3,85,0},{{0,3,0}}},{{1,1,3,1,1,3,1,0,0,0},{1,1,3,85,0},{{0,3,0}}},{{1,1,15,0,0,7,0,0,0,0},{1,0,7,85,0},{}},{{1,1,15,0,0,7,1,0,0,0},{1,0,7,85,0},{}},{{1,1,15,0,0,15,0,0,0,0},{1,0,15,85,0},{}},{{1,1,15,0,0,15,1,0,0,0},{1,0,15,85,0},{}},{{1,1,15,0,1,7,0,0,0,0},{1,1,7,85,0},{{0,7,0}}},{{1,1,15,0,1,7,1,0,0,0},{1,1,7,85,0},{{0,7,0}}},{{1,1,15,0,1,15,0,0,0,0},{1,1,15,85,0},{{0,15,0}}},{{1,1,15,0,1,15,1,0,0,0},{1,1,15,85,0},{{0,15,0}}},{{1,1,15,1,0,7,0,0,0,0},{1,0,7,85,0},{}},{{1,1,15,1,0,7,1,0,0,0},{1,0,7,85,0},{}},{{1,1,15,1,0,15,0,0,0,0},{1,0,15,85,0},{}},{{1,1,15,1,0,15,1,0,0,0},{1,0,15,85,0},{}},{{1,1,15,1,1,7,0,0,0,0},{1,1,7,85,0},{{0,7,0}}},{{1,1,15,1,1,7,1,0,0,0},{1,1,7,85,0},{{0,7,0}}},{{1,1,15,1,1,15,0,0,0,0},{1,1,15,85,0},{{0,15,0}}},{{1,1,15,1,1,15,1,0,0,0},{1,1,15,85,0},{{0,15,0}}},{{1,1,16,0,0,7,0,0,0,0},{1,0,7,85,0},{}},{{1,1,16,0,0,7,1,0,0,0},{1,0,7,85,0},{}},{{1,1,16,0,0,16,0,0,0,0},{1,0,16,85,0},{}},{{1,1,16,0,0,16,1,0,0,0},{1,0,16,85,0},{}},{{1,1,16,0,1,7,0,0,0,0},{1,1,7,85,0},{{0,7,0}}},{{1,1,16,0,1,7,1,0,0,0},{1,1,7,85,0},{{0,7,0}}},{{1,1,16,0,1,16,0,0,0,0},{1,1,16,85,0},{{0,16,0}}},{{1,1,16,0,1,16,1,0,0,0},{1,1,16,85,0},{{0,16,0}}},{{1,1,16,1,0,7,0,0,0,0},{1,0,7,85,0},{}},{{1,1,16,1,0,7,1,0,0,0},{1,0,7,85,0},{}},{{1,1,16,1,0,16,0,0,0,0},{1,0,16,85,0},{}},{{1,1,16,1,0,16,1,0,0,0},{1,0,16,85,0},{}},{{1,1,16,1,1,7,0,0,0,0},{1,1,7,85,0},{{0,7,0}}},{{1,1,16,1,1,7,1,0,0,0},{1,1,7,85,0},{{0,7,0}}},{{1,1,16,1,1,16,0,0,0,0},{1,1,16,85,0},{{0,16,0}}},{{1,1,16,1,1,16,1,0,0,0},{1,1,16,85,0},{{0,16,0}}},{{1,1,2147483650,0,0,7,0,0,0,0},{1,0,7,85,0},{}},{{1,1,2147483650,0,0,7,1,0,0,0},{1,0,7,85,0},{}},{{1,1,2147483650,0,0,2147483650,0,0,0,0},{1,0,2147483650,85,0},{}},{{1,1,2147483650,0,0,2147483650,1,0,0,0},{1,0,2147483650,85,0},{}},{{1,1,2147483650,0,1,7,0,0,0,0},{1,1,7,85,0},{{0,7,0}}},{{1,1,2147483650,0,1,7,1,0,0,0},{1,1,7,85,0},{{0,7,0}}},{{1,1,2147483650,0,1,2147483650,0,0,0,0},{1,1,2147483650,85,0},{{0,2147483650,0}}},{{1,1,2147483650,0,1,2147483650,1,0,0,0},{1,1,2147483650,85,0},{{0,2147483650,0}}},{{1,1,2147483650,1,0,7,0,0,0,0},{1,0,7,85,0},{}},{{1,1,2147483650,1,0,7,1,0,0,0},{1,0,7,85,0},{}},{{1,1,2147483650,1,0,2147483650,0,0,0,0},{1,0,2147483650,85,0},{}},{{1,1,2147483650,1,0,2147483650,1,0,0,0},{1,0,2147483650,85,0},{}},{{1,1,2147483650,1,1,7,0,0,0,0},{1,1,7,85,0},{{0,7,0}}},{{1,1,2147483650,1,1,7,1,0,0,0},{1,1,7,85,0},{{0,7,0}}},{{1,1,2147483650,1,1,2147483650,0,0,0,0},{1,1,2147483650,85,0},{{0,2147483650,0}}},{{1,1,2147483650,1,1,2147483650,1,0,0,0},{1,1,2147483650,85,0},{{0,2147483650,0}}},{{1,3,3,0,0,7,0,0,0,0},{1,0,7,85,0},{}},{{1,3,3,0,0,7,1,0,0,0},{1,0,7,85,0},{}},{{1,3,3,0,1,7,0,0,0,0},{1,1,7,85,0},{{0,7,0}}},{{1,3,3,0,1,7,1,0,0,0},{1,1,7,85,0},{{0,7,0}}},{{2,0,3,0,0,7,0,0,0,0},{2,0,7,85,0},{}},{{2,0,3,0,0,7,1,0,0,0},{2,0,7,85,0},{}},{{2,0,3,0,1,7,0,0,0,0},{2,1,7,85,0},{{0,7,0}}},{{2,0,3,0,1,7,1,0,0,0},{2,1,7,85,0},{{0,7,0}}},{{2,1,0,0,0,7,0,0,0,0},{2,0,7,85,0},{}},{{2,1,0,0,0,7,1,0,0,0},{2,0,7,85,0},{}},{{2,1,0,0,0,0,0,0,0,0},{2,0,0,85,0},{}},{{2,1,0,0,0,0,1,0,0,0},{2,0,0,85,0},{}},{{2,1,0,0,1,7,0,0,0,0},{2,1,7,85,0},{{0,7,0}}},{{2,1,0,0,1,7,1,0,0,0},{2,1,7,85,0},{{0,7,0}}},{{2,1,0,0,1,0,0,0,0,0},{2,1,0,85,0},{{0,0,0}}},{{2,1,0,0,1,0,1,0,0,0},{2,1,0,85,0},{{0,0,0}}},{{2,1,0,1,0,7,0,0,0,0},{2,0,7,85,0},{}},{{2,1,0,1,0,7,1,0,0,0},{2,0,7,85,0},{}},{{2,1,0,1,0,0,0,0,0,0},{2,0,0,85,0},{}},{{2,1,0,1,0,0,1,0,0,0},{2,0,0,85,0},{}},{{2,1,0,1,1,7,0,0,0,0},{2,1,7,85,0},{{0,7,0}}},{{2,1,0,1,1,7,1,0,0,0},{2,1,7,85,0},{{0,7,0}}},{{2,1,0,1,1,0,0,0,0,0},{2,1,0,85,0},{{0,0,0}}},{{2,1,0,1,1,0,1,0,0,0},{2,1,0,85,0},{{0,0,0}}},{{2,1,3,0,0,7,0,0,0,0},{2,0,7,85,0},{}},{{2,1,3,0,0,7,1,0,0,0},{2,0,7,85,0},{}},{{2,1,3,0,0,3,0,0,0,0},{2,0,3,85,0},{}},{{2,1,3,0,0,3,1,0,0,0},{2,0,3,85,0},{}},{{2,1,3,0,1,7,0,0,0,0},{2,1,7,85,0},{{0,7,0}}},{{2,1,3,0,1,7,1,0,0,0},{2,1,7,85,0},{{0,7,0}}},{{2,1,3,0,1,3,0,0,0,0},{2,1,3,85,0},{{0,3,0}}},{{2,1,3,0,1,3,1,0,0,0},{2,1,3,85,0},{{0,3,0}}},{{2,1,3,1,0,7,0,0,0,0},{2,0,7,85,0},{}},{{2,1,3,1,0,7,1,0,0,0},{2,0,7,85,0},{}},{{2,1,3,1,0,3,0,0,0,0},{2,0,3,85,0},{}},{{2,1,3,1,0,3,1,0,0,0},{2,0,3,85,0},{}},{{2,1,3,1,1,7,0,0,0,0},{2,1,7,85,0},{{0,7,0}}},{{2,1,3,1,1,7,1,0,0,0},{2,1,7,85,0},{{0,7,0}}},{{2,1,3,1,1,3,0,0,0,0},{2,1,3,85,0},{{0,3,0}}},{{2,1,3,1,1,3,1,0,0,0},{2,1,3,85,0},{{0,3,0}}},{{2,3,3,0,0,7,0,0,0,0},{2,0,7,85,0},{}},{{2,3,3,0,0,7,1,0,0,0},{2,0,7,85,0},{}},{{2,3,3,0,1,7,0,0,0,0},{2,1,7,85,0},{{0,7,0}}},{{2,3,3,0,1,7,1,0,0,0},{2,1,7,85,0},{{0,7,0}}}},["setters"]={{"strength",0,0},{"strength",4,1082130432},{"strength",8,1090519040},{"strength",12,1094713344},{"strength",16,1098907648},{"strength",20,1101004800},{"strength",24,1103101952},{"strength",28,1105199104},{"strength",32,1107296256},{"strength",36,1108344832},{"strength",40,1109393408},{"strength",44,1110441984},{"strength",48,1111490560},{"strength",52,1112539136},{"strength",56,1113587712},{"strength",60,1114636288},{"strength",64,1115684864},{"strength",68,1116209152},{"strength",72,1116733440},{"strength",76,1117257728},{"strength",80,1117782016},{"strength",84,1118306304},{"strength",88,1118830592},{"strength",92,1119354880},{"strength",96,1119879168},{"strength",100,1120403456},{"damping",0,0},{"damping",4,1082130432},{"damping",8,1090519040},{"damping",12,1094713344},{"damping",16,1098907648},{"damping",20,1101004800},{"damping",24,1103101952},{"damping",28,1105199104},{"damping",32,1107296256},{"damping",36,1108344832},{"damping",40,1109393408},{"damping",44,1110441984},{"damping",48,1111490560},{"damping",52,1112539136},{"damping",56,1113587712},{"damping",60,1114636288},{"damping",64,1115684864},{"damping",68,1116209152},{"damping",72,1116733440},{"damping",76,1117257728},{"damping",80,1117782016},{"damping",84,1118306304},{"damping",88,1118830592},{"damping",92,1119354880},{"damping",96,1119879168},{"damping",100,1120403456},{"latency",0,0},{"latency",4,1082130432},{"latency",8,1090519040},{"latency",12,1094713344},{"latency",16,1098907648},{"latency",20,1101004800},{"latency",24,1103101952},{"latency",28,1105199104},{"latency",32,1107296256},{"latency",36,1108344832},{"latency",40,1109393408},{"latency",44,1110441984},{"latency",48,1111490560},{"latency",52,1112539136},{"latency",56,1113587712},{"latency",60,1114636288},{"latency",64,1115684864},{"latency",68,1116209152},{"latency",72,1116733440},{"latency",76,1117257728},{"latency",80,1117782016},{"latency",84,1118306304},{"latency",88,1118830592},{"latency",92,1119354880},{"latency",96,1119879168},{"latency",100,1120403456},{"latency",104,1120927744},{"latency",108,1121452032},{"latency",112,1121976320},{"latency",116,1122500608},{"latency",120,1123024896},{"latency",124,1123549184},{"latency",128,1124073472},{"latency",132,1124335616},{"latency",136,1124597760},{"latency",140,1124859904},{"latency",144,1125122048},{"latency",148,1125384192},{"latency",152,1125646336},{"latency",156,1125908480},{"latency",160,1126170624},{"latency",164,1126432768},{"latency",168,1126694912},{"latency",172,1126957056},{"latency",176,1127219200},{"latency",180,1127481344},{"latency",184,1127743488},{"latency",188,1128005632},{"latency",192,1128267776},{"latency",196,1128529920},{"latency",200,1128792064},{"latency",204,1129054208},{"latency",208,1129316352},{"latency",212,1129578496},{"latency",216,1129840640},{"latency",220,1130102784},{"latency",224,1130364928},{"latency",228,1130627072},{"latency",232,1130889216},{"latency",236,1131151360},{"latency",240,1131413504},{"latency",244,1131675648},{"latency",248,1131937792}},["tracedStats"]="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",["tracedBlocks"]="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"}
+local Core=script.Parent.Parent.Core
+local Vehicle=require(Core.NR2003CupVehicle)
+local M={}
+local FLAT={}
+for i=1,4 do FLAT[i]={0,0,1,0,0,0,0,1,1} end
+local B64={}
+do
+    local chars="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    for i=1,64 do B64[string.byte(chars,i)]=i-1 end
+end
+local function b64(s)
+    local out=buffer.create(#s*3//4);local o=0
+    for i=1,#s,4 do
+        local a,b,c,d=string.byte(s,i,i+3)
+        local x=B64[a]*262144+B64[b]*4096+(c~=61 and B64[c] or 0)*64+(d~=61 and B64[d] or 0)
+        buffer.writeu8(out,o,bit32.rshift(x,16));o+=1
+        if c~=61 then buffer.writeu8(out,o,bit32.band(bit32.rshift(x,8),0xff));o+=1 end
+        if d~=61 then buffer.writeu8(out,o,bit32.band(x,0xff));o+=1 end
+    end
+    return out,o
+end
+local S=buffer.create(8)
+local function fb(u) buffer.writeu32(S,0,u);return buffer.readf32(S,0) end
+local function bits(x) buffer.writef32(S,0,x);return buffer.readu32(S,0) end
+local function dbl(hi,lo) buffer.writeu32(S,4,hi);buffer.writeu32(S,0,lo);return buffer.readf64(S,0) end
+local function dbits(x) buffer.writef64(S,0,x);return buffer.readu32(S,4),buffer.readu32(S,0) end
+-- packed u32 records: (string, record length) -> iterator of buffers offsets
+local function records(s,len)
+    local b,n=b64(s)
+    local k=-1
+    return function()
+        k+=1
+        if 4*len*(k+1)>n then return nil end
+        return b,4*len*k
+    end
+end
+local ru=buffer.readu32
+local SUSPENDED,ACQUIRED,AXIS,DIRSIGN=0xbf6eb8,0xbf6ebb,0xbf6ebc,0x74c95c
+local FF_ON,STRENGTH,DAMPING,LATENCY=0xbf6f1c,0x74c9a4,0xbf6f24,0xbf6f20
+local REC7=0xd37cb8+29*7
+local ACC={0xbf6ed4,0xbf6ed8,0xbf6edc,0xbf6ee0,0xbf6ee4,0xbf6ee8,0xbf6eec,0xbf6ef0}
+local OUTS={0x74c960,0xbf6ec4,0xbf6ec8,0xbf6ed0}
+local BLOCK_IN={0xbf6ec4,0xbf6ec0,0xbf6ecc,0xbf6ed0,0xbf3a00,LATENCY,DAMPING,STRENGTH,0xc055c0+4*0x30}
+
+function M.run(full)
+    local t0=os.clock()
+    local passed,failed,lines=0,0,{}
+    local function check(name,ok,detail)
+        if ok then passed+=1 else failed+=1 end
+        local line=(ok and "PASS  " or "FAIL  ")..name..(detail and ("  "..detail) or "")
+        table.insert(lines,line);print("[NR2003 Stage 13 self-test] "..line)
+    end
+    local car=Vehicle.new(Core:WaitForChild("NR2003Cup"))
+    local V=car.V
+    check("Stage 13 force feedback installed (NR2003CupFFB)",V.setForceFeedbackOptions~=nil and V.x87~=nil)
+    if not V.setForceFeedbackOptions then return false,lines end
+    local r32,rf32,w32,wf32,r8,w8=V.r32,V.rf32,V.w32,V.wf32,V.r8,V.w8
+    local X=V.x87
+    V.setRuntimeMode("original");V.setSteeringMode("original");V.endSession();V.clearSteeringOptions();V.clearForceFeedbackOptions()
+    V.setForceFeedbackDevice({capable=false});V.reset()
+    check("image defaults: FF off, strength 80, damping 0, latency 0, not acquired, controls active",
+        r8(FF_ON)==0 and rf32(STRENGTH)==80 and rf32(DAMPING)==0 and rf32(LATENCY)==0 and r8(ACQUIRED)==0 and r8(SUSPENDED)==0)
+    -- exact x87 arithmetic: records a(hi,lo,hi,lo) b(..) r(..)
+    local bad,n=0,0
+    for _,op in ipairs({"add","mul","div"}) do
+        for b,o in records(G.x87[op],12) do
+            n+=1
+            local h,l=X[op](dbl(ru(b,o),ru(b,o+4)),dbl(ru(b,o+8),ru(b,o+12)),dbl(ru(b,o+16),ru(b,o+20)),dbl(ru(b,o+24),ru(b,o+28)))
+            local hh,hl=dbits(h);local lh,ll=dbits(l)
+            local eh,el=ru(b,o+32),ru(b,o+36)
+            if hh~=eh or hl~=el or l~=dbl(ru(b,o+40),ru(b,o+44)) then bad+=1 end
+        end
+    end
+    for b,o in records(G.x87.f32,5) do
+        n+=1
+        if bits(X.f32(dbl(ru(b,o),ru(b,o+4)),dbl(ru(b,o+8),ru(b,o+12))))~=ru(b,o+16) then bad+=1 end
+    end
+    check(string.format("exact x87 arithmetic (64-bit significand, round toward -inf) + FST dword: %d vectors",n),bad==0,bad>0 and (bad.." differ") or nil)
+    -- 00554d30: n_LF, n_RF, A/B/C/D (8), outs (4), cleared
+    bad,n=0,0
+    for b,o in records(G.stats,15) do
+        n+=1
+        w32(0x74c964,ru(b,o));w32(0x74c968,ru(b,o+4))
+        for k=1,8 do w32(ACC[k],ru(b,o+4+4*k)) end
+        V.ffbStatsOriginal()
+        for k=1,4 do if r32(OUTS[k])~=ru(b,o+36+4*k) then bad+=1;break end end
+    end
+    check(string.format("00554d30 front tyre statistics: %d original vectors bit-exact",n),bad==0,bad>0 and (bad.." differ") or nil)
+    -- FFB block: ebb, eb8, 9 inputs, ec0', ecc', calls, force
+    local trace={}
+    V._ffbTrace(trace)
+    bad,n=0,0
+    for b,o in records(G.block,15) do
+        n+=1
+        w8(ACQUIRED,ru(b,o));w8(SUSPENDED,ru(b,o+4));w32(AXIS,5)
+        for k=1,9 do w32(BLOCK_IN[k],ru(b,o+4+4*k)) end
+        table.clear(trace)
+        V._ffbFrameEnd()
+        local nf,force=0,0
+        for _,t in ipairs(trace) do if t[1]=="force" then nf+=1;force=bits(t[3]) end end
+        if not (r32(0xbf6ec0)==ru(b,o+44) and r32(0xbf6ecc)==ru(b,o+48) and nf==ru(b,o+52) and (nf==0 or force==ru(b,o+56))) then bad+=1 end
+    end
+    check(string.format("FFB block of 00554520 (0055464c..0055479d): %d original vectors bit-exact (state + 005d08d0 force)",n),bad==0,bad>0 and (bad.." differ") or nil)
+    -- traced calls of the original's closed-loop run (slalom / suspend)
+    bad,n=0,0
+    for b,o in records(G.tracedStats,15) do
+        n+=1
+        w32(0x74c964,ru(b,o+4));w32(0x74c968,ru(b,o+8))
+        for k=1,8 do w32(ACC[k],ru(b,o+8+4*k)) end
+        V.ffbStatsOriginal()
+        for k=1,4 do if r32(OUTS[k])~=ru(b,o+40+4*k) then bad+=1;break end end
+    end
+    local nb=0
+    for b,o in records(G.tracedBlocks,17) do
+        nb+=1
+        w8(ACQUIRED,ru(b,o+4));w8(SUSPENDED,ru(b,o+8))
+        for k=1,9 do w32(BLOCK_IN[k],ru(b,o+8+4*k)) end
+        w32(AXIS,ru(b,o+48))
+        table.clear(trace)
+        V._ffbFrameEnd()
+        local nf,force=0,0
+        for _,t in ipairs(trace) do if t[1]=="force" then nf+=1;force=bits(t[3]) end end
+        if not (r32(0xbf6ec0)==ru(b,o+52) and r32(0xbf6ecc)==ru(b,o+56) and nf==ru(b,o+60) and (nf==0 or force==ru(b,o+64))) then bad+=1 end
+    end
+    check(string.format("closed loop: %d 00554d30 calls + %d FFB blocks traced in the ORIGINAL's run: bit-exact",n,nb),bad==0,bad>0 and (bad.." differ") or nil)
+    -- 00550070 -> 0054fed0 / 00550030: in (flag, kind, axis, dir, ebb, prevAxis, ffon, cap, acq, eff), out (eb8, ebb, axis, sign, eff), log
+    bad,n=0,0
+    local KIND={force=0,acquire=1,release=2}
+    for _,v in ipairs(G.controls) do
+        n+=1
+        local i=v[1]
+        w32(REC7+0x10,i[2]);w32(REC7+0x14,i[3]);w8(REC7+0x1c,i[4])
+        w8(ACQUIRED,i[5]);w32(AXIS,i[6]);w32(DIRSIGN,0x55);w8(FF_ON,i[7]);w8(SUSPENDED,0x33)
+        V._ffbHostState(i[8]==1,i[9]==1,i[10]==1)
+        table.clear(trace)
+        V._ffbControls(i[1])
+        local _,_,effect=V._ffbHostState()
+        local o=v[2]
+        local ok=r8(SUSPENDED)==o[1] and r8(ACQUIRED)==o[2] and r32(AXIS)==o[3] and r32(DIRSIGN)==o[4] and (effect and 1 or 0)==o[5]
+            and #trace==#v[3]
+        if ok then
+            for k,t in ipairs(trace) do
+                local w=v[3][k]
+                if KIND[t[1]]~=w[1] or t[2]~=w[2] or (t[1]=="force" and bits(t[3])~=w[3]) then ok=false end
+            end
+        end
+        if not ok then bad+=1 end
+    end
+    V._ffbTrace(nil);V._ffbHostState(false,true,false)
+    check(string.format("00550070 / 0054fed0 / 00550030: %d original cases (state + device-call sequence)",n),bad==0,bad>0 and (bad.." differ") or nil)
+    -- setters (controls.cfg integers)
+    bad=0
+    for _,v in ipairs(G.setters) do
+        local o={};o[v[1]]=v[2]
+        V.setForceFeedbackOptions(o)
+        local cell=({strength=STRENGTH,damping=DAMPING,latency=LATENCY})[v[1]]
+        if r32(cell)~=v[3] then bad+=1 end
+    end
+    V.clearForceFeedbackOptions();V.reset()
+    check(string.format("FF option setters 00550290 / 005502d0 / 005502b0: %d original vectors",#G.setters),bad==0,bad>0 and (bad.." differ") or nil)
+    -- behaviour
+    V.applySetup(V.Setup.cupGarageDefault());V.reset()
+    V.setForceFeedbackDevice({capable=true})
+    V.setForceFeedbackOptions({enabled=true,strength=64,damping=12,latency=30})
+    V.startSession(nil,{})
+    for _=1,8 do V.drive({throttle=0.3,clutch=1,brakeControl=0,steerLeft=0,steerRight=0,steerDigital=true},FLAT) end
+    local s1=V.forceFeedbackState()
+    for _=1,8 do V.drive({throttle=0.3,clutch=1,brakeControl=0,steerAxis=0.05},FLAT) end
+    local s2=V.forceFeedbackState()
+    check("keys: effect never acquired; analog axis: acquired by 0054fed0, block runs at the frame end",
+        not s1.acquired and not s1.blockRan and s2.acquired and s2.blockRan)
+    V.setControlsSuspended(true)
+    for _=1,8 do V.drive({throttle=1,clutch=1,brakeControl=0,steerAxis=0.05},FLAT) end
+    local s3=V.forceFeedbackState()
+    local nd=rf32(0xbf6eac)==1 and rf32(0xbf6390)==0
+    V.setControlsSuspended(false)
+    for _=1,8 do V.drive({throttle=0.3,clutch=1,brakeControl=0,steerAxis=0.05},FLAT) end
+    local s4=V.forceFeedbackState()
+    check("controls suspended (00550070(1)): 005524f0 not-driven branch, FFB gated, zero force; resume runs it again",
+        nd and s3.suspended and not s3.blockRan and s3.force==0 and not s4.suspended and s4.blockRan)
+    V.reset()
+    local o=V.forceFeedbackOptions()
+    check("FF options survive reset()",o.enabled and o.strength==64 and o.damping==12 and o.latency==30)
+    if full then
+        local cp=V.checkpoint()
+        local function runN(out)
+            for k=1,400 do
+                V.drive({throttle=0.6,clutch=1,brakeControl=0,steerAxis=0.1*math.sin(k/50)},FLAT)
+                if k%8==0 then table.insert(out,bits(V.forceFeedbackState().force)) end
+            end
+        end
+        local a,b={},{}
+        runN(a);V.restore(cp);runN(b)
+        local same=#a==#b and #a==50
+        for i=1,#a do if a[i]~=b[i] then same=false end end
+        check("deterministic FFB output, checkpoint / restore bit-identical",same)
+    end
+    V.endSession();V.clearForceFeedbackOptions();V.setForceFeedbackDevice({capable=false});V.reset()
+    print(string.format("[NR2003 Stage 13 self-test] %d PASS, %d FAIL (%.2f s)",passed,failed,os.clock()-t0))
+    return failed==0,lines
+end
+return M
+]=])
+-- 1) baseline check (nothing is changed before every target is verified) -----------------------------------
+local plan,problems={},{}
+for _,it in ipairs(ITEMS) do
+    local s=find(it.folder,it.name)
+    if s==nil then
+        if it.oldLen~=nil then table.insert(problems,it.folder.."."..it.name.." ausente (Stage 12.1 requerido)") else table.insert(plan,{it=it,state="add"}) end
+    else
+        local src=s.Source;local n,h=#src,fnv(src)
+        if n==it.newLen and h==it.newHash then table.insert(plan,{it=it,s=s,state="current"})
+        elseif it.oldLen~=nil and n==it.oldLen and h==it.oldHash then table.insert(plan,{it=it,s=s,state="replace"})
+        elseif it.oldLen==nil then table.insert(plan,{it=it,s=s,state="replace"})  -- a module this patch adds (re-run)
+        else table.insert(problems,string.format("%s.%s difere do Stage 12.1 publicado (%d bytes, hash %08x): alterado localmente?",it.folder,it.name,n,h)) end
+    end
+end
+if #problems>0 and not _G.NR2003_PATCH13_FORCE then
+    error("Patch Stage 13 recusado, nada foi alterado:\n  "..table.concat(problems,"\n  ")..
+        "\n(_G.NR2003_PATCH13_FORCE=true instala mesmo assim, com backup do que existir)")
+end
+-- 2) backup of exactly the instances this patch changes (created once; a re-run keeps the first backup) ------
+local backup=storage:FindFirstChild("NR2003Backup_Stage13")
+local firstInstall=backup==nil
+if firstInstall then
+    backup=Instance.new("Folder");backup.Name="NR2003Backup_Stage13"
+    backup:SetAttribute("FromStage",stage);backup:SetAttribute("FromVersion",pkg:GetAttribute("NR2003Version"))
+    backup:SetAttribute("Created",os.time())
+    for _,p in ipairs(plan) do
+        local key=p.it.folder.."."..p.it.name
+        if p.state=="add" then
+            local v=Instance.new("StringValue");v.Name="ADDED:"..key;v.Value=key;v.Parent=backup
+        elseif p.s then
+            local c=p.s:Clone();c.Name=key;c.Parent=backup
+        end
+    end
+    backup.Parent=storage
+end
+-- 3) apply (sources updated in place; new modules created) and self-tests; revert on any failure ------------
+local touched={}
+local function apply()
+    for _,p in ipairs(plan) do
+        if p.state~="current" then
+            local s=p.s
+            if s==nil then
+                s=Instance.new(p.it.class);s.Name=p.it.name;s.Parent=FOLDERS[p.it.folder]
+            end
+            table.insert(touched,{s=s,old=p.state=="add" and nil or s.Source,added=p.state=="add"})
+            setSource(s,p.it.source)
+            assert(#s.Source==p.it.newLen and fnv(s.Source)==p.it.newHash,"fonte truncada: "..p.it.folder.."."..p.it.name)
+        end
+    end
+    pkg:SetAttribute("NR2003Stage","13");pkg:SetAttribute("NR2003Version","3.12.0-stage13")
+    for _,n in ipairs({"Stage67SelfTest","Stage8SelfTest","Stage9SelfTest","Stage10SelfTest","Stage11SelfTest","Stage12SelfTest","Stage13SelfTest"}) do
+        local ok,r=require(RobloxF[n]).run(false)
+        assert(ok,"self-test "..n.." falhou:\n"..table.concat(r,"\n"))
+    end
+end
+local ok,reason=pcall(apply)
+if not ok then
+    for i=#touched,1,-1 do
+        local t=touched[i]
+        if t.added then t.s:Destroy() else setSource(t.s,t.old) end
+    end
+    pkg:SetAttribute("NR2003Stage",stage);pkg:SetAttribute("NR2003Version",backup:GetAttribute("FromVersion"))
+    if firstInstall then backup:Destroy() end
+    error("Patch Stage 13 revertido (fontes restauradas): "..tostring(reason))
+end
+print("Stage 13 aplicado ("..(firstInstall and "backup: ServerStorage.NR2003Backup_Stage13" or "re-execução: backup anterior mantido")..").")
+print("Force feedback ORIGINAL do NR2003: 00554d30 (estatísticas dos pneus dianteiros, por tick) -> bloco FFB do fim de quadro")
+print("  00554520 (latência / amortecimento / força / relação do setup) -> força constante -1..1 (DirectInput: x10000).")
+print("Padrões da bancada (Core.CupTune.driver): FFB ligado com os valores da imagem (força 80, amortecimento 0, latência 0),")
+print("  dispositivo presente. O efeito só é adquirido com a direção num eixo analógico (gamepad), como no original (0054fed0).")
+print("Atributos do TestCar (no reset, R): ForceFeedback true/false, ForceFeedbackStrength 0..100, ForceFeedbackDamping 0..100,")
+print("  ForceFeedbackLatency 0..250 ms, ForceFeedbackDevice true/false. Saída: FFBForce, FFBMagnitude, FFBActive (atributos).")
+print("O place NÃO foi salvo. Reverter: PATCH_STAGE13_ROLLBACK.lua. Auto-teste completo: require(...Roblox.Stage13SelfTest).run(true)")

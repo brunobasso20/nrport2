@@ -1,0 +1,104 @@
+0054fed0  83ec1c                 sub esp, 0x1c
+0054fed3  8d442403               lea eax, [esp + 3]
+0054fed7  8d4c240c               lea ecx, [esp + 0xc]
+0054fedb  8d542414               lea edx, [esp + 0x14]
+0054fedf  6a07                   push 7
+0054fee1  50                     push eax
+0054fee2  51                     push ecx
+0054fee3  8d442424               lea eax, [esp + 0x24]
+0054fee7  52                     push edx
+0054fee8  8d4c2418               lea ecx, [esp + 0x18]
+0054feec  50                     push eax
+0054feed  8d542418               lea edx, [esp + 0x18]
+0054fef1  51                     push ecx
+0054fef2  52                     push edx
+0054fef3  e8e8b20200             call 0x57b1e0  ; [57b1e0] f32=5.43516379e-22 u32=1c24448b
+0054fef8  8b442420               mov eax, dword ptr [esp + 0x20]
+0054fefc  83c41c                 add esp, 0x1c
+0054feff  83f801                 cmp eax, 1
+0054ff02  0f85c6000000           jne 0x54ffce  ; [54ffce] f32=-0.93255043 u32=bf6ebba0
+0054ff08  8b4c2408               mov ecx, dword ptr [esp + 8]
+0054ff0c  8a01                   mov al, byte ptr [ecx]
+0054ff0e  84c0                   test al, al
+0054ff10  7410                   je 0x54ff22  ; [54ff22] f32=-2.7979455 u32=c033118a
+0054ff12  3c30                   cmp al, 0x30
+0054ff14  7c0c                   jl 0x54ff22  ; [54ff22] f32=-2.7979455 u32=c033118a
+0054ff16  3c39                   cmp al, 0x39
+0054ff18  7f08                   jg 0x54ff22  ; [54ff22] f32=-2.7979455 u32=c033118a
+0054ff1a  8a4101                 mov al, byte ptr [ecx + 1]
+0054ff1d  41                     inc ecx
+0054ff1e  84c0                   test al, al
+0054ff20  75f0                   jne 0x54ff12  ; [54ff12] f32=1.94278888e-31 u32=c7c303c
+0054ff22  8a11                   mov dl, byte ptr [ecx]
+0054ff24  33c0                   xor eax, eax
+0054ff26  80fa3e                 cmp dl, 0x3e
+0054ff29  56                     push esi
+0054ff2a  0f95c0                 setne al
+0054ff2d  8b742410               mov esi, dword ptr [esp + 0x10]
+0054ff31  57                     push edi
+0054ff32  8d4400ff               lea eax, [eax + eax - 1]
+0054ff36  8bf8                   mov edi, eax
+0054ff38  a0bb6ebf00             mov al, byte ptr [0xbf6ebb]  ; [bf6ebb] f32=0 u32=0
+0054ff3d  84c0                   test al, al
+0054ff3f  742e                   je 0x54ff6f  ; [54ff6f] f32=-0.93255043 u32=bf6ebba0
+0054ff41  e83a030000             call 0x550280  ; [550280] f32=-0.934030533 u32=bf6f1ca0
+0054ff46  84c0                   test al, al
+0054ff48  7408                   je 0x54ff52  ; [54ff52] f32=-8.09225677e+35 u32=fb1bd9e8
+0054ff4a  3935bc6ebf00           cmp dword ptr [0xbf6ebc], esi  ; [bf6ebc] f32=0 u32=0
+0054ff50  741d                   je 0x54ff6f  ; [54ff6f] f32=-0.93255043 u32=bf6ebba0
+0054ff52  e8d91bfbff             call 0x501b30  ; [501b30] f32=-0.000115090283 u32=b8f15ca0
+0054ff57  6a00                   push 0
+0054ff59  6a00                   push 0
+0054ff5b  6860005500             push 0x550060  ; [550060] f32=-0.932565749 u32=bf6ebca1
+0054ff60  e83b7a0a00             call 0x5f79a0  ; [5f79a0] f32=1.35884473e-39 u32=ecbe8
+0054ff65  83c40c                 add esp, 0xc
+0054ff68  c605bb6ebf0000         mov byte ptr [0xbf6ebb], 0  ; [bf6ebb] f32=0 u32=0
+0054ff6f  a0bb6ebf00             mov al, byte ptr [0xbf6ebb]  ; [bf6ebb] f32=0 u32=0
+0054ff74  893d5cc97400           mov dword ptr [0x74c95c], edi  ; [74c95c] f32=1.40129846e-45 u32=1
+0054ff7a  8935bc6ebf00           mov dword ptr [0xbf6ebc], esi  ; [bf6ebc] f32=0 u32=0
+0054ff80  5f                     pop edi
+0054ff81  84c0                   test al, al
+0054ff83  5e                     pop esi
+0054ff84  756e                   jne 0x54fff4  ; [54fff4] f32=-156.767624 u32=c31cc483
+0054ff86  e8f5020000             call 0x550280  ; [550280] f32=-0.934030533 u32=bf6f1ca0
+0054ff8b  84c0                   test al, al
+0054ff8d  7465                   je 0x54fff4  ; [54fff4] f32=-156.767624 u32=c31cc483
+0054ff8f  8b0dbc6ebf00           mov ecx, dword ptr [0xbf6ebc]  ; [bf6ebc] f32=0 u32=0
+0054ff95  51                     push ecx
+0054ff96  e885080800             call 0x5d0820  ; [5d0820] f32=-5.39866889e+32 u32=f5d4f0a0
+0054ff9b  83c404                 add esp, 4
+0054ff9e  84c0                   test al, al
+0054ffa0  7452                   je 0x54fff4  ; [54fff4] f32=-156.767624 u32=c31cc483
+0054ffa2  e8891bfbff             call 0x501b30  ; [501b30] f32=-0.000115090283 u32=b8f15ca0
+0054ffa7  8d542410               lea edx, [esp + 0x10]
+0054ffab  6a00                   push 0
+0054ffad  52                     push edx
+0054ffae  6800005500             push 0x550000  ; [550000] f32=-0.932565749 u32=bf6ebca1
+0054ffb3  e8e8790a00             call 0x5f79a0  ; [5f79a0] f32=1.35884473e-39 u32=ecbe8
+0054ffb8  8b44241c               mov eax, dword ptr [esp + 0x1c]
+0054ffbc  83c40c                 add esp, 0xc
+0054ffbf  85c0                   test eax, eax
+0054ffc1  7431                   je 0x54fff4  ; [54fff4] f32=-156.767624 u32=c31cc483
+0054ffc3  c605bb6ebf0001         mov byte ptr [0xbf6ebb], 1  ; [bf6ebb] f32=0 u32=0
+0054ffca  83c41c                 add esp, 0x1c
+0054ffcd  c3                     ret 
+0054ffce  a0bb6ebf00             mov al, byte ptr [0xbf6ebb]  ; [bf6ebb] f32=0 u32=0
+0054ffd3  84c0                   test al, al
+0054ffd5  741d                   je 0x54fff4  ; [54fff4] f32=-156.767624 u32=c31cc483
+0054ffd7  e8541bfbff             call 0x501b30  ; [501b30] f32=-0.000115090283 u32=b8f15ca0
+0054ffdc  6a00                   push 0
+0054ffde  6a00                   push 0
+0054ffe0  6860005500             push 0x550060  ; [550060] f32=-0.932565749 u32=bf6ebca1
+0054ffe5  e8b6790a00             call 0x5f79a0  ; [5f79a0] f32=1.35884473e-39 u32=ecbe8
+0054ffea  83c40c                 add esp, 0xc
+0054ffed  c605bb6ebf0000         mov byte ptr [0xbf6ebb], 0  ; [bf6ebb] f32=0 u32=0
+0054fff4  83c41c                 add esp, 0x1c
+0054fff7  c3                     ret 
+0054fff8  90                     nop 
+0054fff9  90                     nop 
+0054fffa  90                     nop 
+0054fffb  90                     nop 
+0054fffc  90                     nop 
+0054fffd  90                     nop 
+0054fffe  90                     nop 
+0054ffff  90                     nop 

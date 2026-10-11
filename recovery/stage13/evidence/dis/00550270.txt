@@ -1,0 +1,70 @@
+00550270  8a442404               mov al, byte ptr [esp + 4]
+00550274  a21c6fbf00             mov byte ptr [0xbf6f1c], al  ; [bf6f1c] f32=0 u32=0
+00550279  c3                     ret 
+0055027a  90                     nop 
+0055027b  90                     nop 
+0055027c  90                     nop 
+0055027d  90                     nop 
+0055027e  90                     nop 
+0055027f  90                     nop 
+00550280  a01c6fbf00             mov al, byte ptr [0xbf6f1c]  ; [bf6f1c] f32=0 u32=0
+00550285  c3                     ret 
+00550286  90                     nop 
+00550287  90                     nop 
+00550288  90                     nop 
+00550289  90                     nop 
+0055028a  90                     nop 
+0055028b  90                     nop 
+0055028c  90                     nop 
+0055028d  90                     nop 
+0055028e  90                     nop 
+0055028f  90                     nop 
+00550290  8b442404               mov eax, dword ptr [esp + 4]
+00550294  a3a4c97400             mov dword ptr [0x74c9a4], eax  ; [74c9a4] f32=80 u32=42a00000
+00550299  c3                     ret 
+0055029a  90                     nop 
+0055029b  90                     nop 
+0055029c  90                     nop 
+0055029d  90                     nop 
+0055029e  90                     nop 
+0055029f  90                     nop 
+005502a0  d905a4c97400           fld dword ptr [0x74c9a4]  ; [74c9a4] f32=80 u32=42a00000
+005502a6  c3                     ret 
+005502a7  90                     nop 
+005502a8  90                     nop 
+005502a9  90                     nop 
+005502aa  90                     nop 
+005502ab  90                     nop 
+005502ac  90                     nop 
+005502ad  90                     nop 
+005502ae  90                     nop 
+005502af  90                     nop 
+005502b0  8b442404               mov eax, dword ptr [esp + 4]
+005502b4  a3206fbf00             mov dword ptr [0xbf6f20], eax  ; [bf6f20] f32=0 u32=0
+005502b9  c3                     ret 
+005502ba  90                     nop 
+005502bb  90                     nop 
+005502bc  90                     nop 
+005502bd  90                     nop 
+005502be  90                     nop 
+005502bf  90                     nop 
+005502c0  d905206fbf00           fld dword ptr [0xbf6f20]  ; [bf6f20] f32=0 u32=0
+005502c6  c3                     ret 
+005502c7  90                     nop 
+005502c8  90                     nop 
+005502c9  90                     nop 
+005502ca  90                     nop 
+005502cb  90                     nop 
+005502cc  90                     nop 
+005502cd  90                     nop 
+005502ce  90                     nop 
+005502cf  90                     nop 
+005502d0  8b442404               mov eax, dword ptr [esp + 4]
+005502d4  a3246fbf00             mov dword ptr [0xbf6f24], eax  ; [bf6f24] f32=0 u32=0
+005502d9  c3                     ret 
+005502da  90                     nop 
+005502db  90                     nop 
+005502dc  90                     nop 
+005502dd  90                     nop 
+005502de  90                     nop 
+005502df  90                     nop 
