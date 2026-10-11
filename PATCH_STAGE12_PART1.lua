@@ -93,14 +93,20 @@ return function(V)
 		local prev = rf32(0xbf639c + 4 * ecx)
 		local v
 		if raw <= prev or raw ~= raw or prev ~= prev then -- AND 0x4100; JNZ
-			v = prev - rate -- FSUBR
+			v = zsub(prev, rate) -- FSUBR (Stage 12 C2: an exact-zero step is -0 under RC-down, stored 80000000)
 			if not (v >= raw or v ~= v or raw ~= raw) then v = raw end -- TEST AH,5; JP keep
 		else
 			v = rate + prev -- FADD
 			if not (v <= raw or v ~= v or raw ~= raw) then v = raw end -- AND 0x4100; JNZ keep
 		end
 		wf32d(0xbf639c + 4 * ecx, v) -- FST dword (state), ST0 keeps the x87 value
-		if edx == 0 then v = math.sin(v * rf64(0x6f5a00)) end -- steering axes only
+		if edx == 0 then -- steering axes only: FMUL 1.570796326793946 (9.5e-13 below pi/2); FSIN
+			-- Stage 12 C2: for a state of exactly 1.0 the x87 FSIN under RC-down returns 1 - 2^-64 (the true value is
+			-- 1 - 4.5e-25; hardware-verified, recovery/stage12/evidence/reports/verify-input.md), stored as 3f7fffff; double
+			-- sin gives 1.0. 1 - 2^-53 reproduces every stored result (f32 store, a8 - a7 with the other control).
+			-- Every other f32 state gives the same stored f32 as the x87 (exhaustive scan).
+			if v == 1 then v = 1 - 2 ^ -53 else v = math.sin(v * rf64(0x6f5a00)) end
+		end
 		return v
 	end
 
@@ -1986,7 +1992,7 @@ return function(V)
 	V.steerAssistOriginal = assist      -- 00550230
 
 	---------------------------------------------------------------------------------------------------------
-	-- driver options (simulation-side setters reached through the front-end messages, table 00752540)
+	-- driver options (simulation-side setters reached through the front-end messages: table 00752370, dispatcher 005bad80 drained on the simulation task)
 	---------------------------------------------------------------------------------------------------------
 	-- 005502f0: linearity bf6f00 = clamp(x, 0, 1)
 	local function setLinearityRaw(x)

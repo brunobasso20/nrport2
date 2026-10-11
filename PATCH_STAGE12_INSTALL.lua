@@ -48,8 +48,8 @@ local function edit(folder,name,oldLine,newLine,oldLen,oldHash,newLen,newHash)
     EDITS[#EDITS+1]={folder=folder,name=name,oldLine=oldLine,newLine=newLine,oldLen=oldLen,oldHash=oldHash,newLen=newLen,newHash=newHash}
 end
 do local s=assert(staging:FindFirstChild("NR2003Cup.NR2003CupDriver"),"fonte NR2003Cup.NR2003CupDriver ausente: cole de novo as partes")
-    assert(#s.Source==24430,"fonte NR2003Cup.NR2003CupDriver incompleta: cole de novo as partes")
-    item("NR2003Cup","NR2003CupDriver","ModuleScript",22394,857451009,24430,3703462688,s.Source) end
+    assert(#s.Source==25020,"fonte NR2003Cup.NR2003CupDriver incompleta: cole de novo as partes")
+    item("NR2003Cup","NR2003CupDriver","ModuleScript",22394,857451009,25020,1689364345,s.Source) end
 do local s=assert(staging:FindFirstChild("Core.NR2003CupVehicle"),"fonte Core.NR2003CupVehicle ausente: cole de novo as partes")
     assert(#s.Source==9070,"fonte Core.NR2003CupVehicle incompleta: cole de novo as partes")
     item("Core","NR2003CupVehicle","ModuleScript",7925,3736862230,9070,588044759,s.Source) end
@@ -72,11 +72,11 @@ do local s=assert(staging:FindFirstChild("Client.NR2003Client"),"fonte Client.NR
     assert(#s.Source==15936,"fonte Client.NR2003Client incompleta: cole de novo as partes")
     item("Client","NR2003Client","LocalScript",14210,2653526811,15936,3687068143,s.Source) end
 do local s=assert(staging:FindFirstChild("NR2003Cup.NR2003CupSteering"),"fonte NR2003Cup.NR2003CupSteering ausente: cole de novo as partes")
-    assert(#s.Source==19023,"fonte NR2003Cup.NR2003CupSteering incompleta: cole de novo as partes")
-    item("NR2003Cup","NR2003CupSteering","ModuleScript",nil,nil,19023,260751823,s.Source) end
+    assert(#s.Source==19075,"fonte NR2003Cup.NR2003CupSteering incompleta: cole de novo as partes")
+    item("NR2003Cup","NR2003CupSteering","ModuleScript",nil,nil,19075,2934930772,s.Source) end
 do local s=assert(staging:FindFirstChild("Roblox.Stage12SelfTest"),"fonte Roblox.Stage12SelfTest ausente: cole de novo as partes")
-    assert(#s.Source==191054,"fonte Roblox.Stage12SelfTest incompleta: cole de novo as partes")
-    item("Roblox","Stage12SelfTest","ModuleScript",nil,nil,191054,3549153851,s.Source) end
+    assert(#s.Source==191114,"fonte Roblox.Stage12SelfTest incompleta: cole de novo as partes")
+    item("Roblox","Stage12SelfTest","ModuleScript",nil,nil,191114,1712048471,s.Source) end
 edit("Roblox","Stage67SelfTest",[=[
 if V.setRuntimeMode then V.setRuntimeMode("frozen") end]=],[=[
 if V.setRuntimeMode then V.setRuntimeMode("frozen") end if V.setSteeringMode then V.setSteeringMode("provisional") end]=],60457,511586509,60520,2889733461)
