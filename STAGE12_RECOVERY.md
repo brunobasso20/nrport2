@@ -6,7 +6,7 @@ read-only project of NR2003.exe), the exe memory image (`NR2003_MEM`) and Unicor
 the port is `core/NR2003Cup/NR2003CupSteering.lua` (+ Stage 12 lines in `NR2003CupDriver.lua`). Evidence:
 `recovery/stage12/evidence/` (`ev1..ev14`: pseudo-C + asm with constants of the recovered steering functions, `FUNCS.txt` per
 export; the message dispatcher / handlers, `004233a0`, `005beac0` and the FFB functions are documented in the `reports/`
-evidence lists or in earlier stages' evidence; `funcs_*.tsv` function lists; `reports/` five research reports — bit25, ffbinterface, hubgeometry, setupitems, uiconv — with their own evidence lists). State map:
+evidence lists or in earlier stages' evidence; `funcs_*.tsv` function lists; `reports/` seven research / review reports — bit25, drawchain, ffbinterface, hubgeometry, setupitems, uiconv, verify-input — with their own evidence lists). State map:
 `STAGE12_STEERING_STATE_MAP.md`. Validation: `STAGE12_VALIDATION.md`.
 
 Force feedback / steering torque is **Stage 13**: `00554d30`, `bf6ec4..bf6ef0` and the FFB block of `00554520` were
@@ -64,7 +64,7 @@ draw (005662d0 / 00565cc0): steering wheel = clamp(-(00554fb0() * car[0x1554]), 
 | `005502f0` / `005500c0` / `00550110` / `00550210` | option setters (linearity, momentum, low-speed override, steering assistance; `00550120` = braking help `bf6f04`, not steering) reached through the front-end messages 0x48 linearity, 0x49 steering momentum, 0x4c low-speed override ("BoostSteering"), 0x51 steering help (table `00752370`, dispatcher `005bad80` drained by `005f8ec0` on the simulation task under CW 0x077f; handlers `005bb010..005bb130`) | `setLinearityRaw`, `setMomentum`, `applyOptions` | EXACT (assistance > 0 refused) |
 | `0043f1d0` | controls.cfg load (front-end task): linearity = `FILD [894d40]` (file field) `· 0.01f` (f32 `0x3c23d70a`) → `00570f20` (message 0x48); momentum ints (steering / throttle / brake) → (float)int → messages 0x49..0x4b → `005500c0`; override byte → message 0x4c. UI variables: linearity slider `72c5f0` (shows 100 − value, default 80), momentum sliders `894e18 / 1c / 20` | `setSteeringOptions{linearity, momentum}` (UI-thread f32 rounding to nearest) | EXACT |
 | `00550530` | steering state reset (callers `00550490`, `00550a10`, `00551520`) | image restore in `V.reset` | EXACT (same cells) |
-| `005662d0` / `00565cc0` | cockpit / car-model steering-wheel angle | `V.steeringWheelAngle` | EXACT formula |
+| `005662d0` / `00565cc0` | cockpit / car-model steering-wheel angle; input = draw record `+0xbc` gathered from `car+0x1554` by `00565880` and interpolated by `005ba170`; node `steer` rolled only for the focus car in cockpit / LookLeft / LookRight, else the 3do `timeValue` (`reports/drawchain.md`) | `V.steeringWheelAngle` (current frame, every view) | EXACT formula; ROBLOX ADAPTER presentation |
 | `00551990` | car snapshot (`car[0x1554]` mean front steer) | Stage 11 lift (frame end) | EXACT |
 | `005beac0` | replay / network quantisation of `bf6360` (`e0b6dc`) | — | NOT PORTED (no replay) |
 
@@ -128,7 +128,12 @@ draw (005662d0 / 00565cc0): steering wheel = clamp(-(00554fb0() * car[0x1554]), 
   the same way (`zadd` / `zsub`); see change record C1 in `STAGE12_RESULT.md`.
 - `exp(−0.000493827 v²)` is `FLDL2E / FMUL / FRNDINT (RC down = floor) / F2XM1 / FSCALE`; the port uses the lifter
   convention `exp2` (Stage 6/7). `00552d00` uses `FSIN`; Unicorn (QEMU) computes FSIN / F2XM1 with host doubles, the
-  same model as the port — all 1200 + 3872 vectors bit-exact on the stored f32.
+  same model as the port — all 1212 + 3872 vectors bit-exact on the stored f32 (the one hardware difference, a state of
+  exactly 1.0, is C2).
+- `FSIN` of a slew state of exactly 1.0 is `1 − 2⁻⁶⁴` on the x87 (RC down) but 1.0 in double and in Unicorn (QEMU uses the
+  host's double `sin` for FSIN / F2XM1): change record C2 (port `1 − 2⁻⁵³`, reference hook `orig_stage12._fsin_fix`); the
+  remaining double-model differences (D3 cancellation of `a8 − a7`, D5 sum of squares of `00554f50`) are documented in
+  `STAGE12_RESULT.md` / `STAGE12_VALIDATION.md` § 7.
 - `_CIpow` (`006c5c40`) and `_ftol` are SecuROM-encrypted in the memory image: the reference executes
   `POW_X87` (FYL2X / F2XM1 / FSCALE), the port `x ^ y`; the 2100 tail vectors are bit-exact on `bf63c0`.
 - Front-end payloads (linearity `int · 0.01f`) are built on the UI thread (CW `0x027f`, round to nearest):

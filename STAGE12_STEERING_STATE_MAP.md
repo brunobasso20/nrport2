@@ -27,7 +27,7 @@ control 8 = steer right.** Sign convention of the simulation: road-wheel target 
 
 | State | Original storage | Units | Init / reset | Update | Consumers | Cup / image value | Status / validation |
 |---|---|---|---|---|---|---|---|
-| slew state, control 7 / 8 | `0xbf639c` / `0xbf63a0` | 0..1 | image 0; `00550530` zeroes | `00552d00(n)`: moves toward the raw value by `rate` per frame (`rate · 2.5` when raw < 0.025); output `sin(state · 1.570796326793946)` when rate < 1, raw value (no sine) when rate ≥ 1 | `00552720` | 0 | EXACT (Stage 8 hand port `V.axisOriginal`, steering index 0) · L1 1200 vectors · L2 |
+| slew state, control 7 / 8 | `0xbf639c` / `0xbf63a0` | 0..1 | image 0; `00550530` zeroes | `00552d00(n)`: moves toward the raw value by `rate` per frame (`rate · 2.5` when raw < 0.025); output `sin(state · 1.570796326793946)` when rate < 1, raw value (no sine) when rate ≥ 1 | `00552720` | 0 | EXACT (Stage 8 hand port `V.axisOriginal`, steering index 0) · L1 1212 vectors · L2 |
 | steering rate ("momentum") | `0x74c990` (index 0; throttle `0x74c994`, brake `0x74c998`) | per frame | image **0.033**; setter `005500c0(0, m)`: `m·0.01 == 0 → 1.0`, else `fd((1/(m·0.01))·0.016663333999866692)` | option message | `00552d00` | 0.033 (no controls.cfg) | EXACT · L1 setters 101 vectors |
 | release factor | `0x74c99c` | — | image 2.5 (constant) | — | `00552d00` (raw < 0.025) | 2.5 | EXACT |
 | linearity `L` | `0xbf6f00` | 0..1 | image **0**; setter `005502f0`: clamp(x, 0, 1), NaN → 1 | controls.cfg load `0043f1d0`: (float)int · 0.01f, int 0..100 (slider shows 100 − value) | `00552410` | 0 (no controls.cfg) | EXACT · L1 linRaw 10 + linUI 101 vectors |
@@ -37,7 +37,7 @@ control 8 = steer right.** Sign convention of the simulation: road-wheel target 
 | hardcore driving aids | `S+0x4c` bit 29 | bool | player.ini `hardcoreMode` (multiplayer only) | — | `00550130/80/d0/230` return 0 | 0 | EXACT (read by `assist()`) |
 | vehicle speed `v` | `0xbf6f44` (cache, f32) | m/s | — | `00554f50`: √(vz² + vy² + vx²) of the exported states `bf6d54 / bf6d4c / bf6d44` | `00552720`, `00554fb0` | — | EXACT · L1 |
 | chassis yaw rate | `0xbf6d70` (exported state 12) | rad/s | solver | Stage 6 export | `00552720` (absolute value) | — | EXACT (Stage 6) |
-| processed input | `0xbf63c8` | −1..1 | image 0; not-driven branch writes 0 | `00552720`: `x = fd((fd(axis 8) − axis 7) · sens)`, `sens = fd((1 − 0.15 L) + 0.15 L · fd(exp(−0.000493827 · v²)))` (`v ≥ 0.01`); arcade: `x = fd(x · limiter)`, `limiter = fd(min(12.25 / v, f) / f · 0.9 + 0.1)`, `f = max(|r|, 0.01)` | `00551e80` tail | — | EXACT · L1 3872 vectors + 120-frame key sequence · L2 |
+| processed input | `0xbf63c8` | −1..1 | image 0; not-driven branch writes 0 | `00552720`: `x = fd((fd(axis 8) − axis 7) · sens)`, `sens = fd((1 − 0.15 L) + 0.15 L · fd(exp(−0.000493827 · v²)))` (`v ≥ 0.01`); arcade: `x = fd(x · limiter)`, `limiter = fd(min(12.25 / v, f) / f · 0.9 + 0.1)`, `f = max(|r|, 0.01)` | `00551e80` tail | — | EXACT · L1 3872 vectors + 400-frame key sequence · L2 |
 | not-driven cells | `bf63c8 bf6f14 74c98c bf6388 bf6e84 bf63bc bf638c bf6390` = 0, `bf6eac` = 1.0 | — | — | `005524f0` when the car is not driven (adapter: no seated driver) | — | — | EXACT · scenario `notdriven` (L2 / L3 / L4). `00550640` (called when `0055a5c0() ≠ 3`) runs in neither the reference nor the port |
 | assistance filter states | `bf6388 bf6e84 bf63bc bf638c` | — | zeroed | only in the assistance branch | — | 0 | NOT PORTED (assistance refused) |
 
@@ -71,8 +71,8 @@ Not steering, documented: the head of `00551e80` (`bf6f28` / `bf6f2c`) is an off
 
 | State | Original storage | Units | Update | Consumers | Status |
 |---|---|---|---|---|---|
-| car snapshot steer | `C + 0x1554` (`0x00c13584`) | rad | `00551990` (Stage 11 frame end): `(state15 + state21) · 0.5` | draw state copy `car[0x1498..0x1594]` → `005662d0` | EXACT (Stage 11 lift) |
-| cockpit steering-wheel angle | — (draw) | rad, + clockwise (right turn) | `005662d0` (also `00565cc0`): `clamp(−(00554fb0() · car[0x1554]), ±2.79)` | cockpit model | EXACT formula · `V.steeringWheelAngle()` → `Cockpit.updateAngle` / render snapshot `steer` (flag `FLAG_WHEEL_ANGLE`) |
+| car snapshot steer | `C + 0x1554` (`0x00c13584`) | rad | `00551990` (Stage 11 frame end): `(state15 + state21) · 0.5` | draw record: `00565880` gathers car fields into the snapshot slot `drawobj + 0xf8 + idx·0xfc` (`005ba150`), slot `+0xbc` ← `car+0x1554` (`00565a7d`); render interpolation `005ba170` → `drawobj+0x2f0` (`+0xbc` = lerp(prev, cur, t) wrapped to ±π) → `005662d0` | EXACT (Stage 11 lift; the draw gather / interpolation is presentation, not ported: the adapter reads `car+0x1554` of the current frame) |
+| cockpit steering-wheel angle | — (draw) | rad, + clockwise (right turn) | `005662d0` (also `00565cc0`): `clamp(−(00554fb0() · car[0x1554]), ±2.79)` | original: roll of the model node `steer` (rest heading / pitch kept) only for the focus car in the cockpit / LookLeft / LookRight cameras; otherwise only the 3do variable `timeValue = 10·max(0, trunc(deg(a) + 160.355))`; the front wheels show the mean angle | EXACT formula · `V.steeringWheelAngle()` → `Cockpit.updateAngle` / render snapshot `steer` (flag `FLAG_WHEEL_ANGLE`); Roblox rotates the cockpit wheel in every view (ROBLOX ADAPTER presentation choice; `reports/drawchain.md`) |
 | replay / network steer | packet field from `bf6360` quantised by `005beac0(e0b6dc)` | — | replay recorder | replay | NOT PORTED (no replay) |
 
 ## 6. Force feedback (Stage 13 interface, not implemented)

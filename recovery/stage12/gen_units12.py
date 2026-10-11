@@ -83,6 +83,13 @@ def units():
                         setup_axis(m, n, raw, dig, prev, rate)
                         v = O.call_x80(m, O.AXISSTUB, n)
                         ax.append([n, f32b(raw), dig, f32b(prev), f32b(rate)] + xval(v) + [m.u32(0xbf639c + 4 * (0 if n == 7 else 1))])
+    # exact-zero slew steps (raw 0 < 0.025 -> rate * 2.5 == state): -0 under RC-down (C2)
+    for n in (7, 8):
+        for prev, rate in ((0.625, 0.25), (0.3125, 0.125), (2.5, 1.0 - 2 ** -24)):
+            for dig in (True, False):
+                setup_axis(m, n, 0.0, dig, prev, rate)
+                v = O.call_x80(m, O.AXISSTUB, n)
+                ax.append([n, f32b(0.0), dig, f32b(prev), f32b(rate)] + xval(v) + [m.u32(0xbf639c + 4 * (0 if n == 7 else 1))])
     m.wf(0x74c990, base_rate)
     out['axis'] = ax
     # ---------------------------------------------------------------------------------------- input 00552720
@@ -104,15 +111,21 @@ def units():
                         m.w32(O.CTRL_TYPE + 29 * 7, 1); m.w32(O.CTRL_TYPE + 29 * 8, 1)
                         m.call(O.STEERSTUB)
                         inp.append([f32b(v), f32b(yaw), f32b(L), b25, f32b(u), 1, m.u32(0xbf63c8)])
-    # slewed keyboard subset (rate = image value 0.033): a key held for 1..40 frames then released, speed 3 / 30 m/s
+    # slewed keyboard subset (rate = image value 0.033), speed 3 / 30 m/s: left 0-19, right 20-39, release 40-59; then
+    # full holds (state 1.0: the x87 FSIN value 1 - 2^-64, C2): left 60-99, right 100-139, both 140-179, release 180-199
     m.w32(O.SETTINGS + 0x4c, s25_0); m.wf(0xbf6f00, 0.0); m.wf(0x74c990, base_rate)
     seq = []
     for v in (3.0, 30.0):
         m.wf(0xbf639c, 0.0); m.wf(0xbf63a0, 0.0)
-        for k in range(60):
-            key = 1.0 if k < 40 else 0.0
+        for k in range(200):
+            if k < 60:
+                key = 1.0 if k < 40 else 0.0
+                left, right = (key if (k // 20) % 2 == 0 else 0.0), (key if (k // 20) % 2 == 1 else 0.0)
+            else:
+                left = 1.0 if (60 <= k < 100 or 140 <= k < 180) else 0.0
+                right = 1.0 if 100 <= k < 180 else 0.0
             O.speed_state(m, v, 0.1)
-            m.wf(O.CTRL_RAW + 70, key if (k // 20) % 2 == 0 else 0.0); m.wf(O.CTRL_RAW + 80, key if (k // 20) % 2 == 1 else 0.0)
+            m.wf(O.CTRL_RAW + 70, left); m.wf(O.CTRL_RAW + 80, right)
             m.w32(O.CTRL_TYPE + 29 * 7, 0); m.w32(O.CTRL_TYPE + 29 * 8, 0)
             m.call(O.STEERSTUB)
             seq.append([f32b(v), m.u32(O.CTRL_RAW + 70), m.u32(O.CTRL_RAW + 80), m.u32(0xbf63c8), m.u32(0xbf639c), m.u32(0xbf63a0)])

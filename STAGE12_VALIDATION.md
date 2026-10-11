@@ -15,9 +15,9 @@ test. What did not pass at first, and why, is in § 4 (two L4 scenarios) — not
 
 | Level | Check | Result |
 |---|---|---|
-| L1 functions | `00552d00` steering axes: 1200 vectors (raw × slew state × rate × binding) | stored state and f32 of the x87 value **bit-exact**; x87 value ≤ 4 double ulp (worst 0.99 ulp) |
+| L1 functions | `00552d00` steering axes: 1212 vectors (raw × slew state × rate × binding + 12 exact-zero slew steps, C2) | stored state and f32 of the x87 value **bit-exact**; x87 value ≤ 4 double ulp (worst 0.99 ulp) |
 | | `00552720` processed input: 3872 vectors (11 inputs −1..1 × speed × yaw rate × linearity × arcade bit) | **bit-exact** (3872 / 3872) |
-| | keyboard sequence: 120 frames of `00552720` (key held, released, other key; slew 0.033, release × 2.5, sine) | **bit-exact** |
+| | keyboard sequence: 400 frames of `00552720` (keys held / released / other key, full holds at state 1.0, both keys; slew 0.033, release × 2.5, sine) | **bit-exact**, except 6 of 44 `a8 − a7` cancellation frames (|x| < 2⁻²⁰) that differ by ≤ 4·2⁻⁵³ absolute (D3, § 7) |
 | | `00554fb0` ratio: 192 vectors (speed at / ±1 ulp around 8.94 and 17.88 m/s × setup ratio 6.5..32 × override) | f32 **bit-exact**, x87 value ≤ 2 double ulp (worst 0.00) |
 | | `00551e80` tail (`−bf63c8`, `_CIpow` linearity, × π, ÷ ratio, `bf63b8 / bf6e80 / bf6e88`): 2100 vectors | **bit-exact** |
 | | option setters `005502f0 / 005500c0 / 00550110 / 00550210` + controls.cfg conversion of `0043f1d0`: 215 vectors | **bit-exact** |
@@ -57,8 +57,8 @@ test. What did not pass at first, and why, is in § 4 (two L4 scenarios) — not
 | Element | Original code | Evidence | Status |
 |---|---|---|---|
 | Device layer / bindings | `0057abc0` (host) | L2 host-write cells identical; adapter mock (keys, analog, legacy) | ADAPTER (validated boundary) |
-| Slew + sine | `00552d00` | L1 1200 vectors; L2 | EXACT |
-| Processed input | `00552720`, `00552410`, `00550230`, `0055a770`, `00554f50` | L1 3872 + 120-frame sequence; L2; L4 | EXACT (assistance > 0 NOT PORTED) |
+| Slew + sine | `00552d00` | L1 1212 vectors; L2 | EXACT (C2) |
+| Processed input | `00552720`, `00552410`, `00550230`, `0055a770`, `00554f50` | L1 3872 + 400-frame sequence; L2; L4 | EXACT (assistance > 0 NOT PORTED) |
 | Linearity, × π, target, ramps | `00551e80` tail, `005524b0` | L1 2100; L2 bit-exact incl. the sign of zero (C1); L5 | EXACT |
 | Steering ratio + low-speed override | `00554fb0`, item 0x30 | L1 192 (thresholds ±1 ulp); `ratio12` / `ratio32` / `parking`; L5 mutations 3 and 4 | EXACT |
 | Per-tick ramp, toe, hub coordinates | `005539c0`, `005b2b90` | L3 47 restarts; L4 hub / wheel yaw fields | EXACT |
@@ -116,7 +116,25 @@ once; re-run without duplicates; verified rollback (sources restored and hashed,
 self-test); automatic revert when a self-test fails; split install (parts + INSTALL) = single file; `SavePlace` never
 called by the patch, the parts, INSTALL or ROLLBACK.
 
-## 7. Not executed / open
+## 7. Independent review of the port against the x86 on the hardware (`evidence/reports/verify-input.md`)
+
+A line-by-line review with a three-way differential (the ORIGINAL code natively on this machine's x87 under CW 0x077f,
+Unicorn, Luau) found what the Unicorn reference cannot show:
+
+| Id | Finding | Action |
+|---|---|---|
+| D1 | `FSIN` of a slew state of exactly 1.0 is `1 − 2⁻⁶⁴` on the x87 (RC down), 1.0 in Unicorn (host double) and in the port: full right lock stored `3f800000` instead of `3f7fffff`, both keys at full lock `80000000` instead of `b3800000` | **fixed** (C2, `STAGE12_RESULT.md`): port `1 − 2⁻⁵³`; reference corrected by a hook at the `FSIN` (`orig_stage12._fsin_fix`); units and all 10 scenario fixtures regenerated; new L1 frames (full holds, both keys) |
+| D2 | exact-zero slew step `state − 2.5·rate = 0` is −0 (hardware **and** Unicorn), +0 in the port | **fixed** (C2: `zsub`); 12 new L1 vectors |
+| D3 | `a8 − a7` cancellation exposes the last bits of the extended `FSIN` (also hardware ≠ Unicorn) | documented numeric difference; L1 counts these frames and bounds them by 4·2⁻⁵³ |
+| D5 | `00554f50` sum of squares in 64-bit RD vs double RN: rare 1-ulp difference of the speed cache | documented numeric difference (~1e−9 per call) |
+| D4 | binding type 0 for keys (original 2 / 4); only reader tests `≠ 1` | cosmetic, documented |
+
+The draw-chain review (`evidence/reports/drawchain.md`) confirmed the cockpit formula and corrected the description of
+the draw record (field gather `00565880`, interpolation `005ba170`; `STAGE12_STEERING_STATE_MAP.md` § 5). Two further
+code-review passes (the `00551e80` tail and the integration) did not complete (usage limits); the same code is covered
+by L1 (2100 tail vectors bit-exact), L2 (1481 snapshots bit-exact) and L3.
+
+## 8. Not executed / open
 
 - **Manual Roblox Studio validation** (15 items in `VALIDACAO.md`) — not executed here (no Studio in this environment).
 - Steering assistance > 0 and the arcade mode in production: refused, not validated beyond the bit-25 branch.

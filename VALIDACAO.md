@@ -20,7 +20,7 @@ o mock do adaptador e os mocks dos 6 patches). Método e tolerâncias: **`STAGE1
 
 | Verificação | Resultado |
 |---|---|
-| L1: `00552d00` (1200), `00552720` (3872 + sequência de 120 quadros), `00554fb0` (192), cauda `00551e80` (2100), setters (215) | PASS — bit a bit |
+| L1: `00552d00` (1212), `00552720` (3872 + sequência de 400 quadros), `00554fb0` (192), cauda `00551e80` (2100), setters (215) | PASS — bit a bit (6 quadros de cancelamento `a8 − a7` dentro de 4·2⁻⁵³, D3) |
 | L2: 1481 snapshots de início de quadro em 10 cenários | PASS — 174 384 / 174 384 dwords bit a bit, 0 escritas extras |
 | L3: 47 reinícios de estado completo | PASS — 0 células / 0 campos fora do envelope de um quadro |
 | L4: 10 cenários, 194 s, 771 linhas × 35 campos | PASS — no envelope de 14 gêmeos; horizonte documentado `notdriven` 297 (reinício reverso) |
@@ -174,7 +174,7 @@ Executada nesta máquina com Luau CLI (codegen nativo), Python 3 + Unicorn 2.1.4
 | 8 setups nomeados: estrutura, pool, literais, fim do código | PASS — = original (1 natural, 7 genéricos) |
 | 8 setups nomeados: imagem reconstruída vs build original | PASS — 0 diferenças exatas; células do solve ≤ 6,7e−5 |
 | Padrão reconstruído em Luau vs imagem entregue | PASS — 0 diferenças exatas; 528 células do solve ≤ 1,3e−7 |
-| `applySetup(padrão)` restaura a imagem | PASS — bit a bit |
+| `applySetup(padrão)` restaura a imagem | PASS — bit a bit (6 quadros de cancelamento `a8 − a7` dentro de 4·2⁻⁵³, D3) |
 | 184 builds de item (mín/máx/±1 de cada item ajustável) | PASS — 114 naturais + 70 genéricos = original (hash exato + células do solve ≤ 6,4e−4) |
 | 9 corridas de 8 s (driver) vs build natural ORIGINAL de cada setup | PASS — ticks 1–8 ≤ 4,7e−7; chassi no envelope; marchas idênticas |
 | Resposta ao setup (x, vx após 8 s; z assentado) vs padrão | PASS — 24 sondas com o sinal/tamanho do original |
@@ -369,7 +369,7 @@ Executada nesta máquina com Luau CLI (codegen nativo), Python 3.14 + Unicorn 2.
 | Quase parado: para e fica parado após soltar (hold) | PASS |
 | Sem piloto: pedal exatamente 1,0 | PASS |
 | `setBrakeBias` 74/60 = células do rebuild original | PASS |
-| Checkpoint/restore com travamento | PASS — bit a bit |
+| Checkpoint/restore com travamento | PASS — bit a bit (6 quadros de cancelamento `a8 − a7` dentro de 4·2⁻⁵³, D3) |
 | Regressão Stage 6/7 | PASS — 16/16, números idênticos ao pacote 3.6.0 |
 | Adaptador sob mock (inclui 10 checks de freio + auto-testes 6/7 e 8 rápido/completo) | PASS — 28/28 |
 | `PATCH_STAGE8.lua` em DataModel simulado (6/7 → 8, módulos gerados intactos, backup, reversão forçada, recusa sem 6/7) | PASS — 13/13 |
@@ -411,7 +411,7 @@ Executada com Luau CLI (codegen nativo) e Python/Unicorn. Saída completa: `test
 | 2304 ticks (8 s) dentro do envelope do original | PASS — `raw`: x final Luau 102,816 m, original 102,799, pert 102,825; `drive`: 46,368 / 46,336 / 46,366 |
 | Sequência de marchas (00553d70) | PASS — 0 divergências, chega à 4ª |
 | Limitador | PASS — corta aceleração, pico 9385 rpm (limite 9300 + histerese) |
-| Checkpoint/restore | PASS — bit a bit |
+| Checkpoint/restore | PASS — bit a bit (6 quadros de cancelamento `a8 − a7` dentro de 4·2⁻⁵³, D3) |
 | Provedor de contato por função / leituras de estado | PASS — sem efeitos colaterais |
 | Pose dos registros vs estado/quaternion | PASS |
 | Rodas sobre os pontos de contato, cargas | PASS — altura do centro 0,349–0,356 m, cargas 3,2–4,6 kN |

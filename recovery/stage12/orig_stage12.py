@@ -71,9 +71,31 @@ def _stubs():
 
 # the stubs are written right after boot (Unicorn keeps translated blocks: code must not be rewritten after it ran)
 _boot11 = _OR.boot
+
+
+def _fsin_fix(m):
+    """x87 FSIN correction of the reference (Stage 12 C2): QEMU evaluates FSIN with the host's double sin, so
+    FSIN(1.570796326793946 * 1.0) = 1.0, while the x87 under RC = down returns the correctly rounded-down 1 - 2^-64 (true
+    value 1 - 4.5e-25; verified natively on the hardware: recovery/stage12/evidence/reports/verify-input.md). The FSIN of
+    the steering axes in 00552d00 (@00552dd4) is the only FSIN of the chain; a slew state of 1.0 is the only f32 input
+    whose stored result differs. Armed at the FSIN, applied at the following RET (other paths also reach that RET)."""
+    from unicorn import UC_HOOK_CODE
+    from unicorn.x86_const import UC_X86_REG_FPSW, UC_X86_REG_FP0
+    armed = [False]
+    def cb(uc, addr, size, user):
+        if addr == 0x552dd4: armed[0] = True; return
+        if addr == 0x552dd6 and armed[0]:
+            armed[0] = False
+            top = (uc.reg_read(UC_X86_REG_FPSW) >> 11) & 7
+            if uc.reg_read(UC_X86_REG_FP0 + top) == (1 << 63, 0x3fff):
+                uc.reg_write(UC_X86_REG_FP0 + top, ((1 << 64) - 1, 0x3ffe))
+    m.uc.hook_add(UC_HOOK_CODE, cb, begin=0x552dd4, end=0x552dd6)
+
+
 def _boot_stage12(*a, **k):
     m = _boot11(*a, **k)
     for a_, code in _stubs().items(): m.uc.mem_write(a_, code)
+    _fsin_fix(m)
     return m
 _OR.boot = _boot_stage12
 

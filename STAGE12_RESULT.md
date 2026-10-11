@@ -35,7 +35,7 @@ inclinação 9,215°; guinada da roda ≈ 0,99 × ângulo do cubo; LF−RF 0,007
 |---|---|
 | **EXACT ORIGINAL** (bit a bit contra o original executado) | `00552d00`, `00552720` (ramos simulação e arcade), `00552410`, `00550230`, `00554f50`, cauda de `00551e80` (linearidade `_CIpow`, × π, ÷ relação, alvo, rampas, sinal de zero), `00554fb0`, setters e conversão do controls.cfg, ramo "não dirigido" de `005524f0` |
 | **RECOVERED AND VALIDATED** (acoplamento com a física herdada, no envelope do próprio original) | rampa por tick + toe → cubos → multicorpo → pneus (L3 47 reinícios, L4 771 linhas em 10 cenários) |
-| **ORIGINAL LOGIC WITH DOCUMENTED NUMERIC DIFFERENCE** | valores x87 entregues adiante em double (≤ 1 ulp double observado; os f32 gravados são idênticos); `_CIpow` = `x ^ y` (idêntico nos 2100 vetores); física por tick herdada dos Stages 6–11 (1–4 ulp por quadro) → horizonte documentado `notdriven` 297 |
+| **ORIGINAL LOGIC WITH DOCUMENTED NUMERIC DIFFERENCE** | valores x87 entregues adiante em double (≤ 1 ulp double observado; os f32 gravados são idênticos); `_CIpow` = `x ^ y` (idêntico nos 2100 vetores); D3 cancelamento `a8 − a7` (≤ 4·2⁻⁵³), D5 soma de quadrados de `00554f50` (raro); física por tick herdada dos Stages 6–11 (1–4 ulp por quadro) → horizonte documentado `notdriven` 297 |
 | **ROBLOX ADAPTER** | camada de dispositivos (`0057abc0`), normalização do eixo do gamepad (no lugar de `005d04d0`), atributos, ângulo do volante na apresentação (`Cockpit.updateAngle`, render snapshot), telemetria |
 | **PROVISIONAL** | modo de direção `"provisional"` (só para as suítes de regressão 6–11, nunca em produção) |
 | **NOT RECOVERED / NOT PORTED** | assistência de direção > 0 (linha de corrida), especificação de chassi do modo arcade (`004233a0` → spec `8945b8`), replay/rede (`005beac0`), FFB / torque (Stage 13) |
@@ -45,7 +45,8 @@ inclinação 9,215°; guinada da roda ≈ 0,99 × ângulo do cubo; LF−RF 0,007
 Referência: o código original executado no Unicorn com a mesma fronteira de host (`recovery/stage12/orig_stage12.py`).
 Suíte `tests/stage12/run.luau`: **47/47 PASS** (`tests/stage12/RESULTS_STAGE12.txt`; método em `STAGE12_VALIDATION.md`).
 
-- **L1 funções**: 1200 + 3872 + 120 quadros + 192 + 2100 + 215 vetores; todos os f32 gravados bit a bit.
+- **L1 funções**: 1212 + 3872 + 400 quadros + 192 + 2100 + 215 vetores; todos os f32 gravados bit a bit (exceto 6 quadros de
+  cancelamento `a8 − a7` dentro de 4·2⁻⁵³, D3).
 - **L2 início de quadro**: 1481 snapshots rastreados do original em 10 cenários, 174 384 dwords, **100 % bit a bit**, nenhuma
   escrita extra do Luau.
 - **L3 reinícios**: 47 reinícios de estado completo, 0 células / 0 campos fora de 4× a sensibilidade de um quadro do
@@ -69,6 +70,30 @@ em `keys`) e 308 na rampa de direção `bf6e88` (83 em `keys`). As somas por tic
 executadas pelo L2; o efeito delas aparece só no L3 (células a mais dentro da tolerância, p. ex. `keys` 3301 → 3281). **Efeito:** só o sinal de zeros exatos muda (nenhum valor diferente de zero); as rampas no
 modo `"provisional"` mantêm a aritmética antiga (`plainSub`), para que as fixtures dos Stages 6–11 continuem válidas.
 **Verificação:** L2 100 % bit a bit depois da correção; regressões 6/7–11 inalteradas (mesmas contagens do baseline).
+
+## Registro de mudança C2 (correção com escopo do port do Stage 8 de `00552d00`, eixos de direção)
+
+Achado pela revisão independente do port contra o x86 executado **no hardware** (`recovery/stage12/evidence/reports/verify-input.md`):
+(1) um passo de taxa que dá exatamente zero (`estado − taxa·2,5 = 0` com entrada 0) é −0 com RC = para baixo — o port
+gravava +0 (`zsub` agora, como em C1; o caso exige momentum em que `2,5·taxa` é exato, nunca a taxa padrão 0,033);
+(2) com estado exatamente 1,0 (tecla segurada / batente analógico com taxa < 1) o `FSIN` do x87 com RC = para baixo devolve
+`1 − 2⁻⁶⁴` (valor verdadeiro `1 − 4,5e−25`, arredondado corretamente para baixo), gravado como `3f7fffff`; o `sin` em double
+dá 1,0. O port usa `1 − 2⁻⁵³`, que reproduz todo resultado gravado (direita a fundo: entrada `0,99999994`; as duas teclas a
+fundo: `−2⁻²⁴` = `b3800000`). Varredura exaustiva (revisão): nenhum outro estado f32 muda o f32 gravado. O Unicorn calcula
+`FSIN` com o `sin` do host e dava 1,0: a referência recebeu uma correção pontual equivalente ao hardware (gancho em
+`orig_stage12._fsin_fix`, armado no `FSIN` de `00552dd4`), e as fixtures foram regeneradas. **Efeito:** batente à direita
+1 ulp de f32 menor que à esquerda, como no jogo original; nenhum outro valor muda.
+
+## Diferenças numéricas documentadas (convenção double dos Stages 6/7, sem mudança de lógica)
+
+- **D3** — quando os dois controles estão ativos e `a8 − a7` se cancela, o resultado expõe os últimos bits do `FSIN`
+  estendido: até `4·2⁻⁵³` absoluto (a mesma tolerância de 4 ulp double dos valores x87 do L1); medido: 6 de 44 quadros de
+  cancelamento da sequência de teclas; entre hardware e Unicorn esses bits também diferem.
+- **D5** — `00554f50`: a soma dos quadrados das velocidades com mantissa de 64 bits arredondada para baixo × double
+  arredondado ao mais próximo: em casos raros (~1e−9 por chamada, componentes muito diferentes) o cache de velocidade
+  difere 1 ulp de f32.
+- **D4** (cosmético) — o adaptador grava o tipo de vínculo 0 para teclas; o original grava 2 (bits de tecla) ou 4; o único
+  leitor (`0057af60`) testa só `≠ 1`.
 
 ## Política do instalador
 

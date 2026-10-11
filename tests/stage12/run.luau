@@ -127,19 +127,37 @@ do
 		bad == 0, string.format("exact %d %s", exact, first or ""))
 	w32(SETTINGS + 0x4c, s25); wf32(0xbf6f00, 0); wf32(0x74c990, rate0)
 	-- keyboard sequence (slew + sin)
+	-- frames where both controls are active and a8 - a7 cancels (|x| < 2^-20) expose the last bits of the extended FSIN
+	-- (D3 of STAGE12_VALIDATION.md: the port evaluates x87 values in double, the reference's FSIN differs from the
+	-- hardware there too): x may differ by at most 4 * 2^-53 absolute (4 double ulps of the FSIN value, the axis-family
+	-- tolerance) and those frames are counted separately; every other frame and every slew state must be bit-exact
 	bad, first = 0, nil
+	local cancel, cancelOff = 0, 0
 	local lastV = nil
 	for i, v in ipairs(U.keySeq) do
 		if v[1] ~= lastV then wf32(0xbf639c, 0); wf32(0xbf63a0, 0); lastV = v[1] end
 		speedState(v[1], bits(0.1))
 		w32(CTRL_RAW + 70, v[2]); w32(CTRL_RAW + 80, v[3]); w32(CTRL_TYPE + 29 * 7, 0); w32(CTRL_TYPE + 29 * 8, 0)
 		local x = V.steerInputOriginal()
-		if bits(x) ~= v[4] or r32(0xbf639c) ~= v[5] or r32(0xbf63a0) ~= v[6] then
-			bad += 1; first = first or string.format("step %d: lua %08x/%08x/%08x orig %08x/%08x/%08x", i, bits(x), r32(0xbf639c), r32(0xbf63a0), v[4], v[5], v[6])
+		local s7, s8 = r32(0xbf639c), r32(0xbf63a0)
+		local xo = fb(v[4])
+		local both = v[5] ~= 0 and v[6] ~= 0 and v[5] ~= 0x80000000 and v[6] ~= 0x80000000
+		if both and math.abs(xo) < 2 ^ -20 then
+			cancel += 1
+			if bits(x) ~= v[4] then
+				cancelOff += 1
+				-- the x87 FSIN values may differ by a few double ulps (the axis family allows <= 4): through the cancellation
+				-- that is an absolute difference <= 4 * 2^-53 of x (several float32 ulps when |x| ~ 1e-10)
+				if math.abs(x - xo) > 4 * 2 ^ -53 or s7 ~= v[5] or s8 ~= v[6] then
+					bad += 1; first = first or string.format("cancellation step %d: lua %08x orig %08x", i, bits(x), v[4])
+				end
+			end
+		elseif bits(x) ~= v[4] or s7 ~= v[5] or s8 ~= v[6] then
+			bad += 1; first = first or string.format("step %d: lua %08x/%08x/%08x orig %08x/%08x/%08x", i, bits(x), s7, s8, v[4], v[5], v[6])
 		end
 	end
-	check(string.format("L1 keyboard steering sequence: %d frames of 00552720 with the 0.033/frame slew and sin shaping (key held, released, other key) bit-exact", #U.keySeq),
-		bad == 0, first)
+	check(string.format("L1 keyboard steering sequence: %d frames of 00552720 with the 0.033/frame slew and sin shaping (keys held / released, full holds at state 1.0, both keys) bit-exact; %d a8 - a7 cancellation frames (|x| < 2^-20), %d of them differ by <= 4 * 2^-53 (D3)",
+		#U.keySeq, cancel, cancelOff), bad == 0, first)
 	-- 00554fb0
 	bad, first = 0, nil
 	worstUlp = 0
