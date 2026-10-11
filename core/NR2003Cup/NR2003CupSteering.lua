@@ -50,6 +50,9 @@ return function(V)
 	local K_RATE = rf64(0x6f59c0)              -- 0.016663333999866692 (005500c0: rate = K / (momentum * 0.01))
 	local LOG2E = 1.4426950408889634           -- FLDL2E (lifter convention)
 	local scratch = buffer.create(4)
+	-- Stage 12.1 host options (NOT part of the original; nil / 360 = the original behaviour, see setSteeringOptions)
+	local lockK = K_PI          -- steering-wheel half lock per unit input (rad): the original x pi = 360 deg lock to lock
+	local drawLimit = K_DRAW_LOCK -- cockpit wheel draw limit (rad): the original 2.79
 
 	-- exact-zero sums signed as under round-toward-negative (IEEE 754: x + (-x) = -0 when RC = down)
 	local function zadd(x, y)
@@ -172,6 +175,7 @@ return function(V)
 		wf32(CTRL_RAW + 10 * STEER_LEFT, left); wf32(CTRL_RAW + 10 * STEER_RIGHT, right)
 		local kind = isDigital and 0 or 1
 		w32(CTRL_TYPE + 29 * STEER_LEFT, kind); w32(CTRL_TYPE + 29 * STEER_RIGHT, kind)
+		return isDigital
 	end
 
 	-- steering mode: "original" (production) or "provisional" (the Stage 6-11 contract controls.steer = road-wheel
@@ -188,9 +192,10 @@ return function(V)
 	local lastShaped, lastRatio, lastTarget = 0, 0, 0
 	-- V._steerMutate (TEST ONLY, nil in production): function(stage, value) -> value, used by tests/stage12 to show that
 	-- the comparisons detect deliberately wrong mappings (stages "input", "shaped", "ratio", "target")
+	local deviceMomentum -- forward declaration (defined with the options below)
 	function V._steerDevices(c)
 		if mode ~= "original" then return end
-		hostDevices(c)
+		deviceMomentum(hostDevices(c))
 		local x = steerInput()
 		local mu = V._steerMutate
 		if mu then x = mu("input", x) end
@@ -220,7 +225,7 @@ return function(V)
 		local mu = V._steerMutate
 		if mu then wf32d(0xbf63c0, mu("shaped", rf32(0xbf63c0))) end
 		lastShaped = rf32(0xbf63c0)
-		local w = fd(lastShaped * K_PI)                                    -- FMUL pi; FSTP dword
+		local w = fd(lastShaped * lockK)                                   -- FMUL pi; FSTP dword (lockK = K_PI: 360 deg)
 		local r = ratio()
 		if mu then r = mu("ratio", r) end
 		local t = w / r                                                    -- FDIVR (x87 value)
@@ -252,7 +257,10 @@ return function(V)
 		wf32d(0x74c990 + 4 * i, K_ONE / p * K_RATE)
 	end
 	local options = nil -- applied option table (survives reset)
+	local IMAGE_RATE = r32(0x74c990) -- the executable's steering rate (0.033 / frame) when no controls.cfg was loaded
+	local baseRate = nil -- 74c990 bits after the option messages (image 0.033 or the momentum option)
 	local function applyOptions()
+		lockK, drawLimit, baseRate = K_PI, K_DRAW_LOCK, nil
 		if options == nil then return end
 		local o = options
 		if o.linearityRaw ~= nil then setLinearityRaw(f32near(o.linearityRaw))
@@ -265,6 +273,27 @@ return function(V)
 		if o.yawLimiter ~= nil then
 			local v = r32(SETTINGS + 0x4c)
 			w32(SETTINGS + 0x4c, o.yawLimiter and bit32.bor(v, 0x2000000) or band(v, bit32.bnot(0x2000000)))
+		end
+		-- Stage 12.1 host options (NOT original): steering-wheel lock and cockpit draw limit
+		if o.lockDegrees ~= nil and o.lockDegrees ~= 360 then lockK = f32near(math.rad(o.lockDegrees * 0.5)) end
+		if o.cockpitLimit == "lock" then drawLimit = lockK
+		elseif type(o.cockpitLimit) == "number" then drawLimit = f32near(math.rad(o.cockpitLimit)) end
+		baseRate = o.momentum ~= nil and r32(0x74c990) or IMAGE_RATE
+	end
+	-- Stage 12.1 host option (NOT original): steering momentum per input device. The original has ONE steering momentum
+	-- (74c990, 005500c0) for keys and axes alike; a player switching between keyboard and a wheel / mouse changes it in
+	-- the controls menu. momentumKeys / momentumAxis (0..100, 0 = no slew / no sine, the original setter conversion) are
+	-- applied by the same original setter while keys / an analog axis drive the steering controls; nil = the base value
+	-- (the momentum option, or the image rate 0.033 = no controls.cfg). Both nil = the original single value, untouched.
+	function deviceMomentum(isDigital)
+		local o = options
+		if o == nil or (o.momentumKeys == nil and o.momentumAxis == nil) then return end
+		local m
+		if isDigital then m = o.momentumKeys else m = o.momentumAxis end
+		if m == nil then
+			if baseRate ~= nil and r32(0x74c990) ~= baseRate then w32(0x74c990, baseRate) end
+		else
+			setMomentum(0, math.clamp(floor(m), 0, 100))
 		end
 	end
 	-- opts: linearity (controls.cfg integer 0..100; nil = keep), linearityRaw (bf6f00 value 0..1), momentum (steering
@@ -283,6 +312,16 @@ return function(V)
 		if opts.yawLimiter == true and validation ~= true then
 			error("NR2003 Stage 12: arcade driving mode (race settings bit 25) also selects car chassis spec 0 at build (004233a0): not ported")
 		end
+		local function range(name, lo, hi)
+			local v = opts[name]
+			if v ~= nil and not (type(v) == "number" and v >= lo and v <= hi) then
+				error(string.format("NR2003 Stage 12.1: %s must be a number %g..%g (got %s)", name, lo, hi, tostring(v)))
+			end
+		end
+		range("lockDegrees", 1, 3600); range("momentumKeys", 0, 100); range("momentumAxis", 0, 100)
+		if opts.cockpitLimit ~= nil and opts.cockpitLimit ~= "original" and opts.cockpitLimit ~= "lock" then
+			range("cockpitLimit", 1, 1800)
+		end
 		options = table.clone(opts)
 		options.assist = nil
 		applyOptions()
@@ -293,7 +332,9 @@ return function(V)
 		return {linearity = rf32(0xbf6f00), steerRate = rf32(0x74c990), releaseFactor = rf32(0x74c99c),
 			lowSpeedOverride = r8(0x74c9a0) ~= 0, assist = rf32(0xbf6f08), yawLimiter = settingsBit25(),
 			drivingMode = settingsBit25() and "arcade" or "simulation",
-			aidsDisabled = band(r32(SETTINGS + 0x4c), 0x20000000) ~= 0, setupRatio = rf32(SETUP_RATIO)}
+			aidsDisabled = band(r32(SETTINGS + 0x4c), 0x20000000) ~= 0, setupRatio = rf32(SETUP_RATIO),
+			lockDegrees = options and options.lockDegrees or 360, cockpitLimitDegrees = math.deg(drawLimit),
+			momentumKeys = options and options.momentumKeys, momentumAxis = options and options.momentumAxis}
 	end
 	local baseReset = V.reset
 	function V.reset()
@@ -308,8 +349,8 @@ return function(V)
 	-- drawn by NR2003: -(ratio * mean front steer), left road-wheel angles are positive)
 	local function wheelAngle(drawSteer, r)
 		local a = -(r * drawSteer)
-		if a < -K_DRAW_LOCK then return -K_DRAW_LOCK end
-		if a > K_DRAW_LOCK then return K_DRAW_LOCK end
+		if a < -drawLimit then return -drawLimit end   -- original 2.79 (Stage 12.1 option cockpitLimit)
+		if a > drawLimit then return drawLimit end
 		return a
 	end
 	-- mean front steer of the draw state: the cell written by the ORIGINAL 00551990 (Stage 11 frame end); the

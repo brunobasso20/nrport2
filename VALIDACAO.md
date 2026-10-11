@@ -1,4 +1,48 @@
-# Validação — Stage 12 (cadeia de direção)
+# Validação — Stage 12.1 (trava 360°, relação 12:1, momentum por dispositivo)
+
+Mesma máquina e ferramentas do Stage 12. `tools/run_stage12_1_tests.sh` / `.ps1` refaz as entregas do Stage 12
+(congeladas, byte a byte iguais às publicadas) e do 12.1 e roda tudo; saída em `tests/stage12/REGRESSION_STAGE12_1.txt`.
+
+## Resultados automáticos
+
+| Verificação | Resultado |
+|---|---|
+| Suíte do Stage 12 com as fontes 12.1 (L1–L5 inalterados + 5 verificações das opções: 360 = sem opção bit a bit, 540 → f32(3π/2)/7, `"lock"` → −180°, momentum por dispositivo, recusas) | PASS — 52/52 |
+| Adaptador sob mock (padrões 12:1 / natural / 360 / taxa 0,033; eixo a fundo → volante −π e taxa 1; 540 + `"original"`; atributos removidos) | PASS — 66/66 |
+| `PATCH_STAGE12_1` em DataModel simulado (patches 6/7..12 publicados, recusas, instalação na mesma instância, só 5 módulos, backup, `Stage12SelfTest.run(true)`, re-execução, `PATCH_STAGE12_ROLLBACK` recusa 12.1, reversão para o Stage 12, reversão automática, partes + INSTALL, sem SavePlace) | PASS — 20/20 |
+| Regressão Stage 6/7 / 8 / 9 / 10 / 11 e mocks dos patches 6/7–12 | PASS — mesmas contagens do Stage 12 |
+
+## Validação manual no Roblox Studio — a fazer (10 itens)
+
+Sem atributos novos no `TestCar` (padrões da bancada: trava 360, relação 12, teclas 0,033, eixo 0, volante até a trava).
+
+1. **Instalação**: fora do Play, sobre a bancada Stage 12, `PATCH_STAGE12_1.lua` (ou `PART1`, `PART2` + `INSTALL`, ou o
+   `.rbxmx`). Output: auto-testes 6/7..11, `[NR2003 Stage 12 self-test] 17 passed, 0 failed (… s)`, `Stage 12.1 aplicado
+   (backup: ServerStorage.NR2003Backup_Stage12_1)`. Aplicar de novo → `re-execução: backup anterior mantido`.
+2. Play → Output `[NR2003 Stage 12] direção original: relação 12:1 (item 0x30), trava 360° (180° por lado), override
+   baixa velocidade on, linearidade 0.00, taxa 0.0330/quadro (teclas imagem, eixo 0), volante até 180°`; no `TestCar`
+   `SteeringRatioApplied = 12`, `SteeringLockApplied = 360`.
+3. **Parado, A a fundo** (~0,85 s até −1): `DIREÇÃO teclas (+ = dir.)  entrada -1.000  relação 7.0:1  alvo -25.71°
+   cubos -25.59/-25.84°  rodas ≈ -25.4°  volante -180°` — todos negativos (esquerda). **D** → espelho, positivos.
+4. **Em velocidade** (> 64 km/h) a fundo: `relação 12.0:1  alvo ±15.00°`, volante ±180°; entre 32 e 64 km/h a relação
+   vai de 7 a 12 sem trancos.
+5. **Teclas instantâneas (NR2003 com controls.cfg)**: parar o Play, `SteeringMomentumKeys = 0` no `TestCar`, Play → A
+   leva a entrada a −1.000 no primeiro quadro (sem rampa, sem seno); alvo e volante iguais ao item 3.
+6. **Gamepad** (analógico esquerdo, `eixo`): meio curso parado → entrada ±0.500 (sem seno) e alvo **±12,86°** (π·0,5/7);
+   curso total → ±25,71°, volante ±180°; a resposta segue o analógico sem atraso.
+7. **Trava**: `SteeringLockDegrees = 540` → R → parado a fundo: alvo **±38,57°** (3π/2 / 7), volante **±270°**; em
+   velocidade ±22,50°. Voltar a 360 (ou apagar o atributo) → item 3 de novo.
+8. **Volante original**: `CockpitWheelClamp = "original"` → R → o volante desenhado para em **±160°** (2,79 rad); as rodas
+   e o alvo não mudam.
+9. **Reversão**: fora do Play, `PATCH_STAGE12_1_ROLLBACK.lua` → `Rollback Stage 12.1 -> Stage 12: 5 fontes restauradas;
+   auto-teste Stage 12 OK.`; Play → comportamento do Stage 12 (relação 18 sem atributo, volante ±160°); reaplicar
+   `PATCH_STAGE12_1.lua`.
+10. **Auto-teste completo** (fora do Play): `require(game.ReplicatedStorage.NR2003Lab.Roblox.Stage12SelfTest).run(true)` →
+    `[NR2003 Stage 12 self-test] 18 passed, 0 failed (… s)`.
+
+---
+
+# Validação — Stage 12 (cadeia de direção) — validado no Studio pelo usuário (2026-10-11)
 
 Executada nesta máquina com Luau CLI 0.741 (codegen nativo), Python 3 + Unicorn 2.1.4 + Capstone e Ghidra 11.1.2.
 Saídas: `tests/stage12/RESULTS_STAGE12.txt` (`tools/run_stage12_tests.sh` / `.ps1` roda tudo, incluindo as suítes 6/7–11,

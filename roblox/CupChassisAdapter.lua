@@ -99,6 +99,9 @@ function M:garageSetup()
             if U.finite(v) then Setup.set(s,i,v) end
         end
     end
+    -- Stage 12.1: bench default of the garage steering ratio (item 0x30) when no Setup_steeringRatio attribute is set
+    local ratio=self.tune.driver and self.tune.driver.setupSteeringRatio
+    if U.finite(ratio) and not U.finite(self.car:GetAttribute("Setup_steeringRatio")) then Setup.set(s,"steeringRatio",ratio) end
     return s
 end
 function M:applyGarageSetup(s)
@@ -156,12 +159,22 @@ function M:initialize()
     if self.core.V.setSteeringMode then
         self.core:setSteeringMode("original")
         local function flag(name) local v=self.car:GetAttribute(name);if type(v)=="boolean" then return v end;return nil end
+        -- Stage 12.1 bench options (CupTune.driver defaults; attributes override): steering lock, momentum per device,
+        -- cockpit wheel draw limit. Lock 360 = the original constant; the others are host choices (STAGE12_RESULT.md)
+        local d=self.tune.driver or {}
+        local function pick(name,default) local v=num(name);if v~=nil then return v end;return default end
+        local clamp=self.car:GetAttribute("CockpitWheelClamp")
+        if clamp~="original" and clamp~="lock" then clamp=d.cockpitLimit end
         local o=self.core:setSteeringOptions({linearity=num("SteeringLinearity"),momentum=num("SteeringMomentum"),
-            lowSpeedOverride=flag("SteeringLowSpeedOverride")})
+            lowSpeedOverride=flag("SteeringLowSpeedOverride"),lockDegrees=pick("SteeringLockDegrees",d.steeringLockDegrees),
+            momentumKeys=pick("SteeringMomentumKeys",d.momentumKeys),momentumAxis=pick("SteeringMomentumAxis",d.momentumAxis),
+            cockpitLimit=clamp})
         self.car:SetAttribute("SteeringLinearityApplied",o.linearity);self.car:SetAttribute("SteeringRateApplied",o.steerRate)
-        self.car:SetAttribute("SteeringRatioApplied",o.setupRatio)
-        print(string.format("[NR2003 Stage 12] direção original: relação %g:1 (item 0x30), override baixa velocidade %s, linearidade %.2f, taxa %.4f/quadro",
-            o.setupRatio,o.lowSpeedOverride and "on" or "off",o.linearity,o.steerRate))
+        self.car:SetAttribute("SteeringRatioApplied",o.setupRatio);self.car:SetAttribute("SteeringLockApplied",o.lockDegrees)
+        print(string.format("[NR2003 Stage 12] direção original: relação %g:1 (item 0x30), trava %g° (%g° por lado), override baixa velocidade %s, linearidade %.2f, taxa %.4f/quadro (teclas %s, eixo %s), volante até %g°",
+            o.setupRatio,o.lockDegrees,o.lockDegrees/2,o.lowSpeedOverride and "on" or "off",o.linearity,o.steerRate,
+            o.momentumKeys==nil and "imagem" or tostring(o.momentumKeys),o.momentumAxis==nil and "imagem" or tostring(o.momentumAxis),
+            o.cockpitLimitDegrees))
     end
     if self.car:GetAttribute("AeroSession")==false then
         self.core:endSession();self.weather=nil

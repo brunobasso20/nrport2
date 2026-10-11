@@ -1,4 +1,4 @@
-# Direção — API do Stage 12 (núcleo NR2003 Cup)
+# Direção — API do Stage 12 / 12.1 (núcleo NR2003 Cup)
 
 A cadeia de direção é o **código original** portado à mão do x86 (`NR2003CupSteering` + linhas do Stage 12 em
 `NR2003CupDriver`): controles 7 (esquerda) / 8 (direita) → `00552d00` (taxa por quadro + `sin(x·π/2)`) → `00552720`
@@ -14,17 +14,22 @@ local car = Vehicle.new()
 --   analógico: {steerAxis = -1..1}  (+ = direita; um eixo vinculado aos dois controles, separado pelo sinal; tipo 1)
 --   sem motorista: {driver = false} -> ramo "carro não dirigido" de 005524f0 (entrada de direção 0)
 car:setSteeringOptions({linearity = 80, momentum = 0, lowSpeedOverride = false})   -- setters ORIGINAIS
+-- Stage 12.1 (opções do host; nil / 360 = o original):
+car:setSteeringOptions({lockDegrees = 360, momentumKeys = nil, momentumAxis = 0, cockpitLimit = "lock"})
 local o = car:steeringOptions()      -- {linearity, steerRate, releaseFactor, lowSpeedOverride, assist, yawLimiter,
-                                     --  drivingMode = "simulation" | "arcade", aidsDisabled, setupRatio}
+                                     --  drivingMode = "simulation" | "arcade", aidsDisabled, setupRatio,
+                                     --  lockDegrees, cockpitLimitDegrees, momentumKeys, momentumAxis}
 local s = car:steeringState()        -- leitura das células originais (sem efeito colateral)
 print(s.input, s.target, s.current, s.hubLF, s.hubRF, s.ratioNow, s.wheelAngle)
 local a = car:steeringWheelAngle()   -- 005662d0: clamp(-(relação · car[0x1554]), ±2,79 rad), + = horário (direita)
+                                     -- (Stage 12.1: limite = cockpitLimit)
 ```
 
 | Método | Contrato |
 |---|---|
 | `setSteeringOptions(opts)` | opções do piloto pelos setters ORIGINAIS: `linearity` (inteiro do controls.cfg 0..100 → `(float)v·0,01f`, `005502f0`), `linearityRaw` (valor 0..1 de `bf6f00`), `momentum` (0..100; 0 = sem limite de taxa → 1,0; senão `(1/(m·0,01))·0,016663333999866692`, `005500c0`), `lowSpeedOverride` (bool, `00550110`, ini `steer_ratio`). `nil` = valor da imagem (sem controls.cfg: linearidade 0, taxa 0,033/quadro, override ligado). Os valores sobrevivem a `reset()` e a `applySetup()`. **Recusados (erro)**: `assist ≠ 0` (assistência de direção precisa da linha de corrida da pista do NR2003, não portada) e `yawLimiter = true` (modo de condução ARCADE, bit 25 das opções de corrida: também troca a especificação do chassi do carro no build, `004233a0`, não portado) |
-| `clearSteeringOptions()` | volta aos valores da imagem no próximo `reset()` |
+| `setSteeringOptions(opts)` — Stage 12.1 (HOST, não original; `nil` = o original) | `lockDegrees` (1..3600; **360** = o `× π_f32` original da cauda de `00551e80`, bit a bit; outro valor troca só a constante por `f32(rad(lock/2))`); `cockpitLimit` (`"original"` = 2,79 rad de `005662d0`, `"lock"` = a trava, ou graus 1..1800); `momentumKeys` / `momentumAxis` (0..100: momentum aplicado pelo setter original `005500c0` no início de cada quadro conforme o dispositivo que dirige — tipo de vínculo digital ou eixo; `nil` = a taxa base: a de `momentum`, ou a da imagem 0,033). Fora da faixa = erro `NR2003 Stage 12.1: …` |
+| `clearSteeringOptions()` | volta aos valores da imagem no próximo `reset()` (incluindo trava 360 e limite 2,79 rad) |
 | `steeringOptions()` | leitura das opções e da relação de setup ativa (`c055c0+0xc0`) |
 | `steeringState(out?)` | `mode`, `left` / `right` (controles brutos 7 / 8), `digital`, `slewLeft` / `slewRight` (`bf639c` / `bf63a0`), `input` (`bf63c8`), `shaped` (após a linearidade), `sensitivity`, `yawLimiter` (fator do limitador de taxa de guinada de `00552720`, calculado em todo quadro também em simulação: `min(12,25/max(v, 0,01), max(|r|, 0,01)) / max(|r|, 0,01) · 0,9 + 0,1`; só multiplica a entrada com o bit 25 / arcade; vale 1 antes do primeiro quadro), `ratio` (relação do último quadro), `ratioNow` (`00554fb0` na velocidade atual, sem tocar no cache), `target` (`bf63b8`, rad, + = esquerda), `frameTarget` / `ramp` (`bf6e80` / `bf6e88`), `current` (`bf63c0`, rampa por tick), `lf` / `rf` (`bf6360` / `bf6364`, com toe), `toeLeft` / `toeRight` (`c086b0` / `c086b4`), `hubLF` / `hubRF` (estados 15 / 21 exportados), `drawSteer` (`car+0x1554`), `wheelAngle` |
 | `steeringWheelAngle()` | ângulo do volante do cockpit (`005662d0`); em runtime `"frozen"` usa a média dos estados 15 / 21 em vez de `car+0x1554` |
@@ -36,7 +41,11 @@ gamepad em −1..1. Adaptador: entradas `steerLeft` / `steerRight` (teclas), `st
 (gamepad `Thumbstick1`), `steer` legado (= teclas); atributos do carro `SteeringLinearity` (0..100),
 `SteeringMomentum` (0..100), `SteeringLowSpeedOverride` (bool), lidos a cada reset; aplicados:
 `SteeringLinearityApplied`, `SteeringRateApplied`, `SteeringRatioApplied`. Relação de direção pela garagem:
-`Setup_steeringRatio` (12..32, Stage 10). Telemetria: `hubSteerAngle` (média dos estados 15 / 21, + = esquerda),
+`Setup_steeringRatio` (12..32, Stage 10). Stage 12.1: padrões da bancada em `CupTune.driver`
+(`steeringLockDegrees = 360`, `setupSteeringRatio = 12` — usado pela garagem original quando não há `Setup_steeringRatio`,
+`momentumKeys = nil` = taxa da imagem, `momentumAxis = 0`, `cockpitLimit = "lock"`); atributos que mandam sobre eles:
+`SteeringLockDegrees`, `SteeringMomentumKeys`, `SteeringMomentumAxis`, `CockpitWheelClamp` (`"lock"` / `"original"`);
+aplicado: `SteeringLockApplied`. Painel: linha `DIREÇÃO` com todos os ângulos em + = direita. Telemetria: `hubSteerAngle` (média dos estados 15 / 21, + = esquerda),
 `roadWheelAngle` (guinada média das rodas dianteiras medida nas poses do solver, + = direita, ≈ −0,99·q),
 `steeringWheelAngle`, `steering {…}` (subconjunto de `steeringState`). Render snapshot: `steer` = ângulo do volante
 (flag `FLAG_WHEEL_ANGLE`).

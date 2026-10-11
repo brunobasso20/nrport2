@@ -1,4 +1,4 @@
-# Stage 12 — cadeia de direção original do NR2003 Cup
+# Stage 12 — cadeia de direção original do NR2003 Cup (+ Stage 12.1: trava, relação, momentum por dispositivo)
 
 **Resumo:** a cadeia de direção do carro do jogador no NR2003 foi recuperada inteira (Ghidra + execução do código
 original no Unicorn) e **portada à mão do x86 para Luau** (`core/NR2003Cup/NR2003CupSteering.lua` + linhas do Stage 12 em
@@ -18,6 +18,41 @@ velocidade ou curva foi inventado: o executável não tem Ackermann, bump steer 
 | Mudanças em estágios anteriores | `NR2003CupDriver` (alvo da cauda original; C1), `NR2003CupVehicle` (instala a direção), suítes e self-tests 6/7–11 (uma linha: modo `"provisional"`) |
 | Roblox | teclas / gamepad → controles; atributos `SteeringLinearity`, `SteeringMomentum`, `SteeringLowSpeedOverride` (+ `Setup_steeringRatio`); volante do cockpit = ângulo original; telemetria e linha `DIREÇÃO` no painel T |
 | Entrega | `PATCH_STAGE12.lua` (ou `PART1..2` + `INSTALL`), `NR2003_Patch_Stage12.rbxmx`, `PATCH_STAGE12_ROLLBACK.lua`, `Stage12SelfTest`, relatórios `STAGE12_*.md`, harness / cenários / fixtures do código original, evidências |
+
+## Stage 12.1 (3.11.1-stage12.1) — trava, relação e momentum por dispositivo
+
+Mesma cadeia ORIGINAL do Stage 12 (nenhuma fórmula nova); o que muda são **opções do host** sobre ela e os padrões da
+bancada (`Core.CupTune.driver`; os atributos do `TestCar` mandam, lidos a cada reset **R**).
+
+| Pedido | O que o original faz | Stage 12.1 | Classe |
+|---|---|---|---|
+| Volante 360° (180° por lado) | A entrada total já vale **π rad de volante por lado** (360° batente a batente) para **qualquer** relação: a cauda de `00551e80` faz `alvo = fd(entrada · π_f32) / relação` (π_f32 em `006f4a4c`) — a roda vira π/relação. O −160° do painel era só o limite de **desenho** do volante do cockpit (`005662d0`: ±2,79 rad = 159,9°). | Opção `lockDegrees` (padrão **360** = bit a bit o original; outro valor troca só a constante π por `rad(lock/2)` em f32, mesma cauda). Opção `cockpitLimit`: `"lock"` (padrão da bancada: o volante desenhado vai até a trava, **±180°**) ou `"original"` (±2,79 rad). | 360: EXACT ORIGINAL · ≠ 360 e `"lock"`: HOST EXTENSION (não original) |
+| Relação 12:1 | Item de setup 0x30 (garagem 12..32; o setup do Cup vem com 18), lido por `00554fb0`; override 7:1 ≤ 8,94 m/s com rampa até 17,88 m/s (ini `steer_ratio`, ligado). | `CupTune.driver.setupSteeringRatio = 12` quando o carro não tem `Setup_steeringRatio`: aplicado pelo **pipeline original da garagem** (build natural, o mesmo do atributo). Override 7:1 mantido (desligar: `SteeringLowSpeedOverride = false`). | EXACT ORIGINAL (valor legal da garagem) |
+| A/D suaves × NR2003 0 → 100 % | `00552d00` aplica a taxa ("momentum") a teclas **e** eixos (não lê o tipo de vínculo). Sem controls.cfg vale a taxa da imagem (`74c990` = 0,033/quadro + `sin(x·π/2)`, ~0,85 s de 0 a 1) — é o 1º boot do jogo. O menu grava momentum **0** no controls.cfg → taxa 1,0: 0 → 100 % em um quadro, sem seno — o que os pilotos usam. | Momentum **por dispositivo**: no início de cada quadro, conforme o dispositivo que dirige, o valor passa pelo setter original `005500c0`. Padrão: teclas = taxa da imagem 0,033 (suave), eixo / mouse = momentum 0 (direto, linear, sem seno). Teclas como o NR2003 com controls.cfg: `SteeringMomentumKeys = 0`. | valores: EXACT ORIGINAL (setter) · troca por dispositivo: HOST EXTENSION |
+| Painel com sinais misturados | — | Linha `DIREÇÃO`: todos os ângulos com **+ = direita** (alvo e cubos invertidos para a convenção das rodas e do volante). | ROBLOX ADAPTER |
+
+**A física continua exatamente a do NR2003:** com 360° tudo a partir da entrada processada é a cauda original bit a bit
+(suíte: alvo, cubos e volante idênticos a não passar a opção); o momentum só decide **quando** a entrada chega (taxa por
+quadro), e os dois valores usados (0,033 da imagem e 1,0 do momentum 0) são os do próprio executável. O futuro **volante
+por mouse** entra como eixo (`steerAxis`, igual ao gamepad): recebe momentum 0 e, se quiser, a linearidade original
+(só vale para eixos) — nada na física muda.
+
+Números com a bancada 12.1 (entrada total, override ligado): parado alvo **π/7 = 25,71°**, acima de 64,4 km/h
+**π/12 = 15,00°**; o volante desenhado chega a **±180°** nos dois casos (`relação × ângulo`, limitado à trava).
+Atributos novos (valem no reset): `SteeringLockDegrees` (1..3600, 360 = original), `SteeringMomentumKeys` /
+`SteeringMomentumAxis` (0..100; sem atributo = `CupTune.driver`), `CockpitWheelClamp` (`"lock"` / `"original"`);
+aplicado: `SteeringLockApplied`. `SteeringMomentum` (Stage 12) continua valendo como taxa base das teclas quando
+`momentumKeys` é `nil`.
+
+Validação 12.1: suíte do Stage 12 **52/52** (47 + 5 de opções: 360 = sem opção, 540, `"lock"`, momentum por
+dispositivo, recusas), adaptador sob mock **66/66** (padrões 12:1 / 360 / taxas, eixo a fundo = −π, 540 + `"original"`,
+atributos removidos), `Stage12SelfTest` com 4 verificações 12.1, `PATCH_STAGE12_1` em DataModel simulado **20/20**;
+regressões 6/7–12 e mocks dos patches 6/7–12 inalterados (`tests/stage12/REGRESSION_STAGE12_1.txt`). Entrega
+incremental: `PATCH_STAGE12_1.lua` (ou `PART1..2` + `INSTALL`), `NR2003_Patch_Stage12_1.rbxmx`,
+`PATCH_STAGE12_1_ROLLBACK.lua` — mesma política do instalador (abaixo), base = Stage 12 publicado (`b531e60`), backup
+em `ServerStorage.NR2003Backup_Stage12_1`, 5 módulos atualizados na mesma instância (`NR2003CupSteering`, `CupTune`,
+`CupChassisAdapter`, `NR2003Client`, `Stage12SelfTest`), nada criado nem apagado. Para voltar ao Stage 11: primeiro
+`PATCH_STAGE12_1_ROLLBACK.lua`, depois `PATCH_STAGE12_ROLLBACK.lua` (este recusa uma bancada 12.1).
 
 ## Números do Cup (original)
 
@@ -110,7 +145,7 @@ usuário criar no `TestCar` (`Steering*`) e o próprio backup em `ServerStorage`
 
 ## Limites explícitos
 
-- **Validação manual no Roblox Studio** pendente (15 itens em `VALIDACAO.md`).
+- **Validação manual no Roblox Studio**: Stage 12 validado pelo usuário (2026-10-11); Stage 12.1 pendente (10 itens em `VALIDACAO.md`).
 - **Assistência de direção** e **modo arcade**: recusados (ver classificação). O ramo do bit 25 em `00552720` /
   `00552410` é exato, mas só é ativável para validação.
 - **Dispositivos**: a curva de calibração do joystick do Windows não existe no Roblox; o eixo do gamepad entra já

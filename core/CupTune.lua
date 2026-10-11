@@ -30,9 +30,22 @@ local T={
     -- host collision box (PROVISIONAL): chassis part box raised so its floor keeps the Stage 5
     -- bench clearance (~0.55 m) and ramps/kerbs are handled by the tires, not by the boundary
     collision={raise=0.32},
-    -- steering: PROVISIONAL until Stage 12 recovers 00552720 shaping, pow linearity and the
-    -- 00554fb0 ratio. Same slew/speed-reduction law as the validated Stage 5 bench.
+    -- steering: only the presentation fields (camber of the visual rig) are still read; the steering itself is the
+    -- ORIGINAL chain since Stage 12 (NR2003CupSteering)
     steering=U.copy(Base.steering),
+    -- Stage 12.1 driver defaults of the Roblox bench (car attributes override them at every reset, see
+    -- CupChassisAdapter.initialize). The core default without these options is the original executable.
+    --   steeringLockDegrees  steering-wheel rotation lock to lock at full input: 360 = the ORIGINAL x pi (180 deg per
+    --                        side, 00551e80); other values are a NON-ORIGINAL extension (attribute SteeringLockDegrees)
+    --   setupSteeringRatio   garage item 0x30 (12..32) used when the car has no Setup_steeringRatio attribute, applied
+    --                        through the ORIGINAL garage pipeline (the shipped Cup setup has 18)
+    --   momentumKeys         steering momentum (0..100, original setter 005500c0) while the keys drive the steering;
+    --                        nil = the executable's image rate 0.033 / frame (smooth keys, no controls.cfg)
+    --   momentumAxis         the same while an analog axis (gamepad / mouse) drives it: 0 = no slew and no sine (the
+    --                        front-end default of a saved controls.cfg)
+    --   cockpitLimit         cockpit wheel draw limit: "lock" = the full lock (180 deg per side at 360), "original" =
+    --                        the 005662d0 limit 2.79 rad (160 deg)
+    driver={steeringLockDegrees=360,setupSteeringRatio=12,momentumKeys=nil,momentumAxis=0,cockpitLimit="lock"},
     engine={gears=4,limiterRPM=9300},          -- engine+0x444 / engine+0x438 (display)
     environment={ambientC=26.6667},            -- e0b830 (tire thermal frozen: Stage 11)
     adapter=U.copy(Base.adapter),

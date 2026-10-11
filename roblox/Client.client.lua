@@ -145,8 +145,9 @@ telemetry.OnClientEvent:Connect(function(data)
     else s11Line.Text="" end
     local sd=data.steering
     if sd and sd.mode=="original" then
-        steerLine.Text=string.format("DIREÇÃO %s  entrada %+.3f  relação %.1f:1  alvo %+.2f°  cubos %+.2f/%+.2f°  rodas %+.2f°  volante %+.0f°",
-            sd.digital and "teclas" or "eixo",sd.input or 0,sd.ratioNow or 0,math.deg(sd.target or 0),math.deg(sd.hubLF or 0),math.deg(sd.hubRF or 0),
+        -- all angles shown with one sign convention, + = right (the simulation cells are + = left: negated here)
+        steerLine.Text=string.format("DIREÇÃO %s (+ = dir.)  entrada %+.3f  relação %.1f:1  alvo %+.2f°  cubos %+.2f/%+.2f°  rodas %+.2f°  volante %+.0f°",
+            sd.digital and "teclas" or "eixo",sd.input or 0,sd.ratioNow or 0,-math.deg(sd.target or 0),-math.deg(sd.hubLF or 0),-math.deg(sd.hubRF or 0),
             math.deg(data.roadWheelAngle or 0),math.deg(data.steeringWheelAngle or 0))
     else steerLine.Text="" end
     if data.mode=="NR2003_CUP" then

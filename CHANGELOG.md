@@ -1,3 +1,26 @@
+# 3.11.1-stage12.1 — Stage 12.1: trava 360°, relação 12:1, momentum por dispositivo
+
+- Base: Stage 12 publicado (3.11.0-stage12, `b531e60`). A cadeia de direção original e todos os estágios anteriores
+  **inalterados**; com as opções em `nil` / 360 o núcleo é bit a bit o do Stage 12.
+- `NR2003CupSteering`: opções do host (não originais, documentadas) `lockDegrees` (360 = a constante π de `00551e80`;
+  outro valor troca só a constante), `cockpitLimit` (`"original"` 2,79 rad / `"lock"` / graus) e `momentumKeys` /
+  `momentumAxis` (momentum por dispositivo, aplicado pelo setter original `005500c0` no início de cada quadro);
+  `steeringOptions()` informa `lockDegrees`, `cockpitLimitDegrees`, `momentumKeys`, `momentumAxis`.
+- `CupTune.driver` (padrões da bancada): trava 360, relação do setup 12 (pela garagem original quando o carro não tem
+  `Setup_steeringRatio`), teclas = taxa da imagem 0,033, eixo = momentum 0, volante desenhado até a trava.
+- Adaptador: atributos `SteeringLockDegrees`, `SteeringMomentumKeys`, `SteeringMomentumAxis`, `CockpitWheelClamp`;
+  aplicado `SteeringLockApplied`; linha de Output com trava, taxas por dispositivo e limite do volante. Cliente: linha
+  `DIREÇÃO` com todos os ângulos em + = direita.
+- Explicado (`STAGE12_RESULT.md`, seção 12.1): o NR2003 já gira o volante π rad por lado com entrada total (360°) para
+  qualquer relação; o −160° era o limite de desenho do volante do cockpit; teclas suaves = taxa da imagem sem
+  controls.cfg, teclas instantâneas = momentum 0 do controls.cfg — a física é a mesma.
+- Testes: suíte 12 52/52, adaptador 66/66, `Stage12SelfTest` + 4 verificações, mock do `PATCH_STAGE12_1` 20/20,
+  regressões 6/7–12 inalteradas. `tools/build_stage12.py` agora reproduz as entregas publicadas do Stage 12 a partir de
+  `b531e60` (congeladas, byte a byte).
+- Entrega: `PATCH_STAGE12_1.lua` / `PART1..2` + `INSTALL` / `NR2003_Patch_Stage12_1.rbxmx` / `PATCH_STAGE12_1_ROLLBACK.lua`
+  (base Stage 12 conferida módulo a módulo, backup só dos 5 módulos alterados, fonte na mesma instância, re-execução
+  segura, reversão automática e manual verificada, nunca salva o place).
+
 # 3.11.0-stage12 — Stage 12: cadeia de direção original do NR2003 Cup
 
 - Base: Stage 11 (3.10.0-stage11). Imagem e callbacks 6/7, freio 8, aero 9, setup/build 10 e runtime 11 **inalterados**

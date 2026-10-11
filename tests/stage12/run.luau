@@ -669,6 +669,51 @@ do
 		ss.target == V.fd(rf32(0x6f4a4c) / 7) and ss.ratio == 7 and math.abs(ss.hubLF - (ss.current - ss.toeLeft)) < 1e-6
 		and math.abs(ss.wheelAngle + rf32(0x6f5e6c)) < 1e-6,
 		string.format("target %.6f ratio %.3f hub LF/RF %.6f/%.6f wheel %.4f", ss.target, ss.ratio, ss.hubLF, ss.hubRF, ss.wheelAngle))
+	-- Stage 12.1 host options (NOT original): steering lock, cockpit draw limit, momentum per input device
+	do
+		local function fullLeft(opts)
+			V.clearSteeringOptions(); V.reset()
+			if opts then V.setSteeringOptions(opts) end
+			for _ = 1, 8 * 60 do V.drive({throttle = 0, clutch = 1, steerAxis = -1}, FLAT) end
+			return V.steeringState(), V.steeringOptions()
+		end
+		local a, oa = fullLeft(nil)
+		local b, ob = fullLeft({lockDegrees = 360})
+		check("12.1: lockDegrees = 360 is the original constant (x pi): identical target, hubs, cockpit angle, option report 360",
+			a.target == b.target and a.hubLF == b.hubLF and a.wheelAngle == b.wheelAngle and oa.lockDegrees == 360 and ob.lockDegrees == 360
+			and math.abs(ob.cockpitLimitDegrees - math.deg(rf32(0x6f5e6c))) < 1e-9,
+			string.format("target %.7f / %.7f", a.target, b.target))
+		local c = fullLeft({lockDegrees = 540, cockpitLimit = "lock"})
+		buffer.writef32(S, 0, math.rad(270)) -- f32 of 3 pi / 2 (the tail stores input x lock in a float32, like x pi)
+		local k540 = buffer.readf32(S, 0)
+		check("12.1: lockDegrees = 540: full input -> target f32(3 pi / 2) / 7 at rest; cockpit limit 'lock' shows -270 deg",
+			c.target == V.fd(k540 / 7) and math.abs(c.wheelAngle + k540) < 2e-5,
+			string.format("target %.6f wheel %.4f rad (%.1f deg)", c.target, c.wheelAngle, math.deg(c.wheelAngle)))
+		local d = fullLeft({cockpitLimit = "lock"})
+		check("12.1: cockpitLimit 'lock' at 360: the cockpit wheel reaches -180 deg (the original draw limit is 160 deg)",
+			d.target == a.target and math.abs(d.wheelAngle + math.pi) < 2e-5 and math.abs(a.wheelAngle + rf32(0x6f5e6c)) < 1e-6,
+			string.format("wheel %.4f (original limit %.4f)", d.wheelAngle, a.wheelAngle))
+		-- momentum per device: keys keep the base rate (image 0.033), an axis uses momentum 0 (rate 1, no slew / no sine)
+		V.clearSteeringOptions(); V.reset()
+		V.setSteeringOptions({momentumAxis = 0})
+		local base = rf32(0x74c990)
+		V.drive({throttle = 0, clutch = 1, steerAxis = 0.5}, FLAT)
+		local rAxis = rf32(0x74c990)
+		local xAxis = V.steeringState().input
+		for _ = 1, 7 do V.drive({throttle = 0, clutch = 1, steerAxis = 0.5}, FLAT) end
+		V.drive({throttle = 0, clutch = 1, steerLeft = 1, steerRight = 0, steerDigital = true}, FLAT)
+		local rKeys = rf32(0x74c990)
+		for _ = 1, 7 do V.drive({throttle = 0, clutch = 1, steerLeft = 1, steerRight = 0, steerDigital = true}, FLAT) end
+		V.setSteeringOptions({momentumAxis = 0, momentumKeys = 50})
+		V.drive({throttle = 0, clutch = 1, steerLeft = 1, steerRight = 0, steerDigital = true}, FLAT) -- frame start
+		local rKeys50 = rf32(0x74c990)
+		check("12.1: momentum per device: axis momentum 0 -> rate 1 (input = raw axis, no sine: +0.5), keys -> base rate 0.033 (image) or momentum 50 by the original setter",
+			math.abs(base - 0.033) < 1e-6 and rAxis == 1 and xAxis == 0.5 and rKeys == base and math.abs(rKeys50 - 0.0333266) < 1e-6,
+			string.format("base %.6f axis %.6f keys %.6f keys50 %.7f input %.6f", base, rAxis, rKeys, rKeys50, xAxis))
+		local okBad = pcall(V.setSteeringOptions, {lockDegrees = 0})
+		check("12.1: out-of-range host options refused (lockDegrees 0)", not okBad)
+		V.clearSteeringOptions(); V.reset()
+	end
 	-- determinism / checkpoint with the steering chain
 	local function run(n, k0)
 		local out = {}

@@ -1,0 +1,41 @@
+{
+ "new": [
+  "NR2003_Patch_Stage12_1.rbxmx",
+  "PATCH_STAGE12_1.lua",
+  "PATCH_STAGE12_1_INSTALL.lua",
+  "PATCH_STAGE12_1_PART1.lua",
+  "PATCH_STAGE12_1_PART2.lua",
+  "PATCH_STAGE12_1_ROLLBACK.lua",
+  "tests/stage12/REGRESSION_STAGE12_1.txt",
+  "tests/stage12/patch12_1_mock.luau",
+  "tools/build_stage12_1.py",
+  "tools/make_patch12_1_mock.py",
+  "tools/patch12_1_mock_tail.luau",
+  "tools/run_stage12_1_tests.ps1",
+  "tools/run_stage12_1_tests.sh",
+  "tools/update_manifest_stage12_1.py"
+ ],
+ "changed": [
+  "CHANGED_FILES.txt",
+  "CHANGELOG.md",
+  "CORE_API.md",
+  "NEXT_PROMPT_STAGE13.txt",
+  "PORT_MAP.md",
+  "README_PT.md",
+  "ROADMAP_STATUS.md",
+  "STAGE12_RESULT.md",
+  "STAGE12_STEERING_STATE_MAP.md",
+  "VALIDACAO.md",
+  "core/CupTune.lua",
+  "core/NR2003Cup/NR2003CupSteering.lua",
+  "roblox/Client.client.lua",
+  "roblox/CupChassisAdapter.lua",
+  "roblox/Stage12SelfTest.lua",
+  "tests/stage12/run.luau",
+  "tests/stage67/adapter_mock.luau",
+  "tools/adapter_mock_body.luau",
+  "tools/build_stage12.py",
+  "tools/selftest12_template.lua"
+ ],
+ "removed": []
+}
