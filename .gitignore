@@ -11,3 +11,5 @@ recovery/stage10/dev/fixture_steps.lua
 recovery/stage11/footprint11_*.pkl
 recovery/stage11/out/
 tests/stage11/dev/*.lua
+# Watkins Glen recovery: Python caches and local scratch
+watkinsglen_implementation/**/__pycache__/
