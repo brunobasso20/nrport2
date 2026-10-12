@@ -1,0 +1,12 @@
+10024220 MOV EAX,dword ptr [ECX + 0x2032]
+10024226 MOV ECX,dword ptr [ESP + 0x4]
+1002422a FLD dword ptr [EAX + 0x8]
+1002422d FMUL dword ptr [ECX + 0x8]
+10024230 FLD dword ptr [EAX + 0x4]
+10024233 FMUL dword ptr [ECX + 0x4]
+10024236 FADDP
+10024238 FLD dword ptr [EAX]
+1002423a FMUL dword ptr [ECX]
+1002423c FADDP
+1002423e FADD dword ptr [EAX + 0x24]
+10024241 RET 0x4

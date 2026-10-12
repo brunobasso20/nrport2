@@ -1,0 +1,2 @@
+00441c10 FLD dword ptr [0x00894ee8]
+00441c16 RET

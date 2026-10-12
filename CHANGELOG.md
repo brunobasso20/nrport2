@@ -1,3 +1,22 @@
+# 1.0.0-carmodel — carro Cup ORIGINAL do NR2003 (modelo, cockpit, instrumentos, volante, câmeras)
+
+- Base: Stage 13 publicado (3.12.0-stage13, `c64ad5e`), entre o Stage 13 e o Stage 14 (**Stage 14 não iniciado**).
+  Física, direção, FFB e estágios 1–13 **inalterados** (nenhum arquivo fora de `nr2003carmodel_implementation/` mudou,
+  exceto documentação; regressão completa). Dano fora do escopo (carro sem dano).
+- Conversão dos arquivos originais (`pipeline/`): DAT + DCL, 3do (objetos tipados, leitura completa), MIP DXT1/3, `.car`
+  (CTEX = pintura), `.cam` (MACC) → OBJ/MTL em studs com marcadores de calibração, PNG, descritor do rig, instalador de
+  assets e manifest com SHA-256. Nenhum asset original no repositório.
+- Runtime (`roblox/CarModel`): `NR2003Scale` (0,28 m/stud, compartilhado com as pistas futuras), `NR2003DrawState`
+  (células 0x1508..0x15b0 lidas no servidor, interpolação `005ba170` no cliente), `NR2003Gauges` (`0056f040` / luzes do
+  `005662d0`), `NR2003CarModelRig` (rendserv `10011ec0` / `100118e0` / `10012810` + overrides do `005662d0`),
+  `NR2003CameraSystem` (`0056a9a0` em 14 modos, ordem, olhar, opção de FOV, Hor+ / widescreen), cliente / servidor,
+  auto-teste. `NR2003Client` / `NR2003Server`: ganchos opcionais (`roblox/Bench`).
+- Studio: `studio/INSTALL_CARMODEL.lua` (confere o Stage 13 por hash, backup, auto-teste, reversão automática, não salva),
+  `ROLLBACK_CARMODEL.lua`, `.rbxmx`; `INSTALL_CARMODEL_ASSETS.lua` gerado com o pacote convertido.
+- Validação contra o código ORIGINAL no Unicorn (`recovery/orig_carmodel.py`): Euler / decomposição, agulhas (0 ulp),
+  wheel_speed, suavização do olhar, câmeras (168 poses × 14 modos), switches / LOD / animação do rendserv, rig vs
+  referência, cliente ponta a ponta, instalador (mock) — 47 + 14 checks. Evidências Ghidra: 261 funções.
+
 # 3.12.0-stage13 — Stage 13: torque de direção / force feedback original do NR2003 Cup
 
 - Base: Stage 12.1 publicado (3.11.1-stage12.1, `5d9f5ee`). Física, cadeia de direção e estágios 6/7–12.1

@@ -1,0 +1,58 @@
+005f7200 SUB ESP,0x28
+005f7203 FLD dword ptr [ESP + 0x30]
+005f7207 FMUL dword ptr [0x006ea44c]   ; [006ea44c] f32=0.5 i32=1056964608 f64=1.71188778959e-12
+005f720d PUSH ESI
+005f720e FSTP dword ptr [ESP + 0x34]
+005f7212 FLD dword ptr [ESP + 0x34]
+005f7216 FSINCOS
+005f7218 FSTP dword ptr [ESP + 0x8]
+005f721c FSTP dword ptr [ESP + 0x4]
+005f7220 FLD dword ptr [ESP + 0x4]
+005f7224 MOV ESI,dword ptr [ESP + 0x30]
+005f7228 MOV EAX,dword ptr [ESP + 0x8]
+005f722c FSTP dword ptr [ESI + 0x8]
+005f722f FLD dword ptr [ESP + 0x38]
+005f7233 FMUL dword ptr [0x006ea44c]   ; [006ea44c] f32=0.5 i32=1056964608 f64=1.71188778959e-12
+005f7239 MOV dword ptr [ESI + 0xc],EAX
+005f723c FSTP dword ptr [ESP + 0x34]
+005f7240 FLD dword ptr [ESP + 0x34]
+005f7244 FSINCOS
+005f7246 FSTP dword ptr [ESP + 0x38]
+005f724a FSTP dword ptr [ESP + 0x30]
+005f724e FLD dword ptr [ESP + 0x3c]
+005f7252 FMUL dword ptr [0x006ea44c]   ; [006ea44c] f32=0.5 i32=1056964608 f64=1.71188778959e-12
+005f7258 MOV ECX,dword ptr [ESP + 0x30]
+005f725c MOV EDX,dword ptr [ESP + 0x38]
+005f7260 MOV dword ptr [ESP + 0x10],ECX
+005f7264 MOV dword ptr [ESP + 0x18],EDX
+005f7268 FSTP dword ptr [ESP + 0x34]
+005f726c FLD dword ptr [ESP + 0x34]
+005f7270 FSINCOS
+005f7272 FSTP dword ptr [ESP + 0x38]
+005f7276 FSTP dword ptr [ESP + 0x30]
+005f727a MOV EAX,dword ptr [ESP + 0x30]
+005f727e MOV ECX,dword ptr [ESP + 0x38]
+005f7282 MOV dword ptr [ESP + 0x1c],EAX
+005f7286 LEA EDX,[ESP + 0x1c]
+005f728a MOV dword ptr [ESP + 0x28],ECX
+005f728e LEA EAX,[ESP + 0xc]
+005f7292 PUSH EDX
+005f7293 LEA ECX,[ESP + 0x10]
+005f7297 PUSH EAX
+005f7298 PUSH ECX
+005f7299 MOV dword ptr [ESP + 0x2c],0x0
+005f72a1 MOV dword ptr [ESP + 0x30],0x0
+005f72a9 MOV dword ptr [ESP + 0x18],0x0
+005f72b1 MOV dword ptr [ESP + 0x20],0x0
+005f72b9 MOV dword ptr [ESI],0x0
+005f72bf MOV dword ptr [ESI + 0x4],0x0
+005f72c6 CALL 0x005f7050
+005f72cb LEA EDX,[ESP + 0x18]
+005f72cf PUSH EDX
+005f72d0 PUSH ESI
+005f72d1 PUSH ESI
+005f72d2 CALL 0x005f7050
+005f72d7 ADD ESP,0x18
+005f72da POP ESI
+005f72db ADD ESP,0x28
+005f72de RET
