@@ -360,16 +360,27 @@ return function(V)
 		frameStart(controls)
 	end
 	V._frameStartOnly = frameStartAll
+	-- Watkins Glen port: with the car placed on a loaded track (NR2003CupTrack, V._world.active()) the ORIGINAL world
+	-- runs in the 005b2190 order: 005789c0 + 00578a60 at the frame head, 005543f0 + 00551480 after each export
+	-- (005539c0 / 005544e0 tails) and the contact passes 00578da0 / 00578de0 (tyres -> 0055e1e0, body spheres -> walls)
+	-- in place of the host contact planes. Without a loaded track: unchanged (contacts from the host).
 	function V.drive(controls, contacts)
-		if V.tick % TPF == 0 then frameStartAll(controls) end
+		local W = V._world
+		local world = W ~= nil and W.active()
+		if V.tick % TPF == 0 then
+			if world then W.frame() end
+			frameStartAll(controls)
+		end
 		w32(0xe8441c, V.tick % TPF)
 		w8(0xe843fc, 1)
 		tickInputs()
 		callx(0x5b2b90, ROOT, INPUTS); export()
-		tires(contacts, 1); callx(0x5b2bd0)
+		if world then W.record(); W.pass(1) else tires(contacts, 1) end
+		callx(0x5b2bd0)
 		w8(0xe843fc, 0)
 		callx(0x5b2be0); export()
-		tires(contacts, 2); callx(0x5b2bd0)
+		if world then W.record(); W.pass(2) else tires(contacts, 2) end
+		callx(0x5b2bd0)
 		callx(0x5b2c00)
 		V.tick += 1
 		if V.tick % TPF == 0 then V._frameEnd() end

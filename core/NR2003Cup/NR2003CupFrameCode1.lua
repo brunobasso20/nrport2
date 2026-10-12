@@ -135,6 +135,13 @@ local function B_ret16() ESP = band(ESP + 20) end
 -- 005f58d0(out, point) ADAPTER (no track loaded, identical machine-code stub in the Unicorn reference):
 -- out[0..2] = point, the track-query fields +0x0c..+0x57 written by 0051370a cleared
 local function B_trackPoint()
+	-- Watkins Glen port: with a track loaded (NR2003CupTrack) the ORIGINAL 005f58d0 -> 0051370a runs on it
+	local tp = ctx.trackPoint
+	if tp then
+		EAX, ECX, EDX = tp(r32(ESP + 4), r32(ESP + 8))
+		ESP = band(ESP + 4)
+		return
+	end
 	local out, pos = r32(ESP + 4), r32(ESP + 8)
 	local z = r32(pos + 8)
 	w32(out, r32(pos)); w32(out + 4, r32(pos + 4)); w32(out + 8, z)

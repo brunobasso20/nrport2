@@ -42,6 +42,16 @@ end
 -- get(name) -> module value or nil
 function M.fromLoader(get)
     local image=merge(collect(get,"NR2003CupImage"))
+    -- Watkins Glen port (absent without a track install): the ORIGINAL track / collision world memory (track arena,
+    -- world pools, its stack) lies above the Stage 6/7 image; the core memory is created large enough for it. Nothing
+    -- else changes until V.loadTrack() (NR2003CupTrack)
+    local trackHost=get("NR2003CupTrack")
+    local trackData=nil
+    if trackHost then
+        trackData=collect(get,"NR2003CupTrackData")
+        assert(#trackData>0,"NR2003CupTrackData modules missing")
+        image.size=math.max(image.size,trackData[1].top-image.base)
+    end
     local jit=collect(get,"NR2003CupJIT")
     assert(#jit>0,"NR2003CupJIT modules missing")
     local V=get("NR2003CupDriver")(get("NR2003CupCore")(image,jit))
@@ -67,6 +77,11 @@ function M.fromLoader(get)
     -- follows the control-7 binding written by the steering device layer) and after the frame end (its hooks)
     local ffb=get("NR2003CupFFB")
     if ffb then ffb(V) end
+    -- Watkins Glen port: installed last (its enterTrack / reset / session wrappers are the outermost)
+    if trackHost then
+        trackHost(V,collect(get,"NR2003CupTrackCode"),trackData,
+            {build=get("NR2003CupTrackBuild"),placed=collect(get,"NR2003CupJITP"),placedGeneric=collect(get,"NR2003CupJITPG")})
+    end
     return setmetatable({V=V,state=table.create(45,0),pos={0,0,0},rot={1,0,0,0,1,0,0,0,1}},M)
 end
 function M.new(folder)
@@ -79,6 +94,10 @@ function M.new(folder)
 end
 
 function M:reset() self.V.reset() end
+-- Watkins Glen port: load the track into the car's memory (NR2003CupTrack); the next session start / reset places
+-- the car on it (ORIGINAL 005512f0) and the ORIGINAL collision world replaces the host contact planes
+function M:loadTrack(opts) return self.V.loadTrack(opts) end
+function M:trackLoaded() return self.V.trackLoaded ~= nil and self.V.trackLoaded() end
 function M:tick() return self.V.tick end
 -- controls: {throttle, clutch(engagement), shiftUp, shiftDown,
 --   steerLeft/steerRight (Stage 12: raw steering controls 7/8, 0..1) + steerDigital (true = keys/buttons,

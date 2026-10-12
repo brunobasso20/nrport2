@@ -55,6 +55,16 @@ return function(V, Setup, Build, genericJIT)
 
 	V.Setup = Setup
 	V.Build = Build
+	-- Watkins Glen port: a loaded track changes the reset image (NR2003CupTrack): the shipped-image footprint follows it
+	function V._garageRefreshImage() IMAGE_FOOTPRINT = Build.saveFootprint(PRISTINE) end
+	function V._garageStructure() return active == "generic" and "generic" or "natural" end
+	-- further callback sets (Watkins Glen port: the car placed on the track) and their selection by name
+	function V._garageAddCode(name, modules) CODE[name] = V._jitLoad(modules) end
+	function V._garageUseCode(name)
+		local src = assert(CODE[name], "NR2003 garage: no callback set " .. tostring(name))
+		table.clear(JIT)
+		for a, f in pairs(src) do JIT[a] = f end
+	end
 
 	local function same(a, b)
 		for i = 0, 183 do if a[i] ~= b[i] then return false end end

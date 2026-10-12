@@ -91,6 +91,7 @@ return function(V, codeParts, dataParts)
 	local ctx = {M = M, base = BASE, F = {}, R = table.create(10, 0), XF = {}}
 	for _, p in ipairs(codeParts) do p(ctx) end
 	local XF, R = ctx.XF, ctx.R
+	V._frameCtx = ctx   -- Watkins Glen port: ctx.trackPoint (B_trackPoint -> 005f58d0 on a loaded track)
 
 	local function r32(a) return ru(M, a - BASE) end
 	local function w32(a, v) wu(M, a - BASE, band(v)) end
@@ -177,10 +178,15 @@ return function(V, codeParts, dataParts)
 		-- the Stage 6/7 build leaves it 0). car+4 != 0 gates the collision damage of 00549c40 (00549290 body damage,
 		-- 0054a330 wheel / tyre impact states). One-car ring (links -> car+4) around 00549c40 only, as in the Unicorn
 		-- reference (orig_stage11.race_order): car+4 != 0 would also enable the per-tick render copy 005543f0.
+		-- Watkins Glen port: on a loaded track the car is in the race order of the session (00563620): no adapter ring
 		local l4, l8 = r32(CAR + 4), r32(CAR + 8)
-		w32(CAR + 4, CAR + 4); w32(CAR + 8, CAR + 4)
-		callx(0x549c40, nil)
-		w32(CAR + 4, l4); w32(CAR + 8, l8)
+		if l4 ~= 0 then
+			callx(0x549c40, nil)
+		else
+			w32(CAR + 4, CAR + 4); w32(CAR + 8, CAR + 4)
+			callx(0x549c40, nil)
+			w32(CAR + 4, l4); w32(CAR + 8, l8)
+		end
 	end
 	V._frameStart11 = frameStart11
 	V._frameEnd = frameEnd11
@@ -222,6 +228,8 @@ return function(V, codeParts, dataParts)
 		callx(0x550c40, nil)
 		callx(0x550c60, nil)
 		callx(0x5512d0, nil)
+		-- Watkins Glen port (@00550aeb): ORIGINAL 005512f0 placement on the loaded track (NR2003CupTrack)
+		if V._place then V._place() end
 		w32(CAR + 0x1518, 0)
 		-- Stage 13 (@00550b07): ORIGINAL 00550070(0), player controls active + FF axis setup (NR2003CupFFB)
 		if V._ffbEnterTrack then V._ffbEnterTrack() end
