@@ -82,8 +82,11 @@ mostra este diretório e documentação). Execuções nesta máquina:
 |---|---|
 | Stages 1–5 (`tests/*.lua`, Lua 5.4): check_syntax, baseline, physics, original_core, core_dynamics, geometry, render_snapshots, seat_access, stage5 | 9 / 9 PASS, mesmos números de `tests/RESULTS.txt` (ex.: 14 008 comparações x86, erro máx. 1,19e−7; pico 26,26 km/h) |
 | `tools/run_stage13_tests.sh`: rebuild dos entregáveis Stage 12 / 12.1 (sem diferença) e Stage 13 | PASS (byte a byte) |
-| Stage 6/7 · 8 · 9 · 10 (setup + build) · 11 | 16 · 49 · 59 · 23 + 61 · 66 PASS, 0 falhas |
-| Stage 12, Stage 13, adapter mock, 8 patch mocks, compilação de sintaxe | em execução no momento deste commit — resultado registrado no próximo commit |
+| Stage 6/7 · 8 · 9 · 10 (setup + build) · 11 · 12 · 13 | 16 · 49 · 59 · 23 + 61 · 66 · 52 · 40 PASS, 0 falhas |
+| adapter mock · patch mocks 6/7, 8, 9, 10, 11, 12, 12→12.1, 12.1→13 | 77 · 11, 13, 13, 17, 15, 19, 20, 22 PASS, 0 falhas |
+| compilação de sintaxe (core, roblox, PATCH_STAGE13*) | OK; `git status` limpo depois do rebuild (entregáveis 12 / 12.1 / 13 idênticos) |
+
+Log: `tests/REGRESSION_CARMODEL.txt` (saída completa do `tools/run_stage13_tests.sh`, exit 0).
 
 ## Checklist manual no Studio (Full HD 16:9)
 
