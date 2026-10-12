@@ -40,9 +40,12 @@ POW_SPAN = (0x6c5c40, 0x6c5c40 + 64)     # Stage 6/7 _CIpow replacement (orig_ve
 _cfg = {}
 
 
-def configure(track_dir, shared_dir, server_mem=None):
+def configure(track_dir, shared_dir, server_mem=None, stall=None, grid=0, rts_mem=None):
     """track_dir: folder with <track>.dat + track.ini (the game's tracks/<name>/); shared_dir: tracks/shared."""
-    _cfg.update(track=Path(track_dir), shared=Path(shared_dir), server=server_mem or os.environ.get('SERVER_MEM'))
+    _cfg.update(track=Path(track_dir), shared=Path(shared_dir), server=server_mem or os.environ.get('SERVER_MEM'),
+                name=Path(track_dir).name, grid=grid, rts=rts_mem or os.environ.get('RTS_MEM'))
+    if stall is not None:
+        _cfg['stall'] = stall
 
 
 _boot13 = _OR.boot
@@ -56,6 +59,9 @@ def _boot_world(*a, **k):
     m.uc.mem_write(0x5f58d0, OT.original_bytes(0x5f58d0, len(O11.TRACKPOINT_STUB)))
     m.uc.ctl_flush_tb()
     import crt_x87
+    import rts_native
+    # rts.dll code run natively for the pure-computation exports the track / collision code uses
+    m.rts_bound = rts_native.load(m, ['?Remove@RBNodeBase@@QAEXPAV1@@Z'], mem=_cfg.get('rts'))
     crt = ServerCRT(_cfg['server'])
     host = OT.TrackHost(m, x87_ranges=((0x510000, 0x51a000), (0x575000, 0x57a000), (0x6c6d40, 0x6c6f00),
                                        (0x6c72b0, 0x6c7300)), crt_allow=(POW_SPAN,),
@@ -89,6 +95,69 @@ _OR.boot = _boot_world
 class OriginalWorld(O13.OriginalStage13):
     def __init__(self, *a, **k):
         super().__init__(*a, **k)
+        m = self.m
+        # 00573010 (track init after the loaders), its non-rendering part, once the car's physics spec exists (the
+        # race lines read per-wheel data 0056ed60): 0050c8d0 AI race lines (.lp; b8f258), 00579cd0 car-part x surface
+        # interaction tables, 00573af0, 005105c0(PTF root)
+        # 0050c8d0 (AI race lines) needs the series tables (0056c150: c5c3c8 / c5ca20) that the physics bench never
+        # loads; it only sets b8f258 (opponent-wheel row 0x12 of the interaction tables: car-car wheel contacts).
+        # Not run (single car, no AI): b8f258 = 0, documented.
+        m.call(0x579cd0)
+        m.call(0x573af0)
+        m.call(0x5105c0, m.track_root)
+        k = m.i32(CAR + 0x5b2)
+        self.k = k
+        self.carobj = BG_CAROBJ + k * CAROBJ_SIZE
+        # session start 00566e50: BG object init 0059fa90 (base = carobj - 0xcc) and the car's collision geometry
+        m.call(0x59fa90, ecx=self.carobj - 0xcc)
+        m.w32(self.carobj - 0xcc + 0x270, k)
+        if m.call(0x433cb0, k, CAR + 0x58e, self.carobj) == 0:
+            raise RuntimeError('00433cb0 (collision geometry) failed')
+        m.call(0x578610, ecx=WORLD)
+        # world record + race order (0055bfd0 per frame: car+0x5ae = 005a13f0 record, 00563620 insert)
+        m.w32(CAR + 0x5ae, self.carobj + 0x98)
+        self.place(*_cfg.get('stall', (0.0, 0.0, 0.0)))
+        m.call(0x563620, CAR)
+
+    def place(self, dlong, dlat, yaw=0.0):
+        """ORIGINAL 005512f0(dlong, dlat, yaw): track -> world (005150fa), BG object init, multibody pose 00551520"""
+        f = lambda x: struct.unpack('<I', struct.pack('<f', x))[0]
+        self.m.call(0x5512f0, f(dlong), f(dlat), f(yaw))
+
+    def world_frame(self):
+        """005b2190 head: 005789c0(00562f70, 00566a20) broadphase, 00578a60 pair maintenance (world c74e20)"""
+        m = self.m
+        m.call(0x5789c0, 0x562f70, 0x566a20, ecx=WORLD)
+        m.call(0x578a60, ecx=WORLD)
+
+    def drive_tick(self, contacts=None):
+        """one 005b2190 tick: 005539c0, 00578da0, 005544d0, 005544e0, 00578de0, 005544d0, 00554510"""
+        m = self.m
+        m.w32(0xe8441c, self.tick % O11.TICKS_PER_FRAME)
+        m.uc.mem_write(0xe843fc, b'\x01')
+        m.call(0x5539c0)
+        m.call(0x578da0, ecx=WORLD)
+        m.call(0x5544d0)
+        m.uc.mem_write(0xe843fc, b'\x00')
+        m.call(0x5544e0)
+        m.call(0x578de0, ecx=WORLD)
+        m.call(0x5544d0)
+        m.call(0x554510)
+        self.tick += 1
+
+    def frame_end(self):
+        m = self.m
+        m.call(0x554520)
+        m.call(0x549c40)
+
+    def step_driver(self, controls, contacts=None):
+        if self.tick % O11.TICKS_PER_FRAME == 0:
+            self.world_frame()
+            self.frame(controls)
+        self.drive_tick()
+        if self.tick % O11.TICKS_PER_FRAME == 0:
+            self.frame_end()
+        return self.state()
 
 
 __all__ = ['configure', 'OriginalWorld', 'WORLD', 'BG_CAROBJ']

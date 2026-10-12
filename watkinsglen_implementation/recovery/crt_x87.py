@@ -50,7 +50,12 @@ CIACOS = (b'\x52\xd9\x3c\x24' + b'\x66\x81\x3c\x24\x7f\x02' + b'\x74\x18'
           + b'\x83\xec\x04\x8b\x44\x24\x04\x25\x00\x03\x00\x00\x83\xc8\x7f\x89\x04\x24\xd9\x2c\x24\x83\xc4\x04'
           + b'\xd9\xe8\xd8\xc1\xd9\xe8\xd8\xe2\xde\xc9\xd9\xfa\xd9\xc9\xd9\xf3' + b'\xd9\x2c\x24\x5a\xc3')
 
-CODE = {0x6c72b0: CIACOS, 0x6c5018: FTOL, 0x6c5af0: CHKSTK, 0x6c6d40: CISIN, 0x6c6df0: CICOS, 0x6c6ea0: CISQRT}
+# floor (006c503f <-> server 006c4b4f): _ctrlfp(0x173f): RC down, PC 64; frndint; result through a double; caller CW
+# restored. The caller CW is kept apart from RC (only RC matters to frndint; the masks hide the precision exception).
+FLOOR = bytes.fromhex('55 89e5 83ec10 d97dfc 668b45fc 6625fff3 660d0004 668945fe d96dfe dd4508 d9fc dd5df0 dd45f0'
+                      ' d96dfc c9 c3'.replace(' ', ''))
+
+CODE = {0x6c72b0: CIACOS, 0x6c5af0: CHKSTK, 0x6c6d40: CISIN, 0x6c6df0: CICOS, 0x6c6ea0: CISQRT, 0x6c503f: FLOOR}
 ENCRYPTED = (0x6c3990, 0x6d8000)
 
 
@@ -59,10 +64,13 @@ def install(m, allow=(), extra=None, server=None):
     m.uc.mem_write(CW027F, struct.pack('<H', 0x027f))
     for a, code in CODE.items():
         m.uc.mem_write(a, code)
+    # __ftol: the original slot is 39 bytes (006c5018..006c503e, floor follows): jump to a copy outside the block
+    ftol = m.alloc(64, FTOL)
+    m.uc.mem_write(0x6c5018, b'\xe9' + struct.pack('<i', ftol - (0x6c5018 + 5)))
     py = {0x6c4b00: _strncpy, 0x6c5260: _strncat, 0x6c79d2: _isnan, 0x6c6530: _stricmp, 0x6c4f81: _sprintf,
           0x6c4f40: _atexit}
     py.update(extra or {})
-    spans = sorted([(a, a + len(c)) for a, c in CODE.items()] + list(allow))
+    spans = sorted([(a, a + len(c)) for a, c in CODE.items()] + [(0x6c5018, 0x6c501d)] + list(allow))
 
     def guard(uc, address, size, user):
         for a, b in spans:
