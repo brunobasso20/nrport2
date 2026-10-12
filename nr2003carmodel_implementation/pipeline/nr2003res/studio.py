@@ -23,18 +23,66 @@ def fnv(s):
     return h
 
 
+# Lua: material pass over the imported template model. NR2003 draws the base texture's alpha as transparency
+# (descriptor g.alpha = "blend": windows, windshield buildup, nets, lights, backfire, interior cut-outs). The Studio 3D
+# Importer may put the texture in MeshPart.TextureID or in a SurfaceAppearance (glTF / FBX materials); a SurfaceAppearance
+# needs AlphaMode = Transparency for those, Overlay otherwise. Older descriptors (no g.alpha): the textures of the
+# standard cup.dat whose alpha is transparency.
+MATERIALS_LUA = r'''local DEFAULT_BLEND={backfire=true,bottom=true,card=true,catch=true,glass=true,interior=true,light_c=true,
+    netting=true,tach_night=true,tachlight=true}
+local function applyMaterials(model,desc)
+    local st={parts=0,surface=0,textureId=0,none=0,blend=0,alphaFixed=0,created=0,errors=0}
+    for _,g in ipairs(desc.geometries) do
+        local p=model:FindFirstChild(g.name,true)
+        if p and p:IsA("BasePart") then
+            st.parts+=1
+            local blend
+            if g.alpha~=nil then blend=(g.alpha=="blend") else blend=DEFAULT_BLEND[g.texture]==true end
+            if blend then st.blend+=1 end
+            local sa=p:FindFirstChildOfClass("SurfaceAppearance")
+            if sa then
+                st.surface+=1
+                local want=blend and Enum.AlphaMode.Transparency or Enum.AlphaMode.Overlay
+                if sa.AlphaMode~=want then
+                    if pcall(function() sa.AlphaMode=want end) then st.alphaFixed+=1 else st.errors+=1 end
+                end
+            elseif p:IsA("MeshPart") and p.TextureID~="" then
+                st.textureId+=1
+                if blend then
+                    local ok=pcall(function()
+                        local n=Instance.new("SurfaceAppearance");n.ColorMap=p.TextureID
+                        n.AlphaMode=Enum.AlphaMode.Transparency;n.Parent=p
+                    end)
+                    if ok then st.created+=1 else st.errors+=1 end
+                end
+            else st.none+=1 end
+        end
+    end
+    return st
+end
+local function reportMaterials(st)
+    print(string.format("Materiais: %d peças | textura em SurfaceAppearance %d, em TextureID %d, SEM textura %d | %d transparentes (alfa = transparência), %d AlphaMode corrigidos, %d SurfaceAppearance criadas, %d erros",
+        st.parts,st.surface,st.textureId,st.none,st.blend,st.alphaFixed,st.created,st.errors))
+    if st.none>0 then
+        warn(st.none.." peças importadas sem textura: reimporte obj/make_a.glb (texturas embutidas) pelo 3D Importer; se continuar, confira se as imagens passaram pela moderação do Roblox (Asset Manager > Images)")
+    end
+end
+'''
+
+
 def assets_installer(desc, data_name, data_source):
     pkg = desc["meta"]["package"]
     names = [g["name"] for g in desc["geometries"]]
     transparent = {g["name"]: round(1 - g["opacity"], 4) for g in desc["geometries"] if g["opacity"] < 1}
     head = r'''-- INSTALL_CARMODEL_ASSETS — pacote __PKG__ (gerado pelo convert_car.py a partir dos SEUS arquivos do NR2003:
 -- uso privado, não distribua). Cole na Command Bar do Studio, FORA do Play, depois de INSTALL_CARMODEL.lua e de importar
--- __PKG__.obj pelo 3D Importer (File > Import 3D; unidade Stud; o importador pode mover / escalar à vontade: os 4
+-- __PKG__.glb pelo 3D Importer (File > Import 3D; texturas embutidas; o importador pode mover / escalar à vontade: os 4
 -- marcadores NR2003_MARKER_* medem a transformação). Selecione o modelo importado (ou deixe-o no Workspace com o nome
 -- __PKG__) e rode este script. NÃO salva o place.
 --   * cria/atualiza NR2003Lab.CarModel.Data.__DATA__ (descritor do rig)
 --   * move o modelo importado para NR2003Lab.CarModel.Assets.__PKG__ (o anterior vai para ServerStorage.NR2003Backup_CarModelAssets)
---   * peças: Anchored, sem colisão / consulta / toque; transparência = 1 - opacidade do material 3do (vidros)
+--   * peças: Anchored, sem colisão / consulta / toque; transparência = 1 - opacidade do material 3do
+--   * materiais: alfa da textura = transparência (vidros, para-brisa, redes, luzes): SurfaceAppearance AlphaMode
 --   * _G.NR2003_LIVERY_TEXTURE = "rbxassetid://..." (opcional): atributo NR2003LiveryTexture no TestCar
 assert(not game:GetService("RunService"):IsRunning(),"Pare o Play antes")
 local RS=game:GetService("ReplicatedStorage")
@@ -46,6 +94,7 @@ local pkg=assert(RS:FindFirstChild("NR2003Lab"),"NR2003Lab ausente")
 local folder=assert(pkg:FindFirstChild("CarModel"),"NR2003Lab.CarModel ausente: rode INSTALL_CARMODEL.lua antes")
 local dataF=folder:FindFirstChild("Data") or Instance.new("Folder",folder);dataF.Name="Data"
 local assetsF=folder:FindFirstChild("Assets") or Instance.new("Folder",folder);assetsF.Name="Assets"
+__MATERIALS__
 local NAMES=__NAMES__
 local TRANSPARENT=__TRANSPARENT__
 local MARKERS={"NR2003_MARKER_O","NR2003_MARKER_X","NR2003_MARKER_Y","NR2003_MARKER_Z"}
@@ -58,7 +107,7 @@ end
 if src==nil then src=workspace:FindFirstChild(PKG) end
 local existing=assetsF:FindFirstChild(PKG)
 if src==nil then src=existing end
-assert(src,"modelo importado não encontrado: selecione o Model criado pelo 3D Importer ("..PKG..".obj) e rode de novo")
+assert(src,"modelo importado não encontrado: selecione o Model criado pelo 3D Importer ("..PKG..".glb) e rode de novo")
 local missing,parts={},0
 for _,m in ipairs(MARKERS) do
     local p=src:FindFirstChild(m,true)
@@ -91,16 +140,18 @@ for _,d in ipairs(src:GetDescendants()) do
     end
 end
 src.Parent=assetsF
--- 4) optional livery
+-- 4) materials (alpha = transparency where NR2003 draws it so)
+reportMaterials(applyMaterials(src,require(m)))
+-- 5) optional livery
 local car=workspace:FindFirstChild("TestCar",true)
 if _G.NR2003_LIVERY_TEXTURE and car then car:SetAttribute("NR2003LiveryTexture",_G.NR2003_LIVERY_TEXTURE) end
--- 5) self-test (code + descriptor + imported model)
+-- 6) self-test (code + descriptor + imported model)
 local ok,lines=require(folder.NR2003CarModelSelfTest).run(true)
 print(string.format("Pacote %s instalado: %d geometrias, descritor %d caracteres. Auto-teste: %s",PKG,parts,#m.Source,ok and "OK" or "FALHOU"))
 print("Dê Play e entre no carro: V/B troca câmera (cockpit, Roll Bar, F10, Chase, Nose...), Z/C olha, [ ] muda o FOV.")
 print("O place NÃO foi salvo. Para desfazer: apague CarModel.Data."..DATA.." e CarModel.Assets."..PKG.." (ou ROLLBACK_CARMODEL.lua).")
 '''
-    body = (head.replace("__PKG__", pkg).replace("__DATA__", data_name)
+    body = (head.replace("__PKG__", pkg).replace("__DATA__", data_name).replace("__MATERIALS__", MATERIALS_LUA)
             .replace("__NAMES__", "{" + ",".join(json.dumps(n) for n in names) + "}")
             .replace("__TRANSPARENT__", "{" + ",".join("[%s]=%r" % (json.dumps(k), v) for k, v in transparent.items()) + "}")
             .replace("__LEN__", str(len(data_source.encode("utf-8")))))

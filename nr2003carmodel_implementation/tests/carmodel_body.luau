@@ -100,22 +100,44 @@ function Part.IsA(p, c) return c == "BasePart" or c == "MeshPart" or c == "Insta
 function Part.Clone(p) local c = setmetatable({}, Part); for k, v in pairs(p) do c[k] = v end; c.Parent = nil; return c end
 function Part.GetDescendants() return {} end
 function Part.Destroy(p) p.Parent = nil end
+function Part.IsDescendantOf() return false end
 local function newPart(name, cf, size) return setmetatable({Name = name, CFrame = cf, Size = size, TextureID = ""}, Part) end
 local Model = {}
 Model.__index = Model
 function Model.SetAttribute(m, k, v) m.attrs[k] = v end
 function Model.Destroy(m) m.destroyed = true end
+local Generic = {}
+Generic.__index = Generic
+function Generic.ClearAllChildren(o) o.children = {} end
+function Generic.Destroy(o) o.destroyed = true; o.Parent = nil end
+function Generic.GetDescendants() return {} end
+function Generic.IsA(o, c) return o.ClassName == c end
+local created = {}
 local Instance = {new = function(class)
-	assert(class == "Model", "mock: Instance.new " .. tostring(class))
-	return setmetatable({ClassName = "Model", attrs = {}}, Model)
+	if class == "Model" then return setmetatable({ClassName = "Model", attrs = {}}, Model) end
+	local o = setmetatable({ClassName = class, Name = class, children = {}, Enabled = true}, Generic)
+	created[#created + 1] = o
+	return o
 end}
+local Color3 = {}
+Color3.__index = Color3
+function Color3.new(r, g, b) return setmetatable({R = r or 0, G = g or 0, B = b or 0}, Color3) end
+function Color3.fromRGB(r, g, b) return Color3.new(r / 255, g / 255, b / 255) end
+function Color3.Lerp(a, b, t) return Color3.new(a.R + (b.R - a.R) * t, a.G + (b.G - a.G) * t, a.B + (b.B - a.B) * t) end
+local Vector2 = {new = function(x, y) return {X = x, Y = y} end}
+local UDim2 = {fromScale = function(x, y) return {sx = x, sy = y} end}
+local Services = {Lighting = {GetSunDirection = function() return Vector3.new(0.3, 0.8, -0.2) end, OutdoorAmbient = Color3.new(0.5, 0.5, 0.5)}}
+local game = {GetService = function(_, n) return Services[n] or {} end}
 local bulk = {calls = 0, parts = 0}
 local workspace = {}
 function workspace:BulkMoveTo(parts, cframes)
 	bulk.calls += 1; bulk.parts = #parts
 	for i, p in ipairs(parts) do p.CFrame = cframes[i] end
 end
-local Enum = {BulkMoveMode = {FireCFrameChanged = "FireCFrameChanged"}}
+local Enum = {BulkMoveMode = {FireCFrameChanged = "FireCFrameChanged"}, NormalId = {Back = "Back"},
+	SurfaceGuiSizingMode = {FixedSize = "FixedSize"}, UserInputType = {MouseButton2 = "MouseButton2",
+	MouseMovement = "MouseMovement", MouseWheel = "MouseWheel"}, MouseBehavior = {Default = "Default",
+	LockCurrentPosition = "LockCurrentPosition"}, KeyCode = {Thumbstick2 = "Thumbstick2"}}
 local Random = {new = function(seed)
 	local st = seed
 	return {NextNumber = function(_, a, b) st = (st * 1103515245 + 12345) % 2147483648; return a + (b - a) * st / 2147483648 end}
@@ -134,7 +156,8 @@ local function mockRequire(ref)
 	if loaded[name] then return loaded[name] end
 	local f = assert(loadstring(assert(SOURCES[name], "no source " .. name), name))
 	setfenv(f, setmetatable({script = {Parent = folder}, require = mockRequire, workspace = workspace, Vector3 = Vector3,
-		CFrame = CFrame, Instance = Instance, Enum = Enum, Random = Random}, {__index = _G}))
+		CFrame = CFrame, Instance = Instance, Enum = Enum, Random = Random, Color3 = Color3, Vector2 = Vector2, UDim2 = UDim2,
+		game = game, warn = print}, {__index = _G}))
 	loaded[name] = f()
 	return loaded[name]
 end
@@ -298,6 +321,21 @@ do
 		end
 	end
 	check("widescreen projection: cockpit / look views 65 deg (00587ea2), other views unchanged", wideOk)
+	-- rear-view mirror camera (0056a9a0, second camera argument)
+	local me, mr, mf, mbad = 0, 0, 0, 0
+	for _, c in ipairs(FX.mirror) do
+		cams.mode = c.mode
+		cams.lookSign, cams.lookEased, cams.lookAnalog = 1, c.look, c.analog
+		local o = cams:computeMirror(c.pos, c.R, {head = c.head, modelHead = c.modelHead, headPitch = c.headPitch, headRoll = c.headRoll}, {})
+		local e, r = 0, 0
+		for i = 1, 3 do e = math.max(e, math.abs(o.eye[i] - c.eye[i])) end
+		for i = 1, 9 do r = math.max(r, math.abs(o.R[i] - c.M[i])) end
+		local f = math.max(math.abs(o.fov43 - c.fov[1]), math.abs(o.shift[1] - c.fov[2]), math.abs(o.shift[2] - c.fov[3]), math.abs(o.near - c.near))
+		me, mr, mf = math.max(me, e), math.max(mr, r), math.max(mf, f)
+		if e > 2e-4 or r > 2e-6 or f > 1e-6 then mbad += 1 end
+	end
+	check(string.format("rear-view mirror camera == ORIGINAL 0056a9a0 mirror path (%d poses: head displacement, look, analog)", #FX.mirror),
+		mbad == 0, string.format("eye max %.3g m, rotation max %.3g, fov/shift/near max %.3g", me, mr, mf))
 	-- FOV option (00440a30 / 00567a80 / 00567ab0): 65..78 deg in 1 deg steps
 	local o = Cameras.new({})
 	local def = o:optionRad()
@@ -594,14 +632,22 @@ if DESCRIPTOR_SOURCE then
 	local camera = {CFrame = CFrame.new(0, 0, 0), FieldOfView = 70, CameraType = "Custom", ViewportSize = {X = 1920, Y = 1080}}
 	workspace.CurrentCamera = camera
 	function workspace:Raycast() return nil end
-	local UIS = {GetLastInputType = function() return {Name = "Keyboard"} end, GetGamepadConnected = function() return false end}
-	local env = {GetService = function(_, n) if n == "UserInputService" then return UIS end return {} end}
+	local function signal() local sg = {fns = {}}; function sg:Connect(fn) table.insert(self.fns, fn); return {Disconnect = function() end} end
+		function sg:Fire(...) for _, fn in ipairs(self.fns) do fn(...) end end; return sg end
+	local UIS = {GetLastInputType = function() return {Name = "Keyboard"} end, GetGamepadConnected = function() return false end,
+		InputBegan = signal(), InputEnded = signal(), InputChanged = signal(), MouseBehavior = "Default"}
+	Services.UserInputService = UIS
+	local env = game
+	-- the bench world the mirror reflects: two anchored blocks
+	local worldParts = {newPart("Asphalt", CFrame.new(0, -1, -350), Vector3.new(400, 2, 1000)), newPart("Barrier", CFrame.new(190, 3, -350), Vector3.new(2, 6, 1000))}
+	for _, wp in ipairs(worldParts) do wp.Anchored = true; wp.Transparency = 0 end
+	function workspace:GetDescendants() return worldParts end
 	local RaycastParams = {new = function() return {} end}
 	Enum.RaycastFilterType = {Exclude = "Exclude"}
 	Enum.CameraType = {Scriptable = "Scriptable"}
 	local f = assert(loadstring(SOURCES.NR2003CarModelClient, "NR2003CarModelClient"))
 	setfenv(f, setmetatable({script = {Parent = folder}, require = mockRequire, workspace = workspace, Vector3 = Vector3,
-		CFrame = CFrame, Instance = Instance, Enum = Enum, game = env, RaycastParams = RaycastParams}, {__index = _G}))
+		CFrame = CFrame, Instance = Instance, Enum = Enum, game = env, RaycastParams = RaycastParams, warn = print}, {__index = _G}))
 	local Client = f()
 	local presentation = {buffer = {renderTime = 10.05}}
 	local keys = {}
@@ -634,7 +680,35 @@ if DESCRIPTOR_SOURCE then
 	check("client draw state at the render time: steer lerp 0.03, rpm newer record, wheel angle = clamp(-(15 * 0.03))",
 		math.abs(cm.ds.steer - 0.03) < 1e-6 and cm.ds.rpm == 6000 and math.abs(cm.ds.wheelAngle + 0.45) < 1e-5
 		and cm.vars.cockpitView == 1 and cm.vars.tachLightEnable == 0 and cm.vars.waterTempLightEnable == 0)
+	-- rear-view mirror: ORIGINAL mirror camera, image through the rearView portal, reflected world
+	local Mirror = mockRequire({ref = "NR2003Mirror"})
+	local mir = cm.mirror
+	local mcWant = cams:computeMirror({bx, by, bz}, Rb, {head = cm.ds.headTranslation, modelHead = headNode.t, headPitch = 0, headRoll = 0}, {})
+	local camWant = Mirror.reflect(Scale.cframe(mcWant.eye[1], mcWant.eye[2], mcWant.eye[3], mcWant.R))
+	local dpM, drM = 1, 1
+	if mir then dpM, drM = cfError(mir.cam.CFrame, camWant) end
+	local local_ = mir and mir.part.CFrame:Inverse() * camPos
+	check("mirror: shown in the cockpit, 2 world parts cloned, camera = reflected ORIGINAL mirror camera, image faces the driver",
+		mir ~= nil and mir.gui.Enabled and mir.clones == 2 and dpM < 1e-9 and drM < 1e-12 and local_ and local_.Z > 0,
+		mir and string.format("FOV %.2f deg, portal %.3f x %.3f m", mir.cam.FieldOfView, mir.width, mir.height) or "no mirror")
+	-- the reflected world seen by the reflected camera = the original view flipped left-right
+	local worst, detOk = 0, true
+	local C = Scale.cframe(3, -2, 1.5, Scale.euler(2.1, 0.1, -0.05))
+	for k = 1, 20 do
+		local P = Vector3.new(k * 7.3 - 60, (k % 5) * 3 - 4, -k * 11.1)
+		local a = C:Inverse() * P
+		local b = Mirror.reflect(C):Inverse() * Vector3.new(-P.X, P.Y, P.Z)
+		worst = math.max(worst, math.abs(a.X + b.X), math.abs(a.Y - b.Y), math.abs(a.Z - b.Z))
+	end
+	for _, wp in ipairs(worldParts) do
+		local _, _, _, r00, r01, r02, r10, r11, r12, r20, r21, r22 = Mirror.reflect(wp.CFrame * CFrame.Angles(0.3, 0.2, 0.1)):GetComponents()
+		local det = r00 * (r11 * r22 - r12 * r21) - r01 * (r10 * r22 - r12 * r20) + r02 * (r10 * r21 - r11 * r20)
+		if math.abs(det - 1) > 1e-9 then detOk = false end
+	end
+	check("mirror image handedness: reflect(world) through reflect(camera) = original view flipped left-right; clones stay proper rotations",
+		worst < 1e-9 and detOk, string.format("max %.2g", worst))
 	cm:nextCamera(); cm:update(1 / 60, true); cm:applyCamera(camera)
+	check("mirror hidden outside the cockpit (Roll Bar)", mir ~= nil and mir.gui.Enabled == false)
 	local rb = desc.cameras["Roll Bar"]
 	check("V -> Roll Bar (13): on-car camera of the .cam, its own FOV, car drawn (cockpitView 0)",
 		attrs.NR2003Camera == "Roll Bar" and math.abs(camera.FieldOfView - Scale.verticalFov(rb.fov[1])) < 1e-9 and cm.vars.cockpitView == 0,
@@ -652,6 +726,38 @@ if DESCRIPTOR_SOURCE then
 	for _ = 1, 12 do cm:update(1 / 60, true) end
 	check("Z held in the cockpit -> LookLeft eased to 45 deg", attrs.NR2003Camera == "LookLeft" and math.abs(cm.cams.lookEased - 0.7853982) < 1e-7)
 	keys.LookLeft = nil
+	-- NON-ORIGINAL orbit of the chase cameras: right mouse drag / wheel; zero orbit = the original placement
+	cm.cams:setMode(1); cm.cams:nextCamera(); cm.cams:nextCamera()       -- cockpit -> Roll Bar -> F10Near (4)
+	cm:update(1 / 60, true); cm:applyCamera(camera)
+	local pivot = chassis.CFrame.Position
+	local e0 = camera.CFrame.Position
+	local want0 = cams; want0.mode = 4; want0:resetOrbit()
+	local o0 = want0:compute({bx, by, bz}, Rb, {head = headNode.t, headPitch = 0, headRoll = 0}, nil, {})
+	local e0want = Scale.point(o0.eye[1], o0.eye[2], o0.eye[3])
+	UIS.InputBegan:Fire({UserInputType = "MouseButton2"}, false)
+	local locked = UIS.MouseBehavior == "LockCurrentPosition"
+	UIS.InputChanged:Fire({UserInputType = "MouseMovement", Delta = Vector3.new(-196.35, 0, 0)}, false)
+	cm:update(1 / 60, true); cm:applyCamera(camera)
+	local e1 = camera.CFrame.Position
+	UIS.InputEnded:Fire({UserInputType = "MouseButton2"}, false)
+	local h0, h1 = e0 - pivot, e1 - pivot
+	local ang = math.acos(math.clamp((h0.X * h1.X + h0.Z * h1.Z) / math.sqrt((h0.X ^ 2 + h0.Z ^ 2) * (h1.X ^ 2 + h1.Z ^ 2)), -1, 1))
+	check("orbit: F10Near without input = ORIGINAL placement; right-drag 196 px rotates it ~90 deg about the car at the same distance",
+		(e0 - e0want).Magnitude < 1e-6 and locked and UIS.MouseBehavior == "Default" and math.abs(ang - 196.35 * 0.008) < 1e-3
+		and math.abs(h1.Magnitude - h0.Magnitude) < 1e-6, string.format("%.1f deg, distance %.2f studs", math.deg(ang), h1.Magnitude))
+	UIS.InputChanged:Fire({UserInputType = "MouseWheel", Position = Vector3.new(0, 0, 1)}, false)
+	cm:update(1 / 60, true); cm:applyCamera(camera)
+	local zoomed = (camera.CFrame.Position - pivot).Magnitude
+	UIS.InputBegan:Fire({UserInputType = "MouseButton2"}, false)
+	UIS.InputChanged:Fire({UserInputType = "MouseMovement", Delta = Vector3.new(0, 5000, 0)}, false)
+	UIS.InputEnded:Fire({UserInputType = "MouseButton2"}, false)
+	cm:update(1 / 60, true); cm:applyCamera(camera)
+	local hp = camera.CFrame.Position - pivot
+	local elev = math.deg(math.asin(hp.Y / hp.Magnitude))
+	cm:nextCamera(); cm:prevCamera(); cm:update(1 / 60, true); cm:applyCamera(camera)
+	check("orbit: wheel zoom 0.9x, elevation clamped at 80 deg, V / B reset to the original camera",
+		math.abs(zoomed / h0.Magnitude - 0.9) < 1e-6 and math.abs(elev - 80) < 1e-6 and (camera.CFrame.Position - e0want).Magnitude < 1e-6,
+		string.format("zoom %.3f, elevation %.2f deg", zoomed / h0.Magnitude, elev))
 	local t1 = os.clock()
 	for i = 1, 500 do presentation.buffer.renderTime = 10.0 + (i % 100) * 0.001; cm:update(1 / 60, true); cm:applyCamera(camera) end
 	check("performance: full client frame (draw state + gauges + camera + rig)", true,

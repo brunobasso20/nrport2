@@ -3,11 +3,12 @@
 Referência = o código ORIGINAL do NR2003.exe / rendserv.dll executado no Unicorn 2.1.4 (`recovery/orig_carmodel.py`,
 imagem do projeto Ghidra do OpenNR2003 exportada por `ExportMemoryPy.py`) e o rig de referência (`pipeline/nr2003res/rig.py`,
 conferido visualmente pelo `preview.py`). Vetores: `recovery/gen_fixtures.py` → `tests/fixtures_carmodel.lua` (e o
-subconjunto do Studio `roblox/CarModel/NR2003CarModelGolden.lua`). Suítes: `tests/carmodel_run.luau` (47),
-`tests/install_mock.luau` (14). Resultados completos: `tests/RESULTS_CARMODEL.txt`. Nenhuma tolerância foi escolhida
+subconjunto do Studio `roblox/CarModel/NR2003CarModelGolden.lua`). Suítes: `tests/carmodel_run.luau` (53),
+`tests/install_mock.luau` (16). Resultados completos: `tests/RESULTS_CARMODEL.txt`. Nenhuma tolerância foi escolhida
 depois de ver um erro: os limites são a precisão f32 do original (1 ulp) ou explicitados abaixo.
 
-**Resultado: 47 / 47 + 14 / 14 PASS; regressão dos estágios 1–13 inalterada.**
+**Resultado (1.1.0): 53 / 53 + 16 / 16 PASS; regressão dos estágios 1–13 inalterada** (nenhum arquivo fora deste
+diretório mudou desde a 1.0.0 além da documentação).
 
 ## Geometria e escala
 
@@ -52,6 +53,11 @@ depois de ver um erro: os limites são a precisão f32 do original (1 ulp) ou ex
 | opção de FOV: 65 → 66° em um passo, satura em 78° / 65° | PASS |
 | widescreen (`00587ea2`): cockpit / olhar 65°, demais modos inalterados; FOV vertical Hor+ = 51,077°; FOV horizontal na proporção da tela limitado a 2,5 rad (`00587ed8`, testado em 5:1) | PASS |
 | câmeras de pista não substituídas (`compute` → nil) | PASS |
+| **retrovisor**: câmera de espelho original (`0056a9a0`, 2º argumento) vs `computeMirror`, 60 poses com deslocamento da cabeça, olhar e eixo analógico | olho ≤ 1,5e−5 m, rotação ≤ 3,2e−7, FOV / deslocamento / near exatos |
+| retrovisor no cliente: aparece só no cockpit, câmera = espelho original refletido, imagem voltada para o piloto; mundo refletido × câmera refletida = vista original espelhada (exato) | PASS |
+| **órbita** (extensão): sem entrada = câmera original; arrastar 196 px gira 90° em volta do carro na mesma distância; roda 0,9×; elevação limitada a 80°; V / B restauram | PASS |
+| **materiais**: instalador de assets põe AlphaMode = Transparency nas texturas com alfa (vidros, para-brisa, redes), Overlay nas demais, cria SurfaceAppearance para TextureID transparente; `FIX_CARMODEL_MATERIALS` corrige um modelo já instalado com descritor antigo | PASS (mock) |
+| GLB gerado: estrutura glTF 2.0 válida (178 malhas, 21 imagens, índices no intervalo), posições = OBJ (6e−7 studs), lido pelo `pygltflib` | PASS |
 | cliente ponta a ponta (motor Roblox simulado): câmera Scriptable no olho ORIGINAL, FOV vertical do cockpit widescreen, esterço interpolado, V → Roll Bar (FOV do .cam, carro visível), B B → Nose (carro oculto), Z → LookLeft 45° | PASS (erro do olho 0) |
 
 ## Instalação no Studio (mock do DataModel)
@@ -82,22 +88,30 @@ mostra este diretório e documentação). Execuções nesta máquina:
 |---|---|
 | Stages 1–5 (`tests/*.lua`, Lua 5.4): check_syntax, baseline, physics, original_core, core_dynamics, geometry, render_snapshots, seat_access, stage5 | 9 / 9 PASS, mesmos números de `tests/RESULTS.txt` (ex.: 14 008 comparações x86, erro máx. 1,19e−7; pico 26,26 km/h) |
 | `tools/run_stage13_tests.sh`: rebuild dos entregáveis Stage 12 / 12.1 (sem diferença) e Stage 13 | PASS (byte a byte) |
-| Stage 6/7 · 8 · 9 · 10 (setup + build) · 11 | 16 · 49 · 59 · 23 + 61 · 66 PASS, 0 falhas |
-| Stage 12, Stage 13, adapter mock, 8 patch mocks, compilação de sintaxe | em execução no momento deste commit — resultado registrado no próximo commit |
+| Stage 6/7 · 8 · 9 · 10 (setup + build) · 11 · 12 · 13 | 16 · 49 · 59 · 23 + 61 · 66 · 52 · 40 PASS, 0 falhas |
+| adapter mock · patch mocks 6/7, 8, 9, 10, 11, 12, 12→12.1, 12.1→13 | 77 · 11, 13, 13, 17, 15, 19, 20, 22 PASS, 0 falhas |
+| compilação de sintaxe (core, roblox, PATCH_STAGE13*) | OK; `git status` limpo depois do rebuild (entregáveis 12 / 12.1 / 13 idênticos) |
+
+Log: `tests/REGRESSION_CARMODEL.txt` (saída completa do `tools/run_stage13_tests.sh`, exit 0).
 
 ## Checklist manual no Studio (Full HD 16:9)
 
 1. Place do Stage 13 aberto, FORA do Play. Cole `studio/INSTALL_CARMODEL.lua` → "Modelo do carro ORIGINAL instalado",
-   auto-teste "9 passed, 0 failed"; `ServerStorage.NR2003Backup_CarModel` com 2 scripts + 2 marcadores.
-2. File > Import 3D → `obj/make_a.obj` (Stud). Selecione o modelo, cole `studio/INSTALL_CARMODEL_ASSETS.lua` → "174
-   geometrias", auto-teste "11 passed, 0 failed" (escala do import ≈ 1, ortogonalidade ≈ 0, 0 ausentes).
+   auto-teste "10 passed, 0 failed"; `ServerStorage.NR2003Backup_CarModel` com 2 scripts + 2 marcadores.
+2. File > Import 3D → `obj/make_a.glb`. Selecione o modelo, cole `studio/INSTALL_CARMODEL_ASSETS.lua` → "174
+   geometrias", linha "Materiais: … SEM textura 0", auto-teste "12 passed, 0 failed" (ortogonalidade ≈ 0, 0 ausentes).
+   (Place já instalado com a 1.0: cole o novo `INSTALL_CARMODEL.lua` e depois `FIX_CARMODEL_MATERIALS.lua`.)
 3. Play, entre no carro. O carro da bancada some (só localmente) e aparece o carro #24 original; atributo
    `NR2003CarModelStatus` = "ok".
 4. Cockpit: painel, conta-giros e os 5 mostradores no lugar; conta-giros acompanha o rpm do painel da bancada; voltímetro
    ~13,8 V; volante gira com a direção e para no limite do volante do cockpit (opção do Stage 12.1; original 2,79 rad
    ≈ 160°); luz de troca pisca a partir de 500 rpm antes do limite; luz de óleo acende com o motor parado; a agulha de
    água começa no mínimo e sobe com o motor (célula motor+0x4d4, ver CARMODEL_RESULT.md).
-5. V percorre cockpit → Roll Bar → F10Near → F10Far → Nose → cockpit; B volta. Em Nose o carro não é desenhado. Em
+4b. Para-brisa limpo (só uma leve sujeira), janelas e vidro traseiro transparentes de fora; retrovisor mostra a pista
+   atrás do carro, com esquerda / direita como num espelho (barreira esquerda aparece à esquerda).
+5. V percorre cockpit → Roll Bar → F10Near → F10Far → Nose → cockpit; B volta. Em F10Near / F10Far: botão direito +
+   arrastar gira a câmera em volta do carro (rodas visíveis de lado / de frente), roda do mouse aproxima; V / B voltam
+   à câmera original. Em Nose o carro não é desenhado. Em
    F10Near/Far a câmera segue o rumo do carro (não o rolamento), 2,25 m / 4 m acima.
 6. Z / C: olha 45° para os lados em 0,1 s e volta. FOV: com `NR2003WidescreenProjection` = true (padrão, 16:9) o cockpit
    fica em 65° como no ramo widescreen do jogo e [ ] não muda a imagem; com false, [ ] / `NR2003CockpitFOV` mudam o FOV
@@ -106,7 +120,7 @@ mostra este diretório e documentação). Execuções nesta máquina:
    (`wheel_speed`) troca de nível.
 8. Outro jogador (2 clientes no Studio): vê o carro original do motorista com rodas / esterço / LOD, sem câmera.
 9. Saia do carro (X): câmera volta à do jogador; personagem visível de novo.
-10. `require(game.ReplicatedStorage.NR2003Lab.CarModel.NR2003CarModelSelfTest).run(true)` → 11 passed;
+10. `require(game.ReplicatedStorage.NR2003Lab.CarModel.NR2003CarModelSelfTest).run(true)` → 12 passed;
     `require(game.ReplicatedStorage.NR2003Lab.Roblox.Stage13SelfTest).run(false)` → ok (física intacta).
 11. `studio/ROLLBACK_CARMODEL.lua` → "Bancada de volta ao Stage 13 publicado"; Play: a bancada se comporta como antes.
 12. Desempenho: com o painel H (render diag) o FPS não cai de forma perceptível em relação ao Stage 13.

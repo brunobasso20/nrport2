@@ -60,6 +60,7 @@ function M.new(config)
     config=config or {}
     local self=setmetatable({mode=1,prevMode=0,lookCur=0,lookTarget=0,lookSign=0,lookEased=0,lookAnalog=0,
         fovDeg=f32(config.fovDegrees or M.FOV_OPTION_DEFAULT_DEG),cockpitOnly=config.cockpitOnly==true,
+        orbitYaw=0,orbitPitch=0,orbitZoom=1,
         widescreen=config.widescreen~=false,onCar=config.onCar or {},
         digitalLookLeft=false,digitalLookRight=false,scratch={},R={},L={}},M)
     return self
@@ -83,12 +84,63 @@ function M:setMode(m)
     self.prevMode,self.mode=prev,m
 end
 function M:nextCamera()
+    self:resetOrbit()
     if self.cockpitOnly then self:setMode(1) return end
     self:setMode(M.NEXT[self.mode] or 1)
 end
 function M:prevCamera()
+    self:resetOrbit()
     if self.cockpitOnly then self:setMode(1) return end
     self:setMode(M.PREV[self.mode] or 1)
+end
+
+-- NON-ORIGINAL extension (bench request): free orbit of the third-person (chase) cameras around the car. With no
+-- orbit input (yaw = pitch = 0, zoom = 1) the ORIGINAL placement is used unchanged. The orbit rotates the original
+-- camera (eye and orientation) about the car's body origin: yaw about the world vertical, pitch about the horizontal
+-- axis across the view (elevation kept within [-5, 80] deg), zoom scales the distance (0.4 .. 3). Reset on V / B.
+M.ORBIT_MIN_ELEVATION=math.rad(-5)
+M.ORBIT_MAX_ELEVATION=math.rad(80)
+M.ORBIT_ZOOM={0.4,3.0}
+function M:resetOrbit() self.orbitYaw,self.orbitPitch,self.orbitZoom=0,0,1 end
+function M:orbit(dyaw,dpitch)
+    self.orbitYaw=((self.orbitYaw or 0)+(dyaw or 0))%(2*math.pi)
+    self.orbitPitch=(self.orbitPitch or 0)+(dpitch or 0)
+end
+function M:zoom(factor)
+    self.orbitZoom=math.clamp((self.orbitZoom or 1)*factor,M.ORBIT_ZOOM[1],M.ORBIT_ZOOM[2])
+end
+function M:orbiting() return (self.orbitYaw or 0)~=0 or (self.orbitPitch or 0)~=0 or (self.orbitZoom or 1)~=1 end
+-- rotation about a unit axis (Rodrigues), row-major
+local function axisAngle(ax,ay,az,a,out)
+    local c,s=math.cos(a),math.sin(a);local t=1-c
+    out[1],out[2],out[3]=t*ax*ax+c,t*ax*ay-s*az,t*ax*az+s*ay
+    out[4],out[5],out[6]=t*ax*ay+s*az,t*ay*ay+c,t*ay*az-s*ax
+    out[7],out[8],out[9]=t*ax*az-s*ay,t*ay*az+s*ax,t*az*az+c
+    return out
+end
+M.axisAngle=axisAngle
+function M:applyOrbit(bp,out)
+    local rx,ry,rz=out.eye[1]-bp[1],out.eye[2]-bp[2],out.eye[3]-bp[3]
+    local dist=math.sqrt(rx*rx+ry*ry+rz*rz)
+    if dist<1e-6 then return end
+    local el0=math.asin(math.clamp(rz/dist,-1,1))
+    local pitch=math.clamp(self.orbitPitch or 0,M.ORBIT_MIN_ELEVATION-el0,M.ORBIT_MAX_ELEVATION-el0)
+    self.orbitPitch=pitch
+    local Y=axisAngle(0,0,1,self.orbitYaw or 0,{})
+    local qx,qy,qz=Scale.apply(Y,rx,ry,rz)
+    -- pitch axis: horizontal, perpendicular to the (yawed) offset
+    local ax,ay=-qy,qx
+    local al=math.sqrt(ax*ax+ay*ay)
+    local T=Y
+    if al>1e-9 and pitch~=0 then
+        local P=axisAngle(ax/al,ay/al,0,-pitch,{})
+        qx,qy,qz=Scale.apply(P,qx,qy,qz)
+        T=Scale.mul(P,Y,{})
+    end
+    local z=self.orbitZoom or 1
+    out.eye={bp[1]+qx*z,bp[2]+qy*z,bp[3]+qz*z}
+    out.R=Scale.mul(T,out.R,{})
+    out.orbit=true
 end
 function M:optionRad() return self.fovDeg*M.OPTION_DEG_TO_RAD end                       -- 00411850
 function M:setOptionRad(v) self.fovDeg=f32(M.OPTION_RAD_TO_DEG*f32(v)) end                -- 00411860
@@ -186,6 +238,7 @@ function M:compute(bp,Rb,ds,ground,out)
             out.R=Scale.euler(bh+c.hpr[1],c.hpr[2],c.hpr[3],out.R)
         end
         out.fov43=c.fov[1];out.shift={c.fov[2],c.fov[3]};out.near=c.near
+        if self:orbiting() then self:applyOrbit(bp,out) end                -- NON-ORIGINAL (see resetOrbit)
         local g=ground and ground(out.eye[1],out.eye[2],out.eye[3])
         if g and out.eye[3]-g<1.0 then out.eye[3]=g+1.0 end                  -- 006e97d8: at least 1 m above the track
     elseif m>=10 and m<=15 then
@@ -204,6 +257,41 @@ function M:compute(bp,Rb,ds,ground,out)
     end
     local lo,hi=M.FOV_CLAMP[1],M.FOV_CLAMP[2]
     if out.fov43<lo then out.fov43=lo elseif out.fov43>hi then out.fov43=hi end
+    return out
+end
+-- Rear-view mirror camera (0056a9a0 with its second camera argument, 0056b417..0056b660): a rear-facing camera at
+-- C = 006f5f0c (-0.4, 0, 0.7) in the body frame plus the head displacement reflected through the plane of normal
+-- normalize(C - model head); orientation (h + pi, -p, -(r + look * 006f5f44)) of R_b * Euler(0, headPitch - p_b,
+-- headRoll - r_b); FOV triple (2.0944 (0x40060a92), 0, -look * 006e9824), near 0.3 (0x3e99999a). Drawn through the
+-- cockpit model's portal `rearView` (mirrorFrameEnable case 0).
+M.MIRROR_BASE={-0.4000000059604645,0,0.699999988079071}       -- 006f5f0c / 10 / 14
+M.MIRROR_FOV=2.094395160675049                               -- 0x40060a92
+M.MIRROR_NEAR=0.30000001192092896                            -- 0x3e99999a
+M.MIRROR_ROLL_PER_LOOK=0.25999999046325684                   -- 006f5f44
+M.MIRROR_SHIFT_PER_LOOK=0.20000000298023224                  -- 006e9824
+M.PI_D=3.141592653587892                                     -- 006e97f8
+-- bp / Rb body pose; ds.head = draw-record head (model head + displacement), ds.modelHead = the model's head
+-- (00562f50: the 3do head node), headPitch / headRoll; look = view block [0] (sign * eased look)
+function M:computeMirror(bp,Rb,ds,out)
+    out=out or {}
+    local C=M.MIRROR_BASE
+    local mh=ds.modelHead or {0,0,0}
+    local hx,hy,hz=f32(ds.head[1]-mh[1]),f32(ds.head[2]-mh[2]),f32(ds.head[3]-mh[3])
+    local nx,ny,nz=C[1]-mh[1],C[2]-mh[2],C[3]-mh[3]
+    local l=math.sqrt(nx*nx+ny*ny+nz*nz)
+    nx,ny,nz=nx/l,ny/l,nz/l
+    local d=2*(ny*hy+nz*hz+nx*hx)
+    local ex,ey,ez=(C[1]+hx)-nx*d,(C[2]+hy)-ny*d,(C[3]+hz)-nz*d
+    local ox,oy,oz=Scale.apply(Rb,ex,ey,ez)
+    out.eye={bp[1]+ox,bp[2]+oy,bp[3]+oz}
+    local _,bpitch,broll=Scale.decompose(Rb)
+    Scale.euler(0,ds.headPitch-bpitch,ds.headRoll-broll,self.L)
+    Scale.mul(Rb,self.L,self.scratch)
+    local h,p,r=Scale.decompose(self.scratch)
+    local look=f32(self.lookSign*self.lookEased)
+    r=f32(look*M.MIRROR_ROLL_PER_LOOK+f32(r))
+    out.R=Scale.euler(f32(f32(h)+M.PI_D),-f32(p),-r,out.R)
+    out.fov43=M.MIRROR_FOV;out.shift={0,f32(0-look*M.MIRROR_SHIFT_PER_LOOK)};out.near=M.MIRROR_NEAR
     return out
 end
 return M

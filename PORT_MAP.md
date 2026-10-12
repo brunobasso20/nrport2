@@ -17,7 +17,10 @@ harness do código original `recovery/orig_carmodel.py`. Dano: fora do escopo (c
 | `0056a9a0` câmera (14 modos), `00567e10` tabelas, `.cam`, `00411530/50` ordem, `00568e20`, `00569450`, `005697e0`, opção de FOV `00411850/60`, `00567a80/ab0` | `NR2003CameraSystem` | EXACT vs original (168 poses: olho 1,5e−5 m, rotação 4e−7, FOV 6e−9) |
 | `00587e70` / rendserv `100043a0` projeção (FOV 4:3 horizontal, Hor+, ramo widescreen `00587ea2`, deslocamento (0, −0,125)) | `NR2003Scale.verticalFov`, `NR2003CarModelClient.applyCamera` | exato exceto o deslocamento (aproximado por inclinação) |
 | escala / eixos (0,28 m/stud, (x, y, z) → (−y, z, −x)) | `NR2003Scale` (compartilhado com as pistas futuras) | = `TestTune` / `CupTune`; rodas = cubos da física a 5e−5 m |
-| Retrovisor (Portal), noite / SelfLighting, câmeras de pista, LOD da opção de detalhe, `make_a_light_cockpit`, sombra, controle 3 | — | não portados (motivos em `CARMODEL_RESULT.md`) |
+| `0056a9a0` câmera de espelho (2º argumento; base `006f5f0c`, FOV 120°, near 0,3) + portal `rearView` | `NR2003CameraSystem.computeMirror` + `NR2003Mirror` (ViewportFrame, mundo refletido) | câmera EXACT vs original (60 poses); projeção no portal aproximada |
+| alfa da textura base = transparência (janelas, para-brisa buildup, redes, luzes) | conversor (`g.alpha`, GLB BLEND) + instaladores (SurfaceAppearance AlphaMode) | por evidência dos dados; estado de blend do rendserv não rastreado |
+| câmeras de fora com órbita (mouse / analógico) | `NR2003CameraSystem:applyOrbit` | extensão NÃO original (pedido); sem entrada = original |
+| Noite / SelfLighting, câmeras de pista, LOD da opção de detalhe, `make_a_light_cockpit`, sombra, controle 3 | — | não portados (motivos em `CARMODEL_RESULT.md`) |
 
 # Mapa de recuperação — Stage 13 (torque de direção / force feedback)
 

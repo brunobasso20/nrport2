@@ -12,7 +12,8 @@ inventário / procedência `ASSET_INVENTORY.md`.
 
 ```
 pipeline/                      conversão dos arquivos ORIGINAIS (Python 3, numpy só no preview)
-  convert_car.py               cup.dat (+ .car) -> OBJ/MTL + PNG + descritor (Luau/JSON) + instalador de assets + manifest
+  convert_car.py               cup.dat (+ .car) -> GLB (texturas embutidas) + OBJ/MTL + PNG + descritor (Luau/JSON) +
+                               instalador de assets + manifest
   nr2003res/                   dat.py dcl.py (DAT + PKWARE DCL), obj3do.py (3do), mip.py (MIP/DXT), car.py (CARF/CTEX),
                                scene.py (grafo -> rig), export.py, scale.py, rig.py (rig de referência), studio.py
   preview.py                   renderizador por software (validação visual das câmeras / cockpit / pintura)
@@ -23,10 +24,12 @@ roblox/CarModel/               módulos do runtime (ReplicatedStorage.NR2003Lab.
   NR2003DrawState              registro de desenho original (células 0x1508..0x15b0) + interpolação 005ba170
   NR2003CameraSystem           câmeras originais (0056a9a0, 00569450, 005697e0, 00568e20, opção de FOV, projeção)
   NR2003CarModelRig            grafo 3do no Roblox (switches 10011ec0, LOD 100118e0, animação 10012810, overrides 005662d0)
-  NR2003CarModelClient         apresentação no cliente (rig + câmera), NR2003CarModelServer (envio do registro)
+  NR2003Mirror                 retrovisor (câmera de espelho original no portal rearView, ViewportFrame refletido)
+  NR2003CarModelClient         apresentação no cliente (rig + câmera + órbita + espelho), NR2003CarModelServer
   NR2003CarModelSelfTest       auto-teste no Studio; NR2003CarModelGolden (vetores do código original)
 roblox/Bench/                  NR2003Client / NR2003Server do Stage 13 + ganchos opcionais do modelo (instalados pelo INSTALL)
-studio/                        INSTALL_CARMODEL.lua, ROLLBACK_CARMODEL.lua, NR2003_CarModel_Install.rbxmx
+studio/                        INSTALL_CARMODEL.lua, ROLLBACK_CARMODEL.lua, NR2003_CarModel_Install.rbxmx,
+                               FIX_CARMODEL_MATERIALS.lua (transparência num modelo já instalado)
 recovery/                      orig_carmodel.py (código ORIGINAL no Unicorn), gen_fixtures.py, CARMODEL_RECOVERY.md,
                                evidence/ (descompilação + asm de 261 funções do NR2003.exe / rendserv.dll), ghidra/
 tests/                         carmodel_body.luau (+ make_carmodel_tests.py), install_mock_body.luau (+ make_install_mock.py),
@@ -47,7 +50,8 @@ python3 -I pipeline/convert_car.py --series "<NR2003>/series/cup" --out <saida> 
 ```
 
 `--make` = carMakeIdx (0 Chevrolet, 1 Dodge, 2 Ford, 3 Pontiac; o `car_make` do .car). Com `--livery` a pintura (CTEX)
-substitui `card.png` como o jogo faz (`--keep-card` mantém a genérica). Saída: `obj/make_a.obj + .mtl`, `textures/*.png`,
+substitui `card.png` como o jogo faz (`--keep-card` mantém a genérica; sem `--livery` o carro sai com a pintura genérica
+azul do `card.mip`). Saída: `obj/make_a.glb`, `obj/make_a.obj + .mtl`, `textures/*.png`,
 `luau/`, `json/`, `studio/INSTALL_CARMODEL_ASSETS.lua`, `manifest.json`. Opcional: `python3 -I pipeline/preview.py --pkg
 <saida> --png views.png` (cockpit, Roll Bar, F10, Nose, externa).
 
@@ -57,13 +61,17 @@ substitui `card.png` como o jogo faz (`--keep-card` mantém a genérica). Saída
    `require(workspace.NR2003_CarModel_Install)()`). Confere NR2003Stage = 13 e NR2003Client / NR2003Server byte a byte
    (hash do Stage 13 publicado), faz backup em `ServerStorage.NR2003Backup_CarModel`, cria `NR2003Lab.CarModel` e
    `NR2003Lab.DrawState`, atualiza os dois scripts no lugar, roda o auto-teste e reverte sozinho se algo falhar.
-2. **File > Import 3D** → `<saida>/obj/make_a.obj` (com o .mtl e as texturas na mesma pasta). Unidade: Stud; não
-   reescale (se reescalar, os marcadores medem e compensam). O modelo importado fica no Workspace.
+2. **File > Import 3D** → `<saida>/obj/make_a.glb` (recomendado: texturas embutidas, materiais transparentes marcados;
+   não precisa de Blender). Não reescale (se reescalar, os 4 marcadores medem e compensam). O modelo fica no Workspace.
+   (`make_a.obj` + `.mtl` também é gerado, mas o importador do Roblox pode juntar os objetos do OBJ num só.)
 3. Selecione o modelo importado e cole `<saida>/studio/INSTALL_CARMODEL_ASSETS.lua` na Command Bar: instala o descritor
    em `CarModel.Data`, move o modelo para `CarModel.Assets.make_a` e roda o auto-teste completo (marcadores, todas as
    174 geometrias, rodas = cubos da física).
 4. Salve o place você mesmo depois de conferir. Reverter tudo: `studio/ROLLBACK_CARMODEL.lua` (os scripts voltam ao
    Stage 13 publicado; a pasta CarModel vai para `ServerStorage.NR2003CarModel_Removido`).
+
+**Já instalou a 1.0 (ex.: GLB exportado pelo Blender)?** Cole o novo `studio/INSTALL_CARMODEL.lua` (atualiza o código:
+retrovisor e câmera orbital) e depois `studio/FIX_CARMODEL_MATERIALS.lua` (corrige o para-brisa / vidros sem reimportar).
 
 Sem o passo 3 a apresentação continua como no Stage 13 (os ganchos só agem com o modelo instalado; o servidor apenas
 passa a enviar o registro de desenho, 188 bytes por snapshot).
@@ -75,10 +83,15 @@ passa a enviar o registro de desenho, 188 bytes por snapshot).
 | V / B (gamepad L3) | próxima / anterior câmera (0x56 / 0x57): cockpit → Roll Bar → F10Near → F10Far → Nose → cockpit |
 | Z / C (gamepad: analógico direito) | olhar esquerda / direita (0x54 / 0x55; 45° em 0,1 s) |
 | [ / ] | FOV do cockpit −1° / +1° (0x6e / 0x6d; 65..78°) |
+| botão direito do mouse + arrastar, roda do mouse (gamepad: analógico direito) | **câmeras de fora (F10Near / F10Far / Chase): girar em volta do carro e zoom** — extensão NÃO original; V / B volta à câmera original |
+
+Retrovisor: no cockpit, o espelho mostra a vista traseira da câmera de espelho ORIGINAL (`0056a9a0`), espelhada como
+um espelho de verdade (ViewportFrame com a pista refletida; Terrain não aparece em ViewportFrame).
 
 Atributos do `TestCar` (opcionais): `NR2003CockpitFOV` (65..78, padrão 65), `NR2003WidescreenProjection` (padrão true:
 ramo widescreen do jogo, cockpit em 65°), `NR2003AnimatedSteeringWheel` (true), `NR2003Windshield` (true),
-`NR2003CameraShift` (true: inclinação que aproxima o deslocamento de frustum −0,125), `NR2003LiveryTexture`
+`NR2003CameraShift` (true: inclinação que aproxima o deslocamento de frustum −0,125), `NR2003Mirror` (true),
+`NR2003OrbitCamera` (true), `NR2003LiveryTexture`
 (`rbxassetid://…`, troca a pintura em tempo real), `NR2003CarModelData` (nome do descritor). Saída: `NR2003Camera`,
 `NR2003CarModelStatus`.
 
@@ -86,8 +99,8 @@ ramo widescreen do jogo, cockpit em 65°), `NR2003AnimatedSteeringWheel` (true),
 
 ```
 python3 tools/build_carmodel.py
-python3 tests/make_carmodel_tests.py <saida>      && luau -O2 tests/carmodel_run.luau      # 47 checks (sem <saida>: 34, sem o rig / cliente)
-python3 tests/make_install_mock.py <saida>         && luau -O2 tests/install_mock.luau      # 14 checks (sem <saida>: 11)
+python3 tests/make_carmodel_tests.py <saida>      && luau -O2 tests/carmodel_run.luau      # 53 checks (sem <saida>: 35, sem o rig / cliente)
+python3 tests/make_install_mock.py <saida>         && luau -O2 tests/install_mock.luau      # 16 checks (sem <saida>: 11)
 NR2003_MEM=… RENDSERV_MEM=… python3 recovery/gen_fixtures.py <saida> tests/fixtures_carmodel.lua   # regenera os vetores
 ```
 

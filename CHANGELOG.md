@@ -1,3 +1,19 @@
+# 1.1.0-carmodel — retrovisor, câmera de fora girável, vidros transparentes, GLB direto
+
+- Teste no Studio (usuário): para-brisa coberto por uma "textura de asfalto", sem retrovisor, câmera de fora fixa.
+- **Transparência**: o "asfalto" era o `G144_GLASS` (windshield buildup, `glass.png` quase todo transparente) desenhado
+  opaco — o GLB do Blender marcou os materiais OPAQUE (SurfaceAppearance em Overlay). No NR2003 o alfa da textura base é
+  transparência (janelas do `card` / `bottom`, para-brisa, redes, luzes). O conversor classifica as texturas
+  (`alphaTransparent`, descritor `g.alpha`), gera `make_a.glb` direto (texturas embutidas, BLEND; sem Blender), `map_d`
+  no MTL, linhas `g` no OBJ; o instalador de assets e o novo `studio/FIX_CARMODEL_MATERIALS.lua` aplicam
+  `AlphaMode = Transparency` (o FIX corrige um place já instalado sem reimportar).
+- **Retrovisor**: câmera de espelho ORIGINAL do `0056a9a0` (segundo argumento) recuperada e portada
+  (`NR2003CameraSystem.computeMirror`, idêntica ao original em 60 poses) e desenhada no portal `rearView` por
+  `NR2003Mirror` (ViewportFrame com o mundo refletido: imagem de espelho). Projeção no portal aproximada (não recuperada).
+- **Câmera de fora girável** (extensão não original, pedida): botão direito + arrastar / roda / analógico direito nas
+  câmeras F10 / chase; sem entrada = câmera original; V / B restauram (`NR2003OrbitCamera`).
+- Testes: 53 + 16 (com o pacote convertido). Física e estágios 1–13 inalterados.
+
 # 1.0.0-carmodel — carro Cup ORIGINAL do NR2003 (modelo, cockpit, instrumentos, volante, câmeras)
 
 - Base: Stage 13 publicado (3.12.0-stage13, `c64ad5e`), entre o Stage 13 e o Stage 14 (**Stage 14 não iniciado**).

@@ -50,30 +50,33 @@ Gerado a partir de `manifest.json` do `pipeline/convert_car.py` (execução: `--
 
 ## Texturas (nível maior de cada MIP, PNG RGBA)
 
-| textura | formato | tamanho | clamp U/V | fator (cabeçalho MIP, não aplicado) |
-|---|---|---|---|---|
-| `apillars` | DXT1 | 512×256 | n/n | 0.7 |
-| `backfire` | DXT3 | 128×128 | s/s | 4 |
-| `bottom` | DXT3 | 256×256 | s/s | 0.8 |
-| `card` | DXT3 | 512×512 | s/s | 0.8 |
-| `catch` | DXT1 | 256×128 | s/s | 0.7 |
-| `dash1` | DXT1 | 512×512 | s/s | 4 |
-| `dash2` | DXT1 | 512×512 | n/n | 4 |
-| `doors` | DXT1 | 512×512 | s/s | 0.9 |
-| `fastgdyr_wc` | DXT1 | 256×128 | s/s | 0.7 |
-| `foam` | DXT1 | 64×128 | n/n | 0.7 |
-| `glass` | DXT3 | 256×256 | n/n | 0.9 |
-| `interior` | DXT1 | 512×512 | s/s | 0.7 |
-| `light_c` | DXT3 | 512×256 | s/s | 4 |
-| `mediumgdyr_wc` | DXT1 | 256×128 | s/s | 0.7 |
-| `netting` | DXT3 | 64×64 | n/n | 0.9 |
-| `netting2` | DXT1 | 128×64 | n/s | 0.9 |
-| `shifter` | DXT1 | 256×128 | s/s | 0.7 |
-| `slowgdyr_wc` | DXT1 | 256×128 | s/s | 0.7 |
-| `tach` | DXT1 | 256×256 | s/s | 0.7 |
-| `tach_night` | DXT3 | 256×256 | s/s | 0.7 |
-| `tachlight` | DXT3 | 256×256 | s/s | 0.7 |
-| `wheel2` | DXT1 | 256×256 | n/n | 0.7 |
+| textura | formato | tamanho | clamp U/V | fator (cabeçalho MIP, não aplicado) | alfa = transparência |
+|---|---|---|---|---|---|
+| `apillars` | DXT1 | 512×256 | n/n | 0.7 | não |
+| `backfire` | DXT3 | 128×128 | s/s | 4 | sim |
+| `bottom` | DXT3 | 256×256 | s/s | 0.8 | sim |
+| `card` | DXT3 | 512×512 | s/s | 0.8 | não |
+| `catch` | DXT1 | 256×128 | s/s | 0.7 | sim |
+| `dash1` | DXT1 | 512×512 | s/s | 4 | não |
+| `dash2` | DXT1 | 512×512 | n/n | 4 | não |
+| `doors` | DXT1 | 512×512 | s/s | 0.9 | não |
+| `fastgdyr_wc` | DXT1 | 256×128 | s/s | 0.7 | não |
+| `foam` | DXT1 | 64×128 | n/n | 0.7 | não |
+| `glass` | DXT3 | 256×256 | n/n | 0.9 | sim |
+| `interior` | DXT1 | 512×512 | s/s | 0.7 | sim |
+| `light_c` | DXT3 | 512×256 | s/s | 4 | sim |
+| `mediumgdyr_wc` | DXT1 | 256×128 | s/s | 0.7 | não |
+| `netting` | DXT3 | 64×64 | n/n | 0.9 | sim |
+| `netting2` | DXT1 | 128×64 | n/s | 0.9 | não |
+| `shifter` | DXT1 | 256×128 | s/s | 0.7 | não |
+| `slowgdyr_wc` | DXT1 | 256×128 | s/s | 0.7 | não |
+| `tach` | DXT1 | 256×256 | s/s | 0.7 | não |
+| `tach_night` | DXT3 | 256×256 | s/s | 0.7 | sim |
+| `tachlight` | DXT3 | 256×256 | s/s | 0.7 | sim |
+| `wheel2` | DXT1 | 256×256 | n/n | 0.7 | não |
+
+`card` = a pintura em uso (aqui a do .car, sem alfa: janelas pintadas como no jogo); o `card.mip` genérico tem alfa 136
+nas janelas (transparência sim) — é o caso de uma conversão sem `--livery`.
 
 ## Pintura
 
@@ -82,7 +85,8 @@ Gerado a partir de `manifest.json` do `pipeline/convert_car.py` (execução: `--
 ## Saída do conversor (pacote privado)
 
 ```
-obj/make_a.obj + .mtl           biblioteca de geometria (eixos Roblox, studs; 4 marcadores de calibração)
+obj/make_a.glb                  biblioteca de geometria com texturas embutidas (RECOMENDADO para o 3D Importer)
+obj/make_a.obj + .mtl           a mesma em OBJ (eixos Roblox, studs; 4 marcadores de calibração; PNG ao lado)
 obj/make_a_light_cockpit.*, obj/make_a_shadow.*
 textures/*.png                  23 texturas + pintura
 luau/NR2003CarModelData_*.lua   descritor do rig (nós, switches, LODs, chaves, instâncias, câmeras)

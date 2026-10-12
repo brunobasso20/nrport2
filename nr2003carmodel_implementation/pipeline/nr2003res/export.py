@@ -42,6 +42,7 @@ def write_obj(scene, path, mtl_name, mps=scale.METRES_PER_STUD, header=""):
     vbase = tbase = nbase = 1
     for g in scene.geometries:
         lines.append("o %s" % geometry_name(g))
+        lines.append("g %s" % geometry_name(g))
         mat = "T_" + tex_stem(base_texture(g["material"]))
         if g["material"]["opacity"] < 1:
             mat += "_op%03d" % int(round(g["material"]["opacity"] * 100))
@@ -64,6 +65,7 @@ def write_obj(scene, path, mtl_name, mps=scale.METRES_PER_STUD, header=""):
     for name, (x, y, z) in MARKERS.items():
         s = MARKER_SIZE
         lines.append("o %s" % name)
+        lines.append("g %s" % name)
         lines.append("usemtl T_marker")
         for dx, dy, dz in ((s, 0, 0), (0, s, 0), (0, 0, s), (-s * 0.5, -s * 0.5, -s * 0.5)):
             lines.append("v %.6f %.6f %.6f" % (x + dx, y + dy, z + dz))
@@ -73,7 +75,7 @@ def write_obj(scene, path, mtl_name, mps=scale.METRES_PER_STUD, header=""):
     open(path, "w").write("\n".join(lines) + "\n")
 
 
-def write_mtl(scene, path):
+def write_mtl(scene, path, blend=()):
     seen = {}
     for g in scene.geometries:
         m = g["material"]
@@ -89,6 +91,8 @@ def write_mtl(scene, path):
         out.append("d %.4f" % m["opacity"])
         if stem != "untextured":
             out.append("map_Kd %s.png" % stem)
+            if stem in blend:                     # alpha = transparency (windows, windshield buildup, nets, lights)
+                out.append("map_d %s.png" % stem)
         out.append("")
     out += ["newmtl T_marker", "Kd 1 0 1", "d 1", ""]
     open(path, "w").write("\n".join(out))
@@ -164,3 +168,113 @@ def write_luau(desc, path, header):
 def write_json(desc, path):
     with open(path, "w") as fh:
         json.dump(desc, fh, separators=(",", ":"))
+
+
+def write_glb(scene, path, textures_dir, mps=scale.METRES_PER_STUD, blend=(), clamp=None):
+    """Binary glTF 2.0 of the geometry library: the same objects, names, coordinates (Roblox axes, studs), UVs and
+    calibration markers as the OBJ, with the PNG textures embedded. Materials: baseColorTexture, metallic 0, alphaMode
+    BLEND for the textures whose alpha is transparency (`blend`), OPAQUE otherwise; samplers clamp / repeat as the MIP
+    header (`clamp`: stem -> (clampU, clampV)). glTF UV: v = 0 is the first image row (Direct3D / 3do convention)."""
+    import json as _json
+    import struct as _struct
+    clamp = clamp or {}
+    bin_parts = []
+    offset = [0]
+
+    def add_view(data, target=None):
+        pad = (-len(data)) % 4
+        view = {"buffer": 0, "byteOffset": offset[0], "byteLength": len(data)}
+        if target:
+            view["target"] = target
+        bin_parts.append(data + b"\0" * pad)
+        offset[0] += len(data) + pad
+        views.append(view)
+        return len(views) - 1
+
+    views, accessors, meshes, nodes, materials, textures, images, samplers = [], [], [], [], [], [], [], []
+    mat_index, tex_index, sampler_index = {}, {}, {}
+
+    def sampler(stem):
+        cu, cv = clamp.get(stem, (False, False))
+        key = (cu, cv)
+        if key not in sampler_index:
+            samplers.append({"magFilter": 9729, "minFilter": 9987, "wrapS": 33071 if cu else 10497,
+                             "wrapT": 33071 if cv else 10497})
+            sampler_index[key] = len(samplers) - 1
+        return sampler_index[key]
+
+    def texture(stem):
+        if stem not in tex_index:
+            png = os.path.join(textures_dir, stem + ".png")
+            if not os.path.isfile(png):
+                return None
+            images.append({"bufferView": add_view(open(png, "rb").read()), "mimeType": "image/png", "name": stem})
+            textures.append({"source": len(images) - 1, "sampler": sampler(stem), "name": stem})
+            tex_index[stem] = len(textures) - 1
+        return tex_index[stem]
+
+    def material(name, stem, opacity):
+        if name not in mat_index:
+            m = {"name": name, "pbrMetallicRoughness": {"metallicFactor": 0.0, "roughnessFactor": 1.0}}
+            t = texture(stem) if stem not in (None, "untextured") else None
+            if t is not None:
+                m["pbrMetallicRoughness"]["baseColorTexture"] = {"index": t}
+            if opacity < 1:
+                m["pbrMetallicRoughness"]["baseColorFactor"] = [1.0, 1.0, 1.0, opacity]
+            m["alphaMode"] = "BLEND" if (stem in blend or opacity < 1) else "OPAQUE"
+            materials.append(m)
+            mat_index[name] = len(materials) - 1
+        return mat_index[name]
+
+    def accessor(view, ctype, count, atype, mn=None, mx=None):
+        a = {"bufferView": view, "componentType": ctype, "count": count, "type": atype}
+        if mn is not None:
+            a["min"], a["max"] = mn, mx
+        accessors.append(a)
+        return len(accessors) - 1
+
+    def mesh(name, pos, nrm, uv, tris, mat):
+        pb = b"".join(_struct.pack("<3f", *p) for p in pos)
+        attrs = {"POSITION": accessor(add_view(pb, 34962), 5126, len(pos), "VEC3",
+                                      [min(p[i] for p in pos) for i in range(3)], [max(p[i] for p in pos) for i in range(3)])}
+        if nrm:
+            attrs["NORMAL"] = accessor(add_view(b"".join(_struct.pack("<3f", *n) for n in nrm), 34962), 5126, len(nrm), "VEC3")
+        if uv:
+            attrs["TEXCOORD_0"] = accessor(add_view(b"".join(_struct.pack("<2f", *t) for t in uv), 34962), 5126, len(uv), "VEC2")
+        ib = b"".join(_struct.pack("<3I", *t) for t in tris)
+        prim = {"attributes": attrs, "indices": accessor(add_view(ib, 34963), 5125, 3 * len(tris), "SCALAR"),
+                "material": mat, "mode": 4}
+        meshes.append({"name": name, "primitives": [prim]})
+        nodes.append({"name": name, "mesh": len(meshes) - 1})
+
+    for g in scene.geometries:
+        m = g["material"]
+        stem = tex_stem(base_texture(m))
+        name = "T_" + stem + ("_op%03d" % int(round(m["opacity"] * 100)) if m["opacity"] < 1 else "")
+        pos = [scale.point(*p, mps=mps) for p in g["positions"]]
+        nrm = []
+        for n in g["normals"]:
+            x, y, z = scale.vector(*n)
+            ln = math.sqrt(x * x + y * y + z * z)
+            nrm.append((x / ln, y / ln, z / ln) if ln > 0 else (0.0, 1.0, 0.0))
+        uv = [(u, v) for u, v in g["uvs"]]
+        mesh(geometry_name(g), pos, nrm, uv, g["tris"], material(name, stem, m["opacity"]))
+    marker = len(materials)
+    materials.append({"name": "T_marker", "pbrMetallicRoughness": {"baseColorFactor": [1, 0, 1, 1], "metallicFactor": 0.0}})
+    for name, (x, y, z) in MARKERS.items():
+        sz = MARKER_SIZE
+        pos = [(x + dx, y + dy, z + dz) for dx, dy, dz in ((sz, 0, 0), (0, sz, 0), (0, 0, sz), (-sz * 0.5, -sz * 0.5, -sz * 0.5))]
+        mesh(name, pos, None, None, [(0, 1, 2), (0, 3, 1), (1, 3, 2), (2, 3, 0)], marker)
+    blob = b"".join(bin_parts)
+    gltf = {"asset": {"version": "2.0", "generator": "nr2003carmodel_implementation/pipeline (export.write_glb)"},
+            "scene": 0, "scenes": [{"nodes": list(range(len(nodes)))}], "nodes": nodes, "meshes": meshes,
+            "materials": materials, "accessors": accessors, "bufferViews": views,
+            "buffers": [{"byteLength": len(blob)}]}
+    if textures:
+        gltf["textures"], gltf["images"], gltf["samplers"] = textures, images, samplers
+    js = _json.dumps(gltf, separators=(",", ":")).encode()
+    js += b" " * ((-len(js)) % 4)
+    out = (_struct.pack("<III", 0x46546C67, 2, 12 + 8 + len(js) + 8 + len(blob)) + _struct.pack("<II", len(js), 0x4E4F534A)
+           + js + _struct.pack("<II", len(blob), 0x004E4942) + blob)
+    open(path, "wb").write(out)
+    return len(out)

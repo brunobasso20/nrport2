@@ -225,12 +225,19 @@ class Rendserv:
         return [self.f(obj + 0x44 + 4 * i) for i in range(3)], [self.f(obj + 0x50 + 4 * i) for i in range(9)]
 
 
-def camera_render(E, mode, pos, R, head, head_pitch, head_roll, look=0.0, analog=0.0):
+MODELINFO_HEAD = 0x8728b8   # 00562f50(car) = 004284f0(car+0x58e) + 0x1c0: the car model's head (0 in the boot image)
+
+
+def camera_render(E, mode, pos, R, head, head_pitch, head_roll, look=0.0, analog=0.0, mirror=False, model_head=None):
     """0056a9a0 (the RENDER path that sets the frame's camera): arg1 camera out, arg2 mirror camera (0), arg3 the
     focus car draw object (vtable +0x14 -> body record: position at +0 and +0x18, matrix at +0x58; draw record slot
     drawobj + 0xf8 with [ebbd78] = 0 and [ebbd84] = 0: no interpolation), arg4 view (+0xc mode, +0x10 car),
-    arg5 car index. Look state = the view block of 0056b720 (view + 0x1c): [0] = sign * eased, [7] = analog axis."""
+    arg5 car index. Look state = the view block of 0056b720 (view + 0x1c): [0] = sign * eased, [7] = analog axis.
+    mirror=True passes a second camera (arg2): the rear-view mirror camera of the cockpit views (0056b417..0056b660),
+    returned as res["mirror"]; model_head = the model's head (00562f50, written to MODELINFO_HEAD)."""
     m = E.m
+    if model_head is not None:
+        m.uc.mem_write(MODELINFO_HEAD, struct.pack("<3f", *model_head))
     body = m.alloc(0x100)
     m.uc.mem_write(body, struct.pack("<3f", *pos))
     m.uc.mem_write(body + 0x18, struct.pack("<3f", *pos))
@@ -254,11 +261,17 @@ def camera_render(E, mode, pos, R, head, head_pitch, head_roll, look=0.0, analog
     m.uc.mem_write(lookp, struct.pack("<f", look))
     m.uc.mem_write(lookp + 0x1c, struct.pack("<f", analog))
     cam = m.alloc(0x100)
-    m.call(0x56a9a0, cam, 0, drawobj, view, 0)
+    mir = m.alloc(0x100) if mirror else 0
+    m.call(0x56a9a0, cam, mir, drawobj, view, 0)
     eye = [E.f(cam + 4 * i) for i in range(3)]
     q = [E.f(cam + 0x7c + 4 * i) for i in range(4)]
     fov = [E.f(cam + 0x98 + 4 * i) for i in range(3)]
-    return {"eye": eye, "quat": q, "fov": fov, "near": E.f(cam + 0xa4), "lookPtr": lookp}
+    res = {"eye": eye, "quat": q, "fov": fov, "near": E.f(cam + 0xa4), "lookPtr": lookp}
+    if mirror:
+        res["mirror"] = {"eye": [E.f(mir + 4 * i) for i in range(3)], "quat": [E.f(mir + 0x7c + 4 * i) for i in range(4)],
+                         "fov": [E.f(mir + 0x98 + 4 * i) for i in range(3)], "near": E.f(mir + 0xa4),
+                         "valid": m.uc.mem_read(mir + 0xa8, 1)[0]}
+    return res
 
 
 def quat_matrix(q):

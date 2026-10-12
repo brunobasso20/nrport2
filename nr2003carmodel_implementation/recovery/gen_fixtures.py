@@ -108,6 +108,25 @@ def main():
                          "analog": analog, "eye": res["eye"], "M": O.quat_matrix(res["quat"]), "fov": res["fov"],
                          "near": res["near"]})
     fx["cameras"] = cams
+    # rear-view mirror camera (0056a9a0, second camera argument), model head = the 3do head node (00562f50)
+    hr = [n for n in desc["nodes"] if n.get("name") == "head"][0]["t"]
+    mirs = []
+    for k in range(60):
+        mode = (1, 2, 3)[k % 3]
+        h, p, r = f32(rnd.uniform(-3.1, 3.1)), f32(rnd.uniform(-0.25, 0.25)), f32(rnd.uniform(-0.25, 0.25))
+        Rb = E.euler(h, p, r)
+        pos = [f32(rnd.uniform(-500, 500)), f32(rnd.uniform(-500, 500)), f32(rnd.uniform(0.2, 30))]
+        head = [f32(hr[i] + rnd.uniform(-0.04, 0.04)) for i in range(3)]
+        hp, hrl = f32(p + rnd.uniform(-0.05, 0.05)), f32(r + rnd.uniform(-0.05, 0.05))
+        sign = {1: 0.0, 2: 1.0, 3: -1.0}[mode]
+        look = f32(sign * f32(rnd.uniform(0, 0.7853982)))
+        analog = f32(rnd.uniform(-1, 1)) if k % 4 == 3 else 0.0
+        res = O.camera_render(E, mode, pos, Rb, head, hp, hrl, look=look, analog=analog, mirror=True, model_head=hr)
+        mm = res["mirror"]
+        mirs.append({"mode": mode, "pos": pos, "R": Rb, "head": head, "modelHead": hr, "headPitch": hp, "headRoll": hrl,
+                     "look": look, "analog": analog, "eye": mm["eye"], "M": O.quat_matrix(mm["quat"]), "fov": mm["fov"],
+                     "near": mm["near"]})
+    fx["mirror"] = mirs
     fx["onCar"] = desc["cameras"]
     # camera order tables (00411530 / 00411550) and camera constants, read from the image
     mem = E.m.uc.mem_read
@@ -180,7 +199,7 @@ def main():
     print("fixtures:", {k: len(v) for k, v in fx.items()})
     # Studio self-test subset (roblox/CarModel/NR2003CarModelGolden.lua): original-code vectors only, no model data
     golden = {"gauges": fx["gauges"], "euler": fx["euler"][:40], "decompose": fx["decompose"][:40], "ease": fx["ease"],
-              "wheelSpeed": fx["wheelSpeed"], "cameras": fx["cameras"][::2], "onCar": fx["onCar"], "camTables": fx["camTables"],
+              "wheelSpeed": fx["wheelSpeed"], "cameras": fx["cameras"][::2], "mirror": fx["mirror"][::3], "onCar": fx["onCar"], "camTables": fx["camTables"],
               "constants": fx["constants"], "stateSwitch": fx["stateSwitch"], "lod": fx["lod"]}
     gpath = HERE.parent / "roblox" / "CarModel" / "NR2003CarModelGolden.lua"
     text = ("-- NR2003CarModelGolden: golden vectors of the ORIGINAL NR2003.exe / rendserv.dll code (Unicorn, recovery/\n"

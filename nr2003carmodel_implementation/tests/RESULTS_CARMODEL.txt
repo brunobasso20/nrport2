@@ -1,4 +1,4 @@
-# nr2003carmodel — test results (Luau CLI 0.741). Regenerate: see README.md, section Testes.
+# nr2003carmodel 1.1.0 — test results (Luau CLI 0.741). Regenerate: see README.md, section Testes.
 
 ## tests/carmodel_run.luau (generated with the converted package make_a)
 PASS  load the CarModel modules under the mock
@@ -32,13 +32,14 @@ PASS  cameras == ORIGINAL 0056a9a0: 12 poses x 14 modes (cockpit, look L/R + ana
       mode 14 F Susp     eye 1.45e-05 m  R 2.43e-07  fov 2.98e-09
       mode 15 R Susp     eye 1.47e-05 m  R 3.04e-07  fov 2.98e-09
 PASS  widescreen projection: cockpit / look views 65 deg (00587ea2), other views unchanged
+PASS  rear-view mirror camera == ORIGINAL 0056a9a0 mirror path (60 poses: head displacement, look, analog)  eye max 1.52e-05 m, rotation max 3.23e-07, fov/shift/near max 0
 PASS  cockpit FOV option: degrees, 1 deg steps, clamped to c5c27c / c5736c (00569450, 00411850 / 00411860)  1.134464 -> 66.0000 deg; 1.1344645 .. 1.3613574 rad
 PASS  camera order == ORIGINAL tables 006ec798 / 006ec7f0 (next 1,13,4,5,10 / previous reversed)  13,4,5,10,1 / 10,5,4,13,1
 PASS  camera constants == ORIGINAL image (FOV option / clamps / step, look time / smoothing / dead zone, pi/4, 4/pi, widescreen 65 deg, eye offset, default FOV)
 PASS  track cameras (Sky, Zeppelin, Pit Lane, TV) not substituted
 PASS  StateSwitch child == ORIGINAL rendserv 10011ec0  91 / 91
 PASS  LodSwitch level == ORIGINAL rendserv 100118e0 (distance thresholds + renderer detail floor)  202 / 202
-PASS  AnimatedTransform == ORIGINAL rendserv 10012810 (8 driver/wheel tracks, 276 times)  translation max 0 m, matrix max 1.92e-07
+PASS  AnimatedTransform == ORIGINAL rendserv 10012810 (8 driver/wheel tracks, 276 times)  translation max 0 m, matrix max 1.93e-07
 PASS  draw state encode / decode (43 f32 fields, seq, server time, getBGCount)  188 bytes
 PASS  draw state decode rejects NaN / wrong version / short buffers
 PASS  005ba170 interpolation: lerp / lerp+wrap / roll shortest path / spin = prev + rate dt alpha (2 pi wrap) / newer gauges  steer -3.0832 roll -3.1416 spin 1.7168
@@ -55,39 +56,48 @@ PASS  import calibration from the markers (rigid transform + uniform scale recov
       scenario 3: 9 parts, 30 nodes
 PASS  rig == reference rig (3 scenarios: cockpit + needles/steer/shifter/head, chase LOD, far LOD; 51 parts)  set mismatches 0, position max 2.84e-14 studs, rotation max 9.99e-16
 PASS  livery replaces the 'card' placeholder texture only (CAR CTEX = card.mip)
-PASS  performance: rig update per frame (Luau CLI, interpreter)  cockpit 0.143 ms (26 parts), chase 0.120 ms (16 parts)
+PASS  performance: rig update per frame (Luau CLI, interpreter)  cockpit 0.133 ms (26 parts), chase 0.124 ms (16 parts)
 PASS  client: data module + imported model found, DrawState listener connected  ok
 PASS  client cockpit: Scriptable camera at the ORIGINAL eye, vertical FOV of the 65 deg widescreen cockpit (00587ea2)  FOV 51.0731 deg, eye error 0 studs
 PASS  client draw state at the render time: steer lerp 0.03, rpm newer record, wheel angle = clamp(-(15 * 0.03))
+PASS  mirror: shown in the cockpit, 2 world parts cloned, camera = reflected ORIGINAL mirror camera, image faces the driver  FOV 32.87 deg, portal 0.260 x 0.044 m
+PASS  mirror image handedness: reflect(world) through reflect(camera) = original view flipped left-right; clones stay proper rotations  max 0
+PASS  mirror hidden outside the cockpit (Roll Bar)
 PASS  V -> Roll Bar (13): on-car camera of the .cam, its own FOV, car drawn (cockpitView 0)  FOV 62.539 deg
 PASS  widescreen branch: horizontal FOV at the display aspect clamped to 2.5 rad (00587ed8)  2.5000 rad
 PASS  B B -> Nose (10): car hidden (cockpitView 10, 0056bb30)
 PASS  Z held in the cockpit -> LookLeft eased to 45 deg
-PASS  performance: full client frame (draw state + gauges + camera + rig)  0.200 ms per frame (Luau CLI, interpreter)
-[NR2003 car model self-test] 9 passed, 0 failed
-PASS  Studio self-test NR2003CarModelSelfTest.run (code only, golden subset) passes under the mock  9 passed, 0 failed
+PASS  orbit: F10Near without input = ORIGINAL placement; right-drag 196 px rotates it ~90 deg about the car at the same distance  90.0 deg, distance 22.88 studs
+PASS  orbit: wheel zoom 0.9x, elevation clamped at 80 deg, V / B reset to the original camera  zoom 0.900, elevation 80.00 deg
+PASS  performance: full client frame (draw state + gauges + camera + rig)  0.178 ms per frame (Luau CLI, interpreter)
+[NR2003 car model self-test] 10 passed, 0 failed
+PASS  Studio self-test NR2003CarModelSelfTest.run (code only, golden subset) passes under the mock  10 passed, 0 failed
 
-47 passed, 0 failed
+53 passed, 0 failed
 
 ## tests/install_mock.luau (generated with the converted package make_a)
 PASS  refuses a bench that is not Stage 13
 PASS  refuses a locally modified NR2003Client (nothing changed)
-[NR2003 car model self-test] 9 passed, 0 failed
+[NR2003 car model self-test] 10 passed, 0 failed
 PASS  install on the published Stage 13 bench
-PASS  CarModel folder: 9 modules (sources exact) + Data + Assets; DrawState UnreliableRemoteEvent  9 modules
+PASS  CarModel folder: 10 modules (sources exact) + Data + Assets; DrawState UnreliableRemoteEvent  10 modules
 PASS  NR2003Client / NR2003Server updated in place (same instances, car-model sources)
 PASS  physics / bench modules untouched; NR2003Stage still 13; NR2003CarModel version set
 PASS  backup: only the two changed scripts (published sources) + ADDED markers
-[NR2003 car model self-test] 9 passed, 0 failed
+[NR2003 car model self-test] 10 passed, 0 failed
 PASS  re-run is idempotent (same tree, first backup kept, no duplicates)
 PASS  rollback: published Stage 13 sources restored in place, DrawState removed, CarModel kept in ServerStorage
 PASS  failing self-test -> automatic revert (sources, created instances, backup)
-[NR2003 car model self-test] 9 passed, 0 failed
-[NR2003 car model self-test] 11 passed, 0 failed
+[NR2003 car model self-test] 10 passed, 0 failed
+Materiais: 174 peças | textura em SurfaceAppearance 87, em TextureID 87, SEM textura 0 | 49 transparentes (alfa = transparência), 24 AlphaMode corrigidos, 25 SurfaceAppearance criadas, 0 erros
+[NR2003 car model self-test] 12 passed, 0 failed
 PASS  INSTALL_CARMODEL_ASSETS: descriptor module + imported model moved to CarModel.Assets, parts anchored / no collision, glass opacity  174 geometries, 0 glass
-[NR2003 car model self-test] 11 passed, 0 failed
-PASS  NR2003CarModelSelfTest (full) after the asset install: descriptor wheel nodes + import calibration  11 passed, 0 failed
-[NR2003 car model self-test] 9 passed, 0 failed
+PASS  asset installer materials: SurfaceAppearance AlphaMode = Transparency for alpha-transparent textures (windshield, windows, nets), Overlay otherwise  49 transparent geometries
+Materiais: 174 peças | textura em SurfaceAppearance 112, em TextureID 62, SEM textura 0 | 79 transparentes (alfa = transparência), 65 AlphaMode corrigidos, 14 SurfaceAppearance criadas, 0 erros
+PASS  FIX_CARMODEL_MATERIALS repairs an existing install (old descriptor without alpha: built-in list) — windshield transparent
+[NR2003 car model self-test] 12 passed, 0 failed
+PASS  NR2003CarModelSelfTest (full) after the asset install: descriptor wheel nodes + import calibration  12 passed, 0 failed
+[NR2003 car model self-test] 10 passed, 0 failed
 PASS  INSTALL_CARMODEL_ASSETS refuses an import without the calibration markers (nothing installed)
 PASS  the place is never saved
-14 passed, 0 failed
+16 passed, 0 failed

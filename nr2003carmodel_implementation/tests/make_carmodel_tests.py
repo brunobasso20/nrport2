@@ -13,7 +13,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 MODULES = ["NR2003Scale", "NR2003Gauges", "NR2003DrawState", "NR2003CameraSystem", "NR2003CarModelRig",
-           "NR2003CarModelServer", "NR2003CarModelClient", "NR2003CarModelGolden", "NR2003CarModelSelfTest"]
+           "NR2003CarModelServer", "NR2003CarModelClient", "NR2003Mirror", "NR2003CarModelGolden", "NR2003CarModelSelfTest"]
 
 
 def long_string(text):

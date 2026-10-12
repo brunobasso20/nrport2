@@ -10,7 +10,8 @@ builds in 004287a0 / 004296b0 / 0042a5a0 / 0042a660 / 00429800 ("<model>.3do", "
 Damage branches are resolved to the undamaged car (out of scope); carMakeIdx = --make
 (0 Chevrolet, 1 Dodge, 2 Ford, 3 Pontiac: the order of the .car 'car_make' key and card_<make>.mip).
 Output (nothing is uploaded anywhere):
-  <out>/obj/<package>.obj + .mtl  geometry library per package (import with the Studio 3D Importer, unit = Stud)
+  <out>/obj/<package>.glb         geometry library per package, textures embedded (RECOMMENDED for the Studio 3D Importer)
+  <out>/obj/<package>.obj + .mtl  the same as OBJ / MTL (map_d for transparent textures)
   <out>/textures/*.png            decoded textures (largest MIP level, RGBA; also copied next to the .obj for the importer)
   <out>/luau/NR2003CarModelData_<package>.lua   rig descriptor for the Roblox runtime
   <out>/json/<package>.json       the same descriptor as JSON
@@ -104,6 +105,7 @@ def main(argv=None):
     packages = [(a.model, True), (a.model + "_light_cockpit", False), (a.model + "_shadow", False)]
     textures = set()
     summary = {}
+    built = []
     cams = read_cam(res.get(a.model + ".cam"))
     for pkg, required in packages:
         data = res.get(pkg + ".3do", required)
@@ -114,8 +116,7 @@ def main(argv=None):
         sc = scene.build(root, {}, a.make)
         hdr = ("NR2003 %s.3do (%s), carMakeIdx %d, undamaged; %d geometries, %d instances, %d nodes"
                % (pkg, res.used[pkg + ".3do"]["source"], a.make, len(sc.geometries), len(sc.instances), len(sc.nodes)))
-        export.write_obj(sc, os.path.join(a.out, "obj", pkg + ".obj"), pkg + ".mtl", mps, header=hdr)
-        textures |= set(export.write_mtl(sc, os.path.join(a.out, "obj", pkg + ".mtl")))
+        textures |= {export.tex_stem(export.base_texture(g["material"])) for g in sc.geometries} - {"untextured"}
         meta = {"package": pkg, "model": a.model, "make": a.make, "source": res.used[pkg + ".3do"],
                 "objects": len(stream.objects), "windingAgree": sc.stats["agree"],
                 "windingDisagree": sc.stats["disagree"]}
@@ -123,15 +124,7 @@ def main(argv=None):
         desc["roles"] = roles(sc)
         if pkg == a.model:
             desc["cameras"] = cams
-        export.write_json(desc, os.path.join(a.out, "json", pkg + ".json"))
-        luau_name = "NR2003CarModelData_" + pkg
-        export.write_luau(desc, os.path.join(a.out, "luau", luau_name + ".lua"), hdr)
-        if pkg == a.model:
-            src = open(os.path.join(a.out, "luau", luau_name + ".lua")).read()
-            with open(os.path.join(a.out, "studio", "INSTALL_CARMODEL_ASSETS.lua"), "w", newline="\n") as fh:
-                fh.write(studio.assets_installer(desc, luau_name, src))
-            with open(os.path.join(a.out, "studio", luau_name + ".rbxmx"), "w", newline="\n") as fh:
-                fh.write(studio.rbxmx_module(luau_name, src))
+        built.append((pkg, sc, desc, hdr))
         summary[pkg] = {"geometries": len(sc.geometries), "instances": len(sc.instances), "nodes": len(sc.nodes),
                         "uniqueTriangles": sum(len(g["tris"]) for g in sc.geometries)}
 
@@ -145,7 +138,8 @@ def main(argv=None):
         w, h, px = m.rgba()
         open(os.path.join(a.out, "textures", stem + ".png"), "wb").write(mip.png(w, h, px))
         tex_out[stem] = {"format": mip.FORMAT_NAMES.get(m.format, hex(m.format)), "width": w, "height": h,
-                         "clampU": m.clamp_u, "clampV": m.clamp_v, "factor": m.factor}
+                         "clampU": m.clamp_u, "clampV": m.clamp_v, "factor": m.factor,
+                         "alphaTransparent": any(px[i] < 255 for i in range(3, len(px), 4))}
     livery = None
     if a.livery:
         raw = open(a.livery, "rb").read()
@@ -160,8 +154,28 @@ def main(argv=None):
         if as_card:
             os.replace(card, os.path.join(a.out, "textures", "card_default.png"))
             open(card, "wb").write(png)
+            tex_out["card"]["alphaTransparent"] = any(px[i] < 255 for i in range(3, len(px), 4))
         livery = {"file": os.path.basename(a.livery), "sha256": hashlib.sha256(raw).hexdigest(), "texture": stem,
                   "replaces": "card", "writtenAsCard": as_card, "driver": cf.driver()}
+    # NR2003 draws the base texture's alpha as transparency (windows of card / bottom at alpha 136, the windshield
+    # buildup glass, nets, lights); environment reflection masks are separate textures (shiny*.mip)
+    blend = {k for k, v in tex_out.items() if isinstance(v, dict) and v["alphaTransparent"]}
+    clamp = {k: (v["clampU"], v["clampV"]) for k, v in tex_out.items() if isinstance(v, dict)}
+    for pkg, sc, desc, hdr in built:
+        export.write_obj(sc, os.path.join(a.out, "obj", pkg + ".obj"), pkg + ".mtl", mps, header=hdr)
+        export.write_mtl(sc, os.path.join(a.out, "obj", pkg + ".mtl"), blend)
+        export.write_glb(sc, os.path.join(a.out, "obj", pkg + ".glb"), os.path.join(a.out, "textures"), mps, blend, clamp)
+        for g in desc["geometries"]:
+            g["alpha"] = "blend" if (g["texture"] in blend or g["opacity"] < 1) else "opaque"
+        export.write_json(desc, os.path.join(a.out, "json", pkg + ".json"))
+        luau_name = "NR2003CarModelData_" + pkg
+        export.write_luau(desc, os.path.join(a.out, "luau", luau_name + ".lua"), hdr)
+        if pkg == a.model:
+            src = open(os.path.join(a.out, "luau", luau_name + ".lua")).read()
+            with open(os.path.join(a.out, "studio", "INSTALL_CARMODEL_ASSETS.lua"), "w", newline="\n") as fh:
+                fh.write(studio.assets_installer(desc, luau_name, src))
+            with open(os.path.join(a.out, "studio", luau_name + ".rbxmx"), "w", newline="\n") as fh:
+                fh.write(studio.rbxmx_module(luau_name, src))
     # the .mtl names its maps by file name: the Studio 3D Importer looks for them next to the .obj
     import shutil
     for f in sorted(os.listdir(os.path.join(a.out, "textures"))):
@@ -169,6 +183,7 @@ def main(argv=None):
             shutil.copyfile(os.path.join(a.out, "textures", f), os.path.join(a.out, "obj", f))
     manifest = {"tool": "nr2003carmodel_implementation/pipeline/convert_car.py", "metresPerStud": mps,
                 "model": a.model, "make": a.make, "packages": summary, "textures": tex_out, "livery": livery,
+                "alphaTransparent": sorted(blend),
                 "cameras": cams, "resources": res.used,
                 "archives": [{"file": os.path.basename(p), "hash": "%08x" % ar.hash,
                               "sha256": hashlib.sha256(ar.data).hexdigest(), "entries": len(ar.entries)}

@@ -76,6 +76,10 @@ function Instance.FindFirstChild(o, name, recursive)
 	end
 	return nil
 end
+function Instance.FindFirstChildOfClass(o, class)
+	for _, c in ipairs(rawget(o, "_children")) do if c.ClassName == class then return c end end
+	return nil
+end
 function Instance.GetDescendants(o)
 	local out = {}
 	local function walk(x) for _, c in ipairs(rawget(x, "_children")) do table.insert(out, c); walk(c) end end
@@ -154,10 +158,11 @@ local function check(name, ok, detail)
 	if ok then passed += 1 else failed += 1 end
 	print((ok and "PASS  " or "FAIL  ") .. name .. (detail and ("  " .. detail) or ""))
 end
+local Enum = {AlphaMode = {Overlay = "Overlay", Transparency = "Transparency"}}
 local function run(src, name)
 	local f = assert(loadstring(src, name))
 	setfenv(f, setmetatable({game = game, workspace = services.Workspace, Instance = Instance, require = mockRequire,
-		Vector3 = Vector3, CFrame = CFrame}, {__index = _G}))
+		Vector3 = Vector3, CFrame = CFrame, Enum = Enum, warn = print}, {__index = _G}))
 	return pcall(f)
 end
 local function snapshot(folder)
@@ -201,8 +206,8 @@ check("install on the published Stage 13 bench", ok, not ok and tostring(err) or
 local folder = pkg:FindFirstChild("CarModel")
 local modules = 0
 if folder then for _, c in ipairs(folder:GetChildren()) do if c.ClassName == "ModuleScript" and c.Source == NEW.modules[c.Name] then modules += 1 end end end
-check("CarModel folder: 9 modules (sources exact) + Data + Assets; DrawState UnreliableRemoteEvent",
-	folder ~= nil and modules == 9 and folder:FindFirstChild("Data") ~= nil and folder:FindFirstChild("Assets") ~= nil
+check("CarModel folder: 10 modules (sources exact) + Data + Assets; DrawState UnreliableRemoteEvent",
+	folder ~= nil and modules == 10 and folder:FindFirstChild("Data") ~= nil and folder:FindFirstChild("Assets") ~= nil
 	and pkg:FindFirstChild("DrawState") ~= nil and pkg.DrawState.ClassName == "UnreliableRemoteEvent", modules .. " modules")
 check("NR2003Client / NR2003Server updated in place (same instances, car-model sources)",
 	SP.NR2003Client == client and SSS.NR2003Server == server and client.Source == NEW.Client and server.Source == NEW.Server)
@@ -211,7 +216,7 @@ local untouched = true
 for k, v in pairs(physicsBefore) do if physicsAfter[k] ~= v then untouched = false end end
 check("physics / bench modules untouched; NR2003Stage still 13; NR2003CarModel version set",
 	untouched and pkg:GetAttribute("NR2003Stage") == "13" and pkg:GetAttribute("NR2003Version") == "3.12.0-stage13"
-	and pkg:GetAttribute("NR2003CarModel") == "1.0.0-carmodel")
+	and pkg:GetAttribute("NR2003CarModel") == "1.1.0-carmodel")
 local backup = SS:FindFirstChild("NR2003Backup_CarModel")
 local bnames = {}
 if backup then for _, c in ipairs(backup:GetChildren()) do bnames[c.Name] = c end end
@@ -244,12 +249,13 @@ check("failing self-test -> automatic revert (sources, created instances, backup
 	and same(before, snapshot(RS)) and SS:FindFirstChild("NR2003Backup_CarModel") == nil and SP.NR2003Client.Source == PUBLISHED.Client
 	and SSS.NR2003Server.Source == PUBLISHED.Server)
 -- 6) asset installer of a converted package (only when generated with a package dir)
+local DATA_SRC_CODE
 if ASSETS then
 	pkg = stage13()
 	ok, err = run(INSTALL, "INSTALL_CARMODEL")
 	local DATA_SRC = ASSETS:match("local DATA_SOURCE=(%[=*%[.-%]=*%])")
-	local desc = assert(loadstring("return " .. DATA_SRC))()
-	desc = assert(loadstring(desc))()
+	DATA_SRC_CODE = assert(loadstring("return " .. DATA_SRC))()
+	local desc = assert(loadstring(DATA_SRC_CODE))()
 	-- the import as the 3D Importer could leave it: rigid transform (here a translation) + uniform scale 1.25
 	local k, off = 1.25, Vector3.new(40, 3, -7)
 	local model = make("Model", desc.meta.package, services.Workspace)
@@ -258,9 +264,12 @@ if ASSETS then
 		local p = make("MeshPart", name, model)
 		rawset(p, "CFrame", CFrame.new(off.X + (m[1] + c) * k, off.Y + (m[2] + c) * k, off.Z + (m[3] + c) * k))
 	end
-	for _, g in ipairs(desc.geometries) do
+	for i, g in ipairs(desc.geometries) do
 		local p = make("MeshPart", g.name, model)
 		rawset(p, "CFrame", CFrame.new(off.X + g.center[1] * k, off.Y + g.center[2] * k, off.Z + g.center[3] * k))
+		-- as a glTF / FBX import: half the parts with a SurfaceAppearance in Overlay, the others with TextureID
+		if i % 2 == 0 then local sa = make("SurfaceAppearance", "SurfaceAppearance", p); sa.AlphaMode = "Overlay"
+		else rawset(p, "TextureID", "rbxassetid://" .. i) end
 	end
 	local ok2, err2 = run(ASSETS, "INSTALL_CARMODEL_ASSETS")
 	local data = pkg.CarModel.Data:FindFirstChild("NR2003CarModelData_" .. desc.meta.package)
@@ -277,6 +286,33 @@ if ASSETS then
 		ok and ok2 and data ~= nil and data.Source == DATA_SRC:sub(DATA_SRC:find("\n") + 1, -(#DATA_SRC:match("%]=*%]$") + 1)) and moved == model
 		and model.Parent == pkg.CarModel.Assets and anchored and glass == nGlass,
 		not ok2 and tostring(err2) or string.format("%d geometries, %d glass", #desc.geometries, nGlass))
+	-- material pass: alpha = transparency where the descriptor says "blend"
+	local okMat, nb = true, 0
+	for i, g in ipairs(desc.geometries) do
+		local p = moved and moved:FindFirstChild(g.name)
+		local sa = p and p:FindFirstChildOfClass("SurfaceAppearance")
+		if g.alpha == "blend" then nb += 1 end
+		if i % 2 == 0 then
+			if not sa or sa.AlphaMode ~= (g.alpha == "blend" and "Transparency" or "Overlay") then okMat = false end
+		elseif g.alpha == "blend" then
+			if not sa or sa.AlphaMode ~= "Transparency" or sa.ColorMap ~= p.TextureID then okMat = false end
+		elseif sa then okMat = false end
+	end
+	local glass = moved and moved:FindFirstChild("G144_GLASS")
+	check("asset installer materials: SurfaceAppearance AlphaMode = Transparency for alpha-transparent textures (windshield, windows, nets), Overlay otherwise",
+		okMat and nb > 0 and glass ~= nil and glass:FindFirstChildOfClass("SurfaceAppearance") ~= nil
+		and glass:FindFirstChildOfClass("SurfaceAppearance").AlphaMode == "Transparency", nb .. " transparent geometries")
+	-- FIX_CARMODEL_MATERIALS on an install made with an OLD descriptor (no g.alpha): default list of the cup.dat textures
+	for _, g in ipairs(desc.geometries) do
+		local p = moved:FindFirstChild(g.name); local sa = p and p:FindFirstChildOfClass("SurfaceAppearance")
+		if sa then sa.AlphaMode = "Overlay" end
+	end
+	local oldDesc = loadstring(DATA_SRC_CODE:gsub(",alpha=\"%a+\"", ""))()
+	pkg.CarModel.Data:FindFirstChild("NR2003CarModelData_" .. desc.meta.package).Source = "-- old descriptor\n" .. DATA_SRC_CODE:gsub(",alpha=\"%a+\"", "")
+	local ok4, err4 = run(FIX, "FIX_CARMODEL_MATERIALS")
+	local g144 = moved:FindFirstChild("G144_GLASS"):FindFirstChildOfClass("SurfaceAppearance")
+	check("FIX_CARMODEL_MATERIALS repairs an existing install (old descriptor without alpha: built-in list) — windshield transparent",
+		ok4 and oldDesc.geometries[1].alpha == nil and g144.AlphaMode == "Transparency", not ok4 and tostring(err4) or nil)
 	-- the full self-test (code + descriptor + import calibration) after the asset install
 	local okST, lines = mockRequire(pkg.CarModel.NR2003CarModelSelfTest).run(false)
 	check("NR2003CarModelSelfTest (full) after the asset install: descriptor wheel nodes + import calibration", okST, lines[#lines])
