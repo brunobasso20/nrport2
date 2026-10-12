@@ -83,6 +83,20 @@ function M.run(full,codeOnly)
     end
     check(string.format("cameras == ORIGINAL 0056a9a0 (%d poses, 14 modes)",#G.cameras),bad==0,
         string.format("eye %.2g m, rotation %.2g, fov %.2g",e1,r1,f1))
+    if G.mirror then
+        local me,mr,mbad=0,0,0
+        for _,c in ipairs(G.mirror) do
+            cams.mode=c.mode;cams.lookSign,cams.lookEased,cams.lookAnalog=1,c.look,c.analog
+            local o=cams:computeMirror(c.pos,c.R,{head=c.head,modelHead=c.modelHead,headPitch=c.headPitch,headRoll=c.headRoll},{})
+            local e,r=0,0
+            for i=1,3 do e=math.max(e,math.abs(o.eye[i]-c.eye[i])) end
+            for i=1,9 do r=math.max(r,math.abs(o.R[i]-c.M[i])) end
+            me,mr=math.max(me,e),math.max(mr,r)
+            if e>2e-4 or r>2e-6 or math.abs(o.fov43-c.fov[1])>1e-6 or math.abs(o.shift[2]-c.fov[3])>1e-6 then mbad+=1 end
+        end
+        check(string.format("rear-view mirror camera == ORIGINAL 0056a9a0 mirror path (%d poses)",#G.mirror),mbad==0,
+            string.format("eye %.2g m, rotation %.2g",me,mr))
+    end
     local C=G.constants
     local cok=Cameras.FOV_MIN==C.fovMin and Cameras.FOV_MAX==C.fovMax and Cameras.FOV_STEP==C.fovStep
         and Cameras.FOV_OPTION_DEFAULT_DEG==C.fovDefaultDeg and Cameras.LOOK_TIME==C.lookTime and Cameras.WIDESCREEN_COCKPIT_FOV==C.wideFov

@@ -108,6 +108,16 @@ untouched) and this note records the discrepancy.
 | 10..15 | Nose, Gearbox, On Car, Roll Bar, F Susp, R Susp | eye = body + R_b · pos(.cam); R = R_b · Euler(hpr(.cam)) | fov(.cam), 0.2; car hidden in 10, 11, 14, 15 (`0056bb30`) |
 | 9, 16..21 | Sky, Zeppelin, Pit Lane (2), TV1..3 | need the track system | not ported (no substitute camera) |
 
+**Rear-view mirror camera** (`0056a9a0` second argument, `0056b417..0056b660`; evidence `exe/0056a9a0.c` lines
+335–379): computed for every mode, drawn only through the cockpit portal `rearView`. h' = draw-record head − model head
+(`00562f50` = modelinfo + 0x1c0, the 3do `head` node); C = (−0.4, 0, 0.7) (`006f5f0c..14`); n = normalize(C − model
+head); eye = body + R_b (C + h' − 2 (n · h') n) (the head displacement reflected through the plane of normal n);
+(h, p, r) = `005f74c0`(R_b · Euler(0, headPitch − p_b, headRoll − r_b)); camera Euler(h + π, −p, −(r + look · 0.26))
+(`006e97f8`, `006f5f44`); FOV triple (2.0944 = 120°, 0, −look · 0.2 (`006e9824`)), near 0.3. Ported as
+`NR2003CameraSystem.computeMirror`, identical to the original on 60 poses. Not recovered: how rendserv maps that frustum
+onto the portal polygon and whether it mirrors the image (a mirror shows it flipped; the port flips it and spreads the
+120° across the portal width — `NR2003Mirror`, documented as an approximation).
+
 Chase cameras keep the eye ≥ 1 m above the track (`006e97d8`) — read from the code; not exercised by the vectors (no
 track loaded in the harness). Order while driving (`00411530` / `00411550`, tables `006ec798` / `006ec7f0`): next
 1 → 13 → 4 → 5 → 10 → 1, previous the reverse (cockpit only when session flag 0x80000). Look (`00569450`): digital
@@ -147,11 +157,15 @@ call), `100118e0` (renderer stubs for vf +0x28 far value / +0x154 floor), `10012
 
 ## 8. Not recovered / not ported (with reason)
 
-* Rear-view mirror (Portal `rearView`, `mirrorFrameEnable`): needs a second render target — not in Roblox.
+* Rear-view mirror: the camera is exact; the portal projection / flip of rendserv is approximated (§5).
 * SelfLighting / night (`day_night` = 0 = day), headlights, backfire sprite animation: day only.
 * Track cameras (Sky, Zeppelin, Pit Lane, TV): need the track system (stage after 14).
 * LOD scale factor of the renderer (detail option): `lodScale` = 1, floor 0 (default detail).
 * `make_a_light_cockpit` (outside gauges for other cars) and `make_a_shadow`: converted, not wired.
 * Texture `factor` field of the MIP header and the 3do material colours: carried in the descriptor, not applied (Roblox
   MeshPart has no equivalent); glass opacity < 1 → Part.Transparency = 1 − opacity.
+* Alpha: the base texture's alpha is transparency. Evidence from the data: the alpha < 255 pixels of `card` / `bottom`
+  (alpha 136) cover exactly the windshield, rear and side windows; `glass` (windshield buildup) is 66 % fully clear,
+  mean alpha 9.8; nets / tach lights / backfire / interior cut-outs likewise; the reflection masks are separate textures
+  (`shiny.mip`, `shiny_windows.mip`, slots 3 of the Appearance). The rendserv blend-state code itself was not traced.
 * Damage: undamaged branches only (out of scope by request).

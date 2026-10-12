@@ -1,4 +1,4 @@
-# nr2003carmodel — relatório de implementação (1.0.0-carmodel)
+# nr2003carmodel — relatório de implementação (1.1.0-carmodel)
 
 Base: Stage 13 publicado (3.12.0-stage13, `c64ad5e`). Etapa entre o Stage 13 e o Stage 14; **Stage 14 não iniciado**.
 Física, direção, FFB e estágios 1–13 **inalterados**: nenhum arquivo do repositório fora de `nr2003carmodel_implementation/`
@@ -35,6 +35,26 @@ cliente (depois de RenderPresentation:update)          registro no tempo de rend
 * **Integração**: aditiva e reversível (INSTALL / ROLLBACK verificados, backup, auto-teste, nunca salva o place);
   sem o pacote de assets a bancada se apresenta como no Stage 13.
 
+## 1.1.0 — correções do teste no Studio
+
+* **Para-brisa / vidros**: o "asfalto" cinza no para-brisa era o `G144_GLASS` (opção "windshield buildup", textura
+  `glass.png` com alfa médio 9,8/255: sujeira quase toda transparente) desenhado opaco — o GLB do Blender marcou todos
+  os materiais OPAQUE e o Roblox pôs a SurfaceAppearance em AlphaMode Overlay. No NR2003 o alfa da textura base é
+  transparência (as áreas com alfa 136 do `card` / `bottom` são exatamente o para-brisa, o vidro traseiro e as janelas;
+  a máscara de reflexo é outra textura, `shiny*.mip`). Agora: o conversor classifica cada textura (`alphaTransparent`,
+  descritor `g.alpha`), gera **`make_a.glb` direto** (texturas embutidas, `alphaMode` BLEND nas transparentes — sem
+  Blender), `map_d` no MTL; o instalador de assets e o novo `FIX_CARMODEL_MATERIALS.lua` põem `AlphaMode =
+  Transparency` onde é transparência (para um place já instalado, sem reimportar).
+* **Câmera de fora girável** (extensão NÃO original, pedida): botão direito + arrastar / roda / analógico direito giram
+  e aproximam as câmeras F10Near / F10Far / Chase / Far Chase / Rear chase em volta do carro; sem entrada = câmera
+  original exata; V / B voltam ao original.
+* **Retrovisor**: a câmera de espelho ORIGINAL do `0056a9a0` (segundo argumento) foi recuperada e portada
+  (`computeMirror`, idêntica ao original em 60 poses) e desenhada no polígono do portal `rearView` por um ViewportFrame
+  com o mundo estático refletido (imagem espelhada como um espelho). Aproximações: mapeamento do FOV de 120° no
+  retângulo do portal (o código do portal do rendserv não foi recuperado), só peças ancoradas (Terrain não aparece em
+  ViewportFrame; formas não simétricas como MeshPart não são espelhadas).
+* OBJ com linhas `g` (o importador do Roblox juntava os objetos num "default").
+
 ## Desvios e aproximações (documentados, nenhum altera a física)
 
 | Item | Original | Port | Por quê |
@@ -44,10 +64,12 @@ cliente (depois de RenderPresentation:update)          registro no tempo de rend
 | Suavização do olhar analógico | relógio de CPU entre quadros | dt do quadro de render | mesma fórmula 0,5^(T/dt) |
 | Transparência dos vidros | alfa de material × textura (D3D) | `Transparency` = 1 − opacidade 3do + alfa da textura | MeshPart |
 | Fator do MIP / cores de material | aplicados pelo renderizador | não aplicados (guardados no descritor) | sem equivalente no MeshPart |
+| Retrovisor | câmera de espelho renderizada no portal `rearView` | mesma câmera (exata) num ViewportFrame com o mundo refletido; FOV 120° na largura do portal | sem render target; portal do rendserv não recuperado |
+| Câmeras de fora | fixas | fixas por padrão + órbita opcional (mouse / analógico) | pedido do usuário (atributo `NR2003OrbitCamera`) |
 
 ## Não feito (com motivo)
 
-* Retrovisor (Portal `rearView`): exige segundo render target. Noite / SelfLighting / faróis: só dia (`day_night` 0).
+* Noite / SelfLighting / faróis: só dia (`day_night` 0). Retrovisor: ver 1.1.0 (aproximações na projeção do portal).
 * Câmeras de pista (Sky, Zeppelin, Pit Lane, TV1..3): dependem do sistema de pista — não há substituto (o modo fica sem
   mudança, nunca uma câmera padrão do Roblox).
 * Fator de LOD da opção de detalhe do renderizador: 1 (padrão). `make_a_light_cockpit` e `make_a_shadow`: convertidos,
@@ -63,7 +85,7 @@ port segue o original (a agulha de água começa no mínimo e sobe com o motor);
 
 ## Arquivos
 
-Novos (todos neste diretório): `pipeline/**`, `roblox/CarModel/*` (9 módulos), `roblox/Bench/*` (Client / Server com
+Novos (todos neste diretório): `pipeline/**`, `roblox/CarModel/*` (10 módulos), `roblox/Bench/*` (Client / Server com
 ganchos), `studio/*`, `recovery/*` (harness, gerador, relatório, evidências), `tests/*`, `tools/build_carmodel.py`,
 documentos `*.md`. Alterados fora do diretório: `PORT_MAP.md`, `ROADMAP_STATUS.md`, `CHANGELOG.md` (só documentação). O ZIP
 `OpenNR2003_Roblox_CARMODEL_changed_files.zip` (raiz do repositório) traz exatamente esses arquivos, sem nenhum asset

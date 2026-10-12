@@ -15,8 +15,9 @@ local Gauges=require(script.Parent.NR2003Gauges)
 local DrawState=require(script.Parent.NR2003DrawState)
 local Cameras=require(script.Parent.NR2003CameraSystem)
 local Rig=require(script.Parent.NR2003CarModelRig)
+local Mirror=require(script.Parent.NR2003Mirror)
 local M={};M.__index=M
-M.VERSION="1.0.0-carmodel"
+M.VERSION="1.1.0-carmodel"
 
 local function attr(car,name,default)
     local v=car:GetAttribute(name)
@@ -58,11 +59,42 @@ function M.new(car,presentation,package,player,getKeys)
     local livery=attr(car,"NR2003LiveryTexture",nil)
     if type(livery)=="string" and livery~="" then rig:setLivery(livery) end
     self.rayParams=RaycastParams.new();self.rayParams.FilterType=Enum.RaycastFilterType.Exclude
+    -- rear-view mirror (original mirror camera through the cockpit portal; attribute NR2003Mirror = false disables)
+    if attr(car,"NR2003Mirror",true) then
+        local okM,mir=pcall(Mirror.new,data,rig.model,{})
+        if okM then self.mirror=mir else warn("NR2003 mirror: "..tostring(mir)) end
+    end
+    -- NON-ORIGINAL orbit of the chase cameras (attribute NR2003OrbitCamera = false disables): right mouse button drag,
+    -- mouse wheel zoom, gamepad right stick in the chase views; V / B reset it
+    self.inputConns={}
+    if UIS.InputBegan then
+        local function chase() return self.driving and Cameras.CHASE[self.cams.mode]~=nil and attr(car,"NR2003OrbitCamera",true) end
+        table.insert(self.inputConns,UIS.InputBegan:Connect(function(io,processed)
+            if processed then return end
+            if io.UserInputType==Enum.UserInputType.MouseButton2 and chase() then
+                self.dragging=true;UIS.MouseBehavior=Enum.MouseBehavior.LockCurrentPosition
+            end
+        end))
+        table.insert(self.inputConns,UIS.InputEnded:Connect(function(io)
+            if io.UserInputType==Enum.UserInputType.MouseButton2 and self.dragging then
+                self.dragging=false;UIS.MouseBehavior=Enum.MouseBehavior.Default
+            end
+        end))
+        table.insert(self.inputConns,UIS.InputChanged:Connect(function(io,processed)
+            if io.UserInputType==Enum.UserInputType.MouseMovement and self.dragging and chase() then
+                self.cams:orbit(-io.Delta.X*M.ORBIT_MOUSE,io.Delta.Y*M.ORBIT_MOUSE)
+            elseif io.UserInputType==Enum.UserInputType.MouseWheel and not processed and chase() then
+                self.cams:zoom(1-io.Position.Z*0.1)
+            end
+        end))
+    end
     self.active=true
     car:SetAttribute("NR2003CarModelStatus",self.status)
     return self
 end
 
+M.ORBIT_MOUSE=0.008          -- rad per pixel
+M.ORBIT_STICK={2.5,1.5}       -- rad/s yaw / pitch at full right-stick deflection
 function M:cameraActive() return self.active and self.driving==true end
 function M:nextCamera() if self.cams then self.cams:nextCamera() end end
 function M:prevCamera() if self.cams then self.cams:prevCamera() end end
@@ -126,12 +158,20 @@ function M:update(dt,driving)
     if driving then
         local keys=self.getKeys and self.getKeys() or {}
         local axis=nil
+        local stickX,stickY=0,0
         local last=UIS:GetLastInputType()
         if last.Name:sub(1,7)=="Gamepad" and UIS:GetGamepadConnected(last) then
             for _,o in ipairs(UIS:GetGamepadState(last)) do
-                if o.KeyCode==Enum.KeyCode.Thumbstick2 and math.abs(o.Position.X)>0 then axis=-o.Position.X end
+                if o.KeyCode==Enum.KeyCode.Thumbstick2 then stickX,stickY=o.Position.X,o.Position.Y end
             end
         end
+        local chase=Cameras.CHASE[self.cams.mode]~=nil
+        if chase then
+            -- right stick orbits the chase cameras (NON-ORIGINAL extension)
+            if attr(car,"NR2003OrbitCamera",true) and (math.abs(stickX)>0.15 or math.abs(stickY)>0.15) then
+                self.cams:orbit(-stickX*M.ORBIT_STICK[1]*dt,-stickY*M.ORBIT_STICK[2]*dt)
+            end
+        elseif math.abs(stickX)>0 then axis=-stickX end                 -- cockpit: analog look (0x54 / 0x55 axis)
         self.cams:input(keys.LookLeft==true,keys.LookRight==true,axis,dt)
         self.cams:tick(dt)
         self.rayParams.FilterDescendantsInstances={car,self.rig.model,char}
@@ -156,6 +196,20 @@ function M:update(dt,driving)
     if not v._cockpit then v.timeValue=DrawState.timeValue(ds.wheelAngle) end   -- bit 0x01 clear: driver animation
     local camera=workspace.CurrentCamera
     self.rig:update(bodyCF,v,ds,camera.CFrame.Position,1)
+    -- rear-view mirror: only with the cockpit drawn (cockpitView 1, mirrorFrameEnable case 0)
+    if self.mirror then
+        local show=driving and v._cockpit
+        if show and not self.mirrorReady then
+            local ok,n=pcall(self.mirror.snapshot,self.mirror,bodyCF.Position,{car,self.rig.model,char,self.mirror.part})
+            self.mirrorReady=true
+            if not ok then warn("NR2003 mirror snapshot: "..tostring(n));self.mirror=nil end
+        end
+        if self.mirror then
+            local mc=show and self.cams:computeMirror({bx,by,bz},Rb,{head=ds.headTranslation,modelHead=self.headRest,
+                headPitch=ds.headPitch,headRoll=ds.headRoll},self.mirrorOut) or nil
+            self.mirror:update(bodyCF,mc,show)
+        end
+    end
     car:SetAttribute("NR2003Camera",cam and cam.name or nil)
     return true
 end
@@ -185,6 +239,9 @@ end
 
 function M:destroy()
     if self.conn then self.conn:Disconnect() end
+    for _,c in ipairs(self.inputConns or {}) do c:Disconnect() end
+    if self.dragging then UIS.MouseBehavior=Enum.MouseBehavior.Default end
+    if self.mirror then self.mirror:destroy() end
     if self.addedConn then self.addedConn:Disconnect() end
     setLocalHidden(self.hidden,self.car,false)
     if self.player.Character then setLocalHidden(self.hiddenChar,self.player.Character,false) end

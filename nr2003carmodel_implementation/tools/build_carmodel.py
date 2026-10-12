@@ -21,9 +21,9 @@ HERE = Path(__file__).resolve().parent
 IMPL = HERE.parent
 ROOT = IMPL.parent
 STAGE13_COMMIT = 'c64ad5e'       # published Stage 13 (3.12.0-stage13): the baseline this installer verifies
-VERSION = '1.0.0-carmodel'
+VERSION = '1.1.0-carmodel'
 MODULES = ['NR2003Scale', 'NR2003Gauges', 'NR2003DrawState', 'NR2003CameraSystem', 'NR2003CarModelRig',
-           'NR2003CarModelClient', 'NR2003CarModelServer', 'NR2003CarModelGolden', 'NR2003CarModelSelfTest']
+           'NR2003Mirror', 'NR2003CarModelClient', 'NR2003CarModelServer', 'NR2003CarModelGolden', 'NR2003CarModelSelfTest']
 SCRIPTS = [('Client', 'NR2003Client', 'LocalScript', 'roblox/Client.client.lua', 'roblox/Bench/Client.client.lua'),
            ('Server', 'NR2003Server', 'Script', 'roblox/Server.server.lua', 'roblox/Bench/Server.server.lua')]
 
@@ -267,7 +267,37 @@ print("Bancada de volta ao Stage 13 publicado (NR2003Client / NR2003Server confe
 print("O backup ServerStorage.NR2003Backup_CarModel foi mantido (apague-o você mesmo se quiser). O place NÃO foi salvo.")
 '''.replace('__STAGE13__', st13)
     write(out / 'ROLLBACK_CARMODEL.lua', rollback)
-    print('INSTALL_CARMODEL.lua %d chars, ROLLBACK_CARMODEL.lua %d chars' % (len(install), len(rollback)))
+    # material fix for an already installed model (any descriptor version), shared with INSTALL_CARMODEL_ASSETS
+    import sys as _sys
+    _sys.path.insert(0, str(IMPL / 'pipeline'))
+    from nr2003res import studio as _studio
+    fix = r'''-- FIX_CARMODEL_MATERIALS — corrige a transparência do carro ORIGINAL já instalado (NR2003Lab.CarModel.Assets), sem
+-- reconverter nem reimportar. Cole na Command Bar, FORA do Play. NÃO salva o place.
+-- NR2003 desenha o alfa da textura como transparência (para-brisa "buildup" quase todo transparente, vidros das janelas,
+-- redes, luzes do painel, backfire, recortes do interior). Um import (ex.: GLB exportado pelo Blender com materiais
+-- OPAQUE) deixa a SurfaceAppearance em AlphaMode Overlay: o vidro vira uma placa cinza. Este script põe AlphaMode =
+-- Transparency onde o alfa é transparência (Overlay nas demais) e informa como as texturas foram importadas.
+assert(not game:GetService("RunService"):IsRunning(),"Pare o Play antes")
+local RS=game:GetService("ReplicatedStorage")
+local folder=assert(RS:FindFirstChild("NR2003Lab") and RS.NR2003Lab:FindFirstChild("CarModel"),"NR2003Lab.CarModel ausente")
+local data=assert(folder:FindFirstChild("Data"),"CarModel.Data ausente")
+local assets=assert(folder:FindFirstChild("Assets"),"CarModel.Assets ausente")
+''' + _studio.MATERIALS_LUA + r'''local done=0
+for _,m in ipairs(data:GetChildren()) do
+    if m:IsA("ModuleScript") and m.Name:match("^NR2003CarModelData_") then
+        local desc=require(m)
+        local model=desc.meta and assets:FindFirstChild(desc.meta.package)
+        if model then
+            print("Pacote "..desc.meta.package..":");reportMaterials(applyMaterials(model,desc));done+=1
+        end
+    end
+end
+assert(done>0,"nenhum modelo instalado encontrado (rode INSTALL_CARMODEL_ASSETS antes)")
+print("Pronto. Dê Play: os vidros e o para-brisa ficam transparentes como no NR2003. O place NÃO foi salvo.")
+'''
+    write(out / 'FIX_CARMODEL_MATERIALS.lua', fix)
+    print('INSTALL_CARMODEL.lua %d chars, ROLLBACK_CARMODEL.lua %d chars, FIX_CARMODEL_MATERIALS.lua %d chars' % (
+        len(install), len(rollback), len(fix)))
 
 
 if __name__ == '__main__':
