@@ -1,0 +1,13 @@
+004289b0 MOV EAX,dword ptr [ESP + 0x8]
+004289b4 MOV dword ptr [ESP + 0x8],0x0
+004289bc MOV EAX,dword ptr [EAX + 0x8]
+004289bf LEA ECX,[EAX*0x8 + 0x0]
+004289c6 SUB ECX,EAX
+004289c8 LEA EAX,[ESP + 0x8]
+004289cc SHL ECX,0x9
+004289cf PUSH EAX
+004289d0 MOV ECX,dword ptr [ECX + 0x8726fc]
+004289d6 MOV EDX,dword ptr [ECX]
+004289d8 CALL dword ptr [EDX + 0x8]
+004289db MOV EAX,dword ptr [ESP + 0x8]
+004289df RET

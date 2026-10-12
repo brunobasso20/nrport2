@@ -1,0 +1,93 @@
+# nr2003carmodel — test results (Luau CLI 0.741). Regenerate: see README.md, section Testes.
+
+## tests/carmodel_run.luau (generated with the converted package make_a)
+PASS  load the CarModel modules under the mock
+PASS  METRES_PER_STUD == core TestTune / CupTune metresPerStud (the Stage 5-13 bench and Cup adapter scale)  0.28 m/stud
+PASS  Scale.check rejects a different scale
+PASS  axis map: 1 m forward = -Z, 1 m left = -X, 1 m up = +Y (in 1/0.28 studs)
+PASS  Scale.cframe(t, R) * point(v) == point(t + R v) (200 random poses)  max 3.18e-14 studs
+PASS  Scale.fromCFrame inverts Scale.cframe; toNRPoint inverts point  7.11e-15 / 4.44e-16
+PASS  verticalFov: 4:3 horizontal 65 deg -> 51.0772 deg vertical (Hor+)  51.0772
+PASS  Scale.euler == ORIGINAL 005f6f20 (150 vectors, f32 result)  max 8.11e-08
+PASS  Scale.decompose == ORIGINAL 005f74c0 (150 matrices, f32 result)  max 5.34e-08 rad
+PASS  needle angles == ORIGINAL 0056f040 (276 values incl. clamps and NaN, 6 calibrations)  270 exact, max 0 f32 ulp
+PASS  wheel_speed state == ORIGINAL 00565b10  41 / 41
+PASS  warning lights: shift band 500 rpm + getBGCount bit 4 blink, water > 110, oil < 30 psi, fuel < 4.5 psi
+PASS  look easing == ORIGINAL 00569210 / 00569230 / 00569250 / 00569260  max 0
+PASS  00568e20: cockpit <-> LookLeft conversion keeps the eased look angle  0.282743 -> 0.282743
+PASS  005697e0: LookLeft eases 0 -> 45 deg in 0.1 s ((1-(1-x)^2) pi/4)  0.5890, 0.7854 rad
+PASS  cameras == ORIGINAL 0056a9a0: 12 poses x 14 modes (cockpit, look L/R + analog, 4 chase, 6 on-car)  eye max 1.53e-05 m, rotation max 4.08e-07, fov/shift/near max 5.96e-09
+      mode  1 cockpit    eye 1.44e-05 m  R 3.69e-07  fov 2.98e-09
+      mode  2 LookLeft   eye 1.49e-05 m  R 2.11e-07  fov 2.98e-09
+      mode  3 LookRight  eye 1.44e-05 m  R 4.08e-07  fov 2.98e-09
+      mode  4 F10Near    eye 1.35e-05 m  R 2.35e-07  fov 5.96e-09
+      mode  5 F10Far     eye 1.45e-05 m  R 2.31e-07  fov 5.96e-09
+      mode  6 Chase      eye 1.44e-05 m  R 1.28e-07  fov 5.96e-09
+      mode  7 Far Chase  eye 1.5e-05 m  R 3.08e-07  fov 5.96e-09
+      mode  8 Rear chase eye 1.53e-05 m  R 1.14e-07  fov 5.96e-09
+      mode 10 Nose       eye 1.46e-05 m  R 2.46e-07  fov 2.98e-09
+      mode 11 Gearbox    eye 1.41e-05 m  R 3.83e-07  fov 2.98e-09
+      mode 12 On Car     eye 1.16e-05 m  R 1.8e-07  fov 2.98e-09
+      mode 13 Roll Bar   eye 1.45e-05 m  R 3.74e-07  fov 2.98e-09
+      mode 14 F Susp     eye 1.45e-05 m  R 2.43e-07  fov 2.98e-09
+      mode 15 R Susp     eye 1.47e-05 m  R 3.04e-07  fov 2.98e-09
+PASS  widescreen projection: cockpit / look views 65 deg (00587ea2), other views unchanged
+PASS  cockpit FOV option: degrees, 1 deg steps, clamped to c5c27c / c5736c (00569450, 00411850 / 00411860)  1.134464 -> 66.0000 deg; 1.1344645 .. 1.3613574 rad
+PASS  camera order == ORIGINAL tables 006ec798 / 006ec7f0 (next 1,13,4,5,10 / previous reversed)  13,4,5,10,1 / 10,5,4,13,1
+PASS  camera constants == ORIGINAL image (FOV option / clamps / step, look time / smoothing / dead zone, pi/4, 4/pi, widescreen 65 deg, eye offset, default FOV)
+PASS  track cameras (Sky, Zeppelin, Pit Lane, TV) not substituted
+PASS  StateSwitch child == ORIGINAL rendserv 10011ec0  91 / 91
+PASS  LodSwitch level == ORIGINAL rendserv 100118e0 (distance thresholds + renderer detail floor)  202 / 202
+PASS  AnimatedTransform == ORIGINAL rendserv 10012810 (8 driver/wheel tracks, 276 times)  translation max 0 m, matrix max 1.92e-07
+PASS  draw state encode / decode (43 f32 fields, seq, server time, getBGCount)  188 bytes
+PASS  draw state decode rejects NaN / wrong version / short buffers
+PASS  005ba170 interpolation: lerp / lerp+wrap / roll shortest path / spin = prev + rate dt alpha (2 pi wrap) / newer gauges  steer -3.0832 roll -3.1416 spin 1.7168
+PASS  draw state buffer: before / after the window -> first / last record
+PASS  steering wheel angle = clamp(-(ratio * steer), +-2.79) (005662d0)
+PASS  timeValue = 10 max(0, trunc(deg(a) + 160.355225)) (0056885b..)
+PASS  needle calibrations == the car spec of the ORIGINAL image (car+0x58a -> +0x148 .. +0x1a8, 0056edd0)  spec 007238e0
+PASS  DrawState.sample reads the ORIGINAL frame-end cells (rpm, steer, ratio, rev limit) of a running Cup core  rpm 4449, steer -0.2038, ratio 7.000, limit 9300
+PASS  sampling has no side effect on the core (tick unchanged)
+PASS  3do wheel nodes == ORIGINAL physics hub positions (CupTune frontZ / rearZ / tracks; scale 1:1 in metres)  40 nodes, max 4.9e-05 m
+PASS  import calibration from the markers (rigid transform + uniform scale recovered)  k 1.700000, centre error 5.18e-15 studs
+      scenario 1: 26 parts, 35 nodes
+      scenario 2: 16 parts, 48 nodes
+      scenario 3: 9 parts, 30 nodes
+PASS  rig == reference rig (3 scenarios: cockpit + needles/steer/shifter/head, chase LOD, far LOD; 51 parts)  set mismatches 0, position max 2.84e-14 studs, rotation max 9.99e-16
+PASS  livery replaces the 'card' placeholder texture only (CAR CTEX = card.mip)
+PASS  performance: rig update per frame (Luau CLI, interpreter)  cockpit 0.143 ms (26 parts), chase 0.120 ms (16 parts)
+PASS  client: data module + imported model found, DrawState listener connected  ok
+PASS  client cockpit: Scriptable camera at the ORIGINAL eye, vertical FOV of the 65 deg widescreen cockpit (00587ea2)  FOV 51.0731 deg, eye error 0 studs
+PASS  client draw state at the render time: steer lerp 0.03, rpm newer record, wheel angle = clamp(-(15 * 0.03))
+PASS  V -> Roll Bar (13): on-car camera of the .cam, its own FOV, car drawn (cockpitView 0)  FOV 62.539 deg
+PASS  widescreen branch: horizontal FOV at the display aspect clamped to 2.5 rad (00587ed8)  2.5000 rad
+PASS  B B -> Nose (10): car hidden (cockpitView 10, 0056bb30)
+PASS  Z held in the cockpit -> LookLeft eased to 45 deg
+PASS  performance: full client frame (draw state + gauges + camera + rig)  0.200 ms per frame (Luau CLI, interpreter)
+[NR2003 car model self-test] 9 passed, 0 failed
+PASS  Studio self-test NR2003CarModelSelfTest.run (code only, golden subset) passes under the mock  9 passed, 0 failed
+
+47 passed, 0 failed
+
+## tests/install_mock.luau (generated with the converted package make_a)
+PASS  refuses a bench that is not Stage 13
+PASS  refuses a locally modified NR2003Client (nothing changed)
+[NR2003 car model self-test] 9 passed, 0 failed
+PASS  install on the published Stage 13 bench
+PASS  CarModel folder: 9 modules (sources exact) + Data + Assets; DrawState UnreliableRemoteEvent  9 modules
+PASS  NR2003Client / NR2003Server updated in place (same instances, car-model sources)
+PASS  physics / bench modules untouched; NR2003Stage still 13; NR2003CarModel version set
+PASS  backup: only the two changed scripts (published sources) + ADDED markers
+[NR2003 car model self-test] 9 passed, 0 failed
+PASS  re-run is idempotent (same tree, first backup kept, no duplicates)
+PASS  rollback: published Stage 13 sources restored in place, DrawState removed, CarModel kept in ServerStorage
+PASS  failing self-test -> automatic revert (sources, created instances, backup)
+[NR2003 car model self-test] 9 passed, 0 failed
+[NR2003 car model self-test] 11 passed, 0 failed
+PASS  INSTALL_CARMODEL_ASSETS: descriptor module + imported model moved to CarModel.Assets, parts anchored / no collision, glass opacity  174 geometries, 0 glass
+[NR2003 car model self-test] 11 passed, 0 failed
+PASS  NR2003CarModelSelfTest (full) after the asset install: descriptor wheel nodes + import calibration  11 passed, 0 failed
+[NR2003 car model self-test] 9 passed, 0 failed
+PASS  INSTALL_CARMODEL_ASSETS refuses an import without the calibration markers (nothing installed)
+PASS  the place is never saved
+14 passed, 0 failed

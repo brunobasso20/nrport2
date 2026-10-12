@@ -1,0 +1,2 @@
+0056b710 MOV AL,byte ptr [ECX + 0x162]
+0056b716 RET

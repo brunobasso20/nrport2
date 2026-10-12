@@ -1,0 +1,2 @@
+00427530 MOV EAX,dword ptr [ECX + 0x22]
+00427533 RET 0x8

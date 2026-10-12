@@ -1,0 +1,6 @@
+005d5140 MOV ECX,dword ptr [0x00f5e874]
+005d5146 MOV EDX,dword ptr [ESP + 0x4]
+005d514a PUSH EDX
+005d514b MOV EAX,dword ptr [ECX]
+005d514d CALL dword ptr [EAX + 0x1c4]
+005d5153 RET

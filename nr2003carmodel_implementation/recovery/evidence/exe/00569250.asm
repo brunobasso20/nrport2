@@ -1,0 +1,3 @@
+00569250 FLD dword ptr [ESP + 0x4]
+00569254 FMUL dword ptr [ESP + 0x4]
+00569258 RET
