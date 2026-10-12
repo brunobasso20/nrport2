@@ -81,6 +81,7 @@ def _boot_world(*a, **k):
     m.track_root = root
     if host.build_track(root, arena=OT.ARENA) <= 0:
         raise RuntimeError('track build failed')
+    m.arena_top = (host.arena[1] + 0xfff) & ~0xfff
     # track.ini through the ORIGINAL loaders (00572cb0 -> 00538560(grid option, 0)); grid option = race option of
     # the session (FUN_0055a680()+0x4f bit 0 inverted): host input, starting_grid_<n>
     if m.call(0x538560, _cfg.get('grid', 0), 0) != 1:
@@ -92,32 +93,131 @@ def _boot_world(*a, **k):
 _OR.boot = _boot_world
 
 
+# regions of the track load image (load_image): exe BSS above the Stage 6/7 image (node / pair pools fa9d50..) and the
+# track arena; plus the cells of the Stage 6/7 image range [BASE, TOP) that the track load changed
+BSS_HI = (0xf80000, 0xfb0000)
+IMG = (0x6e9000, 0xf80000)
+HOST_EXCLUDE = (0xf7a000, 0xf80000)      # Stage 11 host blocks + virtual stacks (never image)
+SNAPSHOT = {}                            # set SNAPSHOT['on'] = True to keep the load-image snapshot (m.load_snap)
+
+
+def track_init(m):
+    """00573010 (track init after the loaders), its non-rendering part, once the car's physics spec exists: 00579cd0
+    car-part x surface interaction tables, 00573af0, 005105c0(PTF root). 0050c8d0 (AI race lines, .lp; b8f258) needs the
+    series tables (0056c150: c5c3c8 / c5ca20) that the physics bench never loads; it only sets b8f258 (opponent-wheel
+    row 0x12 of the interaction tables: car-car wheel contacts). Not run (single car, no AI): b8f258 = 0, documented."""
+    m.call(0x579cd0)
+    m.call(0x573af0)
+    m.call(0x5105c0, m.track_root)
+
+
+def snapshot(m):
+    regs = {}
+    for lo, hi in (IMG, BSS_HI):
+        regs[lo] = bytes(m.uc.mem_read(lo, hi - lo))
+    if getattr(m, 'world_boot', False):
+        a0, a1 = OT.ARENA, m.arena_top
+        regs[a0] = bytes(m.uc.mem_read(a0, a1 - a0))
+    return regs
+
+
+_host_blocks11 = O11.host_blocks
+
+
+def _host_blocks_world(m):
+    """Stage 11 session start (host blocks) preceded, with a track, by the track init (the game runs 00573010 when the
+    track loads, before any session); the load-image snapshot point (plain run: the same point without a track)"""
+    if getattr(m, 'world_boot', False) and not getattr(m, 'track_init_done', False):
+        track_init(m)
+        m.track_init_done = True
+    if SNAPSHOT.get('on') and not hasattr(m, 'load_snap'):
+        m.load_snap = snapshot(m)
+        if SNAPSHOT.get('trace'):
+            start_trace(m)
+    _host_blocks11(m)
+
+
+def start_trace(m):
+    """memory footprint from here on: dword cells read or written (m.touched); with SNAPSHOT['eips'] (instruction
+    addresses) only the accesses of those instructions and of rts.dll code (the lifted track set)"""
+    from unicorn import UC_HOOK_MEM_READ, UC_HOOK_MEM_WRITE
+    from unicorn.x86_const import UC_X86_REG_EIP
+    m.touched = set()
+    t = m.touched
+    eips = SNAPSHOT.get('eips')
+    rts_lo = 0x20000000
+
+    def hook(uc, access, addr, size, value, user):
+        if eips is not None:
+            eip = uc.reg_read(UC_X86_REG_EIP)
+            if eip not in eips and not (rts_lo <= eip < rts_lo + 0x100000):
+                return
+        a = addr & ~3
+        t.add(a)
+        if addr + size > a + 4:
+            t.add(a + 4)
+    m.trace_hook = m.uc.hook_add(UC_HOOK_MEM_READ | UC_HOOK_MEM_WRITE, hook)
+    # every write (any code): the comparison set of the fixtures
+    m.written = set()
+    wr = m.written
+
+    def hookw(uc, access, addr, size, value, user):
+        a = addr & ~3
+        wr.add(a)
+        if addr + size > a + 4:
+            wr.add(a + 4)
+    m.write_hook = m.uc.hook_add(UC_HOOK_MEM_WRITE, hookw)
+
+
+O11.host_blocks = _host_blocks_world
+
+
+def session_init(o):
+    """session start 00566e50, the world part: BG object init 0059fa90 (base = carobj - 0xcc, index +0x270), the car's
+    collision geometry 00433cb0 (4 tyre spheres + body spheres, collision object c7e75c), world reset 00578610, world
+    record car+0x5ae = BG car object + 0x98 (005a13f0 record)"""
+    m = o.m
+    m.call(0x59fa90, ecx=o.carobj - 0xcc)
+    m.w32(o.carobj - 0xcc + 0x270, o.k)
+    if m.call(0x433cb0, o.k, CAR + 0x58e, o.carobj) == 0:
+        raise RuntimeError('00433cb0 (collision geometry) failed')
+    m.call(0x578610, ecx=WORLD)
+    m.w32(CAR + 0x5ae, o.carobj + 0x98)
+
+
+def enter_world(o, stall):
+    """ORIGINAL 00550a50 subset of Stage 11..13 (enter_track13) with the placement 005512f0 at its place (@00550aeb:
+    after 005512d0 and the bf63c4 hook, before car+0x1518 = 0), then the race-order insert 00563620 (0055bfd0)"""
+    m = o.m
+    assert m.u32(0xbf63c4) == 0
+    O11.ensure_world_record(m)
+    m.call(0x563080, CAR, 1)
+    m.call(0x550c40)
+    m.call(0x550c60)
+    m.call(0x5512d0)
+    o.place(*stall)
+    m.w32(CAR + 0x1518, 0)
+    o.controls(0)
+    m.uc.mem_write(0xbf6eb9, b'\x00')
+    m.call(0x563620, CAR)
+
+
 class OriginalWorld(O13.OriginalStage13):
-    def __init__(self, *a, **k):
-        super().__init__(*a, **k)
+    """Order (= the Luau port, NR2003CupTrack): boot track load -> car build -> track init (00579cd0, 00573af0, 005105c0)
+    -> [load-image snapshot] -> Stage 11..13 session (host blocks, zone tree, series, options, steering, FFB) ->
+    enterTrack = session_init (0059fa90, 00433cb0, 00578610, car+0x5ae) + 00550a50 subset with 005512f0 + 00563620."""
+    def __init__(self, *a, enter=True, stall=None, **k):
+        super().__init__(*a, enter=False, **k)
         m = self.m
-        # 00573010 (track init after the loaders), its non-rendering part, once the car's physics spec exists (the
-        # race lines read per-wheel data 0056ed60): 0050c8d0 AI race lines (.lp; b8f258), 00579cd0 car-part x surface
-        # interaction tables, 00573af0, 005105c0(PTF root)
-        # 0050c8d0 (AI race lines) needs the series tables (0056c150: c5c3c8 / c5ca20) that the physics bench never
-        # loads; it only sets b8f258 (opponent-wheel row 0x12 of the interaction tables: car-car wheel contacts).
-        # Not run (single car, no AI): b8f258 = 0, documented.
-        m.call(0x579cd0)
-        m.call(0x573af0)
-        m.call(0x5105c0, m.track_root)
-        k = m.i32(CAR + 0x5b2)
-        self.k = k
-        self.carobj = BG_CAROBJ + k * CAROBJ_SIZE
-        # session start 00566e50: BG object init 0059fa90 (base = carobj - 0xcc) and the car's collision geometry
-        m.call(0x59fa90, ecx=self.carobj - 0xcc)
-        m.w32(self.carobj - 0xcc + 0x270, k)
-        if m.call(0x433cb0, k, CAR + 0x58e, self.carobj) == 0:
-            raise RuntimeError('00433cb0 (collision geometry) failed')
-        m.call(0x578610, ecx=WORLD)
-        # world record + race order (0055bfd0 per frame: car+0x5ae = 005a13f0 record, 00563620 insert)
-        m.w32(CAR + 0x5ae, self.carobj + 0x98)
-        self.place(*_cfg.get('stall', (0.0, 0.0, 0.0)))
-        m.call(0x563620, CAR)
+        self.k = m.i32(CAR + 0x5b2)
+        self.carobj = BG_CAROBJ + self.k * CAROBJ_SIZE
+        self.stall = stall if stall is not None else _cfg.get('stall', (0.0, 0.0, 0.0))
+        if enter and self.stage11:
+            self.enter()
+
+    def enter(self, stall=None):
+        session_init(self)
+        enter_world(self, stall or self.stall)
 
     def place(self, dlong, dlat, yaw=0.0):
         """ORIGINAL 005512f0(dlong, dlat, yaw): track -> world (005150fa), BG object init, multibody pose 00551520"""

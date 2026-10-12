@@ -89,6 +89,9 @@ return function(V, codeParts, dataParts)
 		for _, z in ipairs(ZERO) do RUNS[#RUNS + 1] = {z[1], z[2], -1} end
 	end
 	local ZBUF = buffer.create(4096)
+	-- Watkins Glen port: pre-application cells that a loaded track changed (track.ini tyre heat / wear tables, ...),
+	-- written after the restore so that a garage rebuild sees the track (NR2003CupTrack, B.setInputOverrides)
+	local OVERRIDE = {}
 	local function restoreInputs()
 		for _, r in ipairs(RUNS) do
 			local off, len, src = r[1], r[2], r[3]
@@ -102,6 +105,7 @@ return function(V, codeParts, dataParts)
 				end
 			end
 		end
+		for off, v in pairs(OVERRIDE) do buffer.writeu32(M, off, v) end
 	end
 	-- copy the footprint (everything the application writes or reads) between buffers
 	local function copyFootprint(dst, src)
@@ -204,6 +208,30 @@ return function(V, codeParts, dataParts)
 		rep.ok = ok
 		return ok, rep
 	end
+	-- Watkins Glen port: 005b2f20(root, bf6d40) alone (steps 7..18), the foreground action 00551760 that the placement
+	-- 005512f0 requests (bgRequestFGAction): the car rebuilt in place from the state block that 00551520 set (same code
+	-- layout: the structure check of the decision tables applies). No input restore, no commit.
+	function B.rebuildFromState(structure)
+		structure = structure or "natural"
+		local t = TABLES[structure]
+		assert(t, "NR2003 build: structure must be 'natural' or 'generic'")
+		G.FOLD, G.LITF, G.LITA, G.NLIT = t.FOLD, t.LITF, t.LITA, #t.LITF
+		G.strict = structure == "natural"
+		B.structure = structure
+		for k = 1, 7 do R[k] = 0 end
+		R[8] = BUILD_STACK_TOP; R[9] = 0; R[10] = 0
+		table.clear(ctx.F)
+		G.on = false; G.fk = 0; G.lk = 0; G.viol = 0; G.imposed = 0; G.firstViol = nil
+		local okRun, err = pcall(function()
+			for k = 7, 18 do STEPS[k]() end
+		end)
+		G.on = false
+		table.clear(ctx.F)
+		local ok, rep = B.check()
+		if not okRun then ok = false; rep.error = tostring(err) end
+		rep.ok = ok
+		return ok, rep
+	end
 	-- run the whole ORIGINAL application sequence on the core memory (no commit)
 	-- structure: "natural" (strict: the setup's own ORIGINAL emitter outcome must equal the default's, the
 	-- result is then exactly the original code with this setup's cells) or "generic"
@@ -225,6 +253,16 @@ return function(V, codeParts, dataParts)
 		return ok, rep
 	end
 	B.restoreInputs = restoreInputs
+	function B.setInputOverrides(cells) OVERRIDE = cells or {} end
+	-- Watkins Glen port: further callback structures (decision tables + reference summary), e.g. the car placed on the
+	-- track (NR2003CupTrackBuild: "placed", "placedGeneric")
+	function B.addStructure(name, t)
+		local tab = {FOLD = t.fold, LITF = t.litf, LITA = u32s(t.lita)}
+		local r = t.ref
+		assert(#tab.FOLD == r.nfold and #tab.LITF == r.nlit and buffer.len(tab.LITA) == 4 * r.nlit, "NR2003 build: structure " .. name)
+		TABLES[name] = tab
+		REF[name] = r
+	end
 	B.copyFootprint = copyFootprint
 	B.saveFootprint = saveFootprint
 	B.loadFootprint = loadFootprint
