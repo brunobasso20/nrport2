@@ -6,6 +6,24 @@ PASS  tagged terrain camera queries accepted without collision
 PASS  tagged scenery query mesh refused
 PASS  unknown target edit refuses before mutation
 PASS  incompatible solver dependency refuses before mutation
+Watkins Glen physics installed. Original car assets and client retained; backup: ServerStorage.NR2003Backup_WatkinsGlen
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()
+PASS  keyboard momentum=0 compatible and source preserved; trimmed=false
+Watkins Glen physics installed. Original car assets and client retained; backup: ServerStorage.NR2003Backup_WatkinsGlen
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()
+PASS  momentum=0 compatible repeat install
+Watkins Glen patch rolled back. Previous sources, package attributes and generated bench restored; imported car and track visuals retained.
+PASS  momentum=0 source preserved through rollback
+Watkins Glen physics installed. Original car assets and client retained; backup: ServerStorage.NR2003Backup_WatkinsGlen
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()
+PASS  keyboard momentum=0 compatible and source preserved; trimmed=true
+Watkins Glen physics installed. Original car assets and client retained; backup: ServerStorage.NR2003Backup_WatkinsGlen
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()
+PASS  momentum=0 compatible repeat install
+Watkins Glen patch rolled back. Previous sources, package attributes and generated bench restored; imported car and track visuals retained.
+PASS  momentum=0 source preserved through rollback
+PASS  other CupTune changes still refused before mutation | [string "Apply"]:61: Watkins Glen patch refused; nothing was changed:
+  Core.CupTune is incompatible with the recovered track runtime
 PASS  corrupt payload refuses before mutation
 PASS  unsaved editor buffer refuses before mutation
 PASS  unknown existing newly-added module refuses
@@ -31,4 +49,4 @@ Watkins Glen physics installed. Original car assets and client retained; backup:
 Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()
 PASS  injected rollback write failure restores installed state | [string "Rollback"]:71: Rollback failed; installed state was restored:
 ./work/wg_install_mock/mock.luau:217487: injected source write failure
-installer mock: 23 passed, 0 failed
+installer mock: 30 passed, 0 failed

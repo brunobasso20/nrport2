@@ -20,6 +20,7 @@ STUDIO = ROOT / 'watkinsglen_implementation/studio'
 TRACK = ROOT / 'watkinsglen_implementation/core/NR2003Cup'
 BASELINE = ROOT / 'tools/watkinsglen_studio_baseline.json'
 LIMIT = 199000
+MODEL_NAME = 'NR2003_WatkinsGlen_InstallV2'
 HOOKS = (
     'Core.NR2003CupVehicle',
     'Core.NR2003Cup.NR2003CupGarage',
@@ -113,6 +114,17 @@ def build() -> dict[Path, bytes]:
             current = fingerprint((ROOT / 'core/TestTune.lua').read_text(encoding='utf-8'))
             if current not in accepted:
                 accepted.append(current)
+        if key == 'Core.CupTune':
+            # The supplied Studio source differs only in this existing driver
+            # option. Preserve momentumKeys=0; CupTune is never a patch target.
+            source = read_source(ROOT / 'core/CupTune.lua')
+            assert fingerprint(source) == {k: original[k] for k in ('bytes', 'fnv32', 'sha256')}
+            assert source.count('momentumKeys=nil,') == 1
+            zero_keys = source.replace('momentumKeys=nil,', 'momentumKeys=0,')
+            for variant in (source.rstrip('\n'), zero_keys, zero_keys.rstrip('\n')):
+                current = fingerprint(variant)
+                if current not in accepted:
+                    accepted.append(current)
         dependencies.append({'key': key, 'class': original['class'], 'accepted': accepted})
 
     support = {name: read_source(STUDIO / (name + '.lua')) for name in ('Apply', 'Support', 'Rollback')}
@@ -141,7 +153,7 @@ def build() -> dict[Path, bytes]:
             ET.SubElement(properties, 'ProtectedString', name='Source').text = source
         return item
 
-    model = instance(xml, 'NR2003_WatkinsGlen_Install', 'Model')
+    model = instance(xml, MODEL_NAME, 'Model')
     for name, source in support.items():
         instance(model, name, 'ModuleScript', source)
     instance(model, 'Manifest', 'ModuleScript', manifest_lua)
@@ -162,7 +174,7 @@ def build() -> dict[Path, bytes]:
         STUDIO / 'Manifest.lua': manifest_lua.encode(),
         STUDIO / 'INSTALL_WATKINSGLEN.lua': (
             '-- Insert NR2003_WatkinsGlen_Install.rbxmx into Workspace; run after all visual installers, outside Play.\n'
-            'require(workspace.NR2003_WatkinsGlen_Install.Apply)()\n').encode(),
+            f'require(workspace.{MODEL_NAME}.Apply)()\n').encode(),
         STUDIO / 'ROLLBACK_WATKINSGLEN.lua': (
             '-- Outside Play; restores the saved starting state, preserving imported car and track visual assets.\n'
             'require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()\n').encode(),

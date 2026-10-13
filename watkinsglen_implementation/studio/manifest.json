@@ -471,6 +471,21 @@
           "bytes": 5569,
           "fnv32": 669310955,
           "sha256": "c1db7fbad097e1684f1d2b8d7c343b82e5869073d3edc53a51bfa227bbb0de7b"
+        },
+        {
+          "bytes": 5568,
+          "fnv32": 222428995,
+          "sha256": "e7b2330c80c1ba5cf8139b378f75dcc507ff3051f530a7e283d358b7ae3394a2"
+        },
+        {
+          "bytes": 5567,
+          "fnv32": 1522935590,
+          "sha256": "20b6ee7f72a24ab967b49a3644b0537f10b5fc5e528a3ed0b18e79073465b1ff"
+        },
+        {
+          "bytes": 5566,
+          "fnv32": 1367854088,
+          "sha256": "d5c85ea5c8e1f6c75a8034e4d624102df4a31f47b803caa568b802f3bcfae425"
         }
       ]
     },
@@ -801,9 +816,9 @@
   ],
   "installerSources": {
     "Apply": {
-      "bytes": 9185,
-      "fnv32": 2657016292,
-      "sha256": "68ff3763878101c471f985c37d0eff373e861851b17d3bb5ed761ed96c54b7b3"
+      "bytes": 9187,
+      "fnv32": 501155072,
+      "sha256": "ceb2fe9db2eb7882b08e3d11c379757f7b3f4ca1cb772aed05da0cc6c1cd5ab6"
     },
     "Support": {
       "bytes": 5637,
@@ -816,5 +831,5 @@
       "sha256": "cb1d8c2708a2dd73076db493afbc23ab09f12027cf7ebba36eb5bf5c73991f3d"
     }
   },
-  "bundle": "1319036a4aa1a515efe4d8d1f5d025e2eae0faf37e13a5d5e06adcb18cdff554"
+  "bundle": "70d0e30f93e39831f64c4d530d3866cf34327463e400fde3b97b5f80a3892bb6"
 }

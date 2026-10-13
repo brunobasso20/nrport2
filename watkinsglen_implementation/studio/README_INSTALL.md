@@ -4,14 +4,14 @@ This patch targets the Stage 13 package exported in the supplied Roblox model, p
 
 1. Open the existing place in Roblox Studio and stop Play/Run. Keep a saved copy of the place.
 2. Import and calibrate the track visual asset chunks using their supplied visual installers. They must create `Workspace.NR2003WatkinsGlen` with identity pivot, `TrackOriginEnabled = true` and `NR2003MetresPerStud = 0.28`. The original track physics owns collisions; imported visuals stay anchored with `CanCollide = false` and `CanTouch = false`. Terrain tagged `NR2003TerrainQuery = true` remains queryable for the existing chase camera's ground clearance. Walls and scenery remain non-queryable; these camera queries do not feed the original car physics.
-3. Insert `NR2003_WatkinsGlen_Install.rbxmx` into Workspace through **Insert from File**. It creates `Workspace.NR2003_WatkinsGlen_Install`; do not move its individual source modules into the live package manually.
+3. Insert `NR2003_WatkinsGlen_Install.rbxmx` into Workspace through **Insert from File**. It creates `Workspace.NR2003_WatkinsGlen_InstallV2`; do not move its individual source modules into the live package manually.
 4. Run this one line in Studio's Command Bar outside Play:
 
 ```lua
-require(workspace.NR2003_WatkinsGlen_Install.Apply)()
+require(workspace.NR2003_WatkinsGlen_InstallV2.Apply)()
 ```
 
-The installer checks all replaced sources, all bundled track modules and the required recovered Cup dependencies before changing the package. Source fingerprints normalize CRLF/CR to LF. Unknown edits in replaced or required solver modules stop installation; unrelated client/car presentation edits remain intact. Save open script editors before running it.
+The installer checks all replaced sources, all bundled track modules and the required recovered Cup dependencies before changing the package. Source fingerprints normalize CRLF/CR to LF. The known CupTune variant with `driver.momentumKeys = 0` is accepted and preserved, including a missing final newline; other unverified CupTune edits are refused. Unknown edits in replaced or required solver modules stop installation; unrelated client/car presentation edits remain intact. Save open script editors before running it.
 
 The installer writes source through `ScriptEditorService`, verifies the saved result, and sets `ReplicatedStorage.NR2003Lab.NR2003Track` to `watkins_glen`. If `Workspace.NR2003LabWorld.TestTrack` exists, its complete generated bench folder moves into the backup so it cannot overlap the original track. `TestCar` and the imported car assets remain in place.
 
@@ -42,4 +42,13 @@ python tools/build_watkinsglen.py --check
 
 The build verifies every generated module group is contiguous and checks the XML source payloads. Every individual source stays below 199,000 UTF-8 bytes, avoiding the Script.Source paste limit. The optional `--zip` flag packages the Studio patch, required source/dependency files and validation evidence after generation. `manifest.json` records uploaded baseline fingerprints, bundled source hashes and solver compatibility checks.
 
-`validation/installer.log` records 23 passing headless installer checks, including unknown-edit refusal, payload integrity, terrain camera-query flags, backup preparation, instance/client/asset preservation, idempotence, rollback and recovery from injected source-write failures. These checks do not replace the actual Roblox Studio driving/visual check.
+`validation/installer.log` records 30 passing headless installer checks, including unknown-edit refusal, payload integrity, terrain camera-query flags, backup preparation, instance/client/asset preservation, idempotence, rollback and recovery from injected source-write failures. These checks do not replace the actual Roblox Studio driving/visual check.
+
+Reproduce the installer transaction checks after the original model script audit:
+
+```sh
+python3 tools/make_watkinsglen_installer_mock.py
+luau work/wg_install_mock/mock.luau
+```
+
+The new V2 Model name prevents reuse of the old cached Manifest. If the previous installer refused before changing anything, insert V2 and run its command directly; rollback is not needed for that refusal.

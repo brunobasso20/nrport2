@@ -26,7 +26,7 @@ def build(target):
     paths += list((TRACK / 'studio').rglob('*'))
     paths += list((TRACK / 'validation').rglob('*'))
     paths += [TRACK / 'downloads/README_DOWNLOAD.md', TRACK / 'downloads/README_VISUAL_FIX.md',
-              TRACK / 'downloads/README_VISUAL_RECOVERY.md']
+              TRACK / 'downloads/README_VISUAL_RECOVERY.md', TRACK / 'downloads/README_PHYSICS_V2.md']
     paths += [TRACK / name for name in ('README.md', 'VALIDATION.md', 'RUNTIME_VALIDATION.md',
                                      'SURFACE_RECOVERY.md', 'STUDIO_AUDIT.md')]
     files = sorted(p for p in paths if p.is_file() and p.suffix != '.zip')
@@ -104,9 +104,26 @@ def build_visual_recovery():
     print('Visual recovery:', target.name, target.stat().st_size, 'bytes')
 
 
+def build_physics_installer():
+    target = TRACK / 'downloads/WatkinsGlen_Physics_Installer_V2.zip'
+    files = {
+        'NR2003_WatkinsGlen_Install.rbxmx': TRACK / 'studio/NR2003_WatkinsGlen_Install.rbxmx',
+        'INSTALL_WATKINSGLEN.lua': TRACK / 'studio/INSTALL_WATKINSGLEN.lua',
+        'README_FIRST.md': TRACK / 'downloads/README_PHYSICS_V2.md',
+    }
+    with zipfile.ZipFile(target, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=6) as archive:
+        for name, source in files.items():
+            archive.write(source, name)
+    with zipfile.ZipFile(target) as archive:
+        assert archive.testzip() is None
+        assert b'NR2003_WatkinsGlen_InstallV2' in archive.read('INSTALL_WATKINSGLEN.lua')
+    print('Physics installer:', target.name, target.stat().st_size, 'bytes')
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--out', type=Path, default=TRACK / 'downloads/WatkinsGlen_Studio_Package.zip')
     build_visual_fix()
     build_visual_recovery()
+    build_physics_installer()
     build(parser.parse_args().out)

@@ -17,7 +17,7 @@ For a browser download, use the [complete Studio package](downloads/README_DOWNL
 3. Insert `studio/NR2003_WatkinsGlen_Install.rbxmx`. Run this in the Command Bar outside Play:
 
 ```lua
-require(workspace.NR2003_WatkinsGlen_Install.Apply)()
+require(workspace.NR2003_WatkinsGlen_InstallV2.Apply)()
 ```
 
 4. Start Play. The car is placed by the original track placement routine in pit stall 0. The avatar spawns beside it; approach the seat and use the existing F/entry controls. Drive with your existing control bindings and cockpit/camera controls.

@@ -1,5 +1,5 @@
 -- Run in Studio's Command Bar outside Play:
--- require(workspace.NR2003_WatkinsGlen_Install.Apply)()
+-- require(workspace.NR2003_WatkinsGlen_InstallV2.Apply)()
 -- No simulation modules or uploaded scripts are executed by this installer.
 return function()
     local install = script.Parent
