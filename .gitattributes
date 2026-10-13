@@ -1,2 +1,4 @@
 watkinsglen_implementation/assets/**/*.png filter=lfs diff=lfs merge=lfs -text
 watkinsglen_implementation/assets/**/*.glb filter=lfs diff=lfs merge=lfs -text
+watkinsglen_implementation/downloads/WatkinsGlen_Studio_Package.zip filter=lfs diff=lfs merge=lfs -text
+watkinsglen_implementation/downloads/*.cmd text eol=crlf

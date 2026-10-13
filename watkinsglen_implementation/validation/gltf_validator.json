@@ -1,0 +1,702 @@
+{
+  "validator": "Khronos gltf-validator 2.0.0-dev.3.10",
+  "files": [
+    {
+      "name": "watkins_glen_scenery_000.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_scenery_001.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 1,
+      "issueCodes": {
+        "UNUSED_OBJECT": 1
+      }
+    },
+    {
+      "name": "watkins_glen_scenery_002.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_scenery_003.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_000.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 20,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 20
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_001.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 1,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 1
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_002.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_003.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 2,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 2
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_004.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 2,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 2
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_005.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 2,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 2
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_006.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 1,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 1
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_007.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 15,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 15
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_008.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 1,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 1
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_009.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_010.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_011.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_012.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_013.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 1,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 1
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_014.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_015.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_016.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 3,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 3
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_017.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_018.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 1,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 1
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_019.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_020.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_021.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_022.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 1,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 1
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_023.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_024.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 1,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 1
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_025.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 1,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 1
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_026.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 1,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 1
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_027.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_028.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 1,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 1
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_029.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 17,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 17
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_030.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 14,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 14
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_031.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 8,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 8
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_032.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_033.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_034.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 1,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 1
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_035.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_036.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_037.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_038.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_039.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 1,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 1
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_040.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_041.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_042.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_043.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_044.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_045.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_046.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_047.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_048.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_049.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_050.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_051.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_052.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_053.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_054.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_055.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 21,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 21
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_056.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 1,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 1
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_057.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_058.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 1,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 1
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_059.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 1,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 1
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_060.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 1,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 1
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_061.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 8,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 8
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_062.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 1,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 1
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_063.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 1,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 1
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_064.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 1,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 1
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_065.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 2,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 2
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_066.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_067.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 1,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 1
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_068.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_terrain_069.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 3,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 3
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_070.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 4,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 4
+      }
+    },
+    {
+      "name": "watkins_glen_terrain_071.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 37,
+      "issueCodes": {
+        "IMAGE_NPOT_DIMENSIONS": 37
+      }
+    },
+    {
+      "name": "watkins_glen_walls_000.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_walls_001.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_walls_002.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_walls_003.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_walls_004.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 1,
+      "issueCodes": {
+        "UNUSED_OBJECT": 1
+      }
+    },
+    {
+      "name": "watkins_glen_walls_005.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_walls_006.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 1,
+      "issueCodes": {
+        "UNUSED_OBJECT": 1
+      }
+    },
+    {
+      "name": "watkins_glen_walls_007.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_walls_008.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 2,
+      "issueCodes": {
+        "UNUSED_OBJECT": 2
+      }
+    },
+    {
+      "name": "watkins_glen_walls_009.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_walls_010.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    },
+    {
+      "name": "watkins_glen_walls_011.glb",
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0,
+      "issueCodes": {}
+    }
+  ],
+  "errors": 0,
+  "warnings": 0,
+  "infos": 183
+}

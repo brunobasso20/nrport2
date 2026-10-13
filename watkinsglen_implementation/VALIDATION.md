@@ -37,6 +37,8 @@ Strict failures remain visible and return nonzero. Per-wheel surface IDs match a
 
 Independent verification checks buffers/indices, finite positions/normals/UVs, calibration markers, PNG pixel hashes, dimensions and source/compile limits. Evidence: `validation/assets.log`, `validation/visual_pipeline.log`, `validation/wall_profiles.log`, `assets/visual_accuracy.json` and `assets/manifest.json`.
 
+The Khronos glTF validator independently checks all 88 actual GLBs with **0 errors and 0 warnings**; 183 informational notices concern image dimensions and unused objects. See `validation/gltf_validator.json`. A representative original textured terrain GLB also imports in Blender 4.3.2. These are format/import checks, not a Roblox Studio execution test. The complete browser-download package refuses Git LFS pointers and verifies all ZIP CRCs and binary headers.
+
 Recovery includes 69 custom wall profiles, 52 caps and four TrackDetail painted rectangles. DXG `10047350/10048b40` consumes the cubic profiles; three distinct serialized types match the executed original routine. DXG `1002cf00` uses RGB `D3DTOP_MODULATE` (enum 4) with base alpha retained; 170 rendered strips use that base/lightmap pass. Bakes contain 98,620,283 texels.
 
 Remaining presentation differences: finite tessellation/baking; seven wall sides without the native boundary-transition compiler; four authored nonfinite-UV faces exported using original constant appearance colors; other texture stages/native seam triangulation; Roblox lighting/filtering; static daytime/highest-LOD scenery; uninstalled original sky/fog effects. The sampled 2 mm criterion is not a uniform bound between checks. Collision uses original continuous geometry independently of the visual mesh.

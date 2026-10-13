@@ -4,6 +4,8 @@ Finished exports include 88 GLBs, 426 PNGs, 346 scenery placements and original 
 
 ## Obtain actual assets
 
+For browser downloads, use the [complete Studio package](../downloads/README_DOWNLOAD.md). It contains real binaries and requires no Git installation. GitHub's repository Download ZIP can contain 130-byte Git LFS pointer files; Studio rejects those with “Failed to open the selected file.”
+
 GLBs and PNGs use Git LFS. Download an LFS checkout:
 
 ```sh

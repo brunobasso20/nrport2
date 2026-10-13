@@ -10,7 +10,7 @@ The recovered lap is **3942.875732421875 metres**, or **14081.699044363839 Roblo
 
 Use your existing place containing the exported NR2003Lab, NR2003Server and NR2003Client. Preserve its imported car model.
 
-First obtain the branch with **Git LFS** so the GLBs/PNGs are actual assets. Download/import details are in [assets/README_IMPORT.md](assets/README_IMPORT.md).
+For a browser download, use the [complete Studio package](downloads/README_DOWNLOAD.md), which contains the actual GLBs/PNGs and installers. For a repository checkout, use **Git LFS**. GitHub's repository Download ZIP can contain pointer text instead of binary assets. Download/import details are in [assets/README_IMPORT.md](assets/README_IMPORT.md).
 
 1. Stop Play. Import the supplied `assets/glb/*.glb` files with Studio's 3D Importer. Keep the generated chunk names; their textures are embedded.
 2. Insert `assets/studio/NR2003TrackVisualInstallers.rbxmx`, then follow `assets/studio/INSTALL_ALL_TRACK_VISUALS.lua` to calibrate the imported chunks.
