@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from pathlib import Path
 from xml.sax.saxutils import escape
 
@@ -11,11 +12,18 @@ def lua_string(text):
     return json.dumps(text, ensure_ascii=True)
 
 
+def lua_number(value):
+    value = float(value)
+    if not math.isfinite(value):
+        raise ValueError("Nonfinite number in visual installer")
+    return repr(value)
+
+
 def installer(chunk, textures, mps):
     names = []
     for g in chunk["geometries"]:
         names.append("{name=%s,center=Vector3.new(%s),opacity=%s,blend=%s,texture=%s}" % (
-            lua_string(g["name"]), ",".join(repr(x) for x in g["center"]), repr(g["opacity"]),
+            lua_string(g["name"]), ",".join(lua_number(x) for x in g["center"]), lua_number(g["opacity"]),
             "true" if textures.get(g["texture"], {}).get("alphaTransparent") else "false", lua_string(g["texture"])))
     source_hash = hashlib.sha256(json.dumps(chunk, sort_keys=True).encode()).hexdigest()
     template = r'''-- Generated Watkins Glen visual installer: __PACKAGE__.glb.
@@ -31,22 +39,41 @@ local SOURCE_HASH = __HASH__
 local GEOMETRIES = {
 __GEOMETRIES__
 }
-local selected = Selection:Get()
-local src
-for _, item in ipairs(selected) do
-    if (item:IsA("Model") or item:IsA("Folder")) and item:FindFirstChild("NR2003_MARKER_O", true) then
-        local complete = true
-        for _, g in ipairs(GEOMETRIES) do if not item:FindFirstChild(g.name, true) then complete = false; break end end
-        if complete then src = item; break end
-    end
-end
-if not src then src = workspace:FindFirstChild(PACKAGE) end
 local root = workspace:FindFirstChild("NR2003WatkinsGlen")
 assert(not root or root:IsA("Model"), "Workspace.NR2003WatkinsGlen must be a Model")
 local existing = root and root:FindFirstChild(PACKAGE)
-if not src and existing and existing:GetAttribute("NR2003SourceHash") == SOURCE_HASH then
+-- Check this before Selection: a selected wrapper can also contain markers
+-- belonging to another, still-uninstalled chunk after a partial master run.
+if existing and existing:GetAttribute("NR2003SourceHash") == SOURCE_HASH then
+    for _, g in ipairs(GEOMETRIES) do
+        local p = existing:FindFirstChild(g.name, true)
+        assert(p and p:IsA("MeshPart"), "Installed chunk is missing " .. g.name)
+    end
     print(PACKAGE .. " already installed and calibrated")
     return
+end
+local selected = Selection:Get()
+local function completeImport(item)
+    if not item or not (item:IsA("Model") or item:IsA("Folder")) or item == root then return false end
+    local markerCounts = {NR2003_MARKER_O=0, NR2003_MARKER_X=0, NR2003_MARKER_Y=0, NR2003_MARKER_Z=0}
+    for _, p in ipairs(item:GetDescendants()) do
+        if p:IsA("BasePart") and markerCounts[p.Name] then markerCounts[p.Name] += 1 end
+    end
+    for _, count in pairs(markerCounts) do if count ~= 1 then return false end end
+    for _, g in ipairs(GEOMETRIES) do
+        local p = item:FindFirstChild(g.name, true)
+        if not p or not p:IsA("MeshPart") then return false end
+    end
+    return true
+end
+local named = workspace:FindFirstChild(PACKAGE)
+local src = completeImport(named) and named or nil
+if not src then
+    for _, item in ipairs(selected) do
+        local candidate = item:FindFirstChild(PACKAGE, true)
+        if completeImport(candidate) then src = candidate; break end
+        if completeImport(item) then src = item; break end
+    end
 end
 assert(src and (src:IsA("Model") or src:IsA("Folder")), "Import " .. PACKAGE .. ".glb, or select its imported model")
 assert(src ~= root, "Select the imported chunk, not the complete track model")
@@ -111,8 +138,11 @@ for _, item in ipairs(prepared) do
     if appearance then appearance.AlphaMode = g.blend and Enum.AlphaMode.Transparency or Enum.AlphaMode.Overlay end
     p.Parent = installed
 end
-for _, p in ipairs(markers) do p:Destroy() end
-if #src:GetDescendants() == 0 then src:Destroy() else src.Name = PACKAGE .. "_ImportRemainder_" .. os.time(); src.Parent = backup end
+-- Keep original marker meshes and their Node parents intact. Destroying them
+-- can break Studio/Team Create history replay with a locked Parent = NULL.
+-- The whole remainder lives in ServerStorage, outside the rendered world.
+src.Name = PACKAGE .. "_ImportRemainder_" .. os.time()
+src.Parent = backup
 installed:SetAttribute("NR2003SourceHash", SOURCE_HASH)
 installed:SetAttribute("NR2003OriginalScale", k)
 installed:SetAttribute("NR2003VisualKind", KIND)
@@ -129,7 +159,7 @@ print("Track origin is CFrame.identity. The place has not been saved.")
             .replace("__HASH__", lua_string(source_hash))
             .replace("__GEOMETRIES__", "\n".join("    " + n + "," for n in names))
             .replace("__KIND__", lua_string(chunk["kind"]))
-            .replace("__MPS__", repr(mps)))
+            .replace("__MPS__", lua_number(mps)))
 
 
 def write_installers(chunks, textures, out, mps):
@@ -145,14 +175,14 @@ def write_installers(chunks, textures, out, mps):
                        '</Properties></Item>' % (number, escape(chunk["name"]), escape(wrapped)))
     xml = ('<?xml version="1.0" encoding="utf-8"?>\n<roblox version="4"><External>null</External>'
            '<Item class="Model" referent="WG_INSTALLERS"><Properties>'
-           '<string name="Name">NR2003TrackVisualInstallers</string></Properties>'
+           '<string name="Name">NR2003TrackVisualInstallersV2</string></Properties>'
            + "".join(modules) + '</Item></roblox>\n')
     (destination / "NR2003TrackVisualInstallers.rbxmx").write_text(xml)
     master = '''-- Import all assets/glb/*.glb into Workspace with their file names.
 -- Insert assets/studio/NR2003TrackVisualInstallers.rbxmx into Workspace, then run this
 -- in Studio's Command Bar outside Play. All chunk installers are idempotent.
 assert(not game:GetService("RunService"):IsRunning(), "Stop Play before installing")
-local installers = assert(workspace:FindFirstChild("NR2003TrackVisualInstallers"), "Insert NR2003TrackVisualInstallers.rbxmx")
+local installers = assert(workspace:FindFirstChild("NR2003TrackVisualInstallersV2"), "Insert the updated NR2003TrackVisualInstallers.rbxmx (Model name NR2003TrackVisualInstallersV2)")
 local modules = installers:GetChildren()
 table.sort(modules, function(a,b) return a.Name < b.Name end)
 local installed = 0

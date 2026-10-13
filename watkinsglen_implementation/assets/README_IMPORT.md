@@ -21,11 +21,13 @@ For an existing checkout, fetch/switch to the branch and run `git lfs pull`. A r
 
 1. Open the existing place containing your NR2003Lab, server/client and imported car. Stop Play.
 2. Import all `glb/*.glb` with Studio's 3D Importer, in batches if needed. Import complete scenes into Workspace, preserve file/model and mesh names, retain all four `NR2003_MARKER_*` meshes and enable textures. Disable per-object recentering. Each mesh stays within 16,000 triangles and 1,800 studs per dimension.
-3. Insert `studio/NR2003TrackVisualInstallers.rbxmx` into Workspace using Insert from File. Clear selection. Paste the contents of `studio/INSTALL_ALL_TRACK_VISUALS.lua` into the Command Bar and run it outside Play.
-4. The installer creates `Workspace.NR2003WatkinsGlen` at identity pivot, restores original scale/position from the markers and removes them. It sets `TrackOriginEnabled = true` and `NR2003MetresPerStud = 0.28`. Uniform translation, rotation and scale are corrected; nonuniform/reflected transforms and missing meshes stop the affected chunk before editing it.
+3. Insert the updated `studio/NR2003TrackVisualInstallers.rbxmx` into Workspace using Insert from File. Its Model name is `NR2003TrackVisualInstallersV2`, so Studio uses fresh modules even if the previous installer was already required. Clear selection. Paste the updated `studio/INSTALL_ALL_TRACK_VISUALS.lua` into the Command Bar and run it outside Play.
+4. The installer creates `Workspace.NR2003WatkinsGlen` at identity pivot and restores original scale/position from the markers. It retains the original marker meshes and their Node parents in ServerStorage for Studio history. It sets `TrackOriginEnabled = true` and `NR2003MetresPerStud = 0.28`. Uniform translation, rotation and scale are corrected; nonuniform/reflected transforms and missing meshes stop the affected chunk before editing it.
 5. Install the physics patch following [../studio/README_INSTALL.md](../studio/README_INSTALL.md), then start Play and enter the existing car. The first original pit stall is the default spawn.
 
 If a chunk is missing, import that GLB under its original name and rerun the master. Completed chunks are skipped. You can also select one complete imported chunk and run its matching `studio/INSTALL_<chunk>.lua`. Replaced chunks remain in `ServerStorage.NR2003Backup_TrackVisuals`. The master installs chunks separately; a later failure leaves earlier successful chunks installed. It does not save or publish the place.
+
+If the previous installer stopped with `attempt to index nil with 'float64'`, use [the small visual installer fix](../downloads/README_VISUAL_FIX.md). Keep the already imported GLBs and installed scenery. The fix resumes the remaining chunks without reimporting them.
 
 For missing textures, check Studio's normal image import/moderation result. `textures/` contains separate PNG copies. `luau/WatkinsGlenVisualData.rbxmx` is optional inspection metadata.
 

@@ -25,14 +25,14 @@ local GEOMETRIES = {
     {name="G013_terrain_001_06",center=Vector3.new(1351.510293,97.943006,1139.827183),opacity=1.0,blend=false,texture="trackmat__grass"},
     {name="G014_terrain_002_00",center=Vector3.new(924.371338,80.314837,1594.392395),opacity=1.0,blend=false,texture="trackmat__concrete"},
     {name="G015_terrain_002_01",center=Vector3.new(1082.758713,80.314847,1604.555021),opacity=1.0,blend=false,texture="trackmat__concrete_02"},
-    {name="G016_terrain_002_02_baked_f_0",center=Vector3.new(np.float64(1137.532352),np.float64(94.978562),np.float64(1289.555781)),opacity=1.0,blend=false,texture="baked_f_00624_00_00"},
-    {name="G017_terrain_002_02_baked_f_0",center=Vector3.new(np.float64(1112.045506),np.float64(85.612501),np.float64(1606.833799)),opacity=1.0,blend=false,texture="baked_f_00624_00_01"},
-    {name="G018_terrain_002_02_baked_f_0",center=Vector3.new(np.float64(1086.558605),np.float64(70.949247),np.float64(1924.111866)),opacity=1.0,blend=false,texture="baked_f_00624_00_02"},
+    {name="G016_terrain_002_02_baked_f_0",center=Vector3.new(1137.532352,94.978562,1289.555781),opacity=1.0,blend=false,texture="baked_f_00624_00_00"},
+    {name="G017_terrain_002_02_baked_f_0",center=Vector3.new(1112.045506,85.612501,1606.833799),opacity=1.0,blend=false,texture="baked_f_00624_00_01"},
+    {name="G018_terrain_002_02_baked_f_0",center=Vector3.new(1086.558605,70.949247,1924.111866),opacity=1.0,blend=false,texture="baked_f_00624_00_02"},
     {name="G019_terrain_002_03",center=Vector3.new(1152.030781,80.314864,1610.106495),opacity=1.0,blend=false,texture="trackmat__asphalt"},
     {name="G020_terrain_002_04",center=Vector3.new(1177.708708,80.314864,1612.28169),opacity=1.0,blend=false,texture="trackmat__dirt_left"},
-    {name="G021_terrain_002_05_baked_f_0",center=Vector3.new(np.float64(1216.078585),np.float64(94.979252),np.float64(1295.951775)),opacity=1.0,blend=false,texture="baked_f_00633_00_00"},
-    {name="G022_terrain_002_05_baked_f_0",center=Vector3.new(np.float64(1188.955488),np.float64(85.61363),np.float64(1613.095116)),opacity=1.0,blend=false,texture="baked_f_00633_00_01"},
-    {name="G023_terrain_002_05_baked_f_0",center=Vector3.new(np.float64(1161.832392),np.float64(70.949244),np.float64(1930.238469)),opacity=1.0,blend=false,texture="baked_f_00633_00_02"},
+    {name="G021_terrain_002_05_baked_f_0",center=Vector3.new(1216.078585,94.979252,1295.951775),opacity=1.0,blend=false,texture="baked_f_00633_00_00"},
+    {name="G022_terrain_002_05_baked_f_0",center=Vector3.new(1188.955488,85.61363,1613.095116),opacity=1.0,blend=false,texture="baked_f_00633_00_01"},
+    {name="G023_terrain_002_05_baked_f_0",center=Vector3.new(1161.832392,70.949244,1930.238469),opacity=1.0,blend=false,texture="baked_f_00633_00_02"},
     {name="G024_terrain_002_06",center=Vector3.new(1308.635603,80.314861,1624.139513),opacity=1.0,blend=false,texture="trackmat__grass"},
     {name="G025_terrain_003_00",center=Vector3.new(869.063595,54.748023,2189.168004),opacity=1.0,blend=false,texture="trackmat__grass"},
     {name="G026_terrain_003_01",center=Vector3.new(1011.499677,54.756492,2201.124355),opacity=1.0,blend=false,texture="trackmat__concrete"},
@@ -71,22 +71,41 @@ local GEOMETRIES = {
     {name="G059_terrain_006_03",center=Vector3.new(1025.127356,20.506801,2721.14672),opacity=1.0,blend=false,texture="trackmat__curbing2"},
     {name="G060_terrain_006_04",center=Vector3.new(1037.261145,21.017149,2723.691668),opacity=1.0,blend=false,texture="trackmat__asphalt"},
 }
-local selected = Selection:Get()
-local src
-for _, item in ipairs(selected) do
-    if (item:IsA("Model") or item:IsA("Folder")) and item:FindFirstChild("NR2003_MARKER_O", true) then
-        local complete = true
-        for _, g in ipairs(GEOMETRIES) do if not item:FindFirstChild(g.name, true) then complete = false; break end end
-        if complete then src = item; break end
-    end
-end
-if not src then src = workspace:FindFirstChild(PACKAGE) end
 local root = workspace:FindFirstChild("NR2003WatkinsGlen")
 assert(not root or root:IsA("Model"), "Workspace.NR2003WatkinsGlen must be a Model")
 local existing = root and root:FindFirstChild(PACKAGE)
-if not src and existing and existing:GetAttribute("NR2003SourceHash") == SOURCE_HASH then
+-- Check this before Selection: a selected wrapper can also contain markers
+-- belonging to another, still-uninstalled chunk after a partial master run.
+if existing and existing:GetAttribute("NR2003SourceHash") == SOURCE_HASH then
+    for _, g in ipairs(GEOMETRIES) do
+        local p = existing:FindFirstChild(g.name, true)
+        assert(p and p:IsA("MeshPart"), "Installed chunk is missing " .. g.name)
+    end
     print(PACKAGE .. " already installed and calibrated")
     return
+end
+local selected = Selection:Get()
+local function completeImport(item)
+    if not item or not (item:IsA("Model") or item:IsA("Folder")) or item == root then return false end
+    local markerCounts = {NR2003_MARKER_O=0, NR2003_MARKER_X=0, NR2003_MARKER_Y=0, NR2003_MARKER_Z=0}
+    for _, p in ipairs(item:GetDescendants()) do
+        if p:IsA("BasePart") and markerCounts[p.Name] then markerCounts[p.Name] += 1 end
+    end
+    for _, count in pairs(markerCounts) do if count ~= 1 then return false end end
+    for _, g in ipairs(GEOMETRIES) do
+        local p = item:FindFirstChild(g.name, true)
+        if not p or not p:IsA("MeshPart") then return false end
+    end
+    return true
+end
+local named = workspace:FindFirstChild(PACKAGE)
+local src = completeImport(named) and named or nil
+if not src then
+    for _, item in ipairs(selected) do
+        local candidate = item:FindFirstChild(PACKAGE, true)
+        if completeImport(candidate) then src = candidate; break end
+        if completeImport(item) then src = item; break end
+    end
 end
 assert(src and (src:IsA("Model") or src:IsA("Folder")), "Import " .. PACKAGE .. ".glb, or select its imported model")
 assert(src ~= root, "Select the imported chunk, not the complete track model")
@@ -151,8 +170,11 @@ for _, item in ipairs(prepared) do
     if appearance then appearance.AlphaMode = g.blend and Enum.AlphaMode.Transparency or Enum.AlphaMode.Overlay end
     p.Parent = installed
 end
-for _, p in ipairs(markers) do p:Destroy() end
-if #src:GetDescendants() == 0 then src:Destroy() else src.Name = PACKAGE .. "_ImportRemainder_" .. os.time(); src.Parent = backup end
+-- Keep original marker meshes and their Node parents intact. Destroying them
+-- can break Studio/Team Create history replay with a locked Parent = NULL.
+-- The whole remainder lives in ServerStorage, outside the rendered world.
+src.Name = PACKAGE .. "_ImportRemainder_" .. os.time()
+src.Parent = backup
 installed:SetAttribute("NR2003SourceHash", SOURCE_HASH)
 installed:SetAttribute("NR2003OriginalScale", k)
 installed:SetAttribute("NR2003VisualKind", KIND)

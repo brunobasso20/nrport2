@@ -132,7 +132,9 @@ def _lua(v, ind=""):
     if isinstance(v, float):
         if v != v or v in (float("inf"), float("-inf")):
             return "0/0" if v != v else ("math.huge" if v > 0 else "-math.huge")
-        r = repr(v)
+        # NumPy float64 is a float subclass, but its repr contains Python code.
+        # Lua payloads need a numeric literal with the same value.
+        r = repr(float(v))
         return r
     if isinstance(v, str):
         return '"' + v.replace("\\", "\\\\").replace('"', '\\"') + '"'

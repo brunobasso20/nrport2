@@ -34,6 +34,7 @@ Strict failures remain visible and return nonzero. Per-wheel surface IDs match a
 | Bounds difference after float32 export | Maximum 0.000418813 studs, approximately 0.117 mm |
 | Generated source validation | 120 standalone scripts compiled; 119 XML sources; maximum 176,280 bytes |
 | Bake/clipping/filter and oversized metadata checks | 4 tests pass |
+| Actual visual installer execution in a Roblox API mock | 450 checks pass; all 88 chunks, partial resume, cached reruns, calibration and marker preservation |
 
 Independent verification checks buffers/indices, finite positions/normals/UVs, calibration markers, PNG pixel hashes, dimensions and source/compile limits. Evidence: `validation/assets.log`, `validation/visual_pipeline.log`, `validation/wall_profiles.log`, `assets/visual_accuracy.json` and `assets/manifest.json`.
 

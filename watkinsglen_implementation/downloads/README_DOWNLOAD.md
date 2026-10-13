@@ -4,6 +4,8 @@
 
 Use that direct binary download, then extract it. This package includes all **88 actual GLBs**, **426 actual PNGs**, visual installers and the reversible physics patch. Git installation is not required. The repository's green Code → Download ZIP can include Git LFS pointers instead of these binaries.
 
+If the track is already imported and the old visual installer failed with `float64`, download [the small visual installer fix](README_VISUAL_FIX.md) instead of the full package. It resumes the existing import with fresh V2 modules.
+
 Extract into a fresh folder. Follow `README.md`: import `assets/glb/*.glb`, run the visual installer, then apply `studio/NR2003_WatkinsGlen_Install.rbxmx`. Preserve the car model and calibration markers until the visual installers run.
 
 The smallest GLB, `watkins_glen_terrain_009.glb`, is **543,684 bytes**. A real GLB starts with `glTF`; a roughly 130-byte file beginning `version https://git-lfs.github.com/spec/v1` is a pointer. The ZIP's exact byte size and SHA-256 are recorded in `package_info.json`. A package builder refuses pointer inputs and checks ZIP CRCs and every binary header.

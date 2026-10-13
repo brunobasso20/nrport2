@@ -7,6 +7,7 @@ import sys
 import tempfile
 import unittest
 import xml.etree.ElementTree as ET
+import numpy as np
 
 PIPELINE=Path(__file__).resolve().parents[1]
 REPO=PIPELINE.parents[1]
@@ -16,7 +17,7 @@ from convert_track import write_visual_luau
 class MetadataTests(unittest.TestCase):
     def test_large_single_chunk_is_reassembled_without_loss(self):
         geometry=[{'id':i,'name':'G'+str(i),'source':{'raw':'a'*1000}} for i in range(500)]
-        data={'format':'nr2003trackvisual/1','metresPerStud':0.28,
+        data={'format':'nr2003trackvisual/1','metresPerStud':np.float64(0.28),
               'chunks':[{'name':'large','kind':'walls','file':'glb/large.glb','tris':1000,'geometries':geometry}]}
         (REPO/'work').mkdir(exist_ok=True)
         with tempfile.TemporaryDirectory(dir=REPO/'work') as directory:

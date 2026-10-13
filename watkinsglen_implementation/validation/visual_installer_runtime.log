@@ -1,0 +1,6 @@
+..
+----------------------------------------------------------------------
+Ran 2 tests in 0.839s
+
+OK
+Visual installer runtime: 450 checks passed; 88 chunks; partial resume, cached rerun, calibration, marker history and malformed import refusal.

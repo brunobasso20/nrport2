@@ -1,7 +1,8 @@
 /workspace/nrport2/watkinsglen_implementation/pipeline/tests/test_lightmaps.py:33: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
   self.assertEqual(set(im.getdata()),{(40,60,60,128)})
-....
+......
 ----------------------------------------------------------------------
-Ran 4 tests in 0.098s
+Ran 6 tests in 0.977s
 
 OK
+Visual installer runtime: 450 checks passed; 88 chunks; partial resume, cached rerun, calibration, marker history and malformed import refusal.
