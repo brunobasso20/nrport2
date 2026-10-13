@@ -68,10 +68,73 @@ function M.update(controller)
     end
 end
 
+function M.clearDriverSpawn(controller)
+    local state = controller.trackDriverSpawn
+    if not state or state.closed then return end
+    state.closed = true
+    controller.trackDriverSpawn = nil
+    for _, connection in ipairs(state.connections) do connection:Disconnect() end
+    for player, entry in pairs(state.players) do
+        entry.connection:Disconnect()
+        if player.Parent == state.service and player.RespawnLocation == state.spawn then
+            local previous = entry.previous
+            if previous and not previous:IsDescendantOf(workspace) then previous = nil end
+            player.RespawnLocation = previous
+        end
+    end
+    state.players = {}
+    if state.spawn.Parent and not state.spawnDestroying then state.spawn:Destroy() end
+end
+
+-- An avatar can already exist when the recovered core finishes initializing.
+-- Select the new spawn for subsequent characters and bring existing characters
+-- onto its walking surface. No avatar placement enters the native car solver.
+local function bindDriverSpawn(controller, spawn)
+    local players = game:GetService("Players")
+    local state = {spawn = spawn, service = players, connections = {}, players = {}, closed = false}
+    controller.trackDriverSpawn = state
+    local function place(player, character)
+        task.defer(function()
+            if state.closed or player.Parent ~= players or player.Character ~= character then return end
+            local root = character:WaitForChild("HumanoidRootPart", 10)
+            local humanoid = character:WaitForChild("Humanoid", 10)
+            if not root or not humanoid or state.closed or player.Parent ~= players or player.Character ~= character
+                or not spawn.Parent or humanoid.Health <= 0 or humanoid.SeatPart then return end
+            -- Keep a character already standing nearby in place. Otherwise put
+            -- its root above the platform, preserving the avatar's orientation.
+            if (root.Position - spawn.Position).Magnitude > 12 then
+                local destination = spawn.Position + Vector3.new(0, 4, 0)
+                character:PivotTo(character:GetPivot() + (destination - root.Position))
+                root.AssemblyLinearVelocity = Vector3.zero
+                root.AssemblyAngularVelocity = Vector3.zero
+            end
+        end)
+    end
+    local function bind(player)
+        if state.closed or state.players[player] or player.Parent ~= players then return end
+        local previous = player.RespawnLocation
+        local connection = player.CharacterAdded:Connect(function(character) place(player, character) end)
+        state.players[player] = {connection = connection, previous = previous}
+        player.RespawnLocation = spawn
+        if player.Character then place(player, player.Character) end
+    end
+    state.connections[1] = players.PlayerAdded:Connect(bind)
+    state.connections[2] = players.PlayerRemoving:Connect(function(player)
+        local entry = state.players[player]
+        if entry then entry.connection:Disconnect(); state.players[player] = nil end
+    end)
+    state.connections[3] = spawn.Destroying:Connect(function()
+        state.spawnDestroying = true
+        M.clearDriverSpawn(controller)
+    end)
+    for _, player in ipairs(players:GetPlayers()) do bind(player) end
+end
+
 -- A small invisible Roblox walking surface lets the avatar reach the anchored
 -- driver's seat. The car's native world never queries this presentation part.
 function M.prepareDriverSpawn(controller, world)
     if not controller.originalTrack then return end
+    M.clearDriverSpawn(controller)
     controller.car:PivotTo(controller.rootCF)
     local p = controller.core.V.trackPosition(controller.trackPositionOut)
     local surface = controller:worldPoint(p.x, p.y, p.bumpedZ)
@@ -89,6 +152,7 @@ function M.prepareDriverSpawn(controller, world)
     spawn.Duration = 0
     spawn:SetAttribute("NR2003AvatarOnly", true)
     spawn.Parent = world
+    bindDriverSpawn(controller, spawn)
     return spawn
 end
 

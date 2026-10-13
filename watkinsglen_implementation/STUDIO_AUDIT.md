@@ -1,5 +1,7 @@
 # Uploaded Studio model audit
 
+V4 follow-up: the restored `now.rbxm` contains the working car/bank and organized track. Its 105 unchanged NR2003Lab sources match the original upload; CupTune has the accepted momentumKeys=0 setting. The NR2003Client in `ue.rbxm` matches the original byte for byte. Neither later export contains the live server Script. V4 removes that Script from its write targets and prepares the car/avatar spawn inside CupChassisAdapter before returning to the existing host. Existing avatars, later joins and respawns are covered by 15 tests with the actual SeatAccess logic. Ten original-core adapter checks cover startup/contact/reset. These are headless checks; the reported Studio failure was not captured as a Play log and this does not establish its sole cause.
+
 The uploaded `all scripts and car modelgen.rbxm` contains the existing Stage 1–13 physics and the original car presentation package. It contains **no Watkins Glen modules or track assets**. Its server and client scripts already include the car model, cockpit, gauges and camera integration; an installer must preserve those integrations and the imported car assets.
 
 ## Input and extraction

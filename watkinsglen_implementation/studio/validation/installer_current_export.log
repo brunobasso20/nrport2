@@ -29,10 +29,15 @@ PASS  unsaved editor buffer refuses before mutation
 PASS  unknown existing newly-added module refuses
 Watkins Glen physics installed. Original car assets and client retained; backup: ServerStorage.NR2003Backup_WatkinsGlen
 Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()
+PASS  main server source and identity preserved including custom hosting
+Watkins Glen patch rolled back. Previous sources, package attributes and generated bench restored; imported car and track visuals retained.
+PASS  rollback preserves custom main server source
+Watkins Glen physics installed. Original car assets and client retained; backup: ServerStorage.NR2003Backup_WatkinsGlen
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()
 PASS  complete patch applies exact source payloads
 PASS  changed source instance identities preserved
 PASS  client, assets and car preserved; bench moved intact
-PASS  backup has every original and added-module marker | 11 originals, 26 added
+PASS  backup has every original and added-module marker | 10 originals, 26 added
 PASS  track attributes enabled only after source install
 Watkins Glen physics installed. Original car assets and client retained; backup: ServerStorage.NR2003Backup_WatkinsGlen
 Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()
@@ -42,13 +47,13 @@ Watkins Glen patch rolled back. Previous sources, package attributes and generat
 PASS  rollback restores all original sources and removes added modules
 PASS  rollback restores false-valued prior attributes and bench parent
 PASS  backup source write failure removes partial backup and changes no live source | [string "Apply"]:107: Watkins Glen backup preparation failed; live sources and attributes were not changed:
-./work/wg_install_mock/v3_current.luau:217656: injected source write failure
+./work/wg_install_mock/v4_working.luau:217632: injected source write failure
 PASS  injected mid-install write failure restores sources, attrs and bench | [string "Apply"]:162: Watkins Glen installation failed; prior sources, attributes and bench were restored:
-./work/wg_install_mock/v3_current.luau:217656: injected source write failure
+./work/wg_install_mock/v4_working.luau:217632: injected source write failure
 Watkins Glen physics installed. Original car assets and client retained; backup: ServerStorage.NR2003Backup_WatkinsGlen
 Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()
 PASS  injected rollback write failure restores installed state | [string "Rollback"]:68: Rollback failed; installed state was restored:
-./work/wg_install_mock/v3_current.luau:217656: injected source write failure
+./work/wg_install_mock/v4_working.luau:217632: injected source write failure
 PASS  source-write yield holds operation lock
 PASS  overlapping same-model install refuses without disturbing first transaction | [string "Support"]:66: A Watkins Glen install or rollback is already running; wait for its final output before running another command
 PASS  separate imported installer copy shares operation lock | [string "Support"]:66: A Watkins Glen install or rollback is already running; wait for its final output before running another command
@@ -70,24 +75,31 @@ Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollb
 PASS  existing core target cannot be mislabeled as added and deleted on rollback | [string "Support"]:96: Backup original is incomplete: Core.NR2003Cup.NR2003CupBuild
 PASS  entry removed during source write restores all live sources and releases lock | [string "Apply"]:162: Watkins Glen installation failed; prior sources, attributes and bench were restored:
 [string "Apply"]:131: Backup entry was removed during installation: Core.NR2003Cup.NR2003CupTrackData3
-Verified restored live sources; unfinished backup retained as ServerStorage.NR2003Backup_WatkinsGlen_Recovered_1791879636
+Verified restored live sources; unfinished backup retained as ServerStorage.NR2003Backup_WatkinsGlen_Recovered_1791883244
 Watkins Glen physics installed. Original car assets and client retained; backup: ServerStorage.NR2003Backup_WatkinsGlen
 Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()
 PASS  restored unfinished backup is archived intact and install completes: 1319036a
 Watkins Glen patch rolled back. Previous sources, package attributes and generated bench restored; imported car and track visuals retained.
 PASS  rollback after recovery preserves archived backup and starting sources
-Verified restored live sources; unfinished backup retained as ServerStorage.NR2003Backup_WatkinsGlen_Recovered_1791879643
+Verified restored live sources; unfinished backup retained as ServerStorage.NR2003Backup_WatkinsGlen_Recovered_1791883251
 Watkins Glen physics installed. Original car assets and client retained; backup: ServerStorage.NR2003Backup_WatkinsGlen
 Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()
 PASS  restored unfinished backup is archived intact and install completes: 70d0e30f
 Watkins Glen patch rolled back. Previous sources, package attributes and generated bench restored; imported car and track visuals retained.
 PASS  rollback after recovery preserves archived backup and starting sources
+Verified restored live sources; unfinished backup retained as ServerStorage.NR2003Backup_WatkinsGlen_Recovered_1791883258
+Watkins Glen physics installed. Original car assets and client retained; backup: ServerStorage.NR2003Backup_WatkinsGlen
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()
+PASS  restored unfinished backup is archived intact and install completes: 54db4860
+Watkins Glen patch rolled back. Previous sources, package attributes and generated bench restored; imported car and track visuals retained.
+PASS  rollback after recovery preserves archived backup and starting sources
 PASS  unrecognized unfinished backup is retained without source mutation | [string "Support"]:120: Unrecognized unfinished backup; retain it for inspection
 PASS  partially patched live state is refused without discarding unfinished backup | [string "Support"]:123: Unfinished backup retained: live target is not fully restored: Core.NR2003Cup.NR2003CupBuild
-PASS  active track attributes prevent unfinished-backup archive | [string "Support"]:126: Unfinished backup retained: the track patch is still active
-PASS  unrestored package attribute prevents unfinished-backup archive | [string "Support"]:131: Unfinished backup retained: package attribute was not restored: NR2003Track
-PASS  saved moved bench prevents unfinished-backup archive | [string "Support"]:133: Unfinished backup retained: bench or rollback staging needs recovery
+PASS  active track attributes prevent unfinished-backup archive | [string "Support"]:133: Unfinished backup retained: the track patch is still active
+PASS  unrestored package attribute prevents unfinished-backup archive | [string "Support"]:138: Unfinished backup retained: package attribute was not restored: NR2003Track
+PASS  saved moved bench prevents unfinished-backup archive | [string "Support"]:140: Unfinished backup retained: bench or rollback staging needs recovery
 PASS  dependency preflight refuses before archiving unfinished backup | [string "Apply"]:59: Watkins Glen patch refused; nothing was changed:
   Core.CupTune is incompatible with the recovered track runtime
+PASS  earlier unfinished backup checks restoration of its old server target | [string "Support"]:129: Unfinished earlier backup retained: original server was not restored: Server.NR2003Server
 PASS  failed operations leave no operation lock
-installer mock: 52 passed, 0 failed
+installer mock: 57 passed, 0 failed

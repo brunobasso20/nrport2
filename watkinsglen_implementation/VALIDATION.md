@@ -15,8 +15,9 @@ Original continuous queries, broadphase, wheel/body callbacks and material table
 | 123 section midpoints, 96 ticks each | 123 pass / 0 fail |
 | Pit stall, asphalt launch, wall, grass and sand smoke | 43 pass / 0 fail |
 | Existing Stage 13 regression | 40 pass / 0 fail |
-| Existing adapter / track adapter | 77 pass / 0 fail; 8 pass / 0 fail |
-| Reversible installer transaction/recovery | 52 pass / 0 fail on both original and supplied current-source fixtures |
+| Existing adapter / track adapter | Retained legacy evidence: 77 pass / 0 fail; current original-world startup/contact/reset: 10 pass / 0 fail |
+| Avatar startup, respawn and actual seat admission | 15 pass / 0 fail |
+| Reversible installer transaction/recovery | 57 pass / 0 fail on both original and supplied current-source fixtures |
 | Strict original state/contact/written-memory replay | **23 pass / 30 fail** |
 
 Strict failures remain visible and return nonzero. Per-wheel surface IDs match at retained checkpoints, but numeric trajectories/forces differ. Maximum sampled chassis-position differences: pit stall 0.061 mm, 5 s launch 14.74 mm, 4 s wall 31.07 mm, 1 s grass 0.092 mm, 1 s sand 0.001 mm. These are not full-lap bounds. Inherited double intermediates differ from original x87 precision; signed-zero and foreground initialization differences also remain. [RUNTIME_VALIDATION.md](RUNTIME_VALIDATION.md) contains force/speed errors and raw logs.

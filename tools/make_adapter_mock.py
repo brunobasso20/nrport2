@@ -3,7 +3,11 @@ Stage 5 helper modules it requires) under a minimal Roblox API mock in the Luau 
 Checks frame conversions, contact planes from raycasts, pose, fixed-step loop, shifting,
 telemetry/render snapshot encoding, collision boundary and reset."""
 from pathlib import Path
+import argparse
 root = Path(__file__).resolve().parents[1]
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--track', action='store_true', help='Generate the original-world adapter startup checks')
+args = parser.parse_args()
 # Stage 5 helper modules: the full bench tree (Stage 5 package + Stage 6/7/8 patches) has them in place
 stage5 = root
 def src(p): return p.read_text()
@@ -36,8 +40,18 @@ def long_string(text):
     eq = '='
     while (']' + eq + ']') in text: eq += '='
     return '[' + eq + '[\n' + text + ']' + eq + ']'
+if args.track:
+    bundle = {key: value for key, value in bundle.items() if not key.startswith('Roblox.Stage')}
 parts = ['local SOURCES = {}\n']
 for k, v in bundle.items(): parts.append('SOURCES[%r] = %s\n' % (k, long_string(v)))
-parts.append((root / 'tools/adapter_mock_body.luau').read_text())
-(root / 'tests/stage67/adapter_mock.luau').write_text(''.join(parts), newline='\n')
+body = (root / 'tools/adapter_mock_body.luau').read_text()
+destination = root / 'tests/stage67/adapter_mock.luau'
+if args.track:
+    body = body.split('local ctl = Adapter.new(car, TestTune, {})', 1)[0]
+    lookup = 'local ok, v = pcall(require, "../../core/NR2003Cup/" .. m)'
+    body = body.replace(lookup, lookup + '\n            if not ok then ok, v = pcall(require, "../core/NR2003Cup/" .. m) end')
+    body += (root / 'watkinsglen_implementation/tests/adapter_track_body.luau').read_text()
+    destination = root / 'watkinsglen_implementation/tests/adapter_track.luau'
+parts.append(body)
+destination.write_text(''.join(parts), newline='\n')
 print('written', sum(len(v) for v in bundle.values()))

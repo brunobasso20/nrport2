@@ -1,5 +1,5 @@
 -- Run in Studio's Command Bar outside Play:
--- require(workspace.NR2003_WatkinsGlen_InstallV3.Apply)()
+-- require(workspace.NR2003_WatkinsGlen_InstallV4.Apply)()
 -- No simulation modules or uploaded scripts are executed by this installer.
 local function applyLocked(install, H, manifest)
     local pkg, folders = H.folders()
@@ -59,7 +59,7 @@ local function applyLocked(install, H, manifest)
     assert(#problems == 0, "Watkins Glen patch refused; nothing was changed:\n  " .. table.concat(problems, "\n  "))
 
     if existingBackup and existingBackup:GetAttribute("Complete") ~= true then
-        H.archiveRestoredBackup(existingBackup, manifest, plan, pkg)
+        H.archiveRestoredBackup(existingBackup, manifest, plan, pkg, folders)
         existingBackup = nil
     end
 

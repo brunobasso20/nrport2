@@ -1,0 +1,14 @@
+now.rbxm: 5480 instances; 235 sources extracted read-only.
+ue.rbxm: 903 instances; 107 sources extracted read-only.
+105 live NR2003Lab sources match the original upload exactly.
+CupTune differs only by the accepted momentumKeys=0 option.
+No recovered track modules are installed in the live package.
+TestCar, Chassis, DriverSeat, cockpit and imported visual assets are present.
+DriverSeat is enabled, touchable and unanchored in the saved working state.
+Input, Telemetry, RenderState and DrawState remotes are present.
+NR2003Client matches the original uploaded LocalScript byte for byte.
+Current client SHA256: 7dd940a4ab0f1ae8adefec29b1931bae5a7c79f35224bf32afc042cdd5b0a3b9
+Neither later export contains a Script from ServerScriptService.
+V4 does not write any server/client Script or LocalScript.
+The known original server is retained only as a recovery check for unfinished older patches.
+Uploaded Sources were read, not executed, during extraction and comparison.

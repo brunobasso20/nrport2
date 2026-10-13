@@ -27,6 +27,7 @@ if args.current_export:
             assert originals[key]['class'] == row['class']
             sources[key] = (args.current_export / row['source_file']).read_text()
 required = {row['key'] for row in manifest['dependencies']} | {row['key'] for row in manifest['targets'] if row['old']}
+required |= {row['key'] for row in manifest['recoveryTargets']}
 
 def quote(value):
     eq = '='

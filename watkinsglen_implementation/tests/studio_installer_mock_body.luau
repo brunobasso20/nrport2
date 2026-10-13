@@ -110,7 +110,7 @@ local function fixture()
  visual:SetAttribute("TrackOriginEnabled",true);visual:SetAttribute("NR2003MetresPerStud",.28)
  local terrain=make("Model","Terrain",visual);terrain:SetAttribute("NR2003VisualKind","terrain")
  local part=make("Part","Mesh",terrain);part.Anchored=true;part.CanCollide=false;part.CanTouch=false;part.CanQuery=false
- local install=make("Model","NR2003_WatkinsGlen_InstallV3",services.Workspace)
+ local install=make("Model","NR2003_WatkinsGlen_InstallV4",services.Workspace)
  for name,source in pairs(TEMPLATES) do make("ModuleScript",name,install,source) end
  local sources=make("Folder","Sources",install);local sf={}
  for _,name in ipairs({"Core","Roblox","Server"}) do sf[name]=make("Folder",name,sources) end
@@ -179,6 +179,13 @@ f=fixture();f.pkg.Roblox.CupChassisAdapter._editorSource="-- unsaved local edit"
 check("unsaved editor buffer refuses before mutation",not ok and not backup() and allOriginal(f))
 f=fixture();make("ModuleScript","NR2003WatkinsGlen",f.pkg.Roblox,"-- unknown existing module");ok=apply(f)
 check("unknown existing newly-added module refuses",not ok and not backup())
+f=fixture();local server=f.folders.Server.NR2003Server
+local preservedServer=server.Source.."\n-- current custom car hosting"
+server.Source=preservedServer;local serverIdentity=server
+ok,reason=apply(f)
+check("main server source and identity preserved including custom hosting",ok and server==serverIdentity and server.Source==preservedServer and allNew(f),not ok and reason or nil)
+ok,reason=rollback()
+check("rollback preserves custom main server source",ok and server.Source==preservedServer and not backup(),not ok and reason or nil)
 f=fixture();local identities={}
 for key in pairs(ORIGINALS) do local p,n=atKey(f.folders,key);identities[key]=p[n] end
 ok,reason=apply(f)
@@ -290,5 +297,9 @@ f=fixture();stale=unfinished(f);local moved=make("Folder","MovedBench",stale);f.
 check("saved moved bench prevents unfinished-backup archive",not ok and backup()==stale and f.bench.Parent==moved and allOriginal(f) and not operation(),reason)
 f=fixture();stale=unfinished(f);f.pkg.Core.CupTune.Source..="\n-- unverified change";ok,reason=apply(f)
 check("dependency preflight refuses before archiving unfinished backup",not ok and backup()==stale and not operation(),reason)
+f=fixture();stale=unfinished(f)
+f.folders.Server.NR2003Server.Source..="\n-- unknown server after old patch"
+ok,reason=apply(f)
+check("earlier unfinished backup checks restoration of its old server target",not ok and backup()==stale and not operation(),reason)
 check("failed operations leave no operation lock",not operation())
 print(string.format("installer mock: %d passed, %d failed",passed,failed));assert(failed==0,"installer mock failures")

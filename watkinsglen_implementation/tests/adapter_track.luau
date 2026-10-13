@@ -1,5 +1,5 @@
 local SOURCES = {}
-SOURCES["Core.NR2003CupVehicle"] = [=[
+SOURCES['Core.NR2003CupVehicle'] = [=[
 -- Stage 6/7 vehicle core: the ORIGINAL NR2003 Cup car running in Luau.
 -- Core.NR2003Cup holds code generated from NR2003.exe (recovery/stage6_7/gen_runtime.py):
 --   NR2003CupImage1..n : memory image after the game's own car build (spec, setup defaults,
@@ -183,7 +183,7 @@ function M:inputs() return self.V.inputs() end
 function M.displayGear(index) return index-1 end
 return M
 ]=]
-SOURCES["Core.CupTune"] = [=[
+SOURCES['Core.CupTune'] = [=[
 -- NR2003 Cup (series 0, chassis type 2 "spdway") HOST/PRESENTATION geometry for Stage 6/7.
 -- The physics does NOT read this table: mass, inertia, suspension, tires, engine, drivetrain,
 -- setup and aero all live inside the original NR2003 memory image (Core.NR2003Cup).
@@ -256,7 +256,7 @@ function T.new()
 end
 return T
 ]=]
-SOURCES["Core.NR2003FixedStep"] = [=[
+SOURCES['Core.NR2003FixedStep'] = [=[
 -- Scheduling uses 1/288 wall seconds; equations use the recovered float32 dt.
 -- Backlog is retained and exposed. Rendering never changes the simulation step.
 local Math=require(script and script.Parent.NR2003Math or "NR2003Math")
@@ -287,7 +287,7 @@ function M:restore(c)
 end
 return M
 ]=]
-SOURCES["Core.NR2003Math"] = [=[
+SOURCES['Core.NR2003Math'] = [=[
 -- Numeric cells of the 005b7xxx/005b8xxx expression engine, row-major matrices.
 -- Each primitive corresponds to a stored float cell, not arbitrary Lua arithmetic.
 local F = require(script and script.Parent.Float32 or "Float32")
@@ -351,7 +351,7 @@ function M.vector(a,n,label)
 end
 return M
 ]=]
-SOURCES["Core.Float32"] = [=[
+SOURCES['Core.Float32'] = [=[
 -- Round values assigned to C float fields. Extended x87 registers are not emulated.
 local M = {}
 local storage
@@ -383,7 +383,7 @@ function M.inverseSqrt(x)
 end
 return M
 ]=]
-SOURCES["Core.Surface"] = [=[
+SOURCES['Core.Surface'] = [=[
 local Data=require(script and script.Parent.RecoveredData or "core.RecoveredData")
 local U=require(script and script.Parent.MathUtil or "core.MathUtil")
 local M={}
@@ -402,7 +402,7 @@ function M.resolve(name,index,multiplier)
 end
 return M
 ]=]
-SOURCES["Core.RecoveredData"] = [=[
+SOURCES['Core.RecoveredData'] = [=[
 -- Generated from included Ghidra memory exports; embedded pre-setup defaults only.
 -- Not a calibrated/drivable car tune. Preserve raw records for future recovery.
 return {
@@ -452,7 +452,7 @@ return {
     },
 }
 ]=]
-SOURCES["Core.MathUtil"] = [=[
+SOURCES['Core.MathUtil'] = [=[
 local M={}
 function M.clamp(x,a,b) return math.max(a,math.min(b,x)) end
 function M.sign(x) return x<0 and -1 or (x>0 and 1 or 0) end
@@ -470,7 +470,7 @@ function M.assertFinite(t,label)
 end
 return M
 ]=]
-SOURCES["Core.TestTune"] = [=[
+SOURCES['Core.TestTune'] = [=[
 -- SI units. Diagnostic RWD tune; NOT an extracted NR2003 Cup setup.
 local U=require(script and script.Parent.MathUtil or "core.MathUtil")
 local T={
@@ -530,7 +530,7 @@ function T.new()
 end
 return T
 ]=]
-SOURCES["Roblox.RenderSnapshot"] = [=[
+SOURCES['Roblox.RenderSnapshot'] = [=[
 -- Presentation-only render snapshot codec + quaternion helpers.
 -- Pure Lua apart from Roblox's `buffer` library. It never feeds the authoritative solver.
 local M={}
@@ -658,7 +658,7 @@ function M.unwrapSpin(previous,wrapped,omega,dt)
 end
 return M
 ]=]
-SOURCES["Roblox.CupChassisAdapter"] = [=[
+SOURCES['Roblox.CupChassisAdapter'] = [=[
 -- Stage 13: the ORIGINAL force feedback runs inside the core (00554d30 front tyre statistics per tick, the FFB block of the
 -- frame end 00554520, 0054fed0 / 00550070 FF axis and controls; exact x87 arithmetic). Options = the controls.cfg values
 -- (attributes ForceFeedback bool, ForceFeedbackStrength 0..100, ForceFeedbackDamping 0..100, ForceFeedbackLatency
@@ -740,6 +740,9 @@ function M.new(car,tune,remote)
     self.core=Vehicle.new(Core:WaitForChild("NR2003Cup"))
     if TrackHost then TrackHost.attach(self) end
     self:initialize()
+    if self.originalTrack then
+        TrackHost.prepareDriverSpawn(self, assert(car.Parent, "Parent TestCar before initializing the original track"))
+    end
     return self
 end
 
@@ -1244,12 +1247,13 @@ function M:reset()
     self.rootCF=nil;self:initialize();self.car:PivotTo(self.rootCF)
 end
 function M:destroy()
+    if TrackHost then TrackHost.clearDriverSpawn(self) end
     self.access:destroy();self.car:SetAttribute("NR2003CorePoseOwner",nil)
     self.root.Anchored=self.oldAnchored;self.root.CanCollide=self.oldCollide
 end
 return M
 ]=]
-SOURCES["Roblox.NR2003WatkinsGlen"] = [=[
+SOURCES['Roblox.NR2003WatkinsGlen'] = [=[
 -- Roblox presentation adapter for the recovered Watkins Glen world.
 -- Physics, materials, bump sampling and barrier forces belong to NR2003CupTrack.
 -- This module only selects a common render origin and the original test spawn.
@@ -1320,10 +1324,73 @@ function M.update(controller)
     end
 end
 
+function M.clearDriverSpawn(controller)
+    local state = controller.trackDriverSpawn
+    if not state or state.closed then return end
+    state.closed = true
+    controller.trackDriverSpawn = nil
+    for _, connection in ipairs(state.connections) do connection:Disconnect() end
+    for player, entry in pairs(state.players) do
+        entry.connection:Disconnect()
+        if player.Parent == state.service and player.RespawnLocation == state.spawn then
+            local previous = entry.previous
+            if previous and not previous:IsDescendantOf(workspace) then previous = nil end
+            player.RespawnLocation = previous
+        end
+    end
+    state.players = {}
+    if state.spawn.Parent and not state.spawnDestroying then state.spawn:Destroy() end
+end
+
+-- An avatar can already exist when the recovered core finishes initializing.
+-- Select the new spawn for subsequent characters and bring existing characters
+-- onto its walking surface. No avatar placement enters the native car solver.
+local function bindDriverSpawn(controller, spawn)
+    local players = game:GetService("Players")
+    local state = {spawn = spawn, service = players, connections = {}, players = {}, closed = false}
+    controller.trackDriverSpawn = state
+    local function place(player, character)
+        task.defer(function()
+            if state.closed or player.Parent ~= players or player.Character ~= character then return end
+            local root = character:WaitForChild("HumanoidRootPart", 10)
+            local humanoid = character:WaitForChild("Humanoid", 10)
+            if not root or not humanoid or state.closed or player.Parent ~= players or player.Character ~= character
+                or not spawn.Parent or humanoid.Health <= 0 or humanoid.SeatPart then return end
+            -- Keep a character already standing nearby in place. Otherwise put
+            -- its root above the platform, preserving the avatar's orientation.
+            if (root.Position - spawn.Position).Magnitude > 12 then
+                local destination = spawn.Position + Vector3.new(0, 4, 0)
+                character:PivotTo(character:GetPivot() + (destination - root.Position))
+                root.AssemblyLinearVelocity = Vector3.zero
+                root.AssemblyAngularVelocity = Vector3.zero
+            end
+        end)
+    end
+    local function bind(player)
+        if state.closed or state.players[player] or player.Parent ~= players then return end
+        local previous = player.RespawnLocation
+        local connection = player.CharacterAdded:Connect(function(character) place(player, character) end)
+        state.players[player] = {connection = connection, previous = previous}
+        player.RespawnLocation = spawn
+        if player.Character then place(player, player.Character) end
+    end
+    state.connections[1] = players.PlayerAdded:Connect(bind)
+    state.connections[2] = players.PlayerRemoving:Connect(function(player)
+        local entry = state.players[player]
+        if entry then entry.connection:Disconnect(); state.players[player] = nil end
+    end)
+    state.connections[3] = spawn.Destroying:Connect(function()
+        state.spawnDestroying = true
+        M.clearDriverSpawn(controller)
+    end)
+    for _, player in ipairs(players:GetPlayers()) do bind(player) end
+end
+
 -- A small invisible Roblox walking surface lets the avatar reach the anchored
 -- driver's seat. The car's native world never queries this presentation part.
 function M.prepareDriverSpawn(controller, world)
     if not controller.originalTrack then return end
+    M.clearDriverSpawn(controller)
     controller.car:PivotTo(controller.rootCF)
     local p = controller.core.V.trackPosition(controller.trackPositionOut)
     local surface = controller:worldPoint(p.x, p.y, p.bumpedZ)
@@ -1341,6 +1408,7 @@ function M.prepareDriverSpawn(controller, world)
     spawn.Duration = 0
     spawn:SetAttribute("NR2003AvatarOnly", true)
     spawn.Parent = world
+    bindDriverSpawn(controller, spawn)
     return spawn
 end
 
@@ -1549,7 +1617,20 @@ function workspace:FindFirstChild(name) return name == "NR2003WatkinsGlen" and v
 function workspace:Raycast() error("Track adapter called Roblox Raycast") end
 function workspace:Blockcast() error("Track adapter called Roblox Blockcast") end
 packageAttributes.NR2003Track = "watkins_glen"
+mockRequire({ref = "Core.CupTune"}).driver.momentumKeys = 0
+car.Parent = {Name = "NR2003LabWorld"}
+local prepared = 0
+local host = mockRequire({ref = "Roblox.NR2003WatkinsGlen"})
+-- Avatar lifecycle + actual SeatAccess are exercised by spawn_mock_body.luau.
+-- Here the real core/adapter must invoke preparation after its pose is ready.
+host.prepareDriverSpawn = function(controller, world)
+    assert(world == car.Parent and controller.rootCF and controller.core.V.worldActive())
+    controller.car:PivotTo(controller.rootCF)
+    prepared += 1
+end
 local ctl = Adapter.new(car, TestTune, {})
+check("track startup prepares driver spawn without a server source patch", prepared == 1)
+check("current keyboard momentum=0 is retained by original-core startup", ctl.tune.driver.momentumKeys == 0)
 check("original world loaded and active", ctl.originalTrack and ctl.core.V.worldActive())
 check("car and visuals share explicit origin", ctl.origin == trackOrigin)
 local input = {throttle=0,brake=0,steer=0,clutch=0}

@@ -1,9 +1,9 @@
 {
   "file": "WatkinsGlen_Studio_Package.zip",
-  "sha256": "5b3da70780db73be573add554a09db3cce68737742d0df6f4fbec045d4f1b432",
-  "bytes": 640941258,
+  "sha256": "655f6a12c42f50d2acba32799b69d194fa3da3eae80b989cdf7f5dccc071b89b",
+  "bytes": 640944145,
   "glbs": 88,
   "pngs": 426,
-  "entries": 896,
+  "entries": 899,
   "zipCRCVerified": true
 }

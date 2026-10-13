@@ -79,6 +79,9 @@ function M.new(car,tune,remote)
     self.core=Vehicle.new(Core:WaitForChild("NR2003Cup"))
     if TrackHost then TrackHost.attach(self) end
     self:initialize()
+    if self.originalTrack then
+        TrackHost.prepareDriverSpawn(self, assert(car.Parent, "Parent TestCar before initializing the original track"))
+    end
     return self
 end
 
@@ -583,6 +586,7 @@ function M:reset()
     self.rootCF=nil;self:initialize();self.car:PivotTo(self.rootCF)
 end
 function M:destroy()
+    if TrackHost then TrackHost.clearDriverSpawn(self) end
     self.access:destroy();self.car:SetAttribute("NR2003CorePoseOwner",nil)
     self.root.Anchored=self.oldAnchored;self.root.CanCollide=self.oldCollide
 end

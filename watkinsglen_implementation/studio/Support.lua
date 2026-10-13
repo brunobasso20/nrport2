@@ -111,7 +111,7 @@ end
 -- Recover only the state observed in the supplied export: every original target
 -- restored, every added track module absent, attributes restored, no moved bench.
 -- Retain the entire stale backup under a different name rather than delete it.
-function M.archiveRestoredBackup(backup, manifest, plan, pkg)
+function M.archiveRestoredBackup(backup, manifest, plan, pkg, folders)
     assert(backup.ClassName == "Folder" and backup:GetAttribute("Complete") ~= true,
         "Only an unfinished Watkins Glen backup can be recovered automatically")
     local bundle = backup:GetAttribute("Bundle")
@@ -122,6 +122,13 @@ function M.archiveRestoredBackup(backup, manifest, plan, pkg)
         local original = change.item.old
         assert(original and change.old and M.matches(change.old, original) or original == nil and change.object == nil,
             "Unfinished backup retained: live target is not fully restored: " .. change.item.key)
+    end
+    if bundle ~= manifest.bundle then
+        for _, item in ipairs(manifest.recoveryTargets) do
+            local object = M.resolve(folders, item.key, true)
+            assert(object and object.ClassName == item.class and M.matches(M.source(object), item.old),
+                "Unfinished earlier backup retained: original server was not restored: " .. item.key)
+        end
     end
     assert(pkg:GetAttribute("NR2003WatkinsGlenPatch") == nil and pkg:GetAttribute("NR2003Track") ~= "watkins_glen",
         "Unfinished backup retained: the track patch is still active")

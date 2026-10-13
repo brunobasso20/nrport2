@@ -25,9 +25,6 @@ elseif Mode.mode=="NR2003_CUP" then
     -- Stage 6/7: original NR2003 Cup 45-state core (Core.NR2003Cup); Roblox = contact/presentation host
     controller=require(package.Roblox.CupChassisAdapter).new(car,tune,remote)
 else error("Unknown NR2003 mode: "..tostring(Mode.mode)) end
-if controller.originalTrack then
-    require(package.Roblox.NR2003WatkinsGlen).prepareDriverSpawn(controller,world)
-end
 -- Stage 12: only the Cup core sends the ORIGINAL steering-wheel angle in the render snapshots
 car:SetAttribute("CockpitWheelAngle",Mode.mode=="NR2003_CUP")
 -- nr2003carmodel: ORIGINAL draw record for the client car model / cockpit / cameras (presentation only, optional)

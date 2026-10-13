@@ -20,10 +20,11 @@ STUDIO = ROOT / 'watkinsglen_implementation/studio'
 TRACK = ROOT / 'watkinsglen_implementation/core/NR2003Cup'
 BASELINE = ROOT / 'tools/watkinsglen_studio_baseline.json'
 LIMIT = 199000
-MODEL_NAME = 'NR2003_WatkinsGlen_InstallV3'
+MODEL_NAME = 'NR2003_WatkinsGlen_InstallV4'
 PREVIOUS_BUNDLES = (
     '1319036a4aa1a515efe4d8d1f5d025e2eae0faf37e13a5d5e06adcb18cdff554',
     '70d0e30f93e39831f64c4d530d3866cf34327463e400fde3b97b5f80a3892bb6',
+    '54db48606e6707168be02c9fa2fad06e308c4fa1a9b8892a718195f1f736cca1',
 )
 HOOKS = (
     'Core.NR2003CupVehicle',
@@ -103,7 +104,6 @@ def build() -> dict[Path, bytes]:
         target('Core.NR2003Cup.' + name, TRACK / (name + '.lua'))
     target('Roblox.CupChassisAdapter', ROOT / 'roblox/CupChassisAdapter.lua')
     target('Roblox.NR2003WatkinsGlen', ROOT / 'roblox/NR2003WatkinsGlen.lua')
-    target('Server.NR2003Server', ROOT / 'nr2003carmodel_implementation/roblox/Bench/Server.server.lua', 'Script')
     targets.sort(key=lambda entry: entry['key'])
 
     changed = {entry['key'] for entry in targets}
@@ -134,6 +134,10 @@ def build() -> dict[Path, bytes]:
     support = {name: read_source(STUDIO / (name + '.lua')) for name in ('Apply', 'Support', 'Rollback')}
     manifest = {'schema': 1, 'track': 'watkins_glen', 'metresPerStud': 0.28,
                 'previousBundles': list(PREVIOUS_BUNDLES),
+                # Earlier versions patched this Script. An unfinished earlier
+                # backup must still verify its restoration before archival.
+                'recoveryTargets': [{'key': 'Server.NR2003Server', 'class': 'Script',
+                    'old': {k: originals['Server.NR2003Server'][k] for k in ('bytes', 'fnv32', 'sha256')}}],
                 'baselineModelSHA256': baseline['uploaded_model_sha256'],
                 'moduleGroups': groups,
                 'targets': targets, 'dependencies': dependencies,

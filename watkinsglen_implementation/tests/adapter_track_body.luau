@@ -9,7 +9,20 @@ function workspace:FindFirstChild(name) return name == "NR2003WatkinsGlen" and v
 function workspace:Raycast() error("Track adapter called Roblox Raycast") end
 function workspace:Blockcast() error("Track adapter called Roblox Blockcast") end
 packageAttributes.NR2003Track = "watkins_glen"
+mockRequire({ref = "Core.CupTune"}).driver.momentumKeys = 0
+car.Parent = {Name = "NR2003LabWorld"}
+local prepared = 0
+local host = mockRequire({ref = "Roblox.NR2003WatkinsGlen"})
+-- Avatar lifecycle + actual SeatAccess are exercised by spawn_mock_body.luau.
+-- Here the real core/adapter must invoke preparation after its pose is ready.
+host.prepareDriverSpawn = function(controller, world)
+    assert(world == car.Parent and controller.rootCF and controller.core.V.worldActive())
+    controller.car:PivotTo(controller.rootCF)
+    prepared += 1
+end
 local ctl = Adapter.new(car, TestTune, {})
+check("track startup prepares driver spawn without a server source patch", prepared == 1)
+check("current keyboard momentum=0 is retained by original-core startup", ctl.tune.driver.momentumKeys == 0)
 check("original world loaded and active", ctl.originalTrack and ctl.core.V.worldActive())
 check("car and visuals share explicit origin", ctl.origin == trackOrigin)
 local input = {throttle=0,brake=0,steer=0,clutch=0}

@@ -4,7 +4,19 @@
   "metresPerStud": 0.28,
   "previousBundles": [
     "1319036a4aa1a515efe4d8d1f5d025e2eae0faf37e13a5d5e06adcb18cdff554",
-    "70d0e30f93e39831f64c4d530d3866cf34327463e400fde3b97b5f80a3892bb6"
+    "70d0e30f93e39831f64c4d530d3866cf34327463e400fde3b97b5f80a3892bb6",
+    "54db48606e6707168be02c9fa2fad06e308c4fa1a9b8892a718195f1f736cca1"
+  ],
+  "recoveryTargets": [
+    {
+      "key": "Server.NR2003Server",
+      "class": "Script",
+      "old": {
+        "bytes": 5326,
+        "fnv32": 3697834349,
+        "sha256": "3dcd460ec89d37af6ccd6700555636b6272b384b6e2ad90da28c7983a02e6a82"
+      }
+    }
   ],
   "baselineModelSHA256": "a7a6ea2103db3d76a5aab5210ef71c565a9c184c7f3012433c3dcc672eaaab94",
   "moduleGroups": {
@@ -434,9 +446,9 @@
         "sha256": "67ea7f590d55f99124b00ea1c83880f7fc89d62c9d4915a1a8f35dcbcd23300f"
       },
       "new": {
-        "bytes": 38208,
-        "fnv32": 2879669390,
-        "sha256": "b799c9b2f084f81182c940411d3db8526859d7bb2e9012f61b7b47ca93764037"
+        "bytes": 38426,
+        "fnv32": 3810573503,
+        "sha256": "77c8081d19d977d15f150cddb84149bf0c7f69b869fc850916e531df2fa647e6"
       }
     },
     {
@@ -445,24 +457,9 @@
       "file": "roblox/NR2003WatkinsGlen.lua",
       "old": null,
       "new": {
-        "bytes": 4113,
-        "fnv32": 2457788886,
-        "sha256": "357e238660c897d7685bff171558a615bde346ae5666c4fa07d26a19cea2d5ef"
-      }
-    },
-    {
-      "key": "Server.NR2003Server",
-      "class": "Script",
-      "file": "nr2003carmodel_implementation/roblox/Bench/Server.server.lua",
-      "old": {
-        "bytes": 5326,
-        "fnv32": 3697834349,
-        "sha256": "3dcd460ec89d37af6ccd6700555636b6272b384b6e2ad90da28c7983a02e6a82"
-      },
-      "new": {
-        "bytes": 5513,
-        "fnv32": 1707621339,
-        "sha256": "ad01e439c440360d76123fccb02287ffa3b184ef1b40e004a3a3283eb71f57b6"
+        "bytes": 7485,
+        "fnv32": 1464500119,
+        "sha256": "229d5cf5a90be25912e5c97169a394df3778de6260898f71e090eb71746c14d3"
       }
     }
   ],
@@ -820,14 +817,14 @@
   ],
   "installerSources": {
     "Apply": {
-      "bytes": 9741,
-      "fnv32": 4035937136,
-      "sha256": "6efc5b05b469b24e1aaecedb4d647f34851f844b244dabeb6b21d3cf0e20bba5"
+      "bytes": 9750,
+      "fnv32": 3215230732,
+      "sha256": "56bd151321cf2ea609cafbf09dad73aab22ad6da81531fe623b6561aa66d471c"
     },
     "Support": {
-      "bytes": 10512,
-      "fnv32": 3405408869,
-      "sha256": "6422fa74e16c3675f05e60c02edb714418e02057dcd2b1fa5c1e825147254641"
+      "bytes": 10906,
+      "fnv32": 133044911,
+      "sha256": "d011118eb4803bbff17d1db730e821acb105d5254a2c1198661eb8cdf8327d05"
     },
     "Rollback": {
       "bytes": 4735,
@@ -835,5 +832,5 @@
       "sha256": "5311a4e745ae72d17f08910489f4da0f7c0390b0f3db60eebe1d04d9b1fbd5ff"
     }
   },
-  "bundle": "54db48606e6707168be02c9fa2fad06e308c4fa1a9b8892a718195f1f736cca1"
+  "bundle": "16dc1dd714c5dfe1f02b8b7ce4869f497c540694c0edbc4d2d8ad1e98fd25749"
 }
