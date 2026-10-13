@@ -46,6 +46,11 @@ end
 function Instance:FindFirstChildOfClass(c) for _,ch in ipairs(self._children) do if ch:IsA(c) then return ch end end end
 function Instance:SetAttribute(k,v) self._attrs[k]=v end
 function Instance:GetAttribute(k) return self._attrs[k] end
+function Instance:IsDescendantOf(parent)
+    local p=self.Parent
+    while p do if p==parent then return true end;p=p.Parent end
+    return false
+end
 function Instance:Destroy() error('Visual installer must preserve instances for Studio history') end
 local function make(class,name,parent) local o=Instance.new(class);o.Name=name;o.Parent=parent;return o end
 local function vec(a) return Vector3.new(a[1],a[2],a[3]) end
@@ -160,5 +165,61 @@ end
 do
     local a=world();local c=NUMPY_CASE;local src,markers=imported(a,c,1,CFrame.identity)
     compile(a,c)();verifyChunk(a,c,1,markers);check('NumPy numbers execute as native Luau literals',true)
+end
+-- Exercise the actual V3 master against the supplied RBXM's exact import data.
+do
+    local a=world();local refs={};local pendingParents={}
+    for _,r in ipairs(CAPTURED_STATE) do
+        local p=make(r.class,r.name)
+        refs[r.ref]=p;pendingParents[r.ref]=r.parent
+        if r.class=='MeshPart' then
+            p.CFrame=CFrame.new(vec(r.position));p.Size=vec(r.size)
+            p.TextureID=r.texturePresent and 'rbxassetid://123' or ''
+            p.Anchored=r.anchored;p.CanCollide=r.canCollide;p.CanTouch=r.canTouch;p.CanQuery=r.canQuery
+        end
+    end
+    for ref,parent in pairs(pendingParents) do refs[ref].Parent=refs[parent] or a.workspace end
+    local installedSources=make('Model','NR2003TrackVisualInstallersV3',a.workspace)
+    local cases={};local loaded={};local modules={}
+    for _,c in ipairs(CASES) do
+        local module=make('ModuleScript',c.name,installedSources);cases[module]=c;modules[c.name]=module
+    end
+    local master=assert(loadstring(MASTER_SOURCE,'master'))
+    local messages={}
+    setfenv(master,setmetatable({game=a.game,workspace=a.workspace,
+        require=function(m) if not loaded[m] then loaded[m]=compile(a,assert(cases[m])) end;return loaded[m] end,
+        print=function(s)table.insert(messages,s)end,warn=function(s)table.insert(messages,s)end},{__index=_G}))
+    master()
+    local root=assert(a.workspace:FindFirstChild('NR2003WatkinsGlen'))
+    check('captured state installs all 84 intact chunks',root:GetAttribute('NR2003VisualChunksReady')==84 and #root:GetChildren()==84)
+    check('captured state reports incomplete scenery',root:GetAttribute('NR2003VisualsComplete')==false)
+    local failureNames={}
+    for _,s in ipairs(messages) do
+        if s:match('^watkins_glen_scenery_') then table.insert(failureNames,s:match('^(watkins_glen_scenery_%d+)')) end
+    end
+    check('captured state identifies exactly four missing imports',#failureNames==4)
+    -- Restore just the four original scenery GLBs. Empty originals remain;
+    -- duplicate labels and nested importer wrappers must not block discovery.
+    local wrapper=make('Folder','Reimported scenery',a.workspace)
+    for _,c in ipairs(CASES) do if c.kind=='scenery' then
+        local model=imported(a,c,1,CFrame.new(12,5,-30),wrapper)
+        model.Name=c.name..' (1)'
+    end end
+    master()
+    check('captured state recovery reaches all 88 chunks',root:GetAttribute('NR2003VisualChunksReady')==88 and #root:GetChildren()==88)
+    check('captured state complete flag only after recovery',root:GetAttribute('NR2003VisualsComplete')==true)
+    local maxActualPositionError=0
+    for _,c in ipairs(CASES) do
+        local installed=assert(root:FindFirstChild(c.name))
+        for _,g in ipairs(c.geometries) do
+            local p=assert(installed:FindFirstChild(g.name,true))
+            maxActualPositionError=math.max(maxActualPositionError,(p.Position-vec(g.center)).Magnitude)
+            assert(p.Anchored and not p.CanCollide and not p.CanTouch and p.CanQuery==(c.kind=='terrain'))
+        end
+    end
+    check('captured transform recovery preserves original coordinates',maxActualPositionError<.000509)
+    master()
+    check('captured state recovered master is idempotent',root:GetAttribute('NR2003VisualChunksReady')==88 and #root:GetChildren()==88)
+    print(string.format('Captured RBXM recovery: 84 intact chunks -> 88 complete; maximum coordinate difference %.9g studs.',maxActualPositionError))
 end
 print(string.format('Visual installer runtime: %d checks passed; 88 chunks; partial resume, cached rerun, calibration, marker history and malformed import refusal.',passed))

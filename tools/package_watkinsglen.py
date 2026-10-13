@@ -25,7 +25,8 @@ def build(target):
     paths = list((TRACK / 'assets').rglob('*'))
     paths += list((TRACK / 'studio').rglob('*'))
     paths += list((TRACK / 'validation').rglob('*'))
-    paths += [TRACK / 'downloads/README_DOWNLOAD.md', TRACK / 'downloads/README_VISUAL_FIX.md']
+    paths += [TRACK / 'downloads/README_DOWNLOAD.md', TRACK / 'downloads/README_VISUAL_FIX.md',
+              TRACK / 'downloads/README_VISUAL_RECOVERY.md']
     paths += [TRACK / name for name in ('README.md', 'VALIDATION.md', 'RUNTIME_VALIDATION.md',
                                      'SURFACE_RECOVERY.md', 'STUDIO_AUDIT.md')]
     files = sorted(p for p in paths if p.is_file() and p.suffix != '.zip')
@@ -78,13 +79,34 @@ def build_visual_fix():
             archive.write(source, name)
     with zipfile.ZipFile(target) as archive:
         assert archive.testzip() is None
-        assert b'NR2003TrackVisualInstallersV2' in archive.read('NR2003TrackVisualInstallers.rbxmx')
+        assert b'NR2003TrackVisualInstallersV3' in archive.read('NR2003TrackVisualInstallers.rbxmx')
         assert b'np.float' not in archive.read('NR2003TrackVisualInstallers.rbxmx')
     print('Visual installer fix:', target.name, target.stat().st_size, 'bytes')
+
+
+def build_visual_recovery():
+    target = TRACK / 'downloads/WatkinsGlen_Visual_Recovery.zip'
+    files = {
+        'NR2003TrackVisualInstallers.rbxmx': TRACK / 'assets/studio/NR2003TrackVisualInstallers.rbxmx',
+        'INSTALL_ALL_TRACK_VISUALS.lua': TRACK / 'assets/studio/INSTALL_ALL_TRACK_VISUALS.lua',
+        'README_FIRST.md': TRACK / 'downloads/README_VISUAL_RECOVERY.md',
+    }
+    for source in sorted((TRACK / 'assets/glb').glob('watkins_glen_scenery_*.glb')):
+        check_binary(source)
+        files['glb/' + source.name] = source
+    assert sum(name.endswith('.glb') for name in files) == 4
+    with zipfile.ZipFile(target, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=6) as archive:
+        for name, source in files.items():
+            archive.write(source, name)
+    with zipfile.ZipFile(target) as archive:
+        assert archive.testzip() is None
+        assert b'NR2003TrackVisualInstallersV3' in archive.read('NR2003TrackVisualInstallers.rbxmx')
+    print('Visual recovery:', target.name, target.stat().st_size, 'bytes')
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--out', type=Path, default=TRACK / 'downloads/WatkinsGlen_Studio_Package.zip')
     build_visual_fix()
+    build_visual_recovery()
     build(parser.parse_args().out)

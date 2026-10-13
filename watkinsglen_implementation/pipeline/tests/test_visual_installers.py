@@ -48,7 +48,9 @@ class InstallerTests(unittest.TestCase):
             g['opacity']=np.float64(g['opacity'])
         numpy_case=case(synthetic,'return function()\n'+installer(synthetic,manifest['textures'],np.float64(.28))+'\nend\n')
         helpers=(REPO/'tools/adapter_mock_body.luau').read_text().split('-- world: ground plane')[0]
-        runner=helpers+'\nlocal CASES='+to_lua(cases)+'\nlocal NUMPY_CASE='+to_lua(numpy_case)+'\n'+(PIPELINE/'tests/visual_installer_mock.luau').read_text()
+        captured=json.loads((PIPELINE/'tests/fixtures/studio_import_state.json').read_text())
+        master=(assets/'studio/INSTALL_ALL_TRACK_VISUALS.lua').read_text()
+        runner=helpers+'\nlocal CASES='+to_lua(cases)+'\nlocal NUMPY_CASE='+to_lua(numpy_case)+'\nlocal CAPTURED_STATE='+to_lua(captured)+'\nlocal MASTER_SOURCE='+to_lua(master)+'\n'+(PIPELINE/'tests/visual_installer_mock.luau').read_text()
         (REPO/'work').mkdir(exist_ok=True)
         with tempfile.TemporaryDirectory(dir=REPO/'work') as folder:
             target=Path(folder)/'visual_installers.luau';target.write_text(runner)

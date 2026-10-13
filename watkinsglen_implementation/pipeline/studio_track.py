@@ -75,6 +75,24 @@ if not src then
         if completeImport(item) then src = item; break end
     end
 end
+-- Studio can append a suffix when an empty, history-reverted import still
+-- occupies PACKAGE. Resolve a complete chunk by its content, not its label.
+if not src then
+    local candidates = {}
+    for _, item in ipairs(workspace:GetDescendants()) do
+        if completeImport(item) then table.insert(candidates, item) end
+    end
+    local innermost = {}
+    for _, candidate in ipairs(candidates) do
+        local containsCandidate = false
+        for _, other in ipairs(candidates) do
+            if other ~= candidate and other:IsDescendantOf(candidate) then containsCandidate = true; break end
+        end
+        if not containsCandidate then table.insert(innermost, candidate) end
+    end
+    assert(#innermost <= 1, "More than one complete import for " .. PACKAGE .. "; select the intended chunk model")
+    src = innermost[1]
+end
 assert(src and (src:IsA("Model") or src:IsA("Folder")), "Import " .. PACKAGE .. ".glb, or select its imported model")
 assert(src ~= root, "Select the imported chunk, not the complete track model")
 local function marker(name)
@@ -175,20 +193,34 @@ def write_installers(chunks, textures, out, mps):
                        '</Properties></Item>' % (number, escape(chunk["name"]), escape(wrapped)))
     xml = ('<?xml version="1.0" encoding="utf-8"?>\n<roblox version="4"><External>null</External>'
            '<Item class="Model" referent="WG_INSTALLERS"><Properties>'
-           '<string name="Name">NR2003TrackVisualInstallersV2</string></Properties>'
+           '<string name="Name">NR2003TrackVisualInstallersV3</string></Properties>'
            + "".join(modules) + '</Item></roblox>\n')
     (destination / "NR2003TrackVisualInstallers.rbxmx").write_text(xml)
     master = '''-- Import all assets/glb/*.glb into Workspace with their file names.
 -- Insert assets/studio/NR2003TrackVisualInstallers.rbxmx into Workspace, then run this
 -- in Studio's Command Bar outside Play. All chunk installers are idempotent.
 assert(not game:GetService("RunService"):IsRunning(), "Stop Play before installing")
-local installers = assert(workspace:FindFirstChild("NR2003TrackVisualInstallersV2"), "Insert the updated NR2003TrackVisualInstallers.rbxmx (Model name NR2003TrackVisualInstallersV2)")
+local installers = assert(workspace:FindFirstChild("NR2003TrackVisualInstallersV3"), "Insert the updated NR2003TrackVisualInstallers.rbxmx (Model name NR2003TrackVisualInstallersV3)")
 local modules = installers:GetChildren()
 table.sort(modules, function(a,b) return a.Name < b.Name end)
 local installed = 0
+local pending = {}
 for _, module in ipairs(modules) do
-    if module:IsA("ModuleScript") then require(module)(); installed += 1 end
+    if module:IsA("ModuleScript") then
+        local ok, reason = pcall(function() require(module)() end)
+        if ok then installed += 1 else table.insert(pending, {name=module.Name, reason=tostring(reason)}) end
+    end
 end
-print("Watkins Glen visuals installed: " .. installed .. " chunks. Track origin = CFrame.identity. Place not saved.")
+local root = workspace:FindFirstChild("NR2003WatkinsGlen")
+if root then
+    root:SetAttribute("NR2003VisualChunksReady", installed)
+    root:SetAttribute("NR2003VisualsComplete", installed == __CHUNKS__ and #pending == 0)
+end
+if #pending > 0 then
+    warn("Watkins Glen: " .. installed .. " chunks ready; " .. #pending .. " pending. Complete chunks were preserved; fix only the imports listed below, then rerun this V3 master.")
+    for _, failure in ipairs(pending) do warn(failure.name .. ": " .. failure.reason) end
+else
+    print("Watkins Glen visuals installed: " .. installed .. " chunks. Track origin = CFrame.identity. Place not saved.")
+end
 '''
-    (destination / "INSTALL_ALL_TRACK_VISUALS.lua").write_text(master)
+    (destination / "INSTALL_ALL_TRACK_VISUALS.lua").write_text(master.replace("__CHUNKS__", str(len(chunks))))

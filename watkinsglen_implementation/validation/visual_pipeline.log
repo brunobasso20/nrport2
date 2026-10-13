@@ -2,7 +2,8 @@
   self.assertEqual(set(im.getdata()),{(40,60,60,128)})
 ......
 ----------------------------------------------------------------------
-Ran 6 tests in 0.977s
+Ran 6 tests in 2.131s
 
 OK
-Visual installer runtime: 450 checks passed; 88 chunks; partial resume, cached rerun, calibration, marker history and malformed import refusal.
+Captured RBXM recovery: 84 intact chunks -> 88 complete; maximum coordinate difference 0.000508342494 studs.
+Visual installer runtime: 457 checks passed; 88 chunks; partial resume, cached rerun, calibration, marker history and malformed import refusal.

@@ -56,6 +56,24 @@ if not src then
         if completeImport(item) then src = item; break end
     end
 end
+-- Studio can append a suffix when an empty, history-reverted import still
+-- occupies PACKAGE. Resolve a complete chunk by its content, not its label.
+if not src then
+    local candidates = {}
+    for _, item in ipairs(workspace:GetDescendants()) do
+        if completeImport(item) then table.insert(candidates, item) end
+    end
+    local innermost = {}
+    for _, candidate in ipairs(candidates) do
+        local containsCandidate = false
+        for _, other in ipairs(candidates) do
+            if other ~= candidate and other:IsDescendantOf(candidate) then containsCandidate = true; break end
+        end
+        if not containsCandidate then table.insert(innermost, candidate) end
+    end
+    assert(#innermost <= 1, "More than one complete import for " .. PACKAGE .. "; select the intended chunk model")
+    src = innermost[1]
+end
 assert(src and (src:IsA("Model") or src:IsA("Folder")), "Import " .. PACKAGE .. ".glb, or select its imported model")
 assert(src ~= root, "Select the imported chunk, not the complete track model")
 local function marker(name)
