@@ -19,6 +19,7 @@ bundle = {
     'Core.TestTune': src(stage5 / 'core/TestTune.lua'),
     'Roblox.RenderSnapshot': src(stage5 / 'roblox/RenderSnapshot.lua'),
     'Roblox.CupChassisAdapter': src(root / 'roblox/CupChassisAdapter.lua'),
+    'Roblox.NR2003WatkinsGlen': src(root / 'roblox/NR2003WatkinsGlen.lua'),
     'Roblox.Stage67SelfTest': src(root / 'roblox/Stage67SelfTest.lua'),
     'Roblox.Stage8SelfTest': src(root / 'roblox/Stage8SelfTest.lua'),
     'Roblox.Stage9SelfTest': src(root / 'roblox/Stage9SelfTest.lua'),

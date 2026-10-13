@@ -1,0 +1,17 @@
+[NR2003 Stage 10] setup aplicado (natural, 1.26 s): molas -71344/-71344/-41092/-41092 N/m, freio 2812/988 N*m, marchas 2.133/1.611/1.261/1.000 x 4.500
+[NR2003 Stage 12] direção original: relação 12:1 (item 0x30), trava 360° (180° por lado), override baixa velocidade on, linearidade 0.00, taxa 0.0330/quadro (teclas imagem, eixo 0), volante até 180°
+[NR2003 Stage 13] force feedback original ligado: força 80, amortecimento 0, latência 0 ms, dispositivo sim (efeito adquirido pelo 0054fed0 só com o eixo analógico)
+[NR2003 Stage 9] sessão: 70 F, condições 0, dia, vento 0 mph dir 0 -> ar 49.11 C, rho 1.081192 kg/m3, vento (-0.000, 0.000) m/s | fita 0%, aerofólio 65°
+PASS  original world loaded and active
+PASS  car and visuals share explicit origin
+PASS  original contact ticks complete without host queries  nil
+PASS  telemetry reads original tire support
+PASS  render position follows original absolute track coordinates
+PASS  native surfaces published as diagnostics
+[NR2003 Stage 12] direção original: relação 12:1 (item 0x30), trava 360° (180° por lado), override baixa velocidade on, linearidade 0.00, taxa 0.0330/quadro (teclas imagem, eixo 0), volante até 180°
+[NR2003 Stage 13] force feedback original ligado: força 80, amortecimento 0, latência 0 ms, dispositivo sim (efeito adquirido pelo 0054fed0 só com o eixo analógico)
+[NR2003 Stage 9] sessão: 70 F, condições 0, dia, vento 0 mph dir 0 -> ar 49.11 C, rho 1.081192 kg/m3, vento (-0.000, 0.000) m/s | fita 0%, aerofólio 65°
+PASS  reset reactivates the original world
+PASS  reset remains drivable without host queries  nil
+
+track adapter: 8 passed, 0 failed

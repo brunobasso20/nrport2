@@ -1,0 +1,34 @@
+PASS  FNV-1a UTF-8 source normalization
+PASS  Play refusal has no mutation
+PASS  uncalibrated visuals refuse before mutation
+PASS  untagged queryable terrain refuses before mutation
+PASS  tagged terrain camera queries accepted without collision
+PASS  tagged scenery query mesh refused
+PASS  unknown target edit refuses before mutation
+PASS  incompatible solver dependency refuses before mutation
+PASS  corrupt payload refuses before mutation
+PASS  unsaved editor buffer refuses before mutation
+PASS  unknown existing newly-added module refuses
+Watkins Glen physics installed. Original car assets and client retained; backup: ServerStorage.NR2003Backup_WatkinsGlen
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()
+PASS  complete patch applies exact source payloads
+PASS  changed source instance identities preserved
+PASS  client, assets and car preserved; bench moved intact
+PASS  backup has every original and added-module marker | 11 originals, 26 added
+PASS  track attributes enabled only after source install
+Watkins Glen physics installed. Original car assets and client retained; backup: ServerStorage.NR2003Backup_WatkinsGlen
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()
+PASS  repeat install is idempotent and retains first backup
+PASS  rollback refuses subsequent target edits without mutation
+Watkins Glen patch rolled back. Previous sources, package attributes and generated bench restored; imported car and track visuals retained.
+PASS  rollback restores all original sources and removes added modules
+PASS  rollback restores false-valued prior attributes and bench parent
+PASS  backup source write failure removes partial backup and changes no live source | [string "Apply"]:102: Watkins Glen backup preparation failed; live sources and attributes were not changed:
+./work/wg_install_mock/mock.luau:217487: injected source write failure
+PASS  injected mid-install write failure restores sources, attrs and bench | [string "Apply"]:160: Watkins Glen installation failed; prior sources, attributes and bench were restored:
+./work/wg_install_mock/mock.luau:217487: injected source write failure
+Watkins Glen physics installed. Original car assets and client retained; backup: ServerStorage.NR2003Backup_WatkinsGlen
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()
+PASS  injected rollback write failure restores installed state | [string "Rollback"]:71: Rollback failed; installed state was restored:
+./work/wg_install_mock/mock.luau:217487: injected source write failure
+installer mock: 23 passed, 0 failed

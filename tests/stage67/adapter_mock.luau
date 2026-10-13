@@ -44,6 +44,16 @@ end
 -- get(name) -> module value or nil
 function M.fromLoader(get)
     local image=merge(collect(get,"NR2003CupImage"))
+    -- Watkins Glen port (absent without a track install): the ORIGINAL track / collision world memory (track arena,
+    -- world pools, its stack) lies above the Stage 6/7 image; the core memory is created large enough for it. Nothing
+    -- else changes until V.loadTrack() (NR2003CupTrack)
+    local trackHost=get("NR2003CupTrack")
+    local trackData=nil
+    if trackHost then
+        trackData=collect(get,"NR2003CupTrackData")
+        assert(#trackData>0,"NR2003CupTrackData modules missing")
+        image.size=math.max(image.size,trackData[1].top-image.base)
+    end
     local jit=collect(get,"NR2003CupJIT")
     assert(#jit>0,"NR2003CupJIT modules missing")
     local V=get("NR2003CupDriver")(get("NR2003CupCore")(image,jit))
@@ -69,6 +79,11 @@ function M.fromLoader(get)
     -- follows the control-7 binding written by the steering device layer) and after the frame end (its hooks)
     local ffb=get("NR2003CupFFB")
     if ffb then ffb(V) end
+    -- Watkins Glen port: installed last (its enterTrack / reset / session wrappers are the outermost)
+    if trackHost then
+        trackHost(V,collect(get,"NR2003CupTrackCode"),trackData,
+            {build=get("NR2003CupTrackBuild"),placed=collect(get,"NR2003CupJITP"),placedGeneric=collect(get,"NR2003CupJITPG")})
+    end
     return setmetatable({V=V,state=table.create(45,0),pos={0,0,0},rot={1,0,0,0,1,0,0,0,1}},M)
 end
 function M.new(folder)
@@ -81,6 +96,10 @@ function M.new(folder)
 end
 
 function M:reset() self.V.reset() end
+-- Watkins Glen port: load the track into the car's memory (NR2003CupTrack); the next session start / reset places
+-- the car on it (ORIGINAL 005512f0) and the ORIGINAL collision world replaces the host contact planes
+function M:loadTrack(opts) return self.V.loadTrack(opts) end
+function M:trackLoaded() return self.V.trackLoaded ~= nil and self.V.trackLoaded() end
 function M:tick() return self.V.tick end
 -- controls: {throttle, clutch(engagement), shiftUp, shiftDown,
 --   steerLeft/steerRight (Stage 12: raw steering controls 7/8, 0..1) + steerDigital (true = keys/buttons,
@@ -684,6 +703,8 @@ local Visual=require(script.Parent.VisualRig)
 local SeatAccess=require(script.Parent.SeatAccess)
 local Cockpit=require(script.Parent.Cockpit)
 local RenderSnapshot=require(script.Parent.RenderSnapshot)
+local trackModule=script.Parent:FindFirstChild("NR2003WatkinsGlen")
+local TrackHost=trackModule and require(trackModule)
 local M={};M.__index=M
 
 -- NR2003 vehicle-world (+X fwd, +Y left, +Z up) <-> Roblox origin-local (+X right, +Y up, -Z fwd)
@@ -717,6 +738,7 @@ function M.new(car,tune,remote)
     self.params=params
     self.visual=Visual.new(car,cup);self.access=SeatAccess.new(car,remote);Cockpit.ensure(car,cup)
     self.core=Vehicle.new(Core:WaitForChild("NR2003Cup"))
+    if TrackHost then TrackHost.attach(self) end
     self:initialize()
     return self
 end
@@ -772,7 +794,8 @@ function M:applyGarageSetup(s)
     end
 end
 function M:initialize()
-    self.origin=self:groundOrigin(self.spawn)
+    self.origin=self.originalTrack and TrackHost.origin(self) or self:groundOrigin(self.spawn)
+    if self.originalTrack then TrackHost.checkSession(self) end
     -- Stage 12: the steering options are re-read from the attributes at every initialize/reset
     if self.core.V.clearSteeringOptions then self.core.V.clearSteeringOptions() end
     if self.core.V.clearForceFeedbackOptions then self.core.V.clearForceFeedbackOptions() end
@@ -1009,6 +1032,8 @@ end
 --    line along the core +X axis (lap distance = x, lateral = y + DraftTestLateral, same velocity as
 --    the player, Cup wake), to exercise the ORIGINAL drafting code. Not an NR2003 feature.
 function M:aeroHostInputs()
+    -- The recovered track query supplies the original normal and race-order context.
+    if self.originalTrack then return end
     local nx,ny,nz,n=0,0,0,0
     for j=1,4 do
         if self.inContact[j] then local p=self.planes[j];nx+=p[1];ny+=p[2];nz+=p[3];n+=1 end
@@ -1043,7 +1068,7 @@ function M:pose(teleport)
         return self.origin*CFrame.new(lp.X,lp.Y,lp.Z,r00,r01,r02,r10,r11,r12,r20,r21,r22)
     end
     local cf=target()
-    if not teleport and self.rootCF then
+    if not self.originalTrack and not teleport and self.rootCF then
         local delta=cf.Position-self.rootCF.Position
         if delta.Magnitude>1e-6 then
             local cast=self.rootCF*CFrame.new(0,self.tune.collision.raise/mps,0)
@@ -1086,6 +1111,7 @@ function M:step(elapsed,input)
     if self.fault then return end
     local ok,reason=pcall(function()
         self.runner:advance(elapsed,input,nil)
+        if self.originalTrack then TrackHost.update(self) end
         self.car:PivotTo(self.rootCF)
         self.car:SetAttribute("CoreTick",self.core:tick());self.car:SetAttribute("CoreCollision",self.collision==true)
         local wheels=self:wheels()
@@ -1221,6 +1247,103 @@ function M:destroy()
     self.access:destroy();self.car:SetAttribute("NR2003CorePoseOwner",nil)
     self.root.Anchored=self.oldAnchored;self.root.CanCollide=self.oldCollide
 end
+return M
+]=]
+SOURCES['Roblox.NR2003WatkinsGlen'] = [=[
+-- Roblox presentation adapter for the recovered Watkins Glen world.
+-- Physics, materials, bump sampling and barrier forces belong to NR2003CupTrack.
+-- This module only selects a common render origin and the original test spawn.
+local M = {}
+M.TRACK = "watkins_glen"
+M.METRES_PER_STUD = 0.28
+
+function M.enabled(package)
+    return package:GetAttribute("NR2003Track") == M.TRACK
+end
+
+function M.origin(controller)
+    local model = assert(workspace:FindFirstChild("NR2003WatkinsGlen"),
+        "Import the Watkins Glen visuals and run INSTALL_TRACK_VISUALS before driving")
+    assert(model:IsA("Model") and model:GetAttribute("TrackOriginEnabled") == true,
+        "Watkins Glen visuals have not been calibrated by the asset installer")
+    controller.trackModel = model
+    return model:GetPivot()
+end
+
+function M.attach(controller)
+    local package = script.Parent.Parent
+    if not M.enabled(package) then return false end
+    assert(math.abs(controller.tune.metresPerStud - M.METRES_PER_STUD) < 1e-12,
+        "Watkins Glen and the car must both use 0.28 metres per stud")
+    assert(controller.core.V.loadTrack, "Install the recovered Watkins Glen core modules first")
+    M.origin(controller)
+    controller.core:loadTrack()
+    controller.originalTrack = true
+    controller.trackPositionOut = {}
+    controller.trackContactOut = {}
+    local stalls = controller.core.V.trackStalls
+    local stall = assert(stalls and stalls[1], "Watkins Glen original pit spawn is missing")
+    local function number(name, default)
+        local value = controller.car:GetAttribute(name)
+        if type(value) == "number" and value == value and math.abs(value) < math.huge then return value end
+        return default
+    end
+    controller.core.V.setTrackStart(number("TrackDlong", stall[1]), number("TrackDlat", stall[2]),
+        number("TrackYaw", stall[3]))
+    controller.car:SetAttribute("NR2003Track", M.TRACK)
+    controller.car:SetAttribute("TrackContactMode", "NR2003 original world")
+    return true
+end
+
+function M.checkSession(controller)
+    assert(controller.car:GetAttribute("AeroSession") ~= false,
+        "Watkins Glen requires an active original NR2003 session (AeroSession must be enabled)")
+    assert(controller.car:GetAttribute("Stage11Runtime") ~= "frozen",
+        "Watkins Glen requires the original tire thermal/wear runtime")
+end
+
+-- Read-only diagnostics. They never become input to the contact solver.
+function M.update(controller)
+    local V = controller.core.V
+    if V.trackPosition then
+        local p = V.trackPosition(controller.trackPositionOut)
+        controller.car:SetAttribute("TrackDlongCurrent", p.dlong)
+        controller.car:SetAttribute("TrackDlatCurrent", p.dlat)
+        controller.car:SetAttribute("TrackSurface", p.surface)
+    end
+    if V.trackContact then
+        for j = 1, 4 do
+            local c = V.trackContact(j - 1, controller.trackContactOut)
+            controller.inContact[j] = c.grounded == true
+            controller.planes[j][8] = c.surface or 0
+        end
+    end
+end
+
+-- A small invisible Roblox walking surface lets the avatar reach the anchored
+-- driver's seat. The car's native world never queries this presentation part.
+function M.prepareDriverSpawn(controller, world)
+    if not controller.originalTrack then return end
+    controller.car:PivotTo(controller.rootCF)
+    local p = controller.core.V.trackPosition(controller.trackPositionOut)
+    local surface = controller:worldPoint(p.x, p.y, p.bumpedZ)
+    local spawn = world:FindFirstChild("WatkinsGlenDriverSpawn") or Instance.new("SpawnLocation")
+    spawn.Name = "WatkinsGlenDriverSpawn"
+    spawn.Size = Vector3.new(40, 0.5, 40)
+    spawn.CFrame = (controller.rootCF - controller.rootCF.Position) + surface
+        + controller.rootCF.RightVector * 7 - controller.rootCF.UpVector * 0.25
+    spawn.Anchored = true
+    spawn.CanCollide = true
+    spawn.CanTouch = false
+    spawn.CanQuery = false
+    spawn.Transparency = 1
+    spawn.Neutral = true
+    spawn.Duration = 0
+    spawn:SetAttribute("NR2003AvatarOnly", true)
+    spawn.Parent = world
+    return spawn
+end
+
 return M
 ]=]
 SOURCES['Roblox.Stage67SelfTest'] = [=[
@@ -2432,6 +2555,8 @@ local function folder(prefix)
 end
 local CoreFolder, RobloxFolder = folder("Core"), folder("Roblox")
 local package = {Core = CoreFolder, Roblox = RobloxFolder}
+local packageAttributes = {}
+function package:GetAttribute(name) return packageAttributes[name] end
 local stubs = {
 	["Roblox.VisualRig"] = {new = function() return {update = function(_, dyn, contacts) _G_lastVisual = {dyn = dyn, contacts = contacts} end} end},
 	["Roblox.SeatAccess"] = {new = function() return {step = function() end, driver = function() return "player" end, request = function() end,

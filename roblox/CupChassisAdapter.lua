@@ -42,6 +42,8 @@ local Visual=require(script.Parent.VisualRig)
 local SeatAccess=require(script.Parent.SeatAccess)
 local Cockpit=require(script.Parent.Cockpit)
 local RenderSnapshot=require(script.Parent.RenderSnapshot)
+local trackModule=script.Parent:FindFirstChild("NR2003WatkinsGlen")
+local TrackHost=trackModule and require(trackModule)
 local M={};M.__index=M
 
 -- NR2003 vehicle-world (+X fwd, +Y left, +Z up) <-> Roblox origin-local (+X right, +Y up, -Z fwd)
@@ -75,6 +77,7 @@ function M.new(car,tune,remote)
     self.params=params
     self.visual=Visual.new(car,cup);self.access=SeatAccess.new(car,remote);Cockpit.ensure(car,cup)
     self.core=Vehicle.new(Core:WaitForChild("NR2003Cup"))
+    if TrackHost then TrackHost.attach(self) end
     self:initialize()
     return self
 end
@@ -130,7 +133,8 @@ function M:applyGarageSetup(s)
     end
 end
 function M:initialize()
-    self.origin=self:groundOrigin(self.spawn)
+    self.origin=self.originalTrack and TrackHost.origin(self) or self:groundOrigin(self.spawn)
+    if self.originalTrack then TrackHost.checkSession(self) end
     -- Stage 12: the steering options are re-read from the attributes at every initialize/reset
     if self.core.V.clearSteeringOptions then self.core.V.clearSteeringOptions() end
     if self.core.V.clearForceFeedbackOptions then self.core.V.clearForceFeedbackOptions() end
@@ -367,6 +371,8 @@ end
 --    line along the core +X axis (lap distance = x, lateral = y + DraftTestLateral, same velocity as
 --    the player, Cup wake), to exercise the ORIGINAL drafting code. Not an NR2003 feature.
 function M:aeroHostInputs()
+    -- The recovered track query supplies the original normal and race-order context.
+    if self.originalTrack then return end
     local nx,ny,nz,n=0,0,0,0
     for j=1,4 do
         if self.inContact[j] then local p=self.planes[j];nx+=p[1];ny+=p[2];nz+=p[3];n+=1 end
@@ -401,7 +407,7 @@ function M:pose(teleport)
         return self.origin*CFrame.new(lp.X,lp.Y,lp.Z,r00,r01,r02,r10,r11,r12,r20,r21,r22)
     end
     local cf=target()
-    if not teleport and self.rootCF then
+    if not self.originalTrack and not teleport and self.rootCF then
         local delta=cf.Position-self.rootCF.Position
         if delta.Magnitude>1e-6 then
             local cast=self.rootCF*CFrame.new(0,self.tune.collision.raise/mps,0)
@@ -444,6 +450,7 @@ function M:step(elapsed,input)
     if self.fault then return end
     local ok,reason=pcall(function()
         self.runner:advance(elapsed,input,nil)
+        if self.originalTrack then TrackHost.update(self) end
         self.car:PivotTo(self.rootCF)
         self.car:SetAttribute("CoreTick",self.core:tick());self.car:SetAttribute("CoreCollision",self.collision==true)
         local wheels=self:wheels()

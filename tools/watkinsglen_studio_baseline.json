@@ -1,0 +1,762 @@
+{
+  "uploaded_model_sha256": "a7a6ea2103db3d76a5aab5210ef71c565a9c184c7f3012433c3dcc672eaaab94",
+  "normalization": "CRLF and CR to LF",
+  "scripts": [
+    {
+      "key": "Client.NR2003Client",
+      "class": "LocalScript",
+      "bytes": 19748,
+      "fnv32": 3199246809,
+      "sha256": "7dd940a4ab0f1ae8adefec29b1931bae5a7c79f35224bf32afc042cdd5b0a3b9"
+    },
+    {
+      "key": "Core.Aerodynamics",
+      "class": "ModuleScript",
+      "bytes": 2643,
+      "fnv32": 1866955020,
+      "sha256": "b2f85e24cca547c0263347b8f1fcd85016bcb2be17eb9014fd1fd94edb724e9c"
+    },
+    {
+      "key": "Core.ComponentTree",
+      "class": "ModuleScript",
+      "bytes": 3043,
+      "fnv32": 2876772149,
+      "sha256": "05aa4ac22485d7ff06201f0d5dc35c421fd9c5e2745dbe3879ada47bd22dfc2b"
+    },
+    {
+      "key": "Core.Drivetrain",
+      "class": "ModuleScript",
+      "bytes": 2845,
+      "fnv32": 114866234,
+      "sha256": "bd4750fc7046a4ca4e8984c22bdac534bd90d45c79402842566927d97fc3799d"
+    },
+    {
+      "key": "Core.Engine",
+      "class": "ModuleScript",
+      "bytes": 1727,
+      "fnv32": 939887370,
+      "sha256": "1f3a5ca67558c178112e13705ca719ee06670783e4c6ceaa771dae504905a873"
+    },
+    {
+      "key": "Core.Float32",
+      "class": "ModuleScript",
+      "bytes": 1113,
+      "fnv32": 2493976715,
+      "sha256": "d08d371179c7095953f05d6848db6b9edc6c9f2b381928fa37057b442ff494ab"
+    },
+    {
+      "key": "Core.Lookup",
+      "class": "ModuleScript",
+      "bytes": 1208,
+      "fnv32": 3036410948,
+      "sha256": "de23a3e48314d845d96e17ca7879121b314995d42fc48a1b13515b56bbfae4fb"
+    },
+    {
+      "key": "Core.MathUtil",
+      "class": "ModuleScript",
+      "bytes": 704,
+      "fnv32": 4088009230,
+      "sha256": "e7d0252edf90e723289d07493dbc7d8bcf5f6e986acffa7335735137fe0cf14f"
+    },
+    {
+      "key": "Core.NR2003Components",
+      "class": "ModuleScript",
+      "bytes": 3125,
+      "fnv32": 2471856832,
+      "sha256": "72752fa583198c606a378613bc1eda33afb5590c9b20f6ff840a62877c65bde8"
+    },
+    {
+      "key": "Core.NR2003Constraints",
+      "class": "ModuleScript",
+      "bytes": 3142,
+      "fnv32": 188266605,
+      "sha256": "fafd2dbfe17db6792bddafeca8cdedff7d553a7cb988f44f8800ab3aa51c9c13"
+    },
+    {
+      "key": "Core.NR2003Contact",
+      "class": "ModuleScript",
+      "bytes": 2235,
+      "fnv32": 1988229883,
+      "sha256": "f34c3fd44e29acfb492c1aa6560db604bbd42f02da4ef588e9078bad32587bbd"
+    },
+    {
+      "key": "Core.NR2003Derivatives",
+      "class": "ModuleScript",
+      "bytes": 1225,
+      "fnv32": 3908333815,
+      "sha256": "d3b5ebb2ef77a95b8f7d28e0200c263959473492c519d3cfbb648f4024b39fd5"
+    },
+    {
+      "key": "Core.NR2003DrivetrainProjection",
+      "class": "ModuleScript",
+      "bytes": 2873,
+      "fnv32": 2902002767,
+      "sha256": "5af520ac47a0343007f34a7dd8b75b3c1b3eb83a6bf0056107b93c9c721d5822"
+    },
+    {
+      "key": "Core.NR2003FixedStep",
+      "class": "ModuleScript",
+      "bytes": 1517,
+      "fnv32": 1176039564,
+      "sha256": "296a12735aad21988a928757387efcfbe45e00ed906ca8809a94517573760093"
+    },
+    {
+      "key": "Core.NR2003ForceAccumulator",
+      "class": "ModuleScript",
+      "bytes": 2049,
+      "fnv32": 1173906862,
+      "sha256": "020de16c73f54947697c8ae3e23b1bd413c47d27a93e54a260643a000cfd7fc4"
+    },
+    {
+      "key": "Core.NR2003Integrator",
+      "class": "ModuleScript",
+      "bytes": 4278,
+      "fnv32": 785338893,
+      "sha256": "290decd7843c042c79318cb64946e11c663952c8656e9978d7f7e72ab205a729"
+    },
+    {
+      "key": "Core.NR2003MassProperties",
+      "class": "ModuleScript",
+      "bytes": 929,
+      "fnv32": 3974467844,
+      "sha256": "86d6f69cc8cde7b1bca99fc381a0ef1cf17e8347ac8e402b36d8eded78d7aa90"
+    },
+    {
+      "key": "Core.NR2003Math",
+      "class": "ModuleScript",
+      "bytes": 2980,
+      "fnv32": 316436146,
+      "sha256": "b73af7f50073ca2e5171c86ce0586d0d59c56bc51b221881aefc84574958ec3b"
+    },
+    {
+      "key": "Core.NR2003RecoveredForces",
+      "class": "ModuleScript",
+      "bytes": 3003,
+      "fnv32": 57694261,
+      "sha256": "b3735b600feef819e83f6a61dd2ede718174b3400c06a8e5462e4431f3155b3f"
+    },
+    {
+      "key": "Core.NR2003StateLayout",
+      "class": "ModuleScript",
+      "bytes": 1384,
+      "fnv32": 1064660283,
+      "sha256": "8fb9a5e9d4cbb3e67903334338885efa73a78d1e25cf3719df1a5f7cb6ed5c7b"
+    },
+    {
+      "key": "Core.NR2003VehicleSolver",
+      "class": "ModuleScript",
+      "bytes": 3286,
+      "fnv32": 3889095178,
+      "sha256": "9b6f38ac84e53b7f428171a0e1bcdede70a025c6ef8a7818afa5794bf71bcbaf"
+    },
+    {
+      "key": "Core.NR2003VehicleState",
+      "class": "ModuleScript",
+      "bytes": 1094,
+      "fnv32": 967228338,
+      "sha256": "ec4a2dbfd0f9a7ac80c2fc7bc59eeb59c006f4ef9a0b45c21d37b118b29c73a0"
+    },
+    {
+      "key": "Core.RecoveredConstants",
+      "class": "ModuleScript",
+      "bytes": 1335,
+      "fnv32": 80512913,
+      "sha256": "6be6b94a8119afe3c77687b6003d145ff7186f5dc1f11a45300c64f6038efec7"
+    },
+    {
+      "key": "Core.RecoveredData",
+      "class": "ModuleScript",
+      "bytes": 49108,
+      "fnv32": 2876351960,
+      "sha256": "81fa0a5512181de3579c60a88c1edc881112adec268e2e5d50ae24a25d6b331a"
+    },
+    {
+      "key": "Core.RotationMatrix",
+      "class": "ModuleScript",
+      "bytes": 759,
+      "fnv32": 3736613923,
+      "sha256": "417e8d4e0896eeeb5f92d2d1141cd72437c937086b3aa0376e56c50937f711fe"
+    },
+    {
+      "key": "Core.Steering",
+      "class": "ModuleScript",
+      "bytes": 929,
+      "fnv32": 2406214576,
+      "sha256": "e7764c49ad58d34f5c291c51fc47f9240d46c60d8df7002294d610d1a833356a"
+    },
+    {
+      "key": "Core.Surface",
+      "class": "ModuleScript",
+      "bytes": 781,
+      "fnv32": 2709127315,
+      "sha256": "bac8a5f2dd3bcdeb6f6e301b878532b374898c3451c6a9225c3b862e2f7cff0d"
+    },
+    {
+      "key": "Core.Suspension",
+      "class": "ModuleScript",
+      "bytes": 2464,
+      "fnv32": 2341154040,
+      "sha256": "ab44073567df49d727b49b38a166f004d622d580c887a5b39c6f8982ab2118c6"
+    },
+    {
+      "key": "Core.TestTune",
+      "class": "ModuleScript",
+      "bytes": 3619,
+      "fnv32": 2932223513,
+      "sha256": "59d62066fe9a0ca48118c9e72572a7d2364550bc66d296b3316912eae3315420"
+    },
+    {
+      "key": "Core.TireCurves",
+      "class": "ModuleScript",
+      "bytes": 1821,
+      "fnv32": 3499797933,
+      "sha256": "cc730a3322c85c88fa434949e5cb4b2aa579b903a28a9a563662d295d9e159e2"
+    },
+    {
+      "key": "Core.TireForces",
+      "class": "ModuleScript",
+      "bytes": 5772,
+      "fnv32": 4157606795,
+      "sha256": "1ea65371d9dc8d02a64fa55cff2ba0d1eaabf02b3236522a8d400c4dcac52f25"
+    },
+    {
+      "key": "Core.TireThermal",
+      "class": "ModuleScript",
+      "bytes": 3709,
+      "fnv32": 527101517,
+      "sha256": "ab567717a96104bfbf45aa31d53ae491c79e43f1c75253d735d58afc66ce8dcd"
+    },
+    {
+      "key": "Core.TrackProfile",
+      "class": "ModuleScript",
+      "bytes": 1548,
+      "fnv32": 2248762890,
+      "sha256": "663413f51e43bfbe5e195948f29ca1443101443cc203aa3d75c3594ae92037c5"
+    },
+    {
+      "key": "Core.Tune_Test_Recovered",
+      "class": "ModuleScript",
+      "bytes": 1700,
+      "fnv32": 4076023630,
+      "sha256": "72646b9953e2dfdcb29ad68f81ac8a7a57777d2837555c22feb7f5e1894d67cc"
+    },
+    {
+      "key": "Core.VehicleDynamics",
+      "class": "ModuleScript",
+      "bytes": 6213,
+      "fnv32": 3198451282,
+      "sha256": "53ff9e18667af38df21e489087e7e6b9e27f28ca5e81fbbc58580289f45dc94b"
+    },
+    {
+      "key": "Core.CupTune",
+      "class": "ModuleScript",
+      "bytes": 5569,
+      "fnv32": 669310955,
+      "sha256": "c1db7fbad097e1684f1d2b8d7c343b82e5869073d3edc53a51bfa227bbb0de7b"
+    },
+    {
+      "key": "Core.NR2003CupVehicle",
+      "class": "ModuleScript",
+      "bytes": 10193,
+      "fnv32": 1159174214,
+      "sha256": "12b3a2981297339137d27eb6fdc7cfedb5fcfd1ab9d14678df39d1bdbbae0f5a"
+    },
+    {
+      "key": "Core.NR2003Cup.NR2003CupJITG4",
+      "class": "ModuleScript",
+      "bytes": 126210,
+      "fnv32": 2746445935,
+      "sha256": "7fe86ccb4a18e3f31d47f3097718a3b9652976c3cbe48159355a7879894ac96f"
+    },
+    {
+      "key": "Core.NR2003Cup.NR2003CupImage1",
+      "class": "ModuleScript",
+      "bytes": 132187,
+      "fnv32": 884386363,
+      "sha256": "34d956905f32a066f9cc1616048058409990e1253a2987d63d8bf775484c3ff2"
+    },
+    {
+      "key": "Core.NR2003Cup.NR2003CupImage2",
+      "class": "ModuleScript",
+      "bytes": 86421,
+      "fnv32": 2967396158,
+      "sha256": "6c394c5798c9604cf043db02c245061d9d9317999b3a0fc6f302318ee01a9490"
+    },
+    {
+      "key": "Core.NR2003Cup.NR2003CupJIT1",
+      "class": "ModuleScript",
+      "bytes": 90223,
+      "fnv32": 3789447392,
+      "sha256": "2379d119dbb2705de6feeb2e68bc595baf9f93459a57224bdc97eb1cd9035172"
+    },
+    {
+      "key": "Core.NR2003Cup.NR2003CupJIT2",
+      "class": "ModuleScript",
+      "bytes": 140093,
+      "fnv32": 1688988121,
+      "sha256": "339b2ef1919e1bc09d48fc3a49a672a79993821d383c7fe8225a7125cf65bfef"
+    },
+    {
+      "key": "Core.NR2003Cup.NR2003CupJIT3",
+      "class": "ModuleScript",
+      "bytes": 74706,
+      "fnv32": 1291548965,
+      "sha256": "5e669e94e3916d30d3caff4d38f536a5a42695f709f8c873a375118d4411c02c"
+    },
+    {
+      "key": "Core.NR2003Cup.NR2003CupJIT4",
+      "class": "ModuleScript",
+      "bytes": 125674,
+      "fnv32": 2368369749,
+      "sha256": "84ce0870301b49f08015366c62d2547bec60e749f999b53d90cd99a051f8f8cd"
+    },
+    {
+      "key": "Core.NR2003Cup.NR2003CupAero",
+      "class": "ModuleScript",
+      "bytes": 24048,
+      "fnv32": 2996434456,
+      "sha256": "1e0e8b51817a0bdb28e9e1f4cf4b5ac4e193fd3c3a2acb1b0bed38e44c34dcd5"
+    },
+    {
+      "key": "Core.NR2003Cup.NR2003CupGarage",
+      "class": "ModuleScript",
+      "bytes": 8256,
+      "fnv32": 1024463328,
+      "sha256": "1c999b8163e8d1d65ec88d458d75a1861d54c8b9d5103cb45964afe9f73b697b"
+    },
+    {
+      "key": "Core.NR2003Cup.NR2003CupCore",
+      "class": "ModuleScript",
+      "bytes": 172961,
+      "fnv32": 3970145072,
+      "sha256": "c647a8bf739ea2b9e4024c8d2f4cb0c16e2d12b4e44c9c8aea6faaaf441e618e"
+    },
+    {
+      "key": "Core.NR2003Cup.NR2003CupSetupData",
+      "class": "ModuleScript",
+      "bytes": 46531,
+      "fnv32": 1948031370,
+      "sha256": "7ce9c697975881d7c112d549f389669ae0a0c76b5570c5746acc8b38c30075a2"
+    },
+    {
+      "key": "Core.NR2003Cup.NR2003CupSetup",
+      "class": "ModuleScript",
+      "bytes": 15595,
+      "fnv32": 1793818626,
+      "sha256": "f64c333bde054302b6adf6e42a06ca94b8bb6049d27140058d11666d76886970"
+    },
+    {
+      "key": "Core.NR2003Cup.NR2003CupBuild",
+      "class": "ModuleScript",
+      "bytes": 10224,
+      "fnv32": 3128599581,
+      "sha256": "4818c364eb514d569b57cc260df2334f6df74bf780ef30eb8060263af492a84f"
+    },
+    {
+      "key": "Core.NR2003Cup.NR2003CupBuildCode1",
+      "class": "ModuleScript",
+      "bytes": 161018,
+      "fnv32": 763173257,
+      "sha256": "6a1af29b82f5588865e12c989c3d0bf71ddce9da1f8e0f1fb6acd7c09e867fda"
+    },
+    {
+      "key": "Core.NR2003Cup.NR2003CupBuildCode2",
+      "class": "ModuleScript",
+      "bytes": 164236,
+      "fnv32": 991861595,
+      "sha256": "d0950b2801ee93f4c1c5f5aa01ae24b917f16a2a1af72c6a6e7ef52204f3f3ab"
+    },
+    {
+      "key": "Core.NR2003Cup.NR2003CupBuildCode3",
+      "class": "ModuleScript",
+      "bytes": 164713,
+      "fnv32": 1230036091,
+      "sha256": "db0b4336e2fb655962cba2163f0f5fa414d9241cca26167c6e88cd0612fd62c0"
+    },
+    {
+      "key": "Core.NR2003Cup.NR2003CupBuildCode4",
+      "class": "ModuleScript",
+      "bytes": 164303,
+      "fnv32": 3173788398,
+      "sha256": "8f1f8b3feb43840233f7a11b7a1bb32d329516ffc03715d584d94849dc521f58"
+    },
+    {
+      "key": "Core.NR2003Cup.NR2003CupBuildCode5",
+      "class": "ModuleScript",
+      "bytes": 167501,
+      "fnv32": 1759276609,
+      "sha256": "1a5f7d296678f4dcdfbbc403ee7495aca9e3e3e928ee179e97e75411810d309f"
+    },
+    {
+      "key": "Core.NR2003Cup.NR2003CupBuildCode6",
+      "class": "ModuleScript",
+      "bytes": 152476,
+      "fnv32": 2112296471,
+      "sha256": "30655be1cceecd084c566d37d7f193de4174d3b217940be037bc68da4936e069"
+    },
+    {
+      "key": "Core.NR2003Cup.NR2003CupBuildData1",
+      "class": "ModuleScript",
+      "bytes": 169926,
+      "fnv32": 218954011,
+      "sha256": "43f65caf794d031f6041d59d32d32ad4863d7d2e2669b00e402db9aae1db1eb0"
+    },
+    {
+      "key": "Core.NR2003Cup.NR2003CupBuildData2",
+      "class": "ModuleScript",
+      "bytes": 19080,
+      "fnv32": 16550323,
+      "sha256": "87a4401b9ebaee1a2176752298fa4a004acf81e9198531d124a6afcfc1ec1275"
+    },
+    {
+      "key": "Core.NR2003Cup.NR2003CupJITG1",
+      "class": "ModuleScript",
+      "bytes": 90759,
+      "fnv32": 223982303,
+      "sha256": "1e1d9832adec3698302e9250969c5c7d11ab9754da5867475b68e157a1117890"
+    },
+    {
+      "key": "Core.NR2003Cup.NR2003CupJITG2",
+      "class": "ModuleScript",
+      "bytes": 142333,
+      "fnv32": 735763358,
+      "sha256": "28d5ca904effcb3341de0b92bdc8c8a662d9066f5819935efee253b53708312e"
+    },
+    {
+      "key": "Core.NR2003Cup.NR2003CupJITG3",
+      "class": "ModuleScript",
+      "bytes": 74909,
+      "fnv32": 1321354163,
+      "sha256": "6ba894262eae21b9dfbad1848d874cd1ca84be04adf2a448bc70b7f1adf0ab19"
+    },
+    {
+      "key": "Core.NR2003Cup.NR2003CupFrameData1",
+      "class": "ModuleScript",
+      "bytes": 44797,
+      "fnv32": 1627984694,
+      "sha256": "30e7f63074f5083d8ea7a8373a1a2eaf0f4afe434326cd3b8d85c46132d816f5"
+    },
+    {
+      "key": "Core.NR2003Cup.NR2003CupFrame",
+      "class": "ModuleScript",
+      "bytes": 19469,
+      "fnv32": 3109773798,
+      "sha256": "abc2c08a0b666dd954f507f7766e7b857980e53f75cbd20954c0f70932eb1624"
+    },
+    {
+      "key": "Core.NR2003Cup.NR2003CupFrameCode1",
+      "class": "ModuleScript",
+      "bytes": 163718,
+      "fnv32": 3797726782,
+      "sha256": "d7f7dbc885f7be31632cf0fd7b17dc213fd0878bb8bcbc1df9daccfd8641f90e"
+    },
+    {
+      "key": "Core.NR2003Cup.NR2003CupFrameCode2",
+      "class": "ModuleScript",
+      "bytes": 167197,
+      "fnv32": 2470533519,
+      "sha256": "7648d684de7a14d90731f878a96c36f80ad7859ad8bf395cefedef6e99ee7d97"
+    },
+    {
+      "key": "Core.NR2003Cup.NR2003CupFrameCode3",
+      "class": "ModuleScript",
+      "bytes": 168218,
+      "fnv32": 3220776104,
+      "sha256": "674602f573671a6ff1007cf5badbb13f6dd958f49d7fe51231545ba4d3370d61"
+    },
+    {
+      "key": "Core.NR2003Cup.NR2003CupFrameCode4",
+      "class": "ModuleScript",
+      "bytes": 134948,
+      "fnv32": 3973805068,
+      "sha256": "165354209b4e309023213ef5fececc5bd3371f1206eb0f7c59cfd13acc7c2822"
+    },
+    {
+      "key": "Core.NR2003Cup.NR2003CupDriver",
+      "class": "ModuleScript",
+      "bytes": 25607,
+      "fnv32": 4100876898,
+      "sha256": "39f72c1a97aca498cae179518f900d38b6b5340ee78b63a8a3dd30aadcf57d00"
+    },
+    {
+      "key": "Core.NR2003Cup.NR2003CupSteering",
+      "class": "ModuleScript",
+      "bytes": 21927,
+      "fnv32": 1014127710,
+      "sha256": "06d20a8b85ef231835f1b6b54334e3e58939cd7c2984f5a77d0019105d658be3"
+    },
+    {
+      "key": "Core.NR2003Cup.NR2003CupFFB",
+      "class": "ModuleScript",
+      "bytes": 30938,
+      "fnv32": 3259516721,
+      "sha256": "9d3d41dc4beaeb9f22ca63dec53e8aba4e8d7129364a69eec22f6456ec253ac0"
+    },
+    {
+      "key": "Roblox.CarBuilder",
+      "class": "ModuleScript",
+      "bytes": 8653,
+      "fnv32": 933121003,
+      "sha256": "c4575dce620764b7d4c249e765fe776d05071d0fe765b7eb2c7980bddd4b149a"
+    },
+    {
+      "key": "Roblox.Cockpit",
+      "class": "ModuleScript",
+      "bytes": 4459,
+      "fnv32": 1431653166,
+      "sha256": "15410301f3be3487b888f6cea56f76899513117dcabb42e1d0f4b11bc37c45d9"
+    },
+    {
+      "key": "Roblox.CoreChassisAdapter",
+      "class": "ModuleScript",
+      "bytes": 8411,
+      "fnv32": 477308924,
+      "sha256": "58f715e294c96e4c2825e3e6a8c5424d8e43d86cbc2342592cc8dfa58d29c83e"
+    },
+    {
+      "key": "Roblox.CoreChassisBridge",
+      "class": "ModuleScript",
+      "bytes": 4213,
+      "fnv32": 1544977986,
+      "sha256": "89909f1fc3d490886d1646f5568569cd7e85eb98c6dafa280d30439423fa881a"
+    },
+    {
+      "key": "Roblox.Diagnostics",
+      "class": "ModuleScript",
+      "bytes": 4083,
+      "fnv32": 3058780987,
+      "sha256": "df610ca186a43b732752891b093136c48c2d30399d066b02e06c7911b88ccc94"
+    },
+    {
+      "key": "Roblox.DriverConfig",
+      "class": "ModuleScript",
+      "bytes": 582,
+      "fnv32": 287548406,
+      "sha256": "2935943fc913103c7f6cb3396e55cdc721d1801587f6ad178170ad6f2d3374bb"
+    },
+    {
+      "key": "Roblox.LegacyRobloxAdapter",
+      "class": "ModuleScript",
+      "bytes": 112,
+      "fnv32": 4023764059,
+      "sha256": "09ffc2533c28da53439bac6fb60e9921eb51584bda697fb6050ce107c894093d"
+    },
+    {
+      "key": "Roblox.MeshAdapter",
+      "class": "ModuleScript",
+      "bytes": 2389,
+      "fnv32": 3416318141,
+      "sha256": "7c88b6f38208ea1f96ea0dd54be88ab1a8a71a737b361c57f3a7ac5b0c204bf7"
+    },
+    {
+      "key": "Roblox.RaycastContacts",
+      "class": "ModuleScript",
+      "bytes": 2828,
+      "fnv32": 789809177,
+      "sha256": "9da000f128ded9e849dd2b7f0a3cdb333d7c17da3876423e0f3eeee83e80f25d"
+    },
+    {
+      "key": "Roblox.RenderConfig",
+      "class": "ModuleScript",
+      "bytes": 639,
+      "fnv32": 3205394330,
+      "sha256": "4cefd32418a03489ce29c2e629680b0c6a29601c1e4362c34b73dd71a3d26aae"
+    },
+    {
+      "key": "Roblox.RenderPresentation",
+      "class": "ModuleScript",
+      "bytes": 2986,
+      "fnv32": 27795961,
+      "sha256": "53300bf890050635ae1d89c040ad4b0f528f18453cea4f729e1ad383a732550d"
+    },
+    {
+      "key": "Roblox.RenderSnapshot",
+      "class": "ModuleScript",
+      "bytes": 6198,
+      "fnv32": 607194288,
+      "sha256": "296a80cf652a2ec565ab889cc6ed119f7c57b5555f16518e488740a64988923a"
+    },
+    {
+      "key": "Roblox.SeatAccess",
+      "class": "ModuleScript",
+      "bytes": 6877,
+      "fnv32": 684107014,
+      "sha256": "129f059a971dc47a37b62a40153bec3e1242e5650c9bef76c960faf1fb214ad8"
+    },
+    {
+      "key": "Roblox.SnapshotBuffer",
+      "class": "ModuleScript",
+      "bytes": 8761,
+      "fnv32": 3577340719,
+      "sha256": "cebf94fe03547b5f42b4b6dfa9a0ca80c1ba6977c5927408f45e39c5d61d97d6"
+    },
+    {
+      "key": "Roblox.Units",
+      "class": "ModuleScript",
+      "bytes": 433,
+      "fnv32": 4267454403,
+      "sha256": "34f7ba97b226c0ed4586d89a8dceb909351511dfa3d1eca41a5431001c3194fd"
+    },
+    {
+      "key": "Roblox.VehicleController",
+      "class": "ModuleScript",
+      "bytes": 5506,
+      "fnv32": 3579660788,
+      "sha256": "2b3866d5b1be0146bd88c96672e5c6437d014cd430d37a10ddaaa6b7d6199de2"
+    },
+    {
+      "key": "Roblox.VisualRig",
+      "class": "ModuleScript",
+      "bytes": 2051,
+      "fnv32": 1575044299,
+      "sha256": "0e8a92b8cd6db966c8ed4b8fbb9f19d84e116fdd9ebe055a422555a8450043fb"
+    },
+    {
+      "key": "Roblox.ModeConfig",
+      "class": "ModuleScript",
+      "bytes": 156,
+      "fnv32": 1433281705,
+      "sha256": "440bd2ca07f902ad5731427164ac15e2a27eab5f9389a9df6dede93ab71af8a2"
+    },
+    {
+      "key": "Roblox.CupChassisAdapter",
+      "class": "ModuleScript",
+      "bytes": 37708,
+      "fnv32": 2918153274,
+      "sha256": "67ea7f590d55f99124b00ea1c83880f7fc89d62c9d4915a1a8f35dcbcd23300f"
+    },
+    {
+      "key": "Roblox.Stage67SelfTest",
+      "class": "ModuleScript",
+      "bytes": 60520,
+      "fnv32": 2889733461,
+      "sha256": "933ea6c7763f961373ed72feed7775c0e4c844e6ae9d47faf6f187f91be3f84e"
+    },
+    {
+      "key": "Roblox.Stage8SelfTest",
+      "class": "ModuleScript",
+      "bytes": 188303,
+      "fnv32": 1091763942,
+      "sha256": "b17ceae11c6d1c546e7d0f8e28797417cc702c411bee82dd5b5956f2c27a5125"
+    },
+    {
+      "key": "Roblox.Stage9SelfTest",
+      "class": "ModuleScript",
+      "bytes": 186297,
+      "fnv32": 3003201880,
+      "sha256": "580b13b282a333d5a62d0499ebff6572351bb724533b17200e6329c68c534045"
+    },
+    {
+      "key": "Roblox.Stage10SelfTest",
+      "class": "ModuleScript",
+      "bytes": 198582,
+      "fnv32": 1233186362,
+      "sha256": "4cc763e0253173869e7046a40f0a8dfa7686f28c0285716c778c3683ca49ed2c"
+    },
+    {
+      "key": "Roblox.Stage11SelfTest",
+      "class": "ModuleScript",
+      "bytes": 172486,
+      "fnv32": 1527985883,
+      "sha256": "2d968e375d4d68464e72a0a4167d69e2cb77dc331c507b4574604edc04e629c7"
+    },
+    {
+      "key": "Roblox.Stage12SelfTest",
+      "class": "ModuleScript",
+      "bytes": 193065,
+      "fnv32": 3846319133,
+      "sha256": "87ec0a4f62aae2a78f80d827b5184f49074c28b6ecb0dc66ba82abd6060380c8"
+    },
+    {
+      "key": "Roblox.Stage13SelfTest",
+      "class": "ModuleScript",
+      "bytes": 160437,
+      "fnv32": 2806672334,
+      "sha256": "cc8c396fd14b32dbd056b99ee94bbb656e65ba98d937673f298ae79b4c344290"
+    },
+    {
+      "key": "CarModel.NR2003Scale",
+      "class": "ModuleScript",
+      "bytes": 3914,
+      "fnv32": 3623640481,
+      "sha256": "b5338308f59488b319f0bbd11ffe0a22383844be435150f3133f6778a7605dfd"
+    },
+    {
+      "key": "CarModel.NR2003Gauges",
+      "class": "ModuleScript",
+      "bytes": 3328,
+      "fnv32": 3768891696,
+      "sha256": "a95d802e1467d4199bfabf300f3824c8449a912ab3d1ff2806d13b682d07a148"
+    },
+    {
+      "key": "CarModel.NR2003DrawState",
+      "class": "ModuleScript",
+      "bytes": 9267,
+      "fnv32": 66146001,
+      "sha256": "cea61b88a90099bf472d9092710f9355d981691b70ba91442261b9ceb8671dbd"
+    },
+    {
+      "key": "CarModel.NR2003CameraSystem",
+      "class": "ModuleScript",
+      "bytes": 16269,
+      "fnv32": 3655116410,
+      "sha256": "b97e04cea89602320cc38dc8a15406f94d283a3d2b1dd7d54fcac38103a61863"
+    },
+    {
+      "key": "CarModel.NR2003CarModelRig",
+      "class": "ModuleScript",
+      "bytes": 12903,
+      "fnv32": 1557587956,
+      "sha256": "6d8694c868160b974dcb0d433e263667d3c2b46457b933bd27aef0f9ec276813"
+    },
+    {
+      "key": "CarModel.NR2003CarModelClient",
+      "class": "ModuleScript",
+      "bytes": 13750,
+      "fnv32": 1621377553,
+      "sha256": "fe8eb0bbc486006699633d6ab3728add422a026ecf7763a9f9704c394fe08798"
+    },
+    {
+      "key": "CarModel.NR2003CarModelServer",
+      "class": "ModuleScript",
+      "bytes": 921,
+      "fnv32": 1398238869,
+      "sha256": "f2fe262304db1b200155a94edf46fdad2ffaa278d2b5d4fae07addaa45a670e6"
+    },
+    {
+      "key": "CarModel.NR2003CarModelGolden",
+      "class": "ModuleScript",
+      "bytes": 133934,
+      "fnv32": 2019438356,
+      "sha256": "9effd103755b86d0d64423c661fb5d9ca3f506352c48a0c3d6bb7520b76fc805"
+    },
+    {
+      "key": "CarModel.NR2003CarModelSelfTest",
+      "class": "ModuleScript",
+      "bytes": 9035,
+      "fnv32": 4146343796,
+      "sha256": "d13fb9cf3b42eced4da073f5df1e061c5501745812e07ddf546ae87bcd172ee7"
+    },
+    {
+      "key": "CarModel.NR2003Mirror",
+      "class": "ModuleScript",
+      "bytes": 6061,
+      "fnv32": 164555812,
+      "sha256": "45e8ea1308c6330d42a2bd293e120460f41bb9f07e2bac34aa9f9c5ed0abbb89"
+    },
+    {
+      "key": "CarModel.Data.NR2003CarModelData_make_a",
+      "class": "ModuleScript",
+      "bytes": 264204,
+      "fnv32": 1699503233,
+      "sha256": "d19399e5dffae1d5995132259a694f16990da05272ea1beeeccbfe5ae247042c"
+    },
+    {
+      "key": "Server.NR2003Server",
+      "class": "Script",
+      "bytes": 5326,
+      "fnv32": 3697834349,
+      "sha256": "3dcd460ec89d37af6ccd6700555636b6272b384b6e2ad90da28c7983a02e6a82"
+    }
+  ]
+}

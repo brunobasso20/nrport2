@@ -25,6 +25,52 @@ def cells_lua(d, region=None):
     return '{n=%d, addr="%s", val="%s"}' % (len(keys), b64u32(keys), b64u32([d[a] for a in keys]))
 
 
+def wheel_checks(fx, snap):
+    """Read the ORIGINAL per-tire outputs and callback rolling-resistance cells from written-memory checkpoints."""
+    def raw(a, cells):
+        aligned = a & ~3
+        def cell(addr):
+            if addr in cells:
+                return cells[addr]
+            for lo, data in snap.items():
+                if lo <= addr < lo + len(data):
+                    return int.from_bytes(data[addr-lo:addr-lo+4], 'little')
+            raise KeyError(hex(addr))
+        lo = cell(aligned)
+        shift = (a - aligned) * 8
+        return lo if shift == 0 else ((lo >> shift) | (cell(aligned+4) << (32-shift))) & 0xffffffff
+    lines = []
+    for frame, cells in sorted(fx['checks'].items()):
+        wheels = []
+        for w in range(4):
+            tire = 0xbf3a20 + w * 0xa39
+            rr = raw(0xc081f4 + 4*w, cells)
+            values = [raw(tire+o, cells) for o in (0x2c0, 0x2d8, 0x2dc, 0x2e0, 0x2f0, 0x2ec, 0x2cc)]
+            values.append(raw(rr, cells))
+            wheels.append('{%s}' % ','.join(str(v) for v in values))
+        lines.append('[%d]={%s}' % (frame, ','.join(wheels)))
+    return ',\n'.join(lines)
+
+
+def write_surface_fixture(out, snap):
+    tables = [('loadedGrip', 0x74fb30, 20), ('contactStiffness', 0x6f6148, 20),
+              ('contactDamping', 0x6f6198, 20), ('rollingConstant', 0x6f63c8, 20),
+              ('rollingSpeedSquared', 0x6f6418, 20), ('surfaceHeat', 0x6f65c0, 20),
+              ('roughnessHeights', 0x6f41d8, 256), ('roughnessQuantization', 0x6ea514, 1),
+              ('roughnessScale', 0x74c36c, 1)]
+    rows = []
+    for name, address, count in tables:
+        for lo, data in snap.items():
+            if lo <= address and address + count*4 <= lo + len(data):
+                values = struct.unpack_from('<%dI' % count, data, address-lo)
+                rows.append('{name="%s",address=%d,bits={%s}}' % (name, address, ','.join(str(x) for x in values)))
+                break
+        else:
+            raise KeyError(hex(address))
+    text = '-- Generated from the ORIGINAL executed track-load snapshot; float32 bit patterns.\nreturn {\n' + ',\n'.join(rows) + '\n}\n'
+    (out / 'surface_tables.lua').write_text(text)
+
+
 def lua_val(v):
     if isinstance(v, bool):
         return 'true' if v else 'false'
@@ -36,6 +82,7 @@ def main(out_dir, pkls):
     out.mkdir(parents=True, exist_ok=True)
     for p in pkls:
         res = pickle.load(open(p, 'rb'))
+        write_surface_fixture(out, res['snap'])
         for name, sc in res['scenarios'].items():
             fx = sc['fixture']
             st = fx['states']
@@ -51,6 +98,8 @@ def main(out_dir, pkls):
                    'controls={', ',\n'.join(ctl), '},',
                    'ticks={%s},' % ','.join(str(k) for k in ticks),
                    'states="%s",' % b64u32(flat),
+                   '-- wheelChecks fields: surface(u32), Fx/Fy/Fz(N), vx/vslip/tread(m/s), rollingTorque(Nm), raw f32 bits',
+                   'wheelChecks={%s},' % wheel_checks(fx, res['snap']),
                    'enter=%s,' % cells_lua(fx['enter']),
                    'checks={', ',\n'.join(checks), '}}']
             s = '\n'.join(src) + '\n'

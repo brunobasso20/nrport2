@@ -1,0 +1,33 @@
+PASS  load core + track world (NR2003CupTrack)  8.45 s, memory 11956224 bytes
+PASS  V.loadTrack(): track image into the reset image  503460 bytes, 0.96 s
+PASS  track sections / length (ORIGINAL 00510b70 build)  123 sections, 3942.876 m, 43 pit stalls
+PASS  stall0: world active after the session start (ORIGINAL 005512f0 placement, 00563620)
+FAIL  stall0: cells after the session start + placement (bit-exact)  64819 cells, 226 differ  e.g. 00b3308c got 00000000 want 00000001 (0 / 1.4013e-45); 00b33098 got 00000000 want 3f800000 (0 / 1); 00bcf760 got 3c45a26e want 3c45a26c (0.0120627 / 0.0120627); 00bcf788 got 3d04519f want 3d0451a0 (0.0323044 / 0.0323044)
+FAIL  stall0: 45-state vector, 38 ticks compared (bit-exact)  649 values differ, max |d| 0.0955927 at tick 151 state[24]; first: tick 0 state[12] got 3.37282e-06 want 3.37282e-06
+      maximum chassis position difference 6.10351562e-05 m; velocity 0.000706672668 m/s; quaternion 3.88617627e-06
+FAIL  stall0: cells written up to frame 1 (bit-exact)  66046 cells, 142 differ  e.g. 0074c9ac got ffffffff want 00000001 (-nan / 1.4013e-45); 00b3308c got 00000000 want 00000001 (0 / 1.4013e-45); 00b33098 got 00000000 want 3f800000 (0 / 1); 00bf6d70 got 371f48a6 want 371f48a4 (9.49405e-06 / 9.49405e-06)
+FAIL  stall0: cells written up to frame 2 (bit-exact)  67359 cells, 196 differ  e.g. 0074c9ac got ffffffff want 00000002 (-nan / 2.8026e-45); 00b3308c got 00000000 want 00000001 (0 / 1.4013e-45); 00b33098 got 00000000 want 3f800000 (0 / 1); 00bf588c got f39a3c35 want f39c3c35 (-2.44395e+31 / -2.47565e+31)
+FAIL  stall0: cells written up to frame 24 (bit-exact)  67371 cells, 2070 differ  e.g. 0074c9ac got ffffffff want 00000018 (-nan / 3.36312e-44); 00b3308c got 00000000 want 00000001 (0 / 1.4013e-45); 00b33098 got 00000000 want 3f800000 (0 / 1); 00b9341c got 3f6f24ca want 3f6f24d9 (0.934155 / 0.934156)
+      stall0: 1.8 s, final position -645.318 -286.809 13.919
+PASS  launch: world active after the session start (ORIGINAL 005512f0 placement, 00563620)
+FAIL  launch: cells after the session start + placement (bit-exact)  64819 cells, 295 differ  e.g. 00b3308c got 00000000 want 00000001 (0 / 1.4013e-45); 00b33098 got 00000000 want 3f800000 (0 / 1); 00bcf760 got 3c45a147 want 3c45a143 (0.0120624 / 0.0120624); 00bcf764 got 3cf0b708 want 3cf0b70f (0.0293842 / 0.0293842)
+FAIL  launch: 45-state vector, 194 ticks compared (bit-exact)  7109 values differ, max |d| 6.26084 at tick 1263 state[29]; first: tick 0 state[3] got -1.99549e-05 want -1.99548e-05
+      maximum chassis position difference 0.0147399902 m; velocity 0.0126514435 m/s; quaternion 0.000173475593
+FAIL  launch: cells written up to frame 1 (bit-exact)  66046 cells, 273 differ  e.g. 0074c9ac got ffffffff want 00000001 (-nan / 1.4013e-45); 00b3308c got 00000000 want 00000001 (0 / 1.4013e-45); 00b33098 got 00000000 want 3f800000 (0 / 1); 00bf4e54 got 3460d6bd want 3460d5bd (2.09397e-07 / 2.09394e-07)
+FAIL  launch: cells written up to frame 36 (bit-exact)  67058 cells, 2075 differ  e.g. 0074c9ac got ffffffff want 00000024 (-nan / 5.04467e-44); 00b3308c got 00000000 want 00000001 (0 / 1.4013e-45); 00b33098 got 00000000 want 3f800000 (0 / 1); 00b9341c got 3f6b8874 want 3f6b886d (0.920051 / 0.92005)
+FAIL  launch: cells written up to frame 180 (bit-exact)  67390 cells, 2296 differ  e.g. 0074c9ac got ffffffff want 000000b4 (-nan / 2.52234e-43); 00b3308c got 00000000 want 00000001 (0 / 1.4013e-45); 00b33098 got 00000000 want 3f800000 (0 / 1); 00b932c8 got 3ea2e71f want 3ea2e955 (0.31817 / 0.318186)
+      launch: 4.6 s, final position -605.957 -310.135 16.692
+PASS  wall: world active after the session start (ORIGINAL 005512f0 placement, 00563620)
+FAIL  wall: cells after the session start + placement (bit-exact)  64819 cells, 226 differ  e.g. 00b3308c got 00000000 want 00000001 (0 / 1.4013e-45); 00b33098 got 00000000 want 3f800000 (0 / 1); 00bcf760 got 3c45a26e want 3c45a26c (0.0120627 / 0.0120627); 00bcf788 got 3d04519f want 3d0451a0 (0.0323044 / 0.0323044)
+FAIL  wall: 45-state vector, 158 ticks compared (bit-exact)  5653 values differ, max |d| 8.78379 at tick 999 state[34]; first: tick 0 state[12] got 3.37282e-06 want 3.37282e-06
+      maximum chassis position difference 0.0431518555 m; velocity 0.142418265 m/s; quaternion 0.00209011789
+FAIL  wall: cells written up to frame 1 (bit-exact)  66046 cells, 142 differ  e.g. 0074c9ac got ffffffff want 00000001 (-nan / 1.4013e-45); 00b3308c got 00000000 want 00000001 (0 / 1.4013e-45); 00b33098 got 00000000 want 3f800000 (0 / 1); 00bf6d70 got 371f48a6 want 371f48a4 (9.49405e-06 / 9.49405e-06)
+FAIL  wall: cells written up to frame 72 (bit-exact)  67868 cells, 2407 differ  e.g. 0074c9ac got ffffffff want 00000048 (-nan / 1.00893e-43); 00b3308c got 00000000 want 00000001 (0 / 1.4013e-45); 00b33098 got 00000000 want 3f800000 (0 / 1); 00b9341c got 3f7bba1b want 3f7bb9ae (0.983308 / 0.983302)
+FAIL  wall: cells written up to frame 144 (bit-exact)  69022 cells, 2867 differ  e.g. 0074c9ac got ffffffff want 00000090 (-nan / 2.01787e-43); 00b3308c got 00000000 want 00000001 (0 / 1.4013e-45); 00b33098 got 00000000 want 3f800000 (0 / 1); 00b932c8 got 3d4a81f7 want 3d47aff8 (0.0494404 / 0.0487518)
+      wall: 2.3 s, final position -655.355 -283.406 13.211
+
+6 passed, 15 failed
+./watkinsglen_implementation/tests/run_track.luau:220: track tests: 15 failed
+stacktrace:
+[C] function assert
+./watkinsglen_implementation/tests/run_track.luau:220

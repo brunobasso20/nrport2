@@ -61,10 +61,19 @@ return function(V, codeParts, dataParts, extra)
 
 	-- B_tire: the pair callback 00576e00 calls the tyre contact 0055e1e0 (11 cdecl arguments, float10 result): the core's
 	-- own lifted 0055e1e0 on the core's registers (the same function the host-contact path calls)
+	local contacts = {}
+	for i = 0, 3 do contacts[i] = {fx=0, fy=0, load=0, x=0, y=0, z=0, surface=0, contacted=false, count=0} end
 	local coreCall, popF = V._callx, V._popF
 	local function tire(a)
 		coreCall(0x55e1e0, a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11])
-		return popF()
+		local result = popF()
+		local c = contacts[a[6]]
+		if c then
+			c.fx, c.fy, c.load = rf32(a[1]), rf32(a[1]+4), rf32(a[1]+8)
+			c.x, c.y, c.z = rf32(a[3]), rf32(a[3]+4), rf32(a[3]+8)
+			c.surface, c.contacted, c.count = a[11], true, c.count + 1
+		end
+		return result
 	end
 	-- B_fgAction: bgRequestFGAction(00551760) from 00551520 (placement): the foreground task rebuilds the car from the
 	-- state block (00551760 -> 005b2f20(root, bf6d40)), the ORIGINAL sequence of NR2003CupBuild (steps 7..18)
@@ -165,7 +174,10 @@ return function(V, codeParts, dataParts, extra)
 
 	-- placement on the next session start / reset: (dlong, dlat) track coordinates (m), yaw (rad) relative to the track
 	function V.setTrackStart(dlong, dlat, yaw)
-		start[1], start[2], start[3] = dlong + 0.0, dlat + 0.0, (yaw or 0) + 0.0
+		yaw = yaw or 0
+		assert(dlong == dlong and dlat == dlat and yaw == yaw and math.abs(dlong) < math.huge
+			and math.abs(dlat) < math.huge and math.abs(yaw) < math.huge, "NR2003 track: finite start coordinates required")
+		start[1], start[2], start[3] = dlong + 0.0, dlat + 0.0, yaw + 0.0
 	end
 	function V.trackStart() return start[1], start[2], start[3] end
 	V.trackStalls = STALLS
@@ -182,6 +194,10 @@ return function(V, codeParts, dataParts, extra)
 	function V.enterTrack()
 		if not loaded then return baseEnter() end
 		active = false
+		for i = 0, 3 do
+			local c = contacts[i]
+			c.fx, c.fy, c.load, c.contacted, c.count = 0, 0, 0, false, 0
+		end
 		local k = ri32(CAR + 0x5b2)
 		local carobj = BG_CAROBJ + k * CAROBJ_SIZE
 		-- session start 00566e50, world part
@@ -193,6 +209,12 @@ return function(V, codeParts, dataParts, extra)
 		-- 00550a50 (Stage 11 subset + 005512f0 through V._place), then the race-order insert (0055bfd0)
 		baseEnter()
 		callx(0x563620, nil, CAR)
+		-- Host startup boundary: publish the placed pose before broadphase sees the new collision object.
+		-- 005512f0 reinitialises its BG object with 0059fa90; leaving that record zero selects primitives near
+		-- the origin on the first frame and produces invalid contacts elsewhere around the lap. Use the same
+		-- ORIGINAL record publication / external-force reset as the ordinary tick export, in both hosts.
+		callx(0x5543f0, nil)
+		callx(0x551480, nil)
 		active = true
 	end
 	local baseReset, baseEnd = V.reset, V.endSession
@@ -221,6 +243,11 @@ return function(V, codeParts, dataParts, extra)
 		end,
 		-- contact passes 00578da0 (before the first forces pass) / 00578de0 (before the second)
 		pass = function(phase)
+			-- A wheel can leave the track; do not report the previous pass's output as a current contact.
+			for i = 0, 3 do
+				local c = contacts[i]
+				c.fx, c.fy, c.load, c.contacted, c.count = 0, 0, 0, false, 0
+			end
 			callx(phase == 1 and 0x578da0 or 0x578de0, WORLD)
 		end,
 	}
@@ -242,6 +269,76 @@ return function(V, codeParts, dataParts, extra)
 		out = out or {}
 		for k = 0, 0x57, 4 do out[k // 4 + 1] = r32(rec + k) end
 		return out
+	end
+
+	-- Read-only views of the ORIGINAL track query and contact inputs. Vehicle coordinates are metres, Z up.
+	-- 005150fa: eleven output pointers followed by dlong, dlat and the packed search hint.
+	function V.trackToWorld(dlong, dlat, out, hint)
+		assert(loaded, "NR2003 track: loadTrack first")
+		assert(dlong == dlong and dlat == dlat and math.abs(dlong) < math.huge and math.abs(dlat) < math.huge,
+			"NR2003 track: finite coordinates required")
+		local p = HOSTBLK + 0x80
+		local h = callx(0x5150fa, nil, p, p+4, p+8, p+12, p+16, p+20, p+24, p+28, p+32, p+36, p+40,
+			f2u(dlong), f2u(dlat), hint or 0)
+		out = out or {}
+		out.x, out.y, out.z, out.bumpedZ = rf32(p), rf32(p+4), rf32(p+8), rf32(p+12)
+		out.nx, out.ny, out.nz = rf32(p+16), rf32(p+20), rf32(p+24)
+		out.tx, out.ty = rf32(p+28), rf32(p+32)
+		out.surface, out.surfaceMetadata, out.hint = rf32(p+36), rf32(p+40), h
+		return out
+	end
+	local function decodeTrackRecord(rec, out)
+		out = out or {}
+		out.x, out.y, out.z = rf32(rec), rf32(rec+4), rf32(rec+8)
+		out.surfaceX, out.surfaceY, out.surfaceZ = rf32(rec+0x18), rf32(rec+0x1c), rf32(rec+0x20)
+		out.nx, out.ny, out.nz = rf32(rec+0x24), rf32(rec+0x28), rf32(rec+0x2c)
+		out.bumpedZ, out.tx, out.ty = rf32(rec+0x30), rf32(rec+0x34), rf32(rec+0x38)
+		out.dlong, out.dlat = rf32(rec+0x3c), rf32(rec+0x40)
+		out.surface, out.surfaceMetadata, out.hint = ri32(rec+0x4c), ri32(rec+0x50), r32(rec+0x54)
+		out.valid = band(out.hint, 0x8000) ~= 0
+		return out
+	end
+	function V.projectTrackWorld(x, y, z, out)
+		assert(loaded, "NR2003 track: loadTrack first")
+		assert(x == x and y == y and z == z and math.abs(x) < math.huge and math.abs(y) < math.huge
+			and math.abs(z) < math.huge, "NR2003 track: finite world coordinates required")
+		local pos, rec = HOSTBLK, HOSTBLK + 0x10
+		wf32(pos, x); wf32(pos+4, y); wf32(pos+8, z)
+		trackPoint(rec, pos)
+		out = decodeTrackRecord(rec, out)
+		out.x, out.y, out.z = out.surfaceX, out.surfaceY, out.surfaceZ
+		return out
+	end
+	function V.trackPosition(out)
+		if not active then return nil end
+		-- The collision object record is initialised on the first export, so query the current state directly.
+		local state = V.state()
+		local pos, rec = HOSTBLK, HOSTBLK + 0x10
+		wf32(pos, state[1]); wf32(pos+4, state[3]); wf32(pos+8, state[5])
+		trackPoint(rec, pos)
+		return decodeTrackRecord(rec, out)
+	end
+
+	function V.trackContactState(i, out)
+		assert(i >= 0 and i <= 3 and i % 1 == 0, "NR2003 track: wheel index 0..3 required")
+		if not active then return nil end
+		local c = contacts[i]
+		out = out or {}
+		out.fx, out.fy, out.load = c.fx, c.fy, c.load
+		out.x, out.y, out.z, out.surface = c.x, c.y, c.z, c.surface
+		out.contacted, out.grounded, out.count = c.contacted, c.contacted and c.load > 0, c.count
+		return out
+	end
+	V.trackContact = V.trackContactState
+	function V.trackContactOut(i)
+		local c = contacts[i]
+		if not active or not c then return nil end
+		return c.fx, c.fy, c.load, c.x, c.y, c.z
+	end
+	local baseContactOut = V.contactOut
+	function V.contactOut(i)
+		if active then return V.trackContactOut(i) end
+		return baseContactOut(i)
 	end
 	V._trackCtx = ctx
 end

@@ -1,0 +1,22 @@
+tests/stage67/run.luau exit 0 PASS  x86/x87 stacks balanced after ticks  FT=0 ESP=f7f000
+
+16 passed, 0 failed
+tests/stage8/run.luau exit 0 PASS  x86/x87 stacks balanced  FT=0 ESP=f7f000
+
+49 passed, 0 failed
+tests/stage9/run.luau exit 0 PASS  x86/x87 stacks balanced  FT=0 ESP=f7f000
+
+59 passed, 0 failed
+tests/stage10/run_setup.luau exit 0 PASS  00558da0 setup-file validation [down] (30 setups)  0 mismatching items
+
+Stage 10 setup conversion: 23 passed, 0 failed
+tests/stage10/run.luau exit 0 applySetup time: median 0.26 s, max 0.48 s
+
+61 passed, 0 failed
+tests/stage11/run.luau exit 0 PASS  frozen mode (Stage 6-10 comparisons only): fuel / temperatures / wear held at the post-build values
+
+66 passed, 0 failed
+tests/stage12/run.luau exit 0 PASS  determinism: identical steering runs and checkpoint/restore replay are bit-identical
+
+52 passed, 0 failed
+FAILED SUITES: []

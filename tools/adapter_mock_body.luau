@@ -124,6 +124,8 @@ local function folder(prefix)
 end
 local CoreFolder, RobloxFolder = folder("Core"), folder("Roblox")
 local package = {Core = CoreFolder, Roblox = RobloxFolder}
+local packageAttributes = {}
+function package:GetAttribute(name) return packageAttributes[name] end
 local stubs = {
 	["Roblox.VisualRig"] = {new = function() return {update = function(_, dyn, contacts) _G_lastVisual = {dyn = dyn, contacts = contacts} end} end},
 	["Roblox.SeatAccess"] = {new = function() return {step = function() end, driver = function() return "player" end, request = function() end,

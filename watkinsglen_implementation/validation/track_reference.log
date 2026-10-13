@@ -1,0 +1,69 @@
+PASS  load core + track world (NR2003CupTrack)  2.66 s, memory 11956224 bytes
+PASS  V.loadTrack(): track image into the reset image  979040 bytes, 0.31 s
+PASS  track sections / length (ORIGINAL 00510b70 build)  123 sections, 3942.876 m, 43 pit stalls
+PASS  ORIGINAL surface table fixture is present
+PASS  ORIGINAL loadedGrip table (bit-exact)  20 entries; 0 differences
+PASS  ORIGINAL contactStiffness table (bit-exact)  20 entries; 0 differences
+PASS  ORIGINAL contactDamping table (bit-exact)  20 entries; 0 differences
+PASS  ORIGINAL rollingConstant table (bit-exact)  20 entries; 0 differences
+PASS  ORIGINAL rollingSpeedSquared table (bit-exact)  20 entries; 0 differences
+PASS  ORIGINAL surfaceHeat table (bit-exact)  20 entries; 0 differences
+PASS  ORIGINAL roughnessHeights table (bit-exact)  256 entries; 0 differences
+PASS  ORIGINAL roughnessQuantization table (bit-exact)  1 entries; 0 differences
+PASS  ORIGINAL roughnessScale table (bit-exact)  1 entries; 0 differences
+PASS  stall0: world active after the session start (ORIGINAL 005512f0 placement, 00563620)
+FAIL  stall0: cells after the session start + placement (bit-exact)  64863 cells, 226 differ  e.g. 00b3308c got 00000000 want 00000001 (0 / 1.4013e-45); 00b33098 got 00000000 want 3f800000 (0 / 1); 00bcf760 got 3c45a26e want 3c45a26c (0.0120627 / 0.0120627); 00bcf788 got 3d04519f want 3d0451a0 (0.0323044 / 0.0323044)
+FAIL  stall0: 45-state vector, 38 ticks compared (bit-exact)  755 values differ, max |d| 0.0244369 at tick 143 state[24]; first: tick 0 state[3] got -0.000101156 want -0.000101156
+      maximum chassis position difference 6.10351562e-05 m; velocity 0.00055347383 m/s; quaternion 1.14813447e-05
+PASS  stall0: ORIGINAL per-wheel surface IDs at checkpoints  0 mismatches
+FAIL  stall0: ORIGINAL wheel forces / contact speeds / rolling torque (bit-exact)  28 fields differ; force 15.7805176 N; rolling torque 0.00302219391 Nm; contact speed 0.00214016438 m/s maximum differences
+FAIL  stall0: cells written up to frame 1 (bit-exact)  66892 cells, 190 differ  e.g. 00b3308c got 00000000 want 00000001 (0 / 1.4013e-45); 00b33098 got 00000000 want 3f800000 (0 / 1); 00bf5140 got a0223d0e want a0213d0e (-1.37421e-19 / -1.36574e-19); 00bf6d68 got 3aa0d413 want 3aa0d412 (0.00122702 / 0.00122702)
+FAIL  stall0: cells written up to frame 2 (bit-exact)  66905 cells, 280 differ  e.g. 00b3308c got 00000000 want 00000001 (0 / 1.4013e-45); 00b33098 got 00000000 want 3f800000 (0 / 1); 00bf441c got bb01ed17 want bb01ed1b (-0.00198252 / -0.00198252); 00bf588c got 8fff3c35 want 90023c35 (-2.51681e-29 / -2.56844e-29)
+FAIL  stall0: cells written up to frame 24 (bit-exact)  66910 cells, 2048 differ  e.g. 00b3308c got 00000000 want 00000001 (0 / 1.4013e-45); 00b33098 got 00000000 want 3f800000 (0 / 1); 00b932c8 got 3f6f2503 want 3f6f24f5 (0.934159 / 0.934158); 00b932cc got c197fc51 want c197fc64 (-18.9982 / -18.9982)
+      stall0: 0.5 s, final position -645.318 -286.809 13.919
+PASS  launch: world active after the session start (ORIGINAL 005512f0 placement, 00563620)
+FAIL  launch: cells after the session start + placement (bit-exact)  64863 cells, 295 differ  e.g. 00b3308c got 00000000 want 00000001 (0 / 1.4013e-45); 00b33098 got 00000000 want 3f800000 (0 / 1); 00bcf760 got 3c45a147 want 3c45a143 (0.0120624 / 0.0120624); 00bcf764 got 3cf0b708 want 3cf0b70f (0.0293842 / 0.0293842)
+FAIL  launch: 45-state vector, 194 ticks compared (bit-exact)  7109 values differ, max |d| 6.26084 at tick 1263 state[29]; first: tick 0 state[3] got -1.99549e-05 want -1.99548e-05
+      maximum chassis position difference 0.0147399902 m; velocity 0.0126514435 m/s; quaternion 0.000173475593
+PASS  launch: ORIGINAL per-wheel surface IDs at checkpoints  0 mismatches
+FAIL  launch: ORIGINAL wheel forces / contact speeds / rolling torque (bit-exact)  57 fields differ; force 370.709961 N; rolling torque 0.0670511723 Nm; contact speed 0.538480163 m/s maximum differences
+FAIL  launch: cells written up to frame 1 (bit-exact)  66046 cells, 272 differ  e.g. 00b3308c got 00000000 want 00000001 (0 / 1.4013e-45); 00b33098 got 00000000 want 3f800000 (0 / 1); 00bf4e54 got 3460d6bd want 3460d5bd (2.09397e-07 / 2.09394e-07); 00bf5140 got b8213d13 want b8223d13 (-3.84423e-05 / -3.86807e-05)
+FAIL  launch: cells written up to frame 36 (bit-exact)  66599 cells, 2073 differ  e.g. 00b3308c got 00000000 want 00000001 (0 / 1.4013e-45); 00b33098 got 00000000 want 3f800000 (0 / 1); 00b932c8 got 3f6b8874 want 3f6b886d (0.920051 / 0.92005); 00b932cc got 3ecfc5d4 want 3ecfb491 (0.405806 / 0.405674)
+FAIL  launch: cells written up to frame 180 (bit-exact)  67385 cells, 2295 differ  e.g. 00b3308c got 00000000 want 00000001 (0 / 1.4013e-45); 00b33098 got 00000000 want 3f800000 (0 / 1); 00b932c8 got 3ca127a5 want 3ca13513 (0.0196722 / 0.0196786); 00b932cc got 3f22eb57 want 3f24f97c (0.636404 / 0.644432)
+      launch: 1.5 s, final position -605.957 -310.135 16.692
+PASS  wall: world active after the session start (ORIGINAL 005512f0 placement, 00563620)
+FAIL  wall: cells after the session start + placement (bit-exact)  64863 cells, 226 differ  e.g. 00b3308c got 00000000 want 00000001 (0 / 1.4013e-45); 00b33098 got 00000000 want 3f800000 (0 / 1); 00bcf760 got 3c45a26e want 3c45a26c (0.0120627 / 0.0120627); 00bcf788 got 3d04519f want 3d0451a0 (0.0323044 / 0.0323044)
+FAIL  wall: 45-state vector, 158 ticks compared (bit-exact)  5625 values differ, max |d| 6.26999 at tick 575 state[33]; first: tick 0 state[3] got -0.000101156 want -0.000101156
+      maximum chassis position difference 0.0310668945 m; velocity 0.101448417 m/s; quaternion 0.00159857562
+PASS  wall: ORIGINAL per-wheel surface IDs at checkpoints  0 mismatches
+FAIL  wall: ORIGINAL wheel forces / contact speeds / rolling torque (bit-exact)  51 fields differ; force 111.486328 N; rolling torque 0.222793579 Nm; contact speed 0.0676348209 m/s maximum differences
+FAIL  wall: cells written up to frame 1 (bit-exact)  66892 cells, 190 differ  e.g. 00b3308c got 00000000 want 00000001 (0 / 1.4013e-45); 00b33098 got 00000000 want 3f800000 (0 / 1); 00bf5140 got a0223d0e want a0213d0e (-1.37421e-19 / -1.36574e-19); 00bf6d68 got 3aa0d413 want 3aa0d412 (0.00122702 / 0.00122702)
+FAIL  wall: cells written up to frame 72 (bit-exact)  67627 cells, 2426 differ  e.g. 00b3308c got 00000000 want 00000001 (0 / 1.4013e-45); 00b33098 got 00000000 want 3f800000 (0 / 1); 00b932c8 got 3f7bba72 want 3f7bbbe0 (0.983314 / 0.983335); 00b932cc got c19fa967 want c19faebb (-19.9577 / -19.9603)
+FAIL  wall: cells written up to frame 144 (bit-exact)  69002 cells, 2856 differ  e.g. 00b3308c got 00000000 want 00000001 (0 / 1.4013e-45); 00b33098 got 00000000 want 3f800000 (0 / 1); 00b932c8 got 3f82af0c want 3f82afcb (1.02097 / 1.02099); 00b932cc got c1aba6ac want c1abaf40 (-21.4564 / -21.4606)
+      wall: 1.5 s, final position -655.309 -283.417 13.214
+PASS  grass: world active after the session start (ORIGINAL 005512f0 placement, 00563620)
+FAIL  grass: cells after the session start + placement (bit-exact)  64863 cells, 246 differ  e.g. 00b3308c got 00000000 want 00000001 (0 / 1.4013e-45); 00b33098 got 00000000 want 3f800000 (0 / 1); 00bcf764 got 3cf0b71a want 3cf0b71d (0.0293842 / 0.0293842); 00bf3c88 got bd48947f want bd489476 (-0.0489697 / -0.0489697)
+FAIL  grass: 45-state vector, 50 ticks compared (bit-exact)  1430 values differ, max |d| 0.0613656 at tick 287 state[38]; first: tick 0 state[10] got 0.00020917 want 0.00020917
+      maximum chassis position difference 9.15527344e-05 m; velocity 0.00116921775 m/s; quaternion 2.85180286e-05
+PASS  grass: ORIGINAL per-wheel surface IDs at checkpoints  0 mismatches
+FAIL  grass: ORIGINAL wheel forces / contact speeds / rolling torque (bit-exact)  34 fields differ; force 7.97008419 N; rolling torque 0.100875854 Nm; contact speed 0.00529953837 m/s maximum differences
+FAIL  grass: cells written up to frame 1 (bit-exact)  66851 cells, 312 differ  e.g. 00b3308c got 00000000 want 00000001 (0 / 1.4013e-45); 00b33098 got 00000000 want 3f800000 (0 / 1); 00bcf770 got 3d7707ed want 3d7707f3 (0.0603103 / 0.0603103); 00bcf778 got 3d7707ed want 3d7707f3 (0.0603103 / 0.0603103)
+FAIL  grass: cells written up to frame 2 (bit-exact)  66866 cells, 301 differ  e.g. 00b3308c got 00000000 want 00000001 (0 / 1.4013e-45); 00b33098 got 00000000 want 3f800000 (0 / 1); 00bcf770 got 3d3e5c26 want 3d3e5c22 (0.0464746 / 0.0464746); 00bcf778 got 3d3e5c26 want 3d3e5c22 (0.0464746 / 0.0464746)
+FAIL  grass: cells written up to frame 36 (bit-exact)  66873 cells, 1999 differ  e.g. 00b3308c got 00000000 want 00000001 (0 / 1.4013e-45); 00b33098 got 00000000 want 3f800000 (0 / 1); 00b932cc got 41a4dfae want 41a4df7e (20.6092 / 20.6091); 00b93310 got 41a4dfae want 41a4df7e (20.6092 / 20.6091)
+      grass: 0.6 s, final position -557.741 -333.762 19.473
+PASS  sand: world active after the session start (ORIGINAL 005512f0 placement, 00563620)
+FAIL  sand: cells after the session start + placement (bit-exact)  64863 cells, 323 differ  e.g. 00b3308c got 00000000 want 00000001 (0 / 1.4013e-45); 00b33098 got 00000000 want 3f800000 (0 / 1); 00bcf760 got 3c459fbc want 3c459fb9 (0.012062 / 0.012062); 00bcf764 got 3cf0b714 want 3cf0b717 (0.0293842 / 0.0293842)
+FAIL  sand: 45-state vector, 50 ticks compared (bit-exact)  1208 values differ, max |d| 0.000245169 at tick 271 state[38]; first: tick 0 state[17] got 2.73365e-06 want 2.73365e-06
+      maximum chassis position difference 9.53674316e-07 m; velocity 1.05947256e-05 m/s; quaternion 1.3038516e-07
+PASS  sand: ORIGINAL per-wheel surface IDs at checkpoints  0 mismatches
+FAIL  sand: ORIGINAL wheel forces / contact speeds / rolling torque (bit-exact)  34 fields differ; force 0.240112305 N; rolling torque 0.00842285156 Nm; contact speed 3.27993184e-05 m/s maximum differences
+FAIL  sand: cells written up to frame 1 (bit-exact)  66633 cells, 238 differ  e.g. 00b3308c got 00000000 want 00000001 (0 / 1.4013e-45); 00b33098 got 00000000 want 3f800000 (0 / 1); 00bf441c got bb5dc445 want bb5dc443 (-0.00338389 / -0.00338389); 00bf4e54 got 35d1b0bd want 35d1b1bd (1.56232e-06 / 1.56234e-06)
+FAIL  sand: cells written up to frame 2 (bit-exact)  66644 cells, 403 differ  e.g. 00b3308c got 00000000 want 00000001 (0 / 1.4013e-45); 00b33098 got 00000000 want 3f800000 (0 / 1); 00bcf770 got 40b58cfe want 40b58cfa (5.67346 / 5.67346); 00bcf778 got 40b58cfe want 40b58cfa (5.67346 / 5.67346)
+FAIL  sand: cells written up to frame 36 (bit-exact)  66859 cells, 1705 differ  e.g. 00b3308c got 00000000 want 00000001 (0 / 1.4013e-45); 00b33098 got 00000000 want 3f800000 (0 / 1); 00b9cf98 got 40e76723 want 40e76721 (7.23134 / 7.23134); 00b9cfc0 got bd33c8dc want bd33c91b (-0.0438927 / -0.043893)
+      sand: 0.6 s, final position -758.427 -329.271 7.392
+
+23 passed, 30 failed
+./watkinsglen_implementation/tests/run_track.luau:250: track tests: 30 failed
+stacktrace:
+[C] function assert
+./watkinsglen_implementation/tests/run_track.luau:250

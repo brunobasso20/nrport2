@@ -1,0 +1,47 @@
+PASS  load core + track world (NR2003CupTrack)  2.78 s, memory 11956224 bytes
+PASS  V.loadTrack(): track image into the reset image  979040 bytes, 0.36 s
+PASS  track sections / length (ORIGINAL 00510b70 build)  123 sections, 3942.876 m, 43 pit stalls
+PASS  ORIGINAL surface table fixture is present
+PASS  ORIGINAL loadedGrip table (bit-exact)  20 entries; 0 differences
+PASS  ORIGINAL contactStiffness table (bit-exact)  20 entries; 0 differences
+PASS  ORIGINAL contactDamping table (bit-exact)  20 entries; 0 differences
+PASS  ORIGINAL rollingConstant table (bit-exact)  20 entries; 0 differences
+PASS  ORIGINAL rollingSpeedSquared table (bit-exact)  20 entries; 0 differences
+PASS  ORIGINAL surfaceHeat table (bit-exact)  20 entries; 0 differences
+PASS  ORIGINAL roughnessHeights table (bit-exact)  256 entries; 0 differences
+PASS  ORIGINAL roughnessQuantization table (bit-exact)  1 entries; 0 differences
+PASS  ORIGINAL roughnessScale table (bit-exact)  1 entries; 0 differences
+SMOKE ONLY: original trajectory fixtures are not compared by this mode
+PASS  track to world / world to track roundtrip (metres)
+PASS  off-road heights follow ORIGINAL 00513eaa roughness table  193 grass/dirt/sand/gravel samples
+PASS  stall0: placement uses ORIGINAL track coordinates
+PASS  stall0: original broadphase and both contact passes complete with finite states  288 ticks; 0.264 elapsed s/sim s
+PASS  stall0: original tire callbacks produce positive ground loads
+PASS  stationary pit spawn supports vehicle weight after settling  16517.6 N
+PASS  stall0: active-session reset places the car and restarts the world
+PASS  stall0: ending session stops the world
+PASS  launch: placement uses ORIGINAL track coordinates
+PASS  launch: original broadphase and both contact passes complete with finite states  576 ticks; 0.222 elapsed s/sim s
+PASS  launch: original tire callbacks produce positive ground loads
+PASS  launch: active-session reset places the car and restarts the world
+PASS  launch: ending session stops the world
+PASS  wall: placement uses ORIGINAL track coordinates
+PASS  wall: original broadphase and both contact passes complete with finite states  1152 ticks; 0.306 elapsed s/sim s
+PASS  wall: original tire callbacks produce positive ground loads
+PASS  wall: active-session reset places the car and restarts the world
+PASS  wall: ending session stops the world
+PASS  grass: placement uses ORIGINAL track coordinates
+PASS  grass: original broadphase and both contact passes complete with finite states  288 ticks; 0.291 elapsed s/sim s
+PASS  grass: original tire callbacks produce positive ground loads
+PASS  grass: original tyre callbacks encounter the authored surface id
+PASS  grass: active-session reset places the car and restarts the world
+PASS  grass: ending session stops the world
+PASS  sand: placement uses ORIGINAL track coordinates
+PASS  sand: original broadphase and both contact passes complete with finite states  288 ticks; 0.292 elapsed s/sim s
+PASS  sand: original tire callbacks produce positive ground loads
+PASS  sand: original tyre callbacks encounter the authored surface id
+PASS  sand: active-session reset places the car and restarts the world
+PASS  sand: ending session stops the world
+
+43 passed, 0 failed
+process elapsed 8.129 s; user CPU 7.601 s; system CPU 0.351 s

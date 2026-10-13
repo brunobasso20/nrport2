@@ -1,0 +1,446 @@
+{
+  "name": "NR2003WatkinsGlenDrivingTest",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "NR2003Lab": {
+        "$className": "Folder",
+        "Core": {
+          "$className": "Folder",
+          "Aerodynamics": {
+            "$path": "core/Aerodynamics.lua"
+          },
+          "ComponentTree": {
+            "$path": "core/ComponentTree.lua"
+          },
+          "CupTune": {
+            "$path": "core/CupTune.lua"
+          },
+          "Drivetrain": {
+            "$path": "core/Drivetrain.lua"
+          },
+          "Engine": {
+            "$path": "core/Engine.lua"
+          },
+          "Float32": {
+            "$path": "core/Float32.lua"
+          },
+          "Lookup": {
+            "$path": "core/Lookup.lua"
+          },
+          "MathUtil": {
+            "$path": "core/MathUtil.lua"
+          },
+          "NR2003Components": {
+            "$path": "core/NR2003Components.lua"
+          },
+          "NR2003Constraints": {
+            "$path": "core/NR2003Constraints.lua"
+          },
+          "NR2003Contact": {
+            "$path": "core/NR2003Contact.lua"
+          },
+          "NR2003CupVehicle": {
+            "$path": "core/NR2003CupVehicle.lua"
+          },
+          "NR2003Derivatives": {
+            "$path": "core/NR2003Derivatives.lua"
+          },
+          "NR2003DrivetrainProjection": {
+            "$path": "core/NR2003DrivetrainProjection.lua"
+          },
+          "NR2003FixedStep": {
+            "$path": "core/NR2003FixedStep.lua"
+          },
+          "NR2003ForceAccumulator": {
+            "$path": "core/NR2003ForceAccumulator.lua"
+          },
+          "NR2003Integrator": {
+            "$path": "core/NR2003Integrator.lua"
+          },
+          "NR2003MassProperties": {
+            "$path": "core/NR2003MassProperties.lua"
+          },
+          "NR2003Math": {
+            "$path": "core/NR2003Math.lua"
+          },
+          "NR2003RecoveredForces": {
+            "$path": "core/NR2003RecoveredForces.lua"
+          },
+          "NR2003StateLayout": {
+            "$path": "core/NR2003StateLayout.lua"
+          },
+          "NR2003VehicleSolver": {
+            "$path": "core/NR2003VehicleSolver.lua"
+          },
+          "NR2003VehicleState": {
+            "$path": "core/NR2003VehicleState.lua"
+          },
+          "RecoveredConstants": {
+            "$path": "core/RecoveredConstants.lua"
+          },
+          "RecoveredData": {
+            "$path": "core/RecoveredData.lua"
+          },
+          "RotationMatrix": {
+            "$path": "core/RotationMatrix.lua"
+          },
+          "Steering": {
+            "$path": "core/Steering.lua"
+          },
+          "Surface": {
+            "$path": "core/Surface.lua"
+          },
+          "Suspension": {
+            "$path": "core/Suspension.lua"
+          },
+          "TestTune": {
+            "$path": "core/TestTune.lua"
+          },
+          "TireCurves": {
+            "$path": "core/TireCurves.lua"
+          },
+          "TireForces": {
+            "$path": "core/TireForces.lua"
+          },
+          "TireThermal": {
+            "$path": "core/TireThermal.lua"
+          },
+          "TrackProfile": {
+            "$path": "core/TrackProfile.lua"
+          },
+          "Tune_Test_Recovered": {
+            "$path": "core/Tune_Test_Recovered.lua"
+          },
+          "VehicleDynamics": {
+            "$path": "core/VehicleDynamics.lua"
+          },
+          "NR2003Cup": {
+            "$className": "Folder",
+            "NR2003CupAero": {
+              "$path": "core/NR2003Cup/NR2003CupAero.lua"
+            },
+            "NR2003CupBuild": {
+              "$path": "core/NR2003Cup/NR2003CupBuild.lua"
+            },
+            "NR2003CupBuildCode1": {
+              "$path": "core/NR2003Cup/NR2003CupBuildCode1.lua"
+            },
+            "NR2003CupBuildCode2": {
+              "$path": "core/NR2003Cup/NR2003CupBuildCode2.lua"
+            },
+            "NR2003CupBuildCode3": {
+              "$path": "core/NR2003Cup/NR2003CupBuildCode3.lua"
+            },
+            "NR2003CupBuildCode4": {
+              "$path": "core/NR2003Cup/NR2003CupBuildCode4.lua"
+            },
+            "NR2003CupBuildCode5": {
+              "$path": "core/NR2003Cup/NR2003CupBuildCode5.lua"
+            },
+            "NR2003CupBuildCode6": {
+              "$path": "core/NR2003Cup/NR2003CupBuildCode6.lua"
+            },
+            "NR2003CupBuildData1": {
+              "$path": "core/NR2003Cup/NR2003CupBuildData1.lua"
+            },
+            "NR2003CupBuildData2": {
+              "$path": "core/NR2003Cup/NR2003CupBuildData2.lua"
+            },
+            "NR2003CupCore": {
+              "$path": "core/NR2003Cup/NR2003CupCore.lua"
+            },
+            "NR2003CupDriver": {
+              "$path": "core/NR2003Cup/NR2003CupDriver.lua"
+            },
+            "NR2003CupFFB": {
+              "$path": "core/NR2003Cup/NR2003CupFFB.lua"
+            },
+            "NR2003CupFrame": {
+              "$path": "core/NR2003Cup/NR2003CupFrame.lua"
+            },
+            "NR2003CupFrameCode1": {
+              "$path": "core/NR2003Cup/NR2003CupFrameCode1.lua"
+            },
+            "NR2003CupFrameCode2": {
+              "$path": "core/NR2003Cup/NR2003CupFrameCode2.lua"
+            },
+            "NR2003CupFrameCode3": {
+              "$path": "core/NR2003Cup/NR2003CupFrameCode3.lua"
+            },
+            "NR2003CupFrameCode4": {
+              "$path": "core/NR2003Cup/NR2003CupFrameCode4.lua"
+            },
+            "NR2003CupFrameData1": {
+              "$path": "core/NR2003Cup/NR2003CupFrameData1.lua"
+            },
+            "NR2003CupGarage": {
+              "$path": "core/NR2003Cup/NR2003CupGarage.lua"
+            },
+            "NR2003CupImage1": {
+              "$path": "core/NR2003Cup/NR2003CupImage1.lua"
+            },
+            "NR2003CupImage2": {
+              "$path": "core/NR2003Cup/NR2003CupImage2.lua"
+            },
+            "NR2003CupJIT1": {
+              "$path": "core/NR2003Cup/NR2003CupJIT1.lua"
+            },
+            "NR2003CupJIT2": {
+              "$path": "core/NR2003Cup/NR2003CupJIT2.lua"
+            },
+            "NR2003CupJIT3": {
+              "$path": "core/NR2003Cup/NR2003CupJIT3.lua"
+            },
+            "NR2003CupJIT4": {
+              "$path": "core/NR2003Cup/NR2003CupJIT4.lua"
+            },
+            "NR2003CupJITG1": {
+              "$path": "core/NR2003Cup/NR2003CupJITG1.lua"
+            },
+            "NR2003CupJITG2": {
+              "$path": "core/NR2003Cup/NR2003CupJITG2.lua"
+            },
+            "NR2003CupJITG3": {
+              "$path": "core/NR2003Cup/NR2003CupJITG3.lua"
+            },
+            "NR2003CupJITG4": {
+              "$path": "core/NR2003Cup/NR2003CupJITG4.lua"
+            },
+            "NR2003CupSetup": {
+              "$path": "core/NR2003Cup/NR2003CupSetup.lua"
+            },
+            "NR2003CupSetupData": {
+              "$path": "core/NR2003Cup/NR2003CupSetupData.lua"
+            },
+            "NR2003CupSteering": {
+              "$path": "core/NR2003Cup/NR2003CupSteering.lua"
+            },
+            "NR2003CupJITP1": {
+              "$path": "watkinsglen_implementation/core/NR2003Cup/NR2003CupJITP1.lua"
+            },
+            "NR2003CupJITP2": {
+              "$path": "watkinsglen_implementation/core/NR2003Cup/NR2003CupJITP2.lua"
+            },
+            "NR2003CupJITP3": {
+              "$path": "watkinsglen_implementation/core/NR2003Cup/NR2003CupJITP3.lua"
+            },
+            "NR2003CupJITP4": {
+              "$path": "watkinsglen_implementation/core/NR2003Cup/NR2003CupJITP4.lua"
+            },
+            "NR2003CupJITPG1": {
+              "$path": "watkinsglen_implementation/core/NR2003Cup/NR2003CupJITPG1.lua"
+            },
+            "NR2003CupJITPG2": {
+              "$path": "watkinsglen_implementation/core/NR2003Cup/NR2003CupJITPG2.lua"
+            },
+            "NR2003CupJITPG3": {
+              "$path": "watkinsglen_implementation/core/NR2003Cup/NR2003CupJITPG3.lua"
+            },
+            "NR2003CupJITPG4": {
+              "$path": "watkinsglen_implementation/core/NR2003Cup/NR2003CupJITPG4.lua"
+            },
+            "NR2003CupTrack": {
+              "$path": "watkinsglen_implementation/core/NR2003Cup/NR2003CupTrack.lua"
+            },
+            "NR2003CupTrackBuild": {
+              "$path": "watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackBuild.lua"
+            },
+            "NR2003CupTrackCode1": {
+              "$path": "watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode1.lua"
+            },
+            "NR2003CupTrackCode2": {
+              "$path": "watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode2.lua"
+            },
+            "NR2003CupTrackCode3": {
+              "$path": "watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode3.lua"
+            },
+            "NR2003CupTrackCode4": {
+              "$path": "watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua"
+            },
+            "NR2003CupTrackCode5": {
+              "$path": "watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode5.lua"
+            },
+            "NR2003CupTrackCode6": {
+              "$path": "watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode6.lua"
+            },
+            "NR2003CupTrackData1": {
+              "$path": "watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackData1.lua"
+            },
+            "NR2003CupTrackData2": {
+              "$path": "watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackData2.lua"
+            },
+            "NR2003CupTrackData3": {
+              "$path": "watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackData3.lua"
+            },
+            "NR2003CupTrackData4": {
+              "$path": "watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackData4.lua"
+            },
+            "NR2003CupTrackData5": {
+              "$path": "watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackData5.lua"
+            },
+            "NR2003CupTrackData6": {
+              "$path": "watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackData6.lua"
+            },
+            "NR2003CupTrackData7": {
+              "$path": "watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackData7.lua"
+            },
+            "NR2003CupTrackData8": {
+              "$path": "watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackData8.lua"
+            },
+            "NR2003CupTrackData9": {
+              "$path": "watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackData9.lua"
+            }
+          }
+        },
+        "Roblox": {
+          "$className": "Folder",
+          "CarBuilder": {
+            "$path": "roblox/CarBuilder.lua"
+          },
+          "Cockpit": {
+            "$path": "roblox/Cockpit.lua"
+          },
+          "CoreChassisAdapter": {
+            "$path": "roblox/CoreChassisAdapter.lua"
+          },
+          "CoreChassisBridge": {
+            "$path": "roblox/CoreChassisBridge.lua"
+          },
+          "CupChassisAdapter": {
+            "$path": "roblox/CupChassisAdapter.lua"
+          },
+          "Diagnostics": {
+            "$path": "roblox/Diagnostics.lua"
+          },
+          "DriverConfig": {
+            "$path": "roblox/DriverConfig.lua"
+          },
+          "LegacyRobloxAdapter": {
+            "$path": "roblox/LegacyRobloxAdapter.lua"
+          },
+          "MeshAdapter": {
+            "$path": "roblox/MeshAdapter.lua"
+          },
+          "ModeConfig": {
+            "$path": "roblox/ModeConfig.lua"
+          },
+          "RaycastContacts": {
+            "$path": "roblox/RaycastContacts.lua"
+          },
+          "RenderConfig": {
+            "$path": "roblox/RenderConfig.lua"
+          },
+          "RenderPresentation": {
+            "$path": "roblox/RenderPresentation.lua"
+          },
+          "RenderSnapshot": {
+            "$path": "roblox/RenderSnapshot.lua"
+          },
+          "SeatAccess": {
+            "$path": "roblox/SeatAccess.lua"
+          },
+          "SnapshotBuffer": {
+            "$path": "roblox/SnapshotBuffer.lua"
+          },
+          "Stage67SelfTest": {
+            "$path": "roblox/Stage67SelfTest.lua"
+          },
+          "Stage8SelfTest": {
+            "$path": "roblox/Stage8SelfTest.lua"
+          },
+          "Stage9SelfTest": {
+            "$path": "roblox/Stage9SelfTest.lua"
+          },
+          "Stage10SelfTest": {
+            "$path": "roblox/Stage10SelfTest.lua"
+          },
+          "Stage11SelfTest": {
+            "$path": "roblox/Stage11SelfTest.lua"
+          },
+          "Stage12SelfTest": {
+            "$path": "roblox/Stage12SelfTest.lua"
+          },
+          "Units": {
+            "$path": "roblox/Units.lua"
+          },
+          "VehicleController": {
+            "$path": "roblox/VehicleController.lua"
+          },
+          "VisualRig": {
+            "$path": "roblox/VisualRig.lua"
+          },
+          "NR2003WatkinsGlen": {
+            "$path": "roblox/NR2003WatkinsGlen.lua"
+          }
+        },
+        "Input": {
+          "$className": "RemoteEvent"
+        },
+        "Telemetry": {
+          "$className": "RemoteEvent"
+        },
+        "RenderState": {
+          "$className": "UnreliableRemoteEvent"
+        },
+        "$ignoreUnknownInstances": true,
+        "$attributes": {
+          "NR2003Track": "watkins_glen"
+        },
+        "CarModel": {
+          "$className": "Folder",
+          "$ignoreUnknownInstances": true,
+          "NR2003CameraSystem": {
+            "$path": "nr2003carmodel_implementation/roblox/CarModel/NR2003CameraSystem.lua"
+          },
+          "NR2003CarModelClient": {
+            "$path": "nr2003carmodel_implementation/roblox/CarModel/NR2003CarModelClient.lua"
+          },
+          "NR2003CarModelGolden": {
+            "$path": "nr2003carmodel_implementation/roblox/CarModel/NR2003CarModelGolden.lua"
+          },
+          "NR2003CarModelRig": {
+            "$path": "nr2003carmodel_implementation/roblox/CarModel/NR2003CarModelRig.lua"
+          },
+          "NR2003CarModelSelfTest": {
+            "$path": "nr2003carmodel_implementation/roblox/CarModel/NR2003CarModelSelfTest.lua"
+          },
+          "NR2003CarModelServer": {
+            "$path": "nr2003carmodel_implementation/roblox/CarModel/NR2003CarModelServer.lua"
+          },
+          "NR2003DrawState": {
+            "$path": "nr2003carmodel_implementation/roblox/CarModel/NR2003DrawState.lua"
+          },
+          "NR2003Gauges": {
+            "$path": "nr2003carmodel_implementation/roblox/CarModel/NR2003Gauges.lua"
+          },
+          "NR2003Mirror": {
+            "$path": "nr2003carmodel_implementation/roblox/CarModel/NR2003Mirror.lua"
+          },
+          "NR2003Scale": {
+            "$path": "nr2003carmodel_implementation/roblox/CarModel/NR2003Scale.lua"
+          }
+        },
+        "DrawState": {
+          "$className": "UnreliableRemoteEvent"
+        }
+      }
+    },
+    "ServerScriptService": {
+      "NR2003Server": {
+        "$path": "nr2003carmodel_implementation/roblox/Bench/Server.server.lua"
+      }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "NR2003Client": {
+          "$path": "nr2003carmodel_implementation/roblox/Bench/Client.client.lua"
+        }
+      }
+    },
+    "Workspace": {
+      "$className": "Workspace",
+      "$ignoreUnknownInstances": true
+    }
+  }
+}

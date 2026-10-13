@@ -1,0 +1,128 @@
+PASS section 0 midpoint 3.236 m
+PASS section 1 midpoint 8.621 m
+PASS section 2 midpoint 144.455 m
+PASS section 3 midpoint 312.599 m
+PASS section 4 midpoint 378.264 m
+PASS section 5 midpoint 429.468 m
+PASS section 6 midpoint 459.763 m
+PASS section 7 midpoint 474.822 m
+PASS section 8 midpoint 485.193 m
+PASS section 9 midpoint 495.705 m
+PASS section 10 midpoint 508.097 m
+PASS section 11 midpoint 521.968 m
+PASS section 12 midpoint 531.355 m
+PASS section 13 midpoint 538.060 m
+PASS section 14 midpoint 549.000 m
+PASS section 15 midpoint 562.621 m
+PASS section 16 midpoint 581.795 m
+PASS section 17 midpoint 659.160 m
+PASS section 18 midpoint 744.217 m
+PASS section 19 midpoint 808.490 m
+PASS section 20 midpoint 897.396 m
+PASS section 21 midpoint 966.137 m
+PASS section 22 midpoint 1013.232 m
+PASS section 23 midpoint 1075.889 m
+PASS section 24 midpoint 1149.859 m
+PASS section 25 midpoint 1204.810 m
+PASS section 26 midpoint 1283.186 m
+PASS section 27 midpoint 1382.744 m
+PASS section 28 midpoint 1478.409 m
+PASS section 29 midpoint 1574.908 m
+PASS section 30 midpoint 1672.694 m
+FAIL section 31 midpoint 1808.398 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode2.lua:1548: buffer access out of bounds
+FAIL section 32 midpoint 1962.601 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 33 midpoint 2038.568 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 34 midpoint 2042.377 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 35 midpoint 2045.094 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 36 midpoint 2046.367 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 37 midpoint 2047.367 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 38 midpoint 2049.444 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode2.lua:1548: buffer access out of bounds
+FAIL section 39 midpoint 2059.534 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode2.lua:1548: buffer access out of bounds
+FAIL section 40 midpoint 2072.495 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode2.lua:1548: buffer access out of bounds
+FAIL section 41 midpoint 2080.144 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode2.lua:1548: buffer access out of bounds
+FAIL section 42 midpoint 2088.983 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode2.lua:1548: buffer access out of bounds
+FAIL section 43 midpoint 2099.577 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode2.lua:1564: buffer access out of bounds
+FAIL section 44 midpoint 2105.247 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode2.lua:1564: buffer access out of bounds
+FAIL section 45 midpoint 2106.747 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode2.lua:1548: buffer access out of bounds
+FAIL section 46 midpoint 2115.254 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode2.lua:1564: buffer access out of bounds
+FAIL section 47 midpoint 2128.587 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 48 midpoint 2141.449 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 49 midpoint 2150.874 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 50 midpoint 2159.997 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode2.lua:1548: buffer access out of bounds
+FAIL section 51 midpoint 2172.368 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 52 midpoint 2184.625 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 53 midpoint 2197.104 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 54 midpoint 2208.308 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 55 midpoint 2220.248 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 56 midpoint 2228.695 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 57 midpoint 2232.492 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 58 midpoint 2234.722 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 59 midpoint 2235.722 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 60 midpoint 2236.722 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 61 midpoint 2238.825 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 62 midpoint 2247.003 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 63 midpoint 2258.674 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 64 midpoint 2268.966 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 65 midpoint 2293.035 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 66 midpoint 2355.578 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 67 midpoint 2443.396 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 68 midpoint 2516.644 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode2.lua:1564: buffer access out of bounds
+FAIL section 69 midpoint 2560.004 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 70 midpoint 2582.034 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 71 midpoint 2598.550 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 72 midpoint 2613.891 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 73 midpoint 2633.788 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode2.lua:1548: buffer access out of bounds
+FAIL section 74 midpoint 2657.641 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 75 midpoint 2673.748 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 76 midpoint 2706.818 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 77 midpoint 2749.347 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 78 midpoint 2782.756 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode2.lua:1548: buffer access out of bounds
+FAIL section 79 midpoint 2829.507 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 80 midpoint 2901.509 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode2.lua:1548: buffer access out of bounds
+FAIL section 81 midpoint 2947.986 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode2.lua:1564: buffer access out of bounds
+FAIL section 82 midpoint 2961.050 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:5585: buffer access out of bounds
+FAIL section 83 midpoint 2977.041 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode2.lua:1564: buffer access out of bounds
+FAIL section 84 midpoint 2989.656 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 85 midpoint 3002.827 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 86 midpoint 3023.131 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 87 midpoint 3105.418 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode2.lua:1548: buffer access out of bounds
+FAIL section 88 midpoint 3184.236 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 89 midpoint 3204.145 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+FAIL section 90 midpoint 3224.034 m: ./watkinsglen_implementation/tests/run_sections.luau:24: non-finite state
+FAIL section 91 midpoint 3264.395 m: ./watkinsglen_implementation/core/NR2003Cup/NR2003CupTrackCode4.lua:4611: buffer access out of bounds
+PASS section 92 midpoint 3309.936 m
+PASS section 93 midpoint 3335.989 m
+PASS section 94 midpoint 3357.038 m
+PASS section 95 midpoint 3377.566 m
+PASS section 96 midpoint 3393.554 m
+PASS section 97 midpoint 3414.660 m
+PASS section 98 midpoint 3451.832 m
+PASS section 99 midpoint 3496.521 m
+PASS section 100 midpoint 3543.916 m
+PASS section 101 midpoint 3590.242 m
+PASS section 102 midpoint 3619.341 m
+PASS section 103 midpoint 3627.524 m
+PASS section 104 midpoint 3632.961 m
+PASS section 105 midpoint 3647.418 m
+PASS section 106 midpoint 3669.937 m
+PASS section 107 midpoint 3687.569 m
+PASS section 108 midpoint 3692.770 m
+PASS section 109 midpoint 3699.300 m
+PASS section 110 midpoint 3708.952 m
+PASS section 111 midpoint 3732.390 m
+PASS section 112 midpoint 3762.872 m
+PASS section 113 midpoint 3786.157 m
+PASS section 114 midpoint 3826.518 m
+PASS section 115 midpoint 3854.826 m
+PASS section 116 midpoint 3857.579 m
+PASS section 117 midpoint 3870.448 m
+PASS section 118 midpoint 3883.111 m
+PASS section 119 midpoint 3885.658 m
+PASS section 120 midpoint 3901.466 m
+PASS section 121 midpoint 3918.668 m
+PASS section 122 midpoint 3931.720 m
+62 sections passed, 61 failed; 42.87 CPU seconds
+./watkinsglen_implementation/tests/run_sections.luau:33: section coverage failures
+stacktrace:
+[C] function assert
+./watkinsglen_implementation/tests/run_sections.luau:33

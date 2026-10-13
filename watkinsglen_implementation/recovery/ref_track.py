@@ -50,6 +50,8 @@ SCENARIOS = {
     'stall0': ((341.13, -19.61, 0.0), 24, law_idle, (1, 2, 24)),
     'launch': ((255.0, -0.21, 0.0), 36 * 5, law_launch, (1, 36, 36 * 5)),
     'wall':   ((341.13, -19.61, 0.0), 36 * 4, law_wall, (1, 36 * 2, 36 * 4)),
+    'grass':  ((250.0, 20.0, 0.0), 36, law_idle, (1, 2, 36)),
+    'sand':   ((450.0, 32.0, 0.0), 36, law_idle, (1, 2, 36)),
 }
 STATE0 = [0.0] * 45
 STATE0[4] = 0.42
@@ -97,7 +99,9 @@ def written_cells(m, cells, lo, hi):
 
 def run(scenario):
     stall, frames, law, checks = SCENARIOS[scenario]
+    print(scenario, 'loading ORIGINAL track and car', flush=True)
     o = make(scenario=scenario)
+    print(scenario, 'placed; simulating', frames, 'frames', flush=True)
     m = o.m
     top = m.arena_top
     snap = m.load_snap
@@ -111,6 +115,7 @@ def run(scenario):
             fx['states'].append([struct.unpack('<I', struct.pack('<f', x))[0] for x in st])
         if f + 1 in checks:
             fx['checks'][f + 1] = written_cells(m, m.written, 0x6e9000, top)
+            print(scenario, 'checkpoint', f + 1, '/', frames, flush=True)
     m.uc.hook_del(m.trace_hook)
     m.uc.hook_del(m.write_hook)
     return snap, m.touched, fx, top

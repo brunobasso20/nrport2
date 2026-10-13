@@ -387,3 +387,22 @@ Essa API usa **left**. O pacote interno de `CoreChassisBridge` usa **right**, se
 `solver.derivatives.coordinates` contém taxas das coordenadas; as acelerações são resolvidas pela etapa de momento. `solver.derivatives.discrete` é a diferença média entre estados por passo, sem desembrulhar ângulos, e não uma função contínua `f(t,y)` recuperada do executável.
 
 `recovery/vehicle_core/state_layout.csv` contém as 45 entradas exatas. `components.csv` registra relações, máscaras e propriedades. O baseline é anterior à aplicação completa de setup; `0055e9b0` ainda não está ligado como carregador completo de calibração. O estágio 5 usa um registro de chassi de 13 estados e inércia declarada pelo tune/caixa de teste.
+
+
+## Watkins Glen driving-test API
+
+Install the generated modules from `watkinsglen_implementation/core/NR2003Cup` alongside the existing `Core.NR2003Cup` modules. `Vehicle:loadTrack()` installs the original runtime image and placed callback sets. The following session start uses the original track placement; `endSession()` deactivates the world and session reset reactivates it through placement. Without a loaded track, the existing bench contact interface is preserved.
+
+The numeric, Instance-free methods on `Vehicle.V` are:
+
+- `trackLoaded()`, `worldActive()`, `trackInfo()` — readiness and original section/length/stall data.
+- `setTrackStart(dlong, dlat, yaw)` — metres and radians, relative to the track tangent. Default is the original pit stall 0 `(341.13, -19.61, 0)`.
+- `trackToWorld(dlong, dlat, out?, hint?)` — original smooth/rough height, XYZ, normal, tangent, material and packed search hint.
+- `trackPointRaw(x, y, z, out?)` — original 0x58-byte query record as unsigned cells.
+- `trackPosition(out?)` — read-only decoded current position/query, or nil outside an active world.
+- `trackContact(wheel, out?)` — read-only current original contact outputs, material and grounded/load status; wheel is 0..3.
+- `contactOut(wheel)` — existing six-number interface; reads original-world outputs when active and the original bench outputs otherwise.
+
+The Roblox adapter activates this mode when `NR2003Lab:GetAttribute("NR2003Track") == "watkins_glen"`. The track's calibrated `Workspace.NR2003WatkinsGlen:GetPivot()` supplies the common presentation origin. Simulation remains in the original metre frame. Native world contacts own tire and barrier forces; rendered meshes provide no Roblox rigid-body collision for the car. Tagged terrain remains queryable for the existing chase camera only.
+
+See `watkinsglen_implementation/README.md` for the ready-to-import assets and reversible Studio patch. Race rules, lap timing and pit limiting are outside this test integration.

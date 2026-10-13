@@ -517,3 +517,23 @@ O Stage 1 ter mapeado o grafo de 45 estados não significa que todos estejam liv
 Próximas integrações posteriores continuam pendentes após o Stage 7.
 
 Referências do host: [WorldRoot / Blockcast](https://create.roblox.com/docs/reference/engine/classes/WorldRoot), [VehicleSeat](https://create.roblox.com/docs/reference/engine/classes/VehicleSeat), [BasePart](https://create.roblox.com/docs/reference/engine/classes/BasePart), [RunService](https://create.roblox.com/docs/reference/engine/classes/RunService) e [RaycastParams](https://create.roblox.com/docs/reference/engine/datatypes/RaycastParams).
+
+
+## Watkins Glen track integration (driving test)
+
+The track uses the original PTF runtime and material tables. Its coordinates remain in metres; the existing car/Roblox conversion is `(-y, z, -x) / 0.28`. Original lap length is 3942.875732421875 m, with 123 runtime sections. Stages 14 and 15 remain outside this work.
+
+| Original address/data | Recovered role | Luau destination | Port / verification status |
+| --- | --- | --- | --- |
+| `00510b70`, `00510f00`, `005108f0` | PTF descriptors to runtime sections and collision primitives | `watkinsglen_implementation/recovery/orig_track.py`, generated `NR2003CupTrackData1..9` | Original loader executed in reference; resulting runtime data retained |
+| `0050fbd0`, `0074fb30`, `006f6570` | Material grip initialization and loaded surface scalars | Track data + existing original tire core | Twenty loaded scalars compared bit for bit with original snapshot |
+| `005150fa`, `0051370a`, `005f58d0` | Track/world conversion and smooth/rough surface query | `NR2003CupTrackCode*`; host `trackToWorld`, `trackPosition`, `trackPointRaw` | Original equations lifted; coordinate and roughness tests pass; IEEE-double intermediate adaptation retained |
+| `00513eaa`, `006f41d8`, `0074c36c` | Deterministic off-road height grid and section bump profiles | `NR2003CupTrackCode1`, generated data | Original 256-height table, amplitude and quantization checked bit for bit; 193 sampled off-road queries checked |
+| `005512f0`, `00551520`, `00551760`, `005b2f20` | Original track placement and placed vehicle rebuild | Track host + existing Build/Garage hooks and `NR2003CupJITP*`/`JITPG*` | Pit/road/off-road placement, reset and all 123 section midpoints tested |
+| `005789c0`, `00578a60`, `00578da0`, `00578de0` | Broadphase, persistent pairs and two contact passes | Track code, Driver `_world` hooks | All 123 section midpoints complete 96 ticks with finite states and tire contact |
+| `005778a0`, `00577fa0`, `00578050`, `00576e00`, `0055e1e0` | Pair initialization, primitive testing and original tire callback | Track code calling the existing Cup tire core | Original persistent contacts and materials preserved; no Roblox raycast tire input in track mode |
+| `00575920`, `00579cd0`, `00579e80`, `00579ea0` | Body/wall response and combined stiffness/damping | Track code and original chassis force inputs | Original coefficients checked; wall driving smoke passes; strict replay differences remain documented |
+| `005543f0`, `00551480` | World record publication and external-force clearing | Track host `record` and startup publication | Original routines; explicit single-thread startup boundary adapts the original BG snapshot lifecycle |
+| Original PTF/3DO/MIP + renderer evidence | Terrain, walls, scenery, UVs and texture conversion | `watkinsglen_implementation/pipeline/`, `assets/` | Roblox presentation adaptation; use asset validation and manifest for measured geometry/render limits |
+
+Original physics/data and host/render adaptations are distinguished in `watkinsglen_implementation/SURFACE_RECOVERY.md`, `RUNTIME_VALIDATION.md` and `VALIDATION.md`. Strict original-code comparisons are retained and must not be represented as bit-identical when they fail.

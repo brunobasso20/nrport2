@@ -981,7 +981,7 @@ elseif pc == 12 then
 ESP = ESP - 4; wu(M, ESP - 7245824, 0)
 ECX = band(ESP + 20)
 ESP = ESP - 8
-ESP = ESP - 4; wu(M, ESP - 7245824, ESP)
+do local v = ESP; ESP = ESP - 4; wu(M, ESP - 7245824, band(v)) end
 ESP = ESP - 4
 XF[0x5799c0]()
 ECX = EAX
@@ -989,7 +989,7 @@ ESP = ESP - 4
 XF[0x5799f0]()
 ESP = ESP - 8
 ECX = band(ESP + 36)
-ESP = ESP - 4; wu(M, ESP - 7245824, ESP)
+do local v = ESP; ESP = ESP - 4; wu(M, ESP - 7245824, band(v)) end
 ESP = ESP - 4
 XF[0x5799c0]()
 ECX = EAX
@@ -1067,7 +1067,7 @@ elseif pc == 20 then
 ESP = ESP - 4; wu(M, ESP - 7245824, 0)
 ECX = band(ESP + 20)
 ESP = ESP - 8
-ESP = ESP - 4; wu(M, ESP - 7245824, ESP)
+do local v = ESP; ESP = ESP - 4; wu(M, ESP - 7245824, band(v)) end
 ESP = ESP - 4
 XF[0x5799c0]()
 ECX = EAX
@@ -1075,7 +1075,7 @@ ESP = ESP - 4
 XF[0x5799f0]()
 ESP = ESP - 8
 ECX = band(ESP + 36)
-ESP = ESP - 4; wu(M, ESP - 7245824, ESP)
+do local v = ESP; ESP = ESP - 4; wu(M, ESP - 7245824, band(v)) end
 ESP = ESP - 4
 XF[0x5799c0]()
 ECX = EAX
@@ -1122,7 +1122,7 @@ elseif pc == 24 then
 ESP = ESP - 4; wu(M, ESP - 7245824, 0)
 ECX = band(ESP + 20)
 ESP = ESP - 8
-ESP = ESP - 4; wu(M, ESP - 7245824, ESP)
+do local v = ESP; ESP = ESP - 4; wu(M, ESP - 7245824, band(v)) end
 ESP = ESP - 4
 XF[0x5799c0]()
 ECX = EAX
@@ -1130,7 +1130,7 @@ ESP = ESP - 4
 XF[0x579a30]()
 ESP = ESP - 8
 ECX = band(ESP + 36)
-ESP = ESP - 4; wu(M, ESP - 7245824, ESP)
+do local v = ESP; ESP = ESP - 4; wu(M, ESP - 7245824, band(v)) end
 ESP = ESP - 4
 XF[0x5799c0]()
 ECX = EAX
@@ -2302,12 +2302,12 @@ ECX = ru(M, band(ESI) - 7245824)
 EBP = band(band(EBP, 255), 4294967295)
 ESP = ESP - 4; wu(M, ESP - 7245824, EBP)
 ESP = ESP - 8
-ESP = ESP - 4; wu(M, ESP - 7245824, ESP)
+do local v = ESP; ESP = ESP - 4; wu(M, ESP - 7245824, band(v)) end
 ESP = ESP - 4
 XF[0x5799f0]()
 ECX = ru(M, band(ESI) - 7245824)
 ESP = ESP - 8
-ESP = ESP - 4; wu(M, ESP - 7245824, ESP)
+do local v = ESP; ESP = ESP - 4; wu(M, ESP - 7245824, band(v)) end
 ESP = ESP - 4
 XF[0x5799d0]()
 ECX = EDI
@@ -2362,12 +2362,12 @@ elseif pc == 34 then
 ECX = ru(M, band(ESI) - 7245824)
 ESP = ESP - 4; wu(M, ESP - 7245824, EBP)
 ESP = ESP - 8
-ESP = ESP - 4; wu(M, ESP - 7245824, ESP)
+do local v = ESP; ESP = ESP - 4; wu(M, ESP - 7245824, band(v)) end
 ESP = ESP - 4
 XF[0x579a30]()
 ECX = ru(M, band(ESI) - 7245824)
 ESP = ESP - 8
-ESP = ESP - 4; wu(M, ESP - 7245824, ESP)
+do local v = ESP; ESP = ESP - 4; wu(M, ESP - 7245824, band(v)) end
 ESP = ESP - 4
 XF[0x579a10]()
 ECX = EDI
@@ -2441,12 +2441,12 @@ elseif pc == 40 then
 ECX = ru(M, band(ESI) - 7245824)
 ESP = ESP - 4; wu(M, ESP - 7245824, EBX)
 ESP = ESP - 8
-ESP = ESP - 4; wu(M, ESP - 7245824, ESP)
+do local v = ESP; ESP = ESP - 4; wu(M, ESP - 7245824, band(v)) end
 ESP = ESP - 4
 XF[0x5799f0]()
 ECX = ru(M, band(ESI) - 7245824)
 ESP = ESP - 8
-ESP = ESP - 4; wu(M, ESP - 7245824, ESP)
+do local v = ESP; ESP = ESP - 4; wu(M, ESP - 7245824, band(v)) end
 ESP = ESP - 4
 XF[0x5799d0]()
 ECX = EDI
@@ -2462,12 +2462,12 @@ if FZ then pc = 42 else pc = 41 end
 elseif pc == 41 then
 ESP = ESP - 4; wu(M, ESP - 7245824, EBX)
 ESP = ESP - 8
-ESP = ESP - 4; wu(M, ESP - 7245824, ESP)
+do local v = ESP; ESP = ESP - 4; wu(M, ESP - 7245824, band(v)) end
 ESP = ESP - 4
 XF[0x579a30]()
 ECX = ru(M, band(ESI) - 7245824)
 ESP = ESP - 8
-ESP = ESP - 4; wu(M, ESP - 7245824, ESP)
+do local v = ESP; ESP = ESP - 4; wu(M, ESP - 7245824, band(v)) end
 ESP = ESP - 4
 XF[0x579a10]()
 ECX = EDI

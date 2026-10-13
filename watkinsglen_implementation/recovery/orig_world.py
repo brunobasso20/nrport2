@@ -200,6 +200,11 @@ def enter_world(o, stall):
     o.controls(0)
     m.uc.mem_write(0xbf6eb9, b'\x00')
     m.call(0x563620, CAR)
+    # Single-threaded host startup boundary, shared with the Luau host: publish the placed car's collision pose
+    # before the first broadphase. Placement reinitialises its BG object (0059fa90), so its record is otherwise
+    # still zero. These are the same ORIGINAL functions used after every ordinary physics export.
+    m.call(0x5543f0)
+    m.call(0x551480)
 
 
 class OriginalWorld(O13.OriginalStage13):

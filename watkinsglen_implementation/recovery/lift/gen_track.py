@@ -153,6 +153,12 @@ def static_refs(L):
                     a = op.mem.disp & 0xffffffff
                     if BASE <= a < TOP:
                         refs.add((a, op.mem.index != 0))
+                # Constructors store .rdata vtable pointers as immediates. Their virtual slots must be in the image
+                # even when a reference scenario never touches the shape (e.g. body/wall rather than tyre/road).
+                elif op.type == LT.X.X86_OP_IMM and i.mnemonic == 'mov':
+                    a = op.imm & 0xffffffff
+                    if 0x6ea000 <= a < 0x71b000:
+                        refs.add((a, True))
     return refs
 
 
@@ -275,6 +281,12 @@ def main(out_dir, plain_pkl, world_pkls):
         nfoot += 1
     if conv:
         print('core-image cells set to the reference value (%d):' % len(conv), ', '.join(conv[:40]))
+    # Include complete initialized executable data, not just locations observed in a few test drives. A section's
+    # primitive constructors can reach alternate vtables and tables on any later part of the lap.
+    # Preserve load-time values (track.ini and car build included); import slots remain host boundaries.
+    for a in range(0x6ea000, 0x761000, 4):
+        if not excluded(a):
+            cells[a] = Wd[(a - BASE) >> 2]
     # BSS above the image (pools) and the track arena: everything nonzero
     for lo in sorted(snap):
         if lo == BASE:

@@ -51,7 +51,7 @@ local BGCOUNT = 0x7559bc             -- getBGCount (005f7cb0)
 -- getIntCount (005f7cd0): timer-interrupt counter, a host clock. ADAPTER (same convention as the Stage 8 harness,
 -- orig_brake.INTCOUNT): +1 per frame at the frame start. Read by the lifted 00567660 (tyre / continuous contact
 -- records 0054a8d0: table row copy + getIntCount stamp at car+0x1323); the Stage 8 speed cache (00554f50) is
--- recomputed in Luau and ignores it
+-- recomputed in Luau and preserves its cache stamp
 local INTCOUNT = 0x7559c4
 local RNG = 0xf6eae4                 -- rndInt (005f5670) state of stream 0 (+4: stream 1)
 local SETTINGS = 0xc0692a            -- race settings (0055a680)

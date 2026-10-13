@@ -1,0 +1,307 @@
+[NR2003 Stage 10] setup aplicado (natural, 0.75 s): molas -71344/-71344/-41092/-41092 N/m, freio 2812/988 N*m, marchas 2.133/1.611/1.261/1.000 x 4.500
+[NR2003 Stage 12] direção original: relação 12:1 (item 0x30), trava 360° (180° por lado), override baixa velocidade on, linearidade 0.00, taxa 0.0330/quadro (teclas imagem, eixo 0), volante até 180°
+[NR2003 Stage 13] force feedback original ligado: força 80, amortecimento 0, latência 0 ms, dispositivo sim (efeito adquirido pelo 0054fed0 só com o eixo analógico)
+[NR2003 Stage 9] sessão: 70 F, condições 0, dia, vento 0 mph dir 0 -> ar 49.11 C, rho 1.081192 kg/m3, vento (-0.000, 0.000) m/s | fita 0%, aerofólio 65°
+PASS  adapter constructed, root anchored and non-colliding
+PASS  numeric origin on the ground under the spawn  origin y 0.0000
+PASS  initial root height = core chassis z (0.42 m) in studs  1.4996 studs
+PASS  car settles on the raycast ground (chassis ref 0.41..0.43 m)  0.4179 m
+PASS  contact planes from raycasts: n = (0,0,1), d = 0 on flat ground  n=(0 0 1) d=0
+PASS  telemetry: neutral at rest, loads positive  gear 0 loads 4124 3863 3951 4179
+PASS  accelerates forward = Roblox -Z  dz -33.32 studs, 36.3 km/h, gear 2, 2259 rpm
+PASS  upshifts reached 2nd gear  gear 2
+PASS  wheel visual data: compression ~ -0.06 m, spin advancing  comp -0.0647 angle 0.371 rate 27.34
+PASS  render snapshot encodes/decodes  
+PASS  steer right turns toward +X  look (0.503 -0.006 -0.864) steer cell lf -0.3196
+PASS  collision boundary keeps the chassis box out of the wall  front -120.00 wall -120.00 collided true
+PASS  no physics fault  nil
+[NR2003 Stage 12] direção original: relação 12:1 (item 0x30), trava 360° (180° por lado), override baixa velocidade on, linearidade 0.00, taxa 0.0330/quadro (teclas imagem, eixo 0), volante até 180°
+[NR2003 Stage 13] force feedback original ligado: força 80, amortecimento 0, latência 0 ms, dispositivo sim (efeito adquirido pelo 0054fed0 só com o eixo analógico)
+[NR2003 Stage 9] sessão: 70 F, condições 0, dia, vento 0 mph dir 0 -> ar 49.11 C, rho 1.081192 kg/m3, vento (-0.000, 0.000) m/s | fita 0%, aerofólio 65°
+PASS  reset returns to spawn pose
+[NR2003 Stage 12] direção original: relação 12:1 (item 0x30), trava 360° (180° por lado), override baixa velocidade on, linearidade 0.00, taxa 0.0330/quadro (teclas imagem, eixo 0), volante até 180°
+[NR2003 Stage 13] force feedback original ligado: força 80, amortecimento 0, latência 0 ms, dispositivo sim (efeito adquirido pelo 0054fed0 só com o eixo analógico)
+[NR2003 Stage 9] sessão: 70 F, condições 0, dia, vento 0 mph dir 0 -> ar 49.11 C, rho 1.081192 kg/m3, vento (-0.000, 0.000) m/s | fita 0%, aerofólio 65°
+PASS  5 % slope: plane normal tilted, car rolls downhill (-Z)  dz -6.51 studs, plane n=(0.0499 0.0000 0.9988)
+[NR2003 Stage 12] direção original: relação 12:1 (item 0x30), trava 360° (180° por lado), override baixa velocidade on, linearidade 0.00, taxa 0.0330/quadro (teclas imagem, eixo 0), volante até 180°
+[NR2003 Stage 13] force feedback original ligado: força 80, amortecimento 0, latência 0 ms, dispositivo sim (efeito adquirido pelo 0054fed0 só com o eixo analógico)
+[NR2003 Stage 9] sessão: 70 F, condições 0, dia, vento 0 mph dir 0 -> ar 49.11 C, rho 1.081192 kg/m3, vento (-0.000, 0.000) m/s | fita 0%, aerofólio 65°
+PASS  stage 8: at rest without throttle the original auto-hold applies the brake (00553080)  pedal 0.200 core 0.0400 speed 0.22 km/h
+PASS  stage 8: driving: pedal released (0) once moving with throttle  pedal 0.000 82.3 km/h
+PASS  stage 8: key brake ramps up (<= 1/12 per 36 Hz frame) to 1.0 (digital binding)  pedal after 1 host step 0.0833, after 0.5 s 1.0000
+PASS  stage 8: hard key braking at 74 %: front brake torque saturates (~2800 N*m, Kb 2812) without locking (as the original)
+PASS  stage 8: car brakes to a stop through wheel torque + tyres  0.10 km/h (from 82.3)
+PASS  stage 8: brake key released at standstill: original auto-hold keeps the car still  dz -0.004 studs, pedal 0.980
+PASS  stage 8: nobody seated -> 005524f0 'not driven': pedal held at exactly 1.0  pedal 1.0000
+[NR2003 Stage 10] setup aplicado (natural, 0.35 s): molas -71344/-71344/-41092/-41092 N/m, freio 2280/1520 N*m, marchas 2.133/1.611/1.261/1.000 x 4.500
+[NR2003 Stage 12] direção original: relação 12:1 (item 0x30), trava 360° (180° por lado), override baixa velocidade on, linearidade 0.00, taxa 0.0330/quadro (teclas imagem, eixo 0), volante até 180°
+[NR2003 Stage 13] force feedback original ligado: força 80, amortecimento 0, latência 0 ms, dispositivo sim (efeito adquirido pelo 0054fed0 só com o eixo analógico)
+[NR2003 Stage 9] sessão: 70 F, condições 0, dia, vento 0 mph dir 0 -> ar 49.11 C, rho 1.081192 kg/m3, vento (-0.000, 0.000) m/s | fita 0%, aerofólio 65°
+PASS  stage 8: SetupBrakeBias=60 applied at reset (garage item 0x28 -> 0055e9b0 cells)  Kb 2280 / 1520
+[NR2003 Stage 10] setup aplicado (natural, 0.45 s): molas -71344/-71344/-41092/-41092 N/m, freio 2812/988 N*m, marchas 2.133/1.611/1.261/1.000 x 4.500
+[NR2003 Stage 12] direção original: relação 12:1 (item 0x30), trava 360° (180° por lado), override baixa velocidade on, linearidade 0.00, taxa 0.0330/quadro (teclas imagem, eixo 0), volante até 180°
+[NR2003 Stage 13] force feedback original ligado: força 80, amortecimento 0, latência 0 ms, dispositivo sim (efeito adquirido pelo 0054fed0 só com o eixo analógico)
+[NR2003 Stage 9] sessão: 70 F, condições 0, dia, vento 0 mph dir 0 -> ar 49.11 C, rho 1.081192 kg/m3, vento (-0.000, 0.000) m/s | fita 0%, aerofólio 65°
+PASS  stage 8: default bias 74 % restored on reset without the attribute
+PASS  stage 8: no physics fault  nil
+[NR2003 Stage 12] direção original: relação 12:1 (item 0x30), trava 360° (180° por lado), override baixa velocidade on, linearidade 0.00, taxa 0.0330/quadro (teclas imagem, eixo 0), volante até 180°
+[NR2003 Stage 13] force feedback original ligado: força 80, amortecimento 0, latência 0 ms, dispositivo sim (efeito adquirido pelo 0054fed0 só com o eixo analógico)
+[NR2003 Stage 9] sessão: 70 F, condições 0, dia, vento 0 mph dir 0 -> ar 49.11 C, rho 1.081192 kg/m3, vento (-0.000, 0.000) m/s | fita 0%, aerofólio 65°
+PASS  stage 9: reset starts the session with the original defaults (rho 1.08119202, tape 0 %, spoiler 65 deg)  rho 1.08119202 tape 0 spoiler 65
+PASS  stage 9: aero telemetry at speed = ORIGINAL 00561b70 output (session, q, drag, downforce, factors 1.0)  257.6 km/h q 2768 Pa drag 2977 N down 2902 N (F 1223 R 1679) rh 0.1510
+PASS  stage 9: track normal for 00561a80 from the grounded contact planes (flat ground: (0,0,1))  (0 0 1)
+PASS  stage 9: DraftTestGap=8 (TEST ADAPTER phantom car) drives the ORIGINAL 005afd80: drag/front factors < 1  factors 0.874/0.877/1.000
+PASS  stage 9: phantom removed -> no race ring, factors back to 1.0
+PASS  stage 9: no physics fault at speed  nil
+[NR2003 Stage 12] direção original: relação 12:1 (item 0x30), trava 360° (180° por lado), override baixa velocidade on, linearidade 0.00, taxa 0.0330/quadro (teclas imagem, eixo 0), volante até 180°
+[NR2003 Stage 13] force feedback original ligado: força 80, amortecimento 0, latência 0 ms, dispositivo sim (efeito adquirido pelo 0054fed0 só com o eixo analógico)
+[NR2003 Stage 9] AeroSession=false: estado pós-build (sem ar, rho = 0)
+PASS  stage 9: AeroSession=false -> post-build state (rho 0, no aero force)
+[NR2003 Stage 10] setup aplicado (natural, 0.38 s): molas -71344/-71344/-41092/-41092 N/m, freio 2812/988 N*m, marchas 2.133/1.611/1.261/1.000 x 4.500
+[NR2003 Stage 12] direção original: relação 12:1 (item 0x30), trava 360° (180° por lado), override baixa velocidade on, linearidade 0.00, taxa 0.0330/quadro (teclas imagem, eixo 0), volante até 180°
+[NR2003 Stage 13] force feedback original ligado: força 80, amortecimento 0, latência 0 ms, dispositivo sim (efeito adquirido pelo 0054fed0 só com o eixo analógico)
+[NR2003 Stage 9] sessão: 40 F, condições 0, dia, vento 0 mph dir 0 -> ar 32.44 C, rho 1.148869 kg/m3, vento (-0.000, 0.000) m/s | fita 100%, aerofólio 45°
+PASS  stage 9: SetupGrilleTape / SetupSpoiler / WeatherTemperatureF applied at reset (garage items 0x3b/0x3d, 005a3c00 at 40 F)  tape 100 spoiler 45 rho 1.14886904
+[NR2003 Stage 10] setup aplicado (natural, 0.38 s): molas -71344/-71344/-41092/-41092 N/m, freio 2812/988 N*m, marchas 2.133/1.611/1.261/1.000 x 4.500
+[NR2003 Stage 12] direção original: relação 12:1 (item 0x30), trava 360° (180° por lado), override baixa velocidade on, linearidade 0.00, taxa 0.0330/quadro (teclas imagem, eixo 0), volante até 180°
+[NR2003 Stage 13] force feedback original ligado: força 80, amortecimento 0, latência 0 ms, dispositivo sim (efeito adquirido pelo 0054fed0 só com o eixo analógico)
+[NR2003 Stage 9] sessão: 70 F, condições 0, dia, vento 0 mph dir 0 -> ar 49.11 C, rho 1.081192 kg/m3, vento (-0.000, 0.000) m/s | fita 0%, aerofólio 65°
+PASS  stage 9: attributes removed -> Cup defaults again
+[NR2003 Stage 10] setup aplicado (generic, 0.81 s): molas -93296/-71344/-41092/-41092 N/m, freio 2812/988 N*m, marchas 2.133/1.611/1.261/1.000 x 4.500
+[NR2003 Stage 12] direção original: relação 12:1 (item 0x30), trava 360° (180° por lado), override baixa velocidade on, linearidade 0.00, taxa 0.0330/quadro (teclas imagem, eixo 0), volante até 180°
+[NR2003 Stage 13] force feedback original ligado: força 80, amortecimento 0, latência 0 ms, dispositivo sim (efeito adquirido pelo 0054fed0 só com o eixo analógico)
+[NR2003 Stage 9] sessão: 70 F, condições 0, dia, vento 0 mph dir 0 -> ar 49.11 C, rho 1.081192 kg/m3, vento (-0.000, 0.000) m/s | fita 0%, aerofólio 65°
+PASS  stage 10: Setup_<item> attributes -> 005581d0 (snap/clamp) -> ORIGINAL build at reset  generic 0.81 s, spring LF 1700 lb/in -> -93296 N/m, camber LF -3.00 deg
+[NR2003 Stage 12] direção original: relação 12:1 (item 0x30), trava 360° (180° por lado), override baixa velocidade on, linearidade 0.00, taxa 0.0330/quadro (teclas imagem, eixo 0), volante até 180°
+[NR2003 Stage 13] force feedback original ligado: força 80, amortecimento 0, latência 0 ms, dispositivo sim (efeito adquirido pelo 0054fed0 só com o eixo analógico)
+[NR2003 Stage 9] sessão: 70 F, condições 0, dia, vento 0 mph dir 0 -> ar 49.11 C, rho 1.081192 kg/m3, vento (-0.000, 0.000) m/s | fita 0%, aerofólio 65°
+PASS  stage 10: reset with an unchanged setup does not rebuild (reset image keeps the setup)
+PASS  stage 10: car runs on the rebuilt setup (no fault, loads positive)  nil
+[NR2003 Stage 10] setup aplicado (image, 0.00 s): molas -71344/-71344/-41092/-41092 N/m, freio 2812/988 N*m, marchas 2.133/1.611/1.261/1.000 x 4.500
+[NR2003 Stage 12] direção original: relação 18:1 (item 0x30), trava 360° (180° por lado), override baixa velocidade on, linearidade 0.00, taxa 0.0330/quadro (teclas imagem, eixo 0), volante até 180°
+[NR2003 Stage 13] force feedback original ligado: força 80, amortecimento 0, latência 0 ms, dispositivo sim (efeito adquirido pelo 0054fed0 só com o eixo analógico)
+[NR2003 Stage 9] sessão: 70 F, condições 0, dia, vento 0 mph dir 0 -> ar 49.11 C, rho 1.081192 kg/m3, vento (-0.000, 0.000) m/s | fita 0%, aerofólio 65°
+PASS  stage 10: attributes removed (shipped steering ratio 18) -> shipped default image (structure 'image')
+[NR2003 Stage 12] direção original: relação 18:1 (item 0x30), trava 360° (180° por lado), override baixa velocidade on, linearidade 0.00, taxa 0.0330/quadro (teclas imagem, eixo 0), volante até 180°
+[NR2003 Stage 13] force feedback original ligado: força 80, amortecimento 0, latência 0 ms, dispositivo sim (efeito adquirido pelo 0054fed0 só com o eixo analógico)
+[NR2003 Stage 9] sessão: 70 F, condições 0, dia, vento 0 mph dir 0 -> ar 49.11 C, rho 1.081192 kg/m3, vento (-0.000, 0.000) m/s | fita 0%, aerofólio 65°
+PASS  stage 11: reset starts the original runtime (fuel 62.4698 kg, water 93 C, oil 0 C, new tyres at session temperature + 11 C)  original fuel 62.4698 kg water 93.00 oil 0.00 tyre LF 60.08 C (new 60.11)
+PASS  stage 11: driving burns fuel (mass record follows), heats the oil, evolves water / tyre temperatures, wears the tyres (ORIGINAL 0051aac0 / 005605c0 / 0054d610 / 0054e9f0)  fuel 62.2621 kg (record 62.2621) water 90.15 oil 10.57 LR 58.5 C wear 0.00360
+[NR2003 Stage 11] TESTE: registro de colisão original (magnitude 150000) na frente do carro
+PASS  stage 11: DamageTestImpact (TEST ADAPTER) -> ORIGINAL 0054a760 record -> 00549c40 damages a body zone  scale 1.00 zones 0 0 0 0 0 0
+[NR2003 Stage 11] TESTE: troca dos 4 pneus pelo 00550f10 original
+PASS  stage 11: PitTyresTest (TEST ADAPTER) -> ORIGINAL 00550f10 x4: new tyres (wear 0, session temperature + 11 C)  LR wear 0.000000 temperature 59.97 C
+PASS  stage 11: no physics fault  nil
+[NR2003 Stage 12] direção original: relação 18:1 (item 0x30), trava 360° (180° por lado), override baixa velocidade on, linearidade 0.00, taxa 0.0330/quadro (teclas imagem, eixo 0), volante até 180°
+[NR2003 Stage 13] force feedback original ligado: força 80, amortecimento 0, latência 0 ms, dispositivo sim (efeito adquirido pelo 0054fed0 só com o eixo analógico)
+[NR2003 Stage 9] sessão: 70 F, condições 0, dia, vento 0 mph dir 0 -> ar 49.11 C, rho 1.081192 kg/m3, vento (-0.000, 0.000) m/s | fita 0%, aerofólio 65°
+PASS  stage 11: RaceDamageLevel=0 -> 00547e90 damage scale 0; RaceConsumptionRate applied at reset  scale 0.00
+[NR2003 Stage 12] direção original: relação 18:1 (item 0x30), trava 360° (180° por lado), override baixa velocidade on, linearidade 0.00, taxa 0.0330/quadro (teclas imagem, eixo 0), volante até 180°
+[NR2003 Stage 13] force feedback original ligado: força 80, amortecimento 0, latência 0 ms, dispositivo sim (efeito adquirido pelo 0054fed0 só com o eixo analógico)
+[NR2003 Stage 9] sessão: 70 F, condições 0, dia, vento 0 mph dir 0 -> ar 49.11 C, rho 1.081192 kg/m3, vento (-0.000, 0.000) m/s | fita 0%, aerofólio 65°
+PASS  stage 11: Stage11Runtime="frozen" (A/B) keeps the Stage 6-10 frame end: fuel / water held  frozen fuel 62.4698 -> 62.4698
+[NR2003 Stage 12] direção original: relação 18:1 (item 0x30), trava 360° (180° por lado), override baixa velocidade on, linearidade 0.00, taxa 0.0330/quadro (teclas imagem, eixo 0), volante até 180°
+[NR2003 Stage 13] force feedback original ligado: força 80, amortecimento 0, latência 0 ms, dispositivo sim (efeito adquirido pelo 0054fed0 só com o eixo analógico)
+[NR2003 Stage 9] sessão: 70 F, condições 0, dia, vento 0 mph dir 0 -> ar 49.11 C, rho 1.081192 kg/m3, vento (-0.000, 0.000) m/s | fita 0%, aerofólio 65°
+PASS  stage 11: attributes removed -> original runtime again
+[NR2003 Stage 10] setup aplicado (natural, 0.49 s): molas -71344/-71344/-41092/-41092 N/m, freio 2812/988 N*m, marchas 2.133/1.611/1.261/1.000 x 4.500
+[NR2003 Stage 12] direção original: relação 12:1 (item 0x30), trava 360° (180° por lado), override baixa velocidade on, linearidade 0.00, taxa 0.0330/quadro (teclas imagem, eixo 0), volante até 180°
+[NR2003 Stage 13] force feedback original ligado: força 80, amortecimento 0, latência 0 ms, dispositivo sim (efeito adquirido pelo 0054fed0 só com o eixo analógico)
+[NR2003 Stage 9] sessão: 70 F, condições 0, dia, vento 0 mph dir 0 -> ar 49.11 C, rho 1.081192 kg/m3, vento (-0.000, 0.000) m/s | fita 0%, aerofólio 65°
+PASS  stage 12.1: reset applies the bench defaults (setup ratio 12:1 through the ORIGINAL garage build, lock 360 deg = original x pi, linearity 0, keys rate 0.033 / frame, cockpit angle flag)  original ratio 12 (natural) lock 360 linearity 0 rate 0.032999999821186066
+PASS  stage 12.1: analog axis -1 at rest -> road-wheel target pi / 7 (12:1 -> 7:1 below 8.94 m/s), axis momentum 0 (rate 1), cockpit wheel -180 deg (full lock) in Cockpit + render snapshot  target 0.448799 ratio 7.000 wheel -3.1416 (cockpit -3.1415924727916718, snapshot -3.1416) digital false
+PASS  stage 12: the front wheels follow the solver (prescribed hub states 15 / 21 = target -+ toe; measured wheel yaw ~ -0.99 q)  hub LF 0.44656 RF 0.45104 current 0.44880; wheel yaw LF -0.44624 RF -0.44129 mean -0.44376 (0.9888 q)
+PASS  stage 12.1: steer-right key -> digital control 8 = 1.0 -> road-wheel target -pi / 7 at rest; keys use the image rate 0.033 (smooth)  target -0.448799 right 1 digital true rate 0.0330
+PASS  stage 12: legacy input.steer = -1 -> steer-left key (digital control 7)  target 0.448799
+[NR2003 Stage 10] setup aplicado (natural, 0.81 s): molas -71344/-71344/-41092/-41092 N/m, freio 2812/988 N*m, marchas 2.133/1.611/1.261/1.000 x 4.500
+[NR2003 Stage 12] direção original: relação 25:1 (item 0x30), trava 360° (180° por lado), override baixa velocidade off, linearidade 0.80, taxa 1.0000/quadro (teclas imagem, eixo 0), volante até 180°
+[NR2003 Stage 13] force feedback original ligado: força 80, amortecimento 0, latência 0 ms, dispositivo sim (efeito adquirido pelo 0054fed0 só com o eixo analógico)
+[NR2003 Stage 9] sessão: 70 F, condições 0, dia, vento 0 mph dir 0 -> ar 49.11 C, rho 1.081192 kg/m3, vento (-0.000, 0.000) m/s | fita 0%, aerofólio 65°
+PASS  stage 12: SteeringLinearity=80, SteeringMomentum=0, SteeringLowSpeedOverride=false, Setup_steeringRatio=25 -> ORIGINAL setters / garage at reset  linearity 0.7999999523162842 rate 1 ratio 25 target -0.036087 (pi * 0.5^1.8 / 25 = -0.036087)
+PASS  stage 12: no physics fault  nil
+[NR2003 Stage 10] setup aplicado (natural, 0.87 s): molas -71344/-71344/-41092/-41092 N/m, freio 2812/988 N*m, marchas 2.133/1.611/1.261/1.000 x 4.500
+[NR2003 Stage 12] direção original: relação 12:1 (item 0x30), trava 540° (270° por lado), override baixa velocidade on, linearidade 0.00, taxa 0.0330/quadro (teclas imagem, eixo 0), volante até 159.855°
+[NR2003 Stage 13] force feedback original ligado: força 80, amortecimento 0, latência 0 ms, dispositivo sim (efeito adquirido pelo 0054fed0 só com o eixo analógico)
+[NR2003 Stage 9] sessão: 70 F, condições 0, dia, vento 0 mph dir 0 -> ar 49.11 C, rho 1.081192 kg/m3, vento (-0.000, 0.000) m/s | fita 0%, aerofólio 65°
+PASS  stage 12.1: SteeringLockDegrees=540 -> full input target = f32(3 pi / 2) / 7 at rest; CockpitWheelClamp='original' -> 005662d0 limit -2.79 rad  target 0.673198 (want 0.673198) wheel -2.7900
+[NR2003 Stage 12] direção original: relação 12:1 (item 0x30), trava 360° (180° por lado), override baixa velocidade on, linearidade 0.00, taxa 0.0330/quadro (teclas imagem, eixo 0), volante até 180°
+[NR2003 Stage 13] force feedback original ligado: força 80, amortecimento 0, latência 0 ms, dispositivo sim (efeito adquirido pelo 0054fed0 só com o eixo analógico)
+[NR2003 Stage 9] sessão: 70 F, condições 0, dia, vento 0 mph dir 0 -> ar 49.11 C, rho 1.081192 kg/m3, vento (-0.000, 0.000) m/s | fita 0%, aerofólio 65°
+PASS  stage 12.1: attributes removed -> bench defaults again (linearity 0, rate 0.033, override on, ratio 12, lock 360)
+[NR2003 Stage 12] direção original: relação 12:1 (item 0x30), trava 360° (180° por lado), override baixa velocidade on, linearidade 0.00, taxa 0.0330/quadro (teclas imagem, eixo 0), volante até 180°
+[NR2003 Stage 13] force feedback original ligado: força 80, amortecimento 0, latência 0 ms, dispositivo sim (efeito adquirido pelo 0054fed0 só com o eixo analógico)
+[NR2003 Stage 9] sessão: 70 F, condições 0, dia, vento 0 mph dir 0 -> ar 49.11 C, rho 1.081192 kg/m3, vento (-0.000, 0.000) m/s | fita 0%, aerofólio 65°
+PASS  stage 13: reset applies the bench defaults (FF on, strength 80, damping 0, latency 0 = image values; ForceFeedbackApplied)
+PASS  stage 13: keys -> effect never acquired (0054fed0 needs an analog axis): FFBActive false, FFBForce 0
+PASS  stage 13: analog axis -> acquired (0054fed0), FFBActive, FFBForce = the original constant force sent to the device (= core state, |force| <= 1), FFBMagnitude = trunc(force x 10000)  force -0.4547 magnitude -4546 slip 2.81257 moment -107.12 speed 31.0 km/h
+PASS  stage 13: no driver seated -> ORIGINAL 00550070(1): controls suspended, FFBActive false, force 0 (005524f0 not-driven branch)
+PASS  stage 13: driver seated again -> 00550070(0): active, force from the block again
+[NR2003 Stage 12] direção original: relação 12:1 (item 0x30), trava 360° (180° por lado), override baixa velocidade on, linearidade 0.00, taxa 0.0330/quadro (teclas imagem, eixo 0), volante até 180°
+[NR2003 Stage 13] force feedback original ligado: força 40, amortecimento 100, latência 250 ms, dispositivo sim (efeito adquirido pelo 0054fed0 só com o eixo analógico)
+[NR2003 Stage 9] sessão: 70 F, condições 0, dia, vento 0 mph dir 0 -> ar 49.11 C, rho 1.081192 kg/m3, vento (-0.000, 0.000) m/s | fita 0%, aerofólio 65°
+PASS  stage 13: ForceFeedbackStrength / Damping / Latency attributes -> ORIGINAL setters at reset (controls.cfg integers)
+[NR2003 Stage 12] direção original: relação 12:1 (item 0x30), trava 360° (180° por lado), override baixa velocidade on, linearidade 0.00, taxa 0.0330/quadro (teclas imagem, eixo 0), volante até 180°
+[NR2003 Stage 13] force feedback original desligado: força 40, amortecimento 100, latência 250 ms, dispositivo sim (efeito adquirido pelo 0054fed0 só com o eixo analógico)
+[NR2003 Stage 9] sessão: 70 F, condições 0, dia, vento 0 mph dir 0 -> ar 49.11 C, rho 1.081192 kg/m3, vento (-0.000, 0.000) m/s | fita 0%, aerofólio 65°
+PASS  stage 13: ForceFeedback = false -> FF off (00550270), never acquired, no force
+[NR2003 Stage 12] direção original: relação 12:1 (item 0x30), trava 360° (180° por lado), override baixa velocidade on, linearidade 0.00, taxa 0.0330/quadro (teclas imagem, eixo 0), volante até 180°
+[NR2003 Stage 13] force feedback original ligado: força 80, amortecimento 0, latência 0 ms, dispositivo sim (efeito adquirido pelo 0054fed0 só com o eixo analógico)
+[NR2003 Stage 9] sessão: 70 F, condições 0, dia, vento 0 mph dir 0 -> ar 49.11 C, rho 1.081192 kg/m3, vento (-0.000, 0.000) m/s | fita 0%, aerofólio 65°
+PASS  stage 13: attributes removed -> bench defaults again
+PASS  stage 13: no physics fault with the FFB on  nil
+PASS  load Core.NR2003Cup  0.13 s
+PASS  raw: ticks 1-8 vs original (rel <= 2e-5)  worst 4.07e-07
+PASS  raw: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 823 ticks/s | x lua 3.086 orig 3.085 pert 3.097
+PASS  drive: ticks 1-8 vs original (rel <= 2e-5)  worst 2.04e-07
+PASS  drive: chassis states inside original sensitivity envelope (576 ticks)  0 outside | 600 ticks/s | x lua 2.141 orig 2.131 pert 2.136
+PASS  drive: gear sequence (lifted 00553d70)  0 mismatches
+PASS  checkpoint/restore bit-identical
+Stage 6/7 self-test: 7 passed, 0 failed
+PASS  Roblox/Stage67SelfTest.run(false) passes (what PATCH_STAGE6_7 executes)
+PASS  load Core.NR2003Cup (Stage 8 driver layer)  0.03 s
+PASS  00553080 pedal chain vs original (200 vectors)  worst 0 ulp
+PASS  brake bias cells: 74 % -> 2812/988, 60 % -> original rebuild values  2812/987.9999 2280/1520
+PASS  max: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 1062 ticks/s | x lua 122.15 orig 122.15 (twin spread 0.000) | vx lua 0.00 orig 0.00
+PASS  checkpoint/restore bit-identical while braking
+Stage 8 self-test: 5 passed, 0 failed
+PASS  Roblox/Stage8SelfTest.run(false) passes (what PATCH_STAGE8 executes)
+PASS  load Core.NR2003Cup (Stage 8 driver layer)  0.03 s
+PASS  00553080 pedal chain vs original (200 vectors)  worst 0 ulp
+PASS  brake bias cells: 74 % -> 2812/988, 60 % -> original rebuild values  2812/987.9999 2280/1520
+PASS  max: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 1396 ticks/s | x lua 122.15 orig 122.15 (twin spread 0.000) | vx lua 0.00 orig 0.00
+PASS  keyboard: braking phase inside the original envelope (1728 ticks)  0 state / 0 pedal outside | 1408 ticks/s | x lua 132.62 orig 132.62 (twin spread 0.001) | vx lua -0.03 orig -0.03
+PASS  bias85: braking phase inside the original envelope (1152 ticks)  0 state / 0 pedal outside | 1500 ticks/s | x lua 122.28 orig 122.28 (twin spread 0.000) | vx lua 0.00 orig -0.00
+PASS  nearzero: braking phase inside the original envelope (1584 ticks)  0 state / 0 pedal outside | 1332 ticks/s | x lua 1.98 orig 1.98 (twin spread 0.002) | vx lua -0.03 orig -0.03
+PASS  checkpoint/restore bit-identical while braking
+Stage 8 self-test: 8 passed, 0 failed
+PASS  Roblox/Stage8SelfTest.run(true) passes (full: 4 braking phases)
+PASS  load Core.NR2003Cup (Stage 9 aero module)  0.02 s
+PASS  embedded constants / damage-table cells = NR2003.exe (51 cells)  0 mismatching
+PASS  post-build state without a session: no air (rho 0), as in Stages 6-8
+PASS  005a3c00 weather -> wind / density (79 vectors) bit-exact  worst 0 ulp
+PASS  005a3ba0 density (100 vectors) <= 1 ulp  worst 0 ulp
+PASS  00561a80 half wind (40 vectors) <= 1 ulp  worst 0 ulp
+PASS  00561b70 aero force/moment (50 vectors) rel <= 1e-5  worst rel 0.00e+00
+PASS  005b0230 wake (120 vectors) <= 1 ulp  worst 0 ulp
+PASS  005afd80 drafting (50 race rings) <= 1 ulp  worst 0 ulp
+PASS  garage grille tape / spoiler conversions (00423de0 / 004241d0)  0 mismatches
+PASS  launch: aero telemetry = original 00561b70 at the snapshot; run inside the original envelope (576 ticks)  aero worst 0 ulp, 0 outside | 1452 ticks/s | x lua 996.1 orig 996.1 | vx lua 69.12 orig 69.12
+PASS  startSession() defaults: rho 1.08119202 kg/m^3 (70 F, sun, day)
+PASS  checkpoint/restore bit-identical with session air
+Stage 9 self-test: 13 passed, 0 failed
+PASS  Roblox/Stage9SelfTest.run(false) passes (what PATCH_STAGE9 executes)
+PASS  load Core.NR2003Cup (Stage 9 aero module)  0.03 s
+PASS  embedded constants / damage-table cells = NR2003.exe (51 cells)  0 mismatching
+PASS  post-build state without a session: no air (rho 0), as in Stages 6-8
+PASS  005a3c00 weather -> wind / density (79 vectors) bit-exact  worst 0 ulp
+PASS  005a3ba0 density (100 vectors) <= 1 ulp  worst 0 ulp
+PASS  00561a80 half wind (40 vectors) <= 1 ulp  worst 0 ulp
+PASS  00561b70 aero force/moment (50 vectors) rel <= 1e-5  worst rel 0.00e+00
+PASS  005b0230 wake (120 vectors) <= 1 ulp  worst 0 ulp
+PASS  005afd80 drafting (50 race rings) <= 1 ulp  worst 0 ulp
+PASS  garage grille tape / spoiler conversions (00423de0 / 004241d0)  0 mismatches
+PASS  launch: aero telemetry = original 00561b70 at the snapshot; run inside the original envelope (576 ticks)  aero worst 0 ulp, 0 outside | 530 ticks/s | x lua 996.1 orig 996.1 | vx lua 69.12 orig 69.12
+PASS  hsbrake: aero telemetry = original 00561b70 at the snapshot; run inside the original envelope (1152 ticks)  aero worst 0 ulp, 0 outside | 464 ticks/s | x lua 1022.3 orig 1022.3 | vx lua 15.36 orig 15.36
+PASS  draft: aero telemetry = original 00561b70 at the snapshot; run inside the original envelope (2880 ticks)  aero worst 0 ulp, 0 outside | 471 ticks/s | x lua 1228.0 orig 1228.0 | vx lua 69.56 orig 69.56
+PASS  startSession() defaults: rho 1.08119202 kg/m^3 (70 F, sun, day)
+PASS  checkpoint/restore bit-identical with session air
+Stage 9 self-test: 15 passed, 0 failed
+PASS  Roblox/Stage9SelfTest.run(true) passes (full: launch, high-speed braking, drafting)
+PASS  load Core.NR2003Cup (Stage 10: setup, build, generic callbacks, garage)  0.08 s
+PASS  garage conversions / steps = original [nearest] (278 vectors)  0 mismatches
+PASS  garage conversions / steps = original [down] (278 vectors)  0 mismatches
+PASS  setup items through the ORIGINAL build = original (6 builds: 3 natural, 3 generic)  max 1.49 s per applySetup
+PASS  applySetup(default) restores the shipped image (exact Stage 6-9 state)
+PASS  brakes_aero_tyres setup (generic): first 8 ticks = original (rel <= 2e-5)  worst 0.00e+00, 0 samples, 0 outside
+Stage 10 self-test: 6 passed, 0 failed
+PASS  Roblox/Stage10SelfTest.run(false) passes (what PATCH_STAGE10 executes)
+PASS  load Core.NR2003Cup (Stage 10: setup, build, generic callbacks, garage)  0.12 s
+PASS  garage conversions / steps = original [nearest] (278 vectors)  0 mismatches
+PASS  garage conversions / steps = original [down] (278 vectors)  0 mismatches
+PASS  setup items through the ORIGINAL build = original (12 builds: 12 natural, 0 generic)  max 1.09 s per applySetup
+PASS  applySetup(default) restores the shipped image (exact Stage 6-9 state)
+PASS  brakes_aero_tyres setup (generic): first 8 ticks = original (rel <= 2e-5), 8 s within the original envelope  worst 0.00e+00, 32 samples, 0 outside
+Stage 10 self-test: 6 passed, 0 failed
+PASS  Roblox/Stage10SelfTest.run(true) passes (full: more builds, 8 s drive with a setup)
+PASS  load Core.NR2003Cup with the Stage 11 runtime (original frame end lifted from NR2003.exe)  0.03 s, supplement 31252 bytes
+PASS  session start = original (8551 dwords: engine, fuel, 4 new tyres, damage repaired, options)
+PASS  frame end 00554520 + 00549c40 from the original state = original (7791 dwords; fuel double within 1 ulp)
+PASS  0.5 s drive = original (fuel, water, oil, LR tyre temperatures, LF brake, chassis x / vx / z; <= 2e-5 relative)  worst 0.00e+00
+Stage 11 self-test: 4 passed, 0 failed
+PASS  Roblox/Stage11SelfTest.run(false) passes (what PATCH_STAGE11 executes)
+PASS  load Core.NR2003Cup with the Stage 11 runtime (original frame end lifted from NR2003.exe)  0.03 s, supplement 31252 bytes
+PASS  session start = original (8551 dwords: engine, fuel, 4 new tyres, damage repaired, options)
+PASS  frame end 00554520 + 00549c40 from the original state = original (7791 dwords; fuel double within 1 ulp)
+PASS  0.5 s drive = original (fuel, water, oil, LR tyre temperatures, LF brake, chassis x / vx / z; <= 2e-5 relative)  worst 0.00e+00
+PASS  10 s drive twice: Stage 11 state bit-identical (determinism)  fuel 62.1339 kg water 97.26 C LR wear 0.2092
+PASS  frozen A/B mode keeps the post-build Stage 11 state (Stage 6-10 comparisons only)
+Stage 11 self-test: 6 passed, 0 failed
+PASS  Roblox/Stage11SelfTest.run(true) passes (full: 10 s drives, determinism, frozen A/B)
+[NR2003 Stage 12 self-test] PASS  Stage 12 steering chain installed (NR2003CupSteering), production mode 'original'
+[NR2003 Stage 12 self-test] PASS  00552d00 steering axes (slew + sin): 101 original vectors
+[NR2003 Stage 12 self-test] PASS  00552720 processed input (-1..1 x speed x yaw rate x linearity x limiter): 242 original vectors bit-exact
+[NR2003 Stage 12 self-test] PASS  00554fb0 steering ratio + low-speed override (8.94 / 17.88 m/s): 192 original vectors
+[NR2003 Stage 12 self-test] PASS  00551e80 tail (linearity, x pi, / ratio, ramp): 175 original vectors bit-exact
+[NR2003 Stage 12 self-test] PASS  option setters 005502f0 / 005500c0 (controls.cfg 0..100): 202 original vectors
+[NR2003 Stage 12 self-test] PASS  keys: 4 frame starts from the original's traced state: 472 written dwords bit-exact
+[NR2003 Stage 12 self-test] PASS  linear: 4 frame starts from the original's traced state: 464 written dwords bit-exact
+[NR2003 Stage 12 self-test] PASS  ratio32: 4 frame starts from the original's traced state: 472 written dwords bit-exact
+[NR2003 Stage 12 self-test] PASS  analog full left at rest: road-wheel target pi / 7 (18:1 -> 7:1 below 8.94 m/s), cockpit wheel -2.79 rad (005662d0)  target 0.448799 ratio 7.000 wheel -2.7900
+[NR2003 Stage 12 self-test] PASS  options survive a garage rebuild; setup ratio 25 reaches 00554fb0 (override off)
+[NR2003 Stage 12 self-test] PASS  steering assistance > 0 refused (needs the NR2003 track racing line)
+[NR2003 Stage 12 self-test] PASS  arcade driving mode (race bit 25: also chassis spec 0 at build, 004233a0) refused
+[NR2003 Stage 12 self-test] PASS  12.1: lock 360 deg (180 per side) = the original x pi: identical target, hubs and cockpit angle
+[NR2003 Stage 12 self-test] PASS  12.1: cockpit limit 'lock' = -180 deg at full left (original draw limit 160 deg); axis momentum 0 = rate 1, same target  wheel -180.0 deg, rate 1.0000
+[NR2003 Stage 12 self-test] PASS  12.1: lock 540 deg: full input -> target f32(3 pi / 2) / 7 at rest (same 00551e80 tail, other constant)  target 0.673198
+[NR2003 Stage 12 self-test] PASS  12.1: out-of-range host options refused (lock 0, keys momentum 101, cockpit limit 'x')
+[NR2003 Stage 12 self-test] 17 passed, 0 failed (3.2 s)
+PASS  Roblox/Stage12SelfTest.run(false) passes (what PATCH_STAGE12 executes)
+[NR2003 Stage 12 self-test] PASS  Stage 12 steering chain installed (NR2003CupSteering), production mode 'original'
+[NR2003 Stage 12 self-test] PASS  00552d00 steering axes (slew + sin): 101 original vectors
+[NR2003 Stage 12 self-test] PASS  00552720 processed input (-1..1 x speed x yaw rate x linearity x limiter): 242 original vectors bit-exact
+[NR2003 Stage 12 self-test] PASS  00554fb0 steering ratio + low-speed override (8.94 / 17.88 m/s): 192 original vectors
+[NR2003 Stage 12 self-test] PASS  00551e80 tail (linearity, x pi, / ratio, ramp): 175 original vectors bit-exact
+[NR2003 Stage 12 self-test] PASS  option setters 005502f0 / 005500c0 (controls.cfg 0..100): 202 original vectors
+[NR2003 Stage 12 self-test] PASS  keys: 16 frame starts from the original's traced state: 1888 written dwords bit-exact
+[NR2003 Stage 12 self-test] PASS  linear: 16 frame starts from the original's traced state: 1856 written dwords bit-exact
+[NR2003 Stage 12 self-test] PASS  ratio32: 16 frame starts from the original's traced state: 1888 written dwords bit-exact
+[NR2003 Stage 12 self-test] PASS  analog full left at rest: road-wheel target pi / 7 (18:1 -> 7:1 below 8.94 m/s), cockpit wheel -2.79 rad (005662d0)  target 0.448799 ratio 7.000 wheel -2.7900
+[NR2003 Stage 12 self-test] PASS  options survive a garage rebuild; setup ratio 25 reaches 00554fb0 (override off)
+[NR2003 Stage 12 self-test] PASS  steering assistance > 0 refused (needs the NR2003 track racing line)
+[NR2003 Stage 12 self-test] PASS  arcade driving mode (race bit 25: also chassis spec 0 at build, 004233a0) refused
+[NR2003 Stage 12 self-test] PASS  12.1: lock 360 deg (180 per side) = the original x pi: identical target, hubs and cockpit angle
+[NR2003 Stage 12 self-test] PASS  12.1: cockpit limit 'lock' = -180 deg at full left (original draw limit 160 deg); axis momentum 0 = rate 1, same target  wheel -180.0 deg, rate 1.0000
+[NR2003 Stage 12 self-test] PASS  12.1: lock 540 deg: full input -> target f32(3 pi / 2) / 7 at rest (same 00551e80 tail, other constant)  target 0.673198
+[NR2003 Stage 12 self-test] PASS  12.1: out-of-range host options refused (lock 0, keys momentum 101, cockpit limit 'x')
+[NR2003 Stage 12 self-test] PASS  determinism + checkpoint/restore with the steering chain (200 frames)
+[NR2003 Stage 12 self-test] 18 passed, 0 failed (6.8 s)
+PASS  Roblox/Stage12SelfTest.run(true) passes (full: all embedded snapshots, determinism)
+[NR2003 Stage 13 self-test] PASS  Stage 13 force feedback installed (NR2003CupFFB)
+[NR2003 Stage 13 self-test] PASS  image defaults: FF off, strength 80, damping 0, latency 0, not acquired, controls active
+[NR2003 Stage 13 self-test] PASS  exact x87 arithmetic (64-bit significand, round toward -inf) + FST dword: 407 vectors
+[NR2003 Stage 13 self-test] PASS  00554d30 front tyre statistics: 325 original vectors bit-exact
+[NR2003 Stage 13 self-test] PASS  FFB block of 00554520 (0055464c..0055479d): 300 original vectors bit-exact (state + 005d08d0 force)
+[NR2003 Stage 13 self-test] PASS  closed loop: 488 00554d30 calls + 270 FFB blocks traced in the ORIGINAL's run: bit-exact
+[NR2003 Stage 13 self-test] PASS  00550070 / 0054fed0 / 00550030: 216 original cases (state + device-call sequence)
+[NR2003 Stage 13 self-test] PASS  FF option setters 00550290 / 005502d0 / 005502b0: 115 original vectors
+[NR2003 Stage 13 self-test] PASS  keys: effect never acquired; analog axis: acquired by 0054fed0, block runs at the frame end
+[NR2003 Stage 13 self-test] PASS  controls suspended (00550070(1)): 005524f0 not-driven branch, FFB gated, zero force; resume runs it again
+[NR2003 Stage 13 self-test] PASS  FF options survive reset()
+[NR2003 Stage 13 self-test] 11 PASS, 0 FAIL (0.12 s)
+PASS  Roblox/Stage13SelfTest.run(false) passes (what PATCH_STAGE13 executes)
+[NR2003 Stage 13 self-test] PASS  Stage 13 force feedback installed (NR2003CupFFB)
+[NR2003 Stage 13 self-test] PASS  image defaults: FF off, strength 80, damping 0, latency 0, not acquired, controls active
+[NR2003 Stage 13 self-test] PASS  exact x87 arithmetic (64-bit significand, round toward -inf) + FST dword: 407 vectors
+[NR2003 Stage 13 self-test] PASS  00554d30 front tyre statistics: 325 original vectors bit-exact
+[NR2003 Stage 13 self-test] PASS  FFB block of 00554520 (0055464c..0055479d): 300 original vectors bit-exact (state + 005d08d0 force)
+[NR2003 Stage 13 self-test] PASS  closed loop: 488 00554d30 calls + 270 FFB blocks traced in the ORIGINAL's run: bit-exact
+[NR2003 Stage 13 self-test] PASS  00550070 / 0054fed0 / 00550030: 216 original cases (state + device-call sequence)
+[NR2003 Stage 13 self-test] PASS  FF option setters 00550290 / 005502d0 / 005502b0: 115 original vectors
+[NR2003 Stage 13 self-test] PASS  keys: effect never acquired; analog axis: acquired by 0054fed0, block runs at the frame end
+[NR2003 Stage 13 self-test] PASS  controls suspended (00550070(1)): 005524f0 not-driven branch, FFB gated, zero force; resume runs it again
+[NR2003 Stage 13 self-test] PASS  FF options survive reset()
+[NR2003 Stage 13 self-test] PASS  deterministic FFB output, checkpoint / restore bit-identical
+[NR2003 Stage 13 self-test] 12 PASS, 0 FAIL (0.87 s)
+PASS  Roblox/Stage13SelfTest.run(true) passes (full: determinism, checkpoint / restore)
+
+adapter mock: 77 passed, 0 failed

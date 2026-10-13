@@ -1,0 +1,11 @@
+test_by_value_stack_arguments (__main__.PushSemantics.test_by_value_stack_arguments) ... ok
+test_esp_relative_source_is_read_before_decrement (__main__.PushSemantics.test_esp_relative_source_is_read_before_decrement) ... ok
+test_immediate_pushes (__main__.PushSemantics.test_immediate_pushes) ... ok
+test_ordinary_register_pushes (__main__.PushSemantics.test_ordinary_register_pushes) ... ok
+test_push_esp_reads_the_pre_decrement_value (__main__.PushSemantics.test_push_esp_reads_the_pre_decrement_value) ... ok
+test_successive_push_esp_values (__main__.PushSemantics.test_successive_push_esp_values) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.126s
+
+OK

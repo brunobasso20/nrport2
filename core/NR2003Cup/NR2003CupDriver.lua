@@ -97,10 +97,12 @@ return function(V)
 
 	-- 00554f50: vehicle speed |v| from the exported state block, cached in bf6f44 (float32).
 	-- The original recomputes when the timer-interrupt count changes; the state block does not
-	-- change inside a frame start, so recomputing on every call returns the same value.
+	-- change inside a frame start, so recomputing on every call returns the same value. Preserve the ORIGINAL
+	-- getIntCount stamp as well: the track-world regression compares the full written-memory footprint.
 	local function speed()
 		local vz, vy, vx = rf32(0xbf6d54), rf32(0xbf6d4c), rf32(0xbf6d44)
 		wf32d(0xbf6f44, sqrt((vz * vz + vy * vy) + vx * vx))
+		w32(0x74c9ac, r32(0x7559c4))
 		return rf32(0xbf6f44)
 	end
 

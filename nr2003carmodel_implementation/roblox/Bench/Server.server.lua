@@ -10,7 +10,8 @@ local RenderSnapshot=require(package.Roblox.RenderSnapshot)
 local U=require(package.Core.MathUtil)
 local tune=Tune.new(); local world=workspace:FindFirstChild("NR2003LabWorld")
 if not world then
-    world=Instance.new("Folder"); world.Name="NR2003LabWorld"; world.Parent=workspace; Builder.makeTrack(world)
+    world=Instance.new("Folder"); world.Name="NR2003LabWorld"; world.Parent=workspace
+    if package:GetAttribute("NR2003Track")~="watkins_glen" then Builder.makeTrack(world) end
 end
 local car=world:FindFirstChild("TestCar") or Builder.create(world,Builder.spawnCFrame(tune),tune)
 local remote=package:WaitForChild("Input"); local telemetry=package:WaitForChild("Telemetry")
@@ -24,6 +25,9 @@ elseif Mode.mode=="NR2003_CUP" then
     -- Stage 6/7: original NR2003 Cup 45-state core (Core.NR2003Cup); Roblox = contact/presentation host
     controller=require(package.Roblox.CupChassisAdapter).new(car,tune,remote)
 else error("Unknown NR2003 mode: "..tostring(Mode.mode)) end
+if controller.originalTrack then
+    require(package.Roblox.NR2003WatkinsGlen).prepareDriverSpawn(controller,world)
+end
 -- Stage 12: only the Cup core sends the ORIGINAL steering-wheel angle in the render snapshots
 car:SetAttribute("CockpitWheelAngle",Mode.mode=="NR2003_CUP")
 -- nr2003carmodel: ORIGINAL draw record for the client car model / cockpit / cameras (presentation only, optional)

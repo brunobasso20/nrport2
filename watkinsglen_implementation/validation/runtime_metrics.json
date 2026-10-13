@@ -1,0 +1,58 @@
+{
+  "strict_reference_result": {
+    "passed": 23,
+    "failed": 30
+  },
+  "metrics": [
+    {
+      "scenario": "stall0",
+      "seconds": 0.6666666666666666,
+      "position_m": 6.10351562e-05,
+      "velocity_m_s": 0.00055347383,
+      "quaternion": 1.14813447e-05,
+      "force_N": 15.7805176,
+      "rolling_torque_Nm": 0.00302219391,
+      "contact_speed_m_s": 0.00214016438
+    },
+    {
+      "scenario": "launch",
+      "seconds": 5,
+      "position_m": 0.0147399902,
+      "velocity_m_s": 0.0126514435,
+      "quaternion": 0.000173475593,
+      "force_N": 370.709961,
+      "rolling_torque_Nm": 0.0670511723,
+      "contact_speed_m_s": 0.538480163
+    },
+    {
+      "scenario": "wall",
+      "seconds": 4,
+      "position_m": 0.0310668945,
+      "velocity_m_s": 0.101448417,
+      "quaternion": 0.00159857562,
+      "force_N": 111.486328,
+      "rolling_torque_Nm": 0.222793579,
+      "contact_speed_m_s": 0.0676348209
+    },
+    {
+      "scenario": "grass",
+      "seconds": 1,
+      "position_m": 9.15527344e-05,
+      "velocity_m_s": 0.00116921775,
+      "quaternion": 2.85180286e-05,
+      "force_N": 7.97008419,
+      "rolling_torque_Nm": 0.100875854,
+      "contact_speed_m_s": 0.00529953837
+    },
+    {
+      "scenario": "sand",
+      "seconds": 1,
+      "position_m": 9.53674316e-07,
+      "velocity_m_s": 1.05947256e-05,
+      "quaternion": 1.3038516e-07,
+      "force_N": 0.240112305,
+      "rolling_torque_Nm": 0.00842285156,
+      "contact_speed_m_s": 3.27993184e-05
+    }
+  ]
+}

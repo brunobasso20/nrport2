@@ -388,7 +388,8 @@ class Lifter:
             return [self.wr(ops[0], self.ea(ops[1]))], False
         if mn == 'push':
             v = self.rd(ops[0])
-            if re.fullmatch(r'E[A-Z]{2}|\d+', v): return ['ESP = ESP - 4; wu(M, ESP - %d, %s)' % (self.base, v)], False
+            # PUSH ESP reads the pre-decrement stack pointer (Intel PUSH semantics).
+            if v != 'ESP' and re.fullmatch(r'E[A-Z]{2}|\d+', v): return ['ESP = ESP - 4; wu(M, ESP - %d, %s)' % (self.base, v)], False
             return ['do local v = %s; ESP = ESP - 4; wu(M, ESP - %d, band(v)) end' % (v, self.base)], False
         if mn == 'pop':
             if ops[0].type == X.X86_OP_REG and ops[0].reg in R32 and ops[0].reg != X.X86_REG_ESP:

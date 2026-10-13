@@ -1,0 +1,261 @@
+[
+  {
+    "wall": 549,
+    "native": {
+      "points": [
+        [
+          -0.07187499850988388,
+          0.2828125059604645,
+          0.29180288314819336
+        ],
+        [
+          -0.2750000059604645,
+          0.612500011920929,
+          0.67904132604599
+        ],
+        [
+          -0.590624988079071,
+          0.885937511920929,
+          1.0966382026672363
+        ],
+        [
+          -1.0,
+          1.0,
+          1.5216065645217896
+        ]
+      ],
+      "uv0": [
+        0.271983802318573,
+        0.1863420009613037,
+        0.0939861461520195,
+        0.0
+      ],
+      "uv1": [
+        0.271983802318573,
+        0.1863420009613037,
+        0.0939861461520195,
+        0.0
+      ],
+      "base": [
+        0.3365190029144287,
+        0.3365190029144287
+      ],
+      "height": [
+        3.0,
+        3.0
+      ]
+    },
+    "python": {
+      "points": [
+        {
+          "lateral": -0.07187499850988388,
+          "height": 0.2828125059604645,
+          "arcLength": 0.29180288314819336,
+          "uvFractionStart": 0.271983802318573,
+          "uvFractionEnd": 0.271983802318573
+        },
+        {
+          "lateral": -0.2750000059604645,
+          "height": 0.612500011920929,
+          "arcLength": 0.67904132604599,
+          "uvFractionStart": 0.1863420009613037,
+          "uvFractionEnd": 0.1863420009613037
+        },
+        {
+          "lateral": -0.590624988079071,
+          "height": 0.885937511920929,
+          "arcLength": 1.0966382026672363,
+          "uvFractionStart": 0.0939861461520195,
+          "uvFractionEnd": 0.0939861461520195
+        },
+        {
+          "lateral": -1.0,
+          "height": 1.0,
+          "arcLength": 1.5216065645217896,
+          "uvFractionStart": 0.0,
+          "uvFractionEnd": 0.0
+        }
+      ],
+      "lowerHeightStart": 3.0,
+      "lowerHeightEnd": 3.0,
+      "profileHeight": 1.0,
+      "totalProfileArcLength": 1.5216065645217896,
+      "baseUVFractionStart": 0.3365190029144287,
+      "baseUVFractionEnd": 0.3365190029144287,
+      "source": "rend_dxg.dll10047350/10048b40",
+      "authored": {
+        "targetHeight": -1.0,
+        "subdivisions": 4,
+        "lateralControlPoints": [
+          0.0,
+          0.0,
+          0.4000000059604645,
+          1.0
+        ],
+        "heightControlPoints": [
+          0.0,
+          0.30000001192092896,
+          1.0,
+          1.0
+        ],
+        "bytesHex": "000080bf040000000000000000000000cdcccc3e0000803f000000009a99993e0000803f0000803f",
+        "sourceRenderer": "rend_dxg.dll10047350"
+      }
+    },
+    "mismatches": []
+  },
+  {
+    "wall": 2049,
+    "native": {
+      "points": [
+        [
+          -0.014814816415309906,
+          0.06666667014360428,
+          0.06829292327165604
+        ],
+        [
+          -0.11851853132247925,
+          0.2666666805744171,
+          0.29358044266700745
+        ],
+        [
+          -0.4000000059604645,
+          0.6000000238418579,
+          0.7298635244369507
+        ]
+      ],
+      "uv0": [
+        0.1601918786764145,
+        0.10564104467630386,
+        0.0
+      ],
+      "uv1": [
+        0.1601918786764145,
+        0.10564104467630386,
+        0.0
+      ],
+      "base": [
+        0.1767282485961914,
+        0.1767282485961914
+      ],
+      "height": [
+        3.399999976158142,
+        3.399999976158142
+      ]
+    },
+    "python": {
+      "points": [
+        {
+          "lateral": -0.014814816415309906,
+          "height": 0.06666667014360428,
+          "arcLength": 0.06829292327165604,
+          "uvFractionStart": 0.1601918786764145,
+          "uvFractionEnd": 0.1601918786764145
+        },
+        {
+          "lateral": -0.11851853132247925,
+          "height": 0.2666666805744171,
+          "arcLength": 0.29358044266700745,
+          "uvFractionStart": 0.10564104467630386,
+          "uvFractionEnd": 0.10564104467630386
+        },
+        {
+          "lateral": -0.4000000059604645,
+          "height": 0.6000000238418579,
+          "arcLength": 0.7298635244369507,
+          "uvFractionStart": 0.0,
+          "uvFractionEnd": 0.0
+        }
+      ],
+      "lowerHeightStart": 3.399999976158142,
+      "lowerHeightEnd": 3.399999976158142,
+      "profileHeight": 0.6000000238418579,
+      "totalProfileArcLength": 0.7298635244369507,
+      "baseUVFractionStart": 0.1767282485961914,
+      "baseUVFractionEnd": 0.1767282485961914,
+      "source": "rend_dxg.dll10047350/10048b40",
+      "authored": {
+        "targetHeight": -1.0,
+        "subdivisions": 3,
+        "lateralControlPoints": [
+          0.0,
+          0.0,
+          0.0,
+          0.4000000059604645
+        ],
+        "heightControlPoints": [
+          0.0,
+          0.0,
+          0.20000000298023224,
+          0.6000000238418579
+        ],
+        "bytesHex": "000080bf03000000000000000000000000000000cdcccc3e0000000000000000cdcc4c3e9a99193f",
+        "sourceRenderer": "rend_dxg.dll10047350"
+      }
+    },
+    "mismatches": []
+  },
+  {
+    "wall": 2909,
+    "native": {
+      "points": [
+        [
+          0.5,
+          0.5,
+          0.7071067690849304
+        ]
+      ],
+      "uv0": [
+        0.0
+      ],
+      "uv1": [
+        0.0
+      ],
+      "base": [
+        0.1680743545293808,
+        0.1680743545293808
+      ],
+      "height": [
+        3.5,
+        3.5
+      ]
+    },
+    "python": {
+      "points": [
+        {
+          "lateral": 0.5,
+          "height": 0.5,
+          "arcLength": 0.7071067690849304,
+          "uvFractionStart": 0.0,
+          "uvFractionEnd": 0.0
+        }
+      ],
+      "lowerHeightStart": 3.5,
+      "lowerHeightEnd": 3.5,
+      "profileHeight": 0.5,
+      "totalProfileArcLength": 0.7071067690849304,
+      "baseUVFractionStart": 0.1680743545293808,
+      "baseUVFractionEnd": 0.1680743545293808,
+      "source": "rend_dxg.dll10047350/10048b40",
+      "authored": {
+        "targetHeight": -1.0,
+        "subdivisions": 1,
+        "lateralControlPoints": [
+          0.0,
+          0.0,
+          0.0,
+          -0.5
+        ],
+        "heightControlPoints": [
+          0.0,
+          0.0,
+          0.0,
+          0.5
+        ],
+        "bytesHex": "000080bf01000000000000000000000000000000000000bf0000000000000000000000000000003f",
+        "sourceRenderer": "rend_dxg.dll10047350"
+      }
+    },
+    "mismatches": []
+  }
+]
