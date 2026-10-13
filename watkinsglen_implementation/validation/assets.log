@@ -1,0 +1,12 @@
+{
+ "files": 88,
+ "meshes": 3333,
+ "triangles": 1024561,
+ "textures": 426,
+ "installersCompiled": 120,
+ "maxMeshTriangles": 16000,
+ "maxMeshDimensionStuds": 1800.0,
+ "sourceModules": 119,
+ "maxSourceBytes": 176280,
+ "boundsDifferenceStuds": 0.00041881250035658013
+}

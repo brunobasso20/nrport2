@@ -1,7 +1,8 @@
 """Small, source-derived helpers for the original NR2003 track renderer.
 
-Evidence is recovered from the original rendserv.dll, not inferred from a
-viewer.  See 1001cf60/1001dd20 (wall boundary curves), 1001e450 (UV corner
+Evidence is recovered from the original rendserv.dll and rend_dxg.dll. See
+DXG10047350/10048b40 (cubic walls), DXG100496f0 (painted details),
+1001cf60/1001dd20 (wall boundary curves), 1001e450 (UV corner
 coefficients), 1001e530 (wall end-cap coordinates), and 10020bf0/10021340/
 100217b0 (wall compiler).  These helpers do not replace the continuous
 NR2003 collision and surface query runtime.

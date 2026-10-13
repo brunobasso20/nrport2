@@ -1,0 +1,115 @@
+-- Generated Watkins Glen visual installer: watkins_glen_terrain_063.glb.
+-- Import this GLB into Workspace with Studio's 3D Importer, then run this in the Command Bar outside Play.
+-- Uses the four NR2003 markers to undo importer translation/rotation/uniform scale.
+-- Keeps the previous chunk in ServerStorage.NR2003Backup_TrackVisuals. Does not save the place.
+assert(not game:GetService("RunService"):IsRunning(), "Stop Play before installing track assets")
+local Selection = game:GetService("Selection")
+local storage = game:GetService("ServerStorage")
+local PACKAGE = "watkins_glen_terrain_063"
+local KIND = "terrain"
+local SOURCE_HASH = "0d7b3b3402510b4f4fa9a640abbc62af8bb8d77434815b93a89fd136d2fc73f6"
+local GEOMETRIES = {
+    {name="G000_terrain_102_10",center=Vector3.new(1126.147188,87.107689,-153.157632),opacity=1.0,blend=false,texture="trackmat__grass"},
+    {name="G001_terrain_103_00",center=Vector3.new(1070.059041,82.414954,151.681805),opacity=1.0,blend=false,texture="trackmat__grass"},
+    {name="G002_terrain_103_01",center=Vector3.new(1097.894287,82.306947,65.64361),opacity=1.0,blend=false,texture="trackmat__curbing2"},
+    {name="G003_terrain_103_02",center=Vector3.new(1100.054278,82.810041,59.21326),opacity=1.0,blend=false,texture="trackmat__asphalt"},
+    {name="G004_terrain_103_03",center=Vector3.new(1102.051108,83.450644,53.057594),opacity=1.0,blend=false,texture="trackmat__paint"},
+    {name="G005_terrain_103_04",center=Vector3.new(1105.365481,84.485344,42.926281),opacity=1.0,blend=false,texture="trackmat__concrete"},
+    {name="G006_terrain_103_05",center=Vector3.new(1111.259024,86.272158,25.615623),opacity=1.0,blend=false,texture="trackmat__asphalt"},
+    {name="G007_terrain_103_06",center=Vector3.new(1113.947514,87.107573,17.069014),opacity=1.0,blend=false,texture="trackmat__dirt_left"},
+    {name="G008_terrain_103_07_baked_f_0",center=Vector3.new(1117.920903,87.107577,5.232867),opacity=1.0,blend=false,texture="baked_f_06557_00_00"},
+    {name="G009_terrain_103_08",center=Vector3.new(1123.161915,87.107583,-10.740206),opacity=1.0,blend=false,texture="trackmat__grass"},
+    {name="G010_terrain_103_09",center=Vector3.new(1163.959776,87.107641,-132.489872),opacity=1.0,blend=false,texture="trackmat__grass"},
+}
+local selected = Selection:Get()
+local src
+for _, item in ipairs(selected) do
+    if (item:IsA("Model") or item:IsA("Folder")) and item:FindFirstChild("NR2003_MARKER_O", true) then
+        local complete = true
+        for _, g in ipairs(GEOMETRIES) do if not item:FindFirstChild(g.name, true) then complete = false; break end end
+        if complete then src = item; break end
+    end
+end
+if not src then src = workspace:FindFirstChild(PACKAGE) end
+local root = workspace:FindFirstChild("NR2003WatkinsGlen")
+assert(not root or root:IsA("Model"), "Workspace.NR2003WatkinsGlen must be a Model")
+local existing = root and root:FindFirstChild(PACKAGE)
+if not src and existing and existing:GetAttribute("NR2003SourceHash") == SOURCE_HASH then
+    print(PACKAGE .. " already installed and calibrated")
+    return
+end
+assert(src and (src:IsA("Model") or src:IsA("Folder")), "Import " .. PACKAGE .. ".glb, or select its imported model")
+assert(src ~= root, "Select the imported chunk, not the complete track model")
+local function marker(name)
+    local p = src:FindFirstChild(name, true)
+    assert(p and p:IsA("BasePart"), "Missing calibration marker " .. name .. "; import the complete GLB")
+    return p
+end
+local markers = {marker("NR2003_MARKER_O"), marker("NR2003_MARKER_X"), marker("NR2003_MARKER_Y"), marker("NR2003_MARKER_Z")}
+local origin = markers[1].Position
+local ex, ey, ez = (markers[2].Position-origin)/4, (markers[3].Position-origin)/4, (markers[4].Position-origin)/4
+local k = ex.Magnitude
+assert(k > 1e-6, "Degenerate calibration markers")
+local qx, qy, qz = ex/k, ey/k, ez/k
+local error = math.max(math.abs(qx:Dot(qy)), math.abs(qy:Dot(qz)), math.abs(qz:Dot(qx)),
+    math.abs(ey.Magnitude/k-1), math.abs(ez.Magnitude/k-1), math.abs(qx:Cross(qy):Dot(qz)-1))
+assert(error < 1e-3, "Importer applied a nonuniform or reflected transform; calibration error " .. error)
+-- Marker tetrahedron bounding-box centre is 1/4 of its 0.25-stud edge offset.
+local offset = 0.0625
+local importedFrame = CFrame.fromMatrix(origin-(qx+qy+qz)*offset*k, qx, qy, qz)
+local prepared = {}
+local missingTextures = 0
+for _, g in ipairs(GEOMETRIES) do
+    local p = src:FindFirstChild(g.name, true)
+    assert(p and p:IsA("MeshPart"), "Missing imported MeshPart " .. g.name)
+    local cf = importedFrame:ToObjectSpace(p.CFrame)
+    local centre = cf.Position/k
+    assert((centre-g.center).Magnitude < 0.15,
+        "Geometry centre differs from original for " .. g.name .. "; disable importer per-object recentering")
+    local appearance = p:FindFirstChildOfClass("SurfaceAppearance")
+    if g.texture ~= "untextured" and not appearance and p.TextureID == "" then missingTextures += 1 end
+    table.insert(prepared, {part=p, geometry=g, cf=CFrame.new(centre)*(cf-cf.Position), size=p.Size/k})
+end
+-- Every marker and geometry was validated before editing the place.
+local backup = storage:FindFirstChild("NR2003Backup_TrackVisuals")
+if not backup then backup = Instance.new("Folder"); backup.Name = "NR2003Backup_TrackVisuals"; backup.Parent = storage end
+if not root then root = Instance.new("Model"); root.Name = "NR2003WatkinsGlen"; root.WorldPivot = CFrame.identity; root.Parent = workspace end
+if existing and existing ~= src then existing.Name = PACKAGE .. "_" .. os.time(); existing.Parent = backup end
+local installed = Instance.new("Model")
+installed.Name = PACKAGE
+installed.WorldPivot = CFrame.identity
+for _, item in ipairs(prepared) do
+    local p, g = item.part, item.geometry
+    p.Anchored = true
+    p.CanCollide = false
+    -- The existing car client's chase camera queries terrain for clearance.
+    -- Vehicle contacts continue to use the recovered NR2003 world exclusively.
+    p.CanQuery = (KIND == "terrain")
+    p:SetAttribute("NR2003TerrainQuery", KIND == "terrain")
+    p.CanTouch = false
+    p.Size = item.size
+    p.CFrame = item.cf
+    p.Transparency = 1-g.opacity
+    p.CastShadow = true
+    p.DoubleSided = true
+    local appearance = p:FindFirstChildOfClass("SurfaceAppearance")
+    if not appearance and g.blend and p.TextureID ~= "" then
+        appearance = Instance.new("SurfaceAppearance")
+        appearance.ColorMap = p.TextureID
+        appearance.Parent = p
+    end
+    if appearance then appearance.AlphaMode = g.blend and Enum.AlphaMode.Transparency or Enum.AlphaMode.Overlay end
+    p.Parent = installed
+end
+for _, p in ipairs(markers) do p:Destroy() end
+if #src:GetDescendants() == 0 then src:Destroy() else src.Name = PACKAGE .. "_ImportRemainder_" .. os.time(); src.Parent = backup end
+installed:SetAttribute("NR2003SourceHash", SOURCE_HASH)
+installed:SetAttribute("NR2003OriginalScale", k)
+installed:SetAttribute("NR2003VisualKind", KIND)
+installed.Parent = root
+root.WorldPivot = CFrame.identity
+root:SetAttribute("TrackOriginEnabled", true)
+root:SetAttribute("NR2003MetresPerStud", 0.28)
+print(string.format("Installed %s: %d original mesh parts; importer scale %.9g undone; collision disabled", PACKAGE, #prepared, k))
+if missingTextures > 0 then warn(missingTextures .. " parts have no imported texture; check Asset Manager image moderation") end
+print("Track origin is CFrame.identity. The place has not been saved.")

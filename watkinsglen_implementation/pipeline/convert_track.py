@@ -378,18 +378,34 @@ def write_visual_luau(data, path):
         (path.parent / (name + ".lua")).write_text(source)
         modules.append((name, source))
         batch.clear()
-    for chunk in chunks:
-        source = export._lua(chunk)
+    def append_fragment(index, header, geometries):
+        source = export._lua({"chunk": index, "header": header, "geometries": geometries})
         if len(source.encode()) > 180000:
-            raise ValueError("Visual chunk metadata exceeds Roblox source module limit: " + chunk["name"])
+            raise ValueError("One visual geometry description exceeds Roblox source module limit")
         if batch and sum(len(x.encode()) for x in batch) + len(source.encode()) > 180000:
             flush()
         batch.append(source)
+    for index, chunk in enumerate(chunks, 1):
+        header = {key: value for key, value in chunk.items() if key != "geometries"}
+        geometries, size = [], len(export._lua(header).encode()) + 100
+        for geometry in chunk["geometries"]:
+            geometry_size = len(export._lua(geometry).encode()) + 1
+            if geometries and size + geometry_size > 175000:
+                append_fragment(index, header, geometries)
+                header, geometries, size = {}, [], 100
+            geometries.append(geometry)
+            size += geometry_size
+        append_fragment(index, header, geometries)
     flush()
     lines.append("D.chunks = {}")
     lines.append("for i = 1, %d do" % len(modules))
     lines.append('    local part = require(script.Parent:WaitForChild("%sPart" .. i))' % path.stem)
-    lines.append("    for _, chunk in ipairs(part) do table.insert(D.chunks, chunk) end")
+    lines.append("    for _, fragment in ipairs(part) do")
+    lines.append("        local chunk = D.chunks[fragment.chunk]")
+    lines.append("        if not chunk then chunk = {geometries = {}}; D.chunks[fragment.chunk] = chunk end")
+    lines.append("        for key, value in pairs(fragment.header) do chunk[key] = value end")
+    lines.append("        for _, geometry in ipairs(fragment.geometries) do table.insert(chunk.geometries, geometry) end")
+    lines.append("    end")
     lines.append("end")
     lines.append("return D")
     main_source = "\n".join(lines) + "\n"
@@ -508,6 +524,8 @@ def main(argv=None):
     if not a.geometry:
         limitations.append("No recovered terrain/wall geometry supplied: placed original scenery only.")
     limitations.append("Visual state is a daytime race with full population, highest-detail LOD; source scene graphs preserve other authored branches. Dynamic flags and vehicles are not driven by game state. Original sky geometry/settings are retained in json/sky.json; sky and fog renderer effects are not installed.")
+    if lightmap_report.get("limitation"):
+        limitations.append(lightmap_report["limitation"])
     visual = {"format": "nr2003trackvisual/1", "track": "Watkins Glen", "metresPerStud": a.metres_per_stud,
               "dimensions": original_track_dimensions(REPO, a.metres_per_stud),
               "axes": "roblox(x=-y_nr,y=z_nr,z=-x_nr)", "markers": export.MARKERS, "markerSize": export.MARKER_SIZE,

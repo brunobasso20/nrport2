@@ -1,30 +1,29 @@
 # Watkins Glen continuation status
 
-Stage14 has not started. Scope is the original track driving test: scale/topography, textures, surface behavior and body/barrier contacts. Race rules, lap timing and pit limiting are excluded.
+The original-track driving test is implemented and packaged. Scope is scale/topography, textures, surface behavior and body/barrier contacts. Stage 14/15, race rules, lap timing and pit limiting have not been started.
 
-## Completed runtime integration
+## Completed
 
-- Original123-section track runtime, length3942.875732421875m, with original world/tire/body contact functions.
-- Same0.28metres/stud and NRaxis conversion as the existing car. Studio import markers restore that scale and placement.
-- Original material grip, stiffness/damping, rolling resistance, heat and off-road roughness data checked against executed original code.
-- Fixed lifted PUSH ESP semantics, complete initialized static-data coverage and startup collision-record publication.
-- All123section midpoints pass96ticks of contact/stability coverage; five-case smoke43pass/0fail; Stage13regression40pass/0fail; real adapter mock77pass/0fail and original-track adapter8pass/0fail.
-- Reversible Studio patch preserves the existing car meshes, cockpit, client and controls; installer transaction23pass/0fail.
+- Original 123-section runtime, length 3942.875732421875 m, with original world/tire/body contacts.
+- Shared 0.28 metres/stud conversion and calibrated Studio import at original dimensions.
+- Original grip, compliance, rolling resistance, heat and roughness data checked against executed original code.
+- Fixed PUSH ESP semantics, initialized static-data coverage and startup collision-record publication.
+- All 123 section midpoints pass contact/stability coverage; smoke 43/0; Stage 13 40/0; adapter 77/0 and track adapter 8/0.
+- Finished exports: 88 GLBs, 426 PNGs, all 346 TSO placements, wall profiles/caps and painted details. Independent asset validation passes.
+- Terrain refined against 3,225,404 original-query samples to a sampled 2 mm criterion; base/lightmap pass baked for Roblox.
+- Reversible Studio patch preserves existing car/cockpit/client/controls; installer transaction 23/0.
 
-Strict original-code replays retain numerical differences:23pass/30fail. This is not certified100% gameplay equality. See RUNTIME_VALIDATION.md and validation/track_reference.log for physical-unit errors and the inherited x87 intermediate-precision limitation.
-
-## Visual work
-
-The complete original PTF,346TSO placements and source textures are parsed. Renderer-derived custom wall profiles, caps and four TrackDetail overlays are recovered. Terrain has been refined against3,225,404 sampled original-query checks to a sampled2mm criterion. Original base/lightmap multiplication is being baked for Roblox's single-UV material interface. Final exports and asset verification are being finalized; all converted files will be kept under assets/.
+Strict original-code replays retain differences: **23 pass / 30 fail**. This is not certified 100% gameplay equality. Studio performance, appearance and a continuous driven lap remain unverified. See [VALIDATION.md](VALIDATION.md) and [RUNTIME_VALIDATION.md](RUNTIME_VALIDATION.md).
 
 ## Reference regeneration
 
-The recovery programs use NR2003_MEM,SERVER_MEM,RTS_MEM for Ghidra memory-export directories and WG_TRACK/WG_SHARED for the supplied track directories. Local inputs/tools/intermediates remain under work/.
+Recovery uses `NR2003_MEM`, `SERVER_MEM`, `RTS_MEM` for Ghidra memory-export directories, and `WG_TRACK`/`WG_SHARED` for supplied track directories. Original inputs/tools/intermediates stay under `work/`.
 
-```
+```sh
 python3 watkinsglen_implementation/recovery/ref_track.py plain work/plain.pkl
 python3 watkinsglen_implementation/recovery/ref_track.py world work/world.pkl
-python3 watkinsglen_implementation/recovery/gen_fixtures_track.py work/world.pkl
+python3 watkinsglen_implementation/recovery/gen_fixtures_track.py \
+  watkinsglen_implementation/tests/fixtures work/world.pkl
 ```
 
-The original golden fixtures are retained in tests/fixtures/. Converted assets will be sufficient for Studio installation without repeating recovery or conversion. Follow README.md and studio/README_INSTALL.md.
+Golden fixtures are committed in `tests/fixtures/`; GLBs/PNGs use Git LFS. Installation requires no new conversion/Ghidra. Follow [README.md](README.md), [assets/README_IMPORT.md](assets/README_IMPORT.md) and [studio/README_INSTALL.md](studio/README_INSTALL.md).

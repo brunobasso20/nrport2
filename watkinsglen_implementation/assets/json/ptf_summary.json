@@ -1,0 +1,7457 @@
+{
+ "declaredSegments": 123,
+ "parsedSegments": 123,
+ "placements": [
+  {
+   "index": 0,
+   "handle": 16,
+   "model": "press_box01.3do",
+   "referenceName": "",
+   "position": [
+    -299.2549133300781,
+    -310.390380859375,
+    27.299999237060547
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'press_box01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 1,
+   "handle": 20,
+   "model": "tower01.3do",
+   "referenceName": "",
+   "position": [
+    -329.9494934082031,
+    -364.2476501464844,
+    28.0
+   ],
+   "rotation": [
+    3.071779489517212,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tower01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 2,
+   "handle": 22,
+   "model": "redbridge.3do",
+   "referenceName": "",
+   "position": [
+    -98.34398651123047,
+    -346.39532470703125,
+    23.200000762939453
+   ],
+   "rotation": [
+    3.0595622062683105,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'redbridge.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 3,
+   "handle": 24,
+   "model": "grand_red.3do",
+   "referenceName": "",
+   "position": [
+    -543.7388916015625,
+    -337.8006896972656,
+    20.200000762939453
+   ],
+   "rotation": [
+    -0.06981316953897476,
+    -0.02617993950843811,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'grand_red.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 4,
+   "handle": 26,
+   "model": "grand_green.3do",
+   "referenceName": "",
+   "position": [
+    -414.1565246582031,
+    -348.18365478515625,
+    25.700000762939453
+   ],
+   "rotation": [
+    -0.06981316953897476,
+    -0.02617993950843811,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'grand_green.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 5,
+   "handle": 28,
+   "model": "grand_conc01.3do",
+   "referenceName": "",
+   "position": [
+    -772.6976318359375,
+    -38.92002868652344,
+    0.0
+   ],
+   "rotation": [
+    -2.024581932312197,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'grand_conc01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 6,
+   "handle": 30,
+   "model": "grand_conc02.3do",
+   "referenceName": "",
+   "position": [
+    -779.9168090820312,
+    -66.4537353515625,
+    0.0
+   ],
+   "rotation": [
+    -1.972222054752399,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'grand_conc02.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 7,
+   "handle": 32,
+   "model": "grand_conc03.3do",
+   "referenceName": "",
+   "position": [
+    -763.9170532226562,
+    -12.06529712677002,
+    0.0
+   ],
+   "rotation": [
+    -2.024581932312197,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'grand_conc03.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 8,
+   "handle": 34,
+   "model": "tree01.3do",
+   "referenceName": "",
+   "position": [
+    -50.4880256652832,
+    -327.30181884765625,
+    23.0
+   ],
+   "rotation": [
+    -1.1868238913554259,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 9,
+   "handle": 36,
+   "model": "grand_geen02.3do",
+   "referenceName": "",
+   "position": [
+    -811.4227905273438,
+    -341.8087463378906,
+    6.0
+   ],
+   "rotation": [
+    -0.6108652381976457,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'grand_geen02.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 10,
+   "handle": 38,
+   "model": "grand_geen03.3do",
+   "referenceName": "",
+   "position": [
+    -358.3275451660156,
+    189.5030517578125,
+    25.799999237060547
+   ],
+   "rotation": [
+    0.8203047484368385,
+    -0.01745329238474369,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'grand_geen03.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 11,
+   "handle": 40,
+   "model": "build_37.3do",
+   "referenceName": "",
+   "position": [
+    -481.59466552734375,
+    83.46612548828125,
+    18.5
+   ],
+   "rotation": [
+    -1.256637061435157,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'build_37.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 12,
+   "handle": 42,
+   "model": "grand_silver.3do",
+   "referenceName": "",
+   "position": [
+    3.966344118118286,
+    -349.42913818359375,
+    24.399999618530273
+   ],
+   "rotation": [
+    1.2740903539550896,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'grand_silver.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 13,
+   "handle": 44,
+   "model": "grand_yell.3do",
+   "referenceName": "",
+   "position": [
+    -457.21258544921875,
+    -344.2477111816406,
+    24.200000762939453
+   ],
+   "rotation": [
+    -0.06981316953897476,
+    -0.02617993950843811,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'grand_yell.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 14,
+   "handle": 46,
+   "model": "build_37a.3do",
+   "referenceName": "",
+   "position": [
+    -549.5193481445312,
+    -16.7199764251709,
+    15.0
+   ],
+   "rotation": [
+    -1.6231562043537444,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'build_37a.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 15,
+   "handle": 48,
+   "model": "grand_oran.3do",
+   "referenceName": "",
+   "position": [
+    -499.58489990234375,
+    -340.0404052734375,
+    22.399999618530273
+   ],
+   "rotation": [
+    -0.06981316953897476,
+    -0.02617993950843811,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'grand_oran.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 16,
+   "handle": 50,
+   "model": "tree_group1.3do",
+   "referenceName": "",
+   "position": [
+    -821.720703125,
+    -396.30181884765625,
+    6.300000190734863
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group1.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 17,
+   "handle": 52,
+   "model": "tree_group1.3do",
+   "referenceName": "",
+   "position": [
+    -758.715576171875,
+    -411.40777587890625,
+    7.5
+   ],
+   "rotation": [
+    0.0,
+    -0.01745329238474369,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group1.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 18,
+   "handle": 53,
+   "model": "flagbox.3do",
+   "referenceName": "",
+   "position": [
+    -307.6998596191406,
+    -345.28533935546875,
+    27.5
+   ],
+   "rotation": [
+    -0.06981317007973094,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'flagbox.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 19,
+   "handle": 55,
+   "model": "tree_group2.3do",
+   "referenceName": "",
+   "position": [
+    -636.7730712890625,
+    182.8652801513672,
+    8.0
+   ],
+   "rotation": [
+    -2.303834612631121,
+    0.05235987901687622,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group2.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 20,
+   "handle": 57,
+   "model": "grand_gray.3do",
+   "referenceName": "",
+   "position": [
+    -277.468994140625,
+    -361.43359375,
+    27.299999237060547
+   ],
+   "rotation": [
+    -0.06981316953897476,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'grand_gray.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 21,
+   "handle": 59,
+   "model": "grand_gray.3do",
+   "referenceName": "",
+   "position": [
+    -368.5229187011719,
+    -352.8009033203125,
+    27.100000381469727
+   ],
+   "rotation": [
+    -0.06981316953897476,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'grand_gray.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 22,
+   "handle": 60,
+   "model": "pitg_center.3do",
+   "referenceName": "",
+   "position": [
+    -426.0880432128906,
+    -288.0508728027344,
+    21.5
+   ],
+   "rotation": [
+    -0.0872664600610733,
+    -0.008726646192371845,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'pitg_center.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 23,
+   "handle": 62,
+   "model": "tree_group3.3do",
+   "referenceName": "",
+   "position": [
+    -733.1680297851562,
+    129.3707275390625,
+    2.9000000953674316
+   ],
+   "rotation": [
+    -1.972222054752399,
+    0.05235987755979821,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group3.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 24,
+   "handle": 64,
+   "model": "tree_group1.3do",
+   "referenceName": "",
+   "position": [
+    -572.9291381835938,
+    197.42022705078125,
+    13.300000190734863
+   ],
+   "rotation": [
+    -2.7925268031892374,
+    0.0872664600610733,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group1.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 25,
+   "handle": 65,
+   "model": "tree_group3.3do",
+   "referenceName": "",
+   "position": [
+    -475.10272216796875,
+    256.5438232421875,
+    23.0
+   ],
+   "rotation": [
+    -2.024581932312197,
+    0.0872664600610733,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group3.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 26,
+   "handle": 66,
+   "model": "tree01.3do",
+   "referenceName": "",
+   "position": [
+    -455.2110595703125,
+    -385.79376220703125,
+    24.0
+   ],
+   "rotation": [
+    -0.925024503556435,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 27,
+   "handle": 67,
+   "model": "tree07.3do",
+   "referenceName": "",
+   "position": [
+    -475.1822204589844,
+    -365.0813903808594,
+    23.0
+   ],
+   "rotation": [
+    -1.448623279154417,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree07.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 28,
+   "handle": 69,
+   "model": "tree07.3do",
+   "referenceName": "",
+   "position": [
+    -605.4949951171875,
+    -362.4846496582031,
+    16.0
+   ],
+   "rotation": [
+    -1.4835298641942825,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree07.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 29,
+   "handle": 70,
+   "model": "tree02.3do",
+   "referenceName": "",
+   "position": [
+    -604.1058349609375,
+    -378.8027038574219,
+    15.5
+   ],
+   "rotation": [
+    -0.6108652381976457,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree02.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 30,
+   "handle": 72,
+   "model": "tree01.3do",
+   "referenceName": "",
+   "position": [
+    -742.7073974609375,
+    -359.4840393066406,
+    7.0
+   ],
+   "rotation": [
+    -0.9948376736361658,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 31,
+   "handle": 73,
+   "model": "tower02.3do",
+   "referenceName": "",
+   "position": [
+    -311.536865234375,
+    232.10877990722656,
+    27.0
+   ],
+   "rotation": [
+    -0.8377580409567713,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tower02.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 32,
+   "handle": 75,
+   "model": "tree_group1.3do",
+   "referenceName": "",
+   "position": [
+    -265.7770080566406,
+    347.61334228515625,
+    29.0
+   ],
+   "rotation": [
+    -2.3736477827108518,
+    0.01745329238474369,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group1.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 33,
+   "handle": 76,
+   "model": "tree_group2.3do",
+   "referenceName": "",
+   "position": [
+    -149.17164611816406,
+    374.017578125,
+    30.399999618530273
+   ],
+   "rotation": [
+    -2.687807048069641,
+    0.008726646192371845,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group2.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 34,
+   "handle": 77,
+   "model": "tree_group3.3do",
+   "referenceName": "",
+   "position": [
+    -37.8066291809082,
+    380.7763366699219,
+    31.5
+   ],
+   "rotation": [
+    -2.6529004630297757,
+    0.012217304669320583,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group3.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 35,
+   "handle": 78,
+   "model": "tree_group1.3do",
+   "referenceName": "",
+   "position": [
+    48.1130256652832,
+    381.1640930175781,
+    32.5
+   ],
+   "rotation": [
+    -2.705260340589574,
+    0.012217304669320583,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group1.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 36,
+   "handle": 79,
+   "model": "tree_group2.3do",
+   "referenceName": "",
+   "position": [
+    176.50936889648438,
+    384.3486328125,
+    33.70000076293945
+   ],
+   "rotation": [
+    -2.7925268031892374,
+    0.008726646192371845,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group2.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 37,
+   "handle": 80,
+   "model": "tree_group3.3do",
+   "referenceName": "",
+   "position": [
+    290.7337341308594,
+    388.7560119628906,
+    33.70000076293945
+   ],
+   "rotation": [
+    -2.775073510669305,
+    0.001745329238474369,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group3.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 38,
+   "handle": 81,
+   "model": "tree_group1.3do",
+   "referenceName": "",
+   "position": [
+    374.5295715332031,
+    411.9582214355469,
+    33.599998474121094
+   ],
+   "rotation": [
+    -2.4609142453105157,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group1.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 39,
+   "handle": 82,
+   "model": "tree_group2.3do",
+   "referenceName": "",
+   "position": [
+    520.1423950195312,
+    414.96575927734375,
+    33.70000076293945
+   ],
+   "rotation": [
+    -2.7925268031892374,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group2.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 40,
+   "handle": 83,
+   "model": "tree_group3.3do",
+   "referenceName": "",
+   "position": [
+    610.7789306640625,
+    425.54168701171875,
+    33.599998474121094
+   ],
+   "rotation": [
+    -2.9321531433486996,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group3.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 41,
+   "handle": 84,
+   "model": "tree_group1.3do",
+   "referenceName": "",
+   "position": [
+    679.4885864257812,
+    423.0064392089844,
+    33.599998474121094
+   ],
+   "rotation": [
+    -3.019419605948363,
+    -0.001745329238474369,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group1.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 42,
+   "handle": 85,
+   "model": "tree_group2.3do",
+   "referenceName": "",
+   "position": [
+    769.6812744140625,
+    397.5727233886719,
+    32.79999923706055
+   ],
+   "rotation": [
+    3.1415926535878924,
+    -0.01745329238474369,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group2.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 43,
+   "handle": 86,
+   "model": "tree_group3.3do",
+   "referenceName": "",
+   "position": [
+    858.5684814453125,
+    296.268310546875,
+    29.950000762939453
+   ],
+   "rotation": [
+    2.3736477827108518,
+    -0.02094395086169243,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group3.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 44,
+   "handle": 87,
+   "model": "tree_group1.3do",
+   "referenceName": "",
+   "position": [
+    873.055908203125,
+    213.7136993408203,
+    28.68000030517578
+   ],
+   "rotation": [
+    1.9373154697125334,
+    -0.015707962214946747,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group1.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 45,
+   "handle": 88,
+   "model": "tree01.3do",
+   "referenceName": "",
+   "position": [
+    216.24041748046875,
+    370.1177062988281,
+    33.5
+   ],
+   "rotation": [
+    -1.85004900711287,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 46,
+   "handle": 89,
+   "model": "tree07.3do",
+   "referenceName": "",
+   "position": [
+    0.9871333241462708,
+    367.56158447265625,
+    31.5
+   ],
+   "rotation": [
+    -1.7627825445132062,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree07.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 47,
+   "handle": 90,
+   "model": "tree_group1.3do",
+   "referenceName": "",
+   "position": [
+    532.80078125,
+    25.99894142150879,
+    25.600000381469727
+   ],
+   "rotation": [
+    -1.8151424220730044,
+    0.01745329238474369,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group1.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 48,
+   "handle": 91,
+   "model": "tree07.3do",
+   "referenceName": "",
+   "position": [
+    442.0682373046875,
+    410.38677978515625,
+    33.900001525878906
+   ],
+   "rotation": [
+    -1.5009831567142151,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree07.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 49,
+   "handle": 92,
+   "model": "tree01.3do",
+   "referenceName": "",
+   "position": [
+    558.9000854492188,
+    401.8881530761719,
+    33.0
+   ],
+   "rotation": [
+    -1.9896753472723316,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 50,
+   "handle": 93,
+   "model": "tree02.3do",
+   "referenceName": "",
+   "position": [
+    330.9670715332031,
+    379.5114440917969,
+    33.0
+   ],
+   "rotation": [
+    2.8797932657889014,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree02.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 51,
+   "handle": 94,
+   "model": "tree07.3do",
+   "referenceName": "",
+   "position": [
+    -442.4205322265625,
+    -66.94869995117188,
+    19.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree07.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 52,
+   "handle": 95,
+   "model": "tree07.3do",
+   "referenceName": "",
+   "position": [
+    240.25070190429688,
+    -32.50160217285156,
+    27.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree07.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 53,
+   "handle": 96,
+   "model": "tree_group01_sh.3do",
+   "referenceName": "",
+   "position": [
+    533.9176635742188,
+    47.258243560791016,
+    27.399999618530273
+   ],
+   "rotation": [
+    0.5934119456777129,
+    0.005235987715423107,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group01_sh.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 54,
+   "handle": 98,
+   "model": "tree_group03_sh.3do",
+   "referenceName": "",
+   "position": [
+    455.81658935546875,
+    24.669754028320312,
+    27.799999237060547
+   ],
+   "rotation": [
+    0.6108652381976457,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group03_sh.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 55,
+   "handle": 100,
+   "model": "tree_group02_sh.3do",
+   "referenceName": "",
+   "position": [
+    633.3268432617188,
+    22.585092544555664,
+    25.0
+   ],
+   "rotation": [
+    1.1344640137956277,
+    0.0,
+    -0.08726646192371845
+   ],
+   "secondaryModel": "(an instance of 'tree_group02_sh.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 56,
+   "handle": 102,
+   "model": "tower04.3do",
+   "referenceName": "",
+   "position": [
+    468.5240783691406,
+    55.56760787963867,
+    27.5
+   ],
+   "rotation": [
+    -1.3613568165547534,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tower04.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 57,
+   "handle": 104,
+   "model": "tree_group02_sh.3do",
+   "referenceName": "",
+   "position": [
+    722.6630859375,
+    82.27313232421875,
+    27.600000381469727
+   ],
+   "rotation": [
+    0.8203047484368385,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group02_sh.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 58,
+   "handle": 105,
+   "model": "tree_group02_sh.3do",
+   "referenceName": "",
+   "position": [
+    812.4103393554688,
+    108.60419464111328,
+    28.0
+   ],
+   "rotation": [
+    0.8726646259966367,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group02_sh.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 59,
+   "handle": 106,
+   "model": "tree01.3do",
+   "referenceName": "",
+   "position": [
+    654.416015625,
+    171.92507934570312,
+    27.0
+   ],
+   "rotation": [
+    -0.5934119456777129,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 60,
+   "handle": 107,
+   "model": "tree02.3do",
+   "referenceName": "",
+   "position": [
+    598.2252807617188,
+    148.3165740966797,
+    29.0
+   ],
+   "rotation": [
+    -0.8203047484368385,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree02.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 61,
+   "handle": 108,
+   "model": "tree07.3do",
+   "referenceName": "",
+   "position": [
+    504.7991638183594,
+    134.722412109375,
+    30.0
+   ],
+   "rotation": [
+    -0.4712388980381838,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree07.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 62,
+   "handle": 109,
+   "model": "tower03.3do",
+   "referenceName": "",
+   "position": [
+    803.7701416015625,
+    367.7123718261719,
+    31.600000381469727
+   ],
+   "rotation": [
+    -3.1415926535878924,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tower03.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 63,
+   "handle": 111,
+   "model": "pit_garage.3do",
+   "referenceName": "",
+   "position": [
+    -190.74142456054688,
+    -193.42572021484375,
+    26.0
+   ],
+   "rotation": [
+    -0.7853981633969731,
+    0.0,
+    -0.012217304461261125
+   ],
+   "secondaryModel": "(an instance of 'pit_garage.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 64,
+   "handle": 113,
+   "model": "red_house.3do",
+   "referenceName": "",
+   "position": [
+    -219.46710205078125,
+    -292.2204284667969,
+    26.0
+   ],
+   "rotation": [
+    -1.3089969389949552,
+    0.0,
+    1.5707963146269321
+   ],
+   "secondaryModel": "(an instance of 'red_house.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 65,
+   "handle": 115,
+   "model": "tree01.3do",
+   "referenceName": "",
+   "position": [
+    -211.98220825195312,
+    -305.82257080078125,
+    26.0
+   ],
+   "rotation": [
+    -0.4712388980381838,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 66,
+   "handle": 116,
+   "model": "tree07.3do",
+   "referenceName": "",
+   "position": [
+    -140.89190673828125,
+    -285.63702392578125,
+    26.0
+   ],
+   "rotation": [
+    -1.1344640137956277,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree07.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 67,
+   "handle": 117,
+   "model": "tree02.3do",
+   "referenceName": "",
+   "position": [
+    -129.5297088623047,
+    -248.5325164794922,
+    26.0
+   ],
+   "rotation": [
+    -1.1693705988354932,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree02.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 68,
+   "handle": 118,
+   "model": "bboards06a.3do",
+   "referenceName": "",
+   "position": [
+    -749.9768676757812,
+    -2.023453712463379,
+    0.30000001192092896
+   ],
+   "rotation": [
+    1.3264502315148878,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'bboards06a.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 69,
+   "handle": 120,
+   "model": "bboards06b.3do",
+   "referenceName": "",
+   "position": [
+    -741.658935546875,
+    23.90623664855957,
+    0.5
+   ],
+   "rotation": [
+    1.1519173383712769,
+    -0.001745329238474369,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'bboards06b.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 70,
+   "handle": 122,
+   "model": "score02_a.3do",
+   "referenceName": "",
+   "position": [
+    -658.8772583007812,
+    155.1988983154297,
+    0.0
+   ],
+   "rotation": [
+    0.8377580409567713,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'score02_a.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 71,
+   "handle": 124,
+   "model": "tree17.3do",
+   "referenceName": "",
+   "position": [
+    442.21331787109375,
+    127.73812866210938,
+    30.299999237060547
+   ],
+   "rotation": [
+    -1.256637061435157,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree17.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 72,
+   "handle": 126,
+   "model": "tree16.3do",
+   "referenceName": "",
+   "position": [
+    350.6900939941406,
+    68.85755157470703,
+    30.0
+   ],
+   "rotation": [
+    -1.0122909661560986,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree16.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 73,
+   "handle": 128,
+   "model": "tree18.3do",
+   "referenceName": "",
+   "position": [
+    311.213134765625,
+    62.26502990722656,
+    30.450000762939453
+   ],
+   "rotation": [
+    -3.019419605948363,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree18.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 74,
+   "handle": 130,
+   "model": "s_winston.3do",
+   "referenceName": "",
+   "position": [
+    695.9447631835938,
+    92.3025894165039,
+    26.5
+   ],
+   "rotation": [
+    2.216568150031457,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 's_winston.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 75,
+   "handle": 132,
+   "model": "b_winston.3do",
+   "referenceName": "",
+   "position": [
+    -309.64892578125,
+    -146.84744262695312,
+    25.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'b_winston.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 76,
+   "handle": 134,
+   "model": "score02_a.3do",
+   "referenceName": "",
+   "position": [
+    -625.6698608398438,
+    -271.7144775390625,
+    12.0
+   ],
+   "rotation": [
+    -3.1415926535878924,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'score02_a.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 77,
+   "handle": 135,
+   "model": "tree17.3do",
+   "referenceName": "",
+   "position": [
+    -192.0357666015625,
+    -306.1185607910156,
+    26.0
+   ],
+   "rotation": [
+    -1.448623279154417,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree17.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 78,
+   "handle": 136,
+   "model": "tree16.3do",
+   "referenceName": "",
+   "position": [
+    -510.0019836425781,
+    -357.3451843261719,
+    21.0
+   ],
+   "rotation": [
+    -1.4137166941145516,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree16.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 79,
+   "handle": 137,
+   "model": "tree18.3do",
+   "referenceName": "",
+   "position": [
+    -69.0599136352539,
+    -325.7370300292969,
+    23.0
+   ],
+   "rotation": [
+    -3.1415926535878924,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree18.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 80,
+   "handle": 138,
+   "model": "tree17.3do",
+   "referenceName": "",
+   "position": [
+    758.3599243164062,
+    80.1151123046875,
+    28.0
+   ],
+   "rotation": [
+    -1.6755160819135426,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree17.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 81,
+   "handle": 139,
+   "model": "tree16.3do",
+   "referenceName": "",
+   "position": [
+    689.3368530273438,
+    83.03927612304688,
+    27.100000381469727
+   ],
+   "rotation": [
+    -3.1415926535878924,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree16.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 82,
+   "handle": 140,
+   "model": "house_04.3do",
+   "referenceName": "",
+   "position": [
+    -716.7160034179688,
+    -29.049999237060547,
+    1.0
+   ],
+   "rotation": [
+    -0.13962633907794952,
+    0.0,
+    0.043633230961859226
+   ],
+   "secondaryModel": "(an instance of 'house_04.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 83,
+   "handle": 142,
+   "model": "bboard01a.3do",
+   "referenceName": "",
+   "position": [
+    -112.11000061035156,
+    -371.30999755859375,
+    22.0
+   ],
+   "rotation": [
+    3.054326057434082,
+    -0.013962633907794952,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'bboard01a.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 84,
+   "handle": 144,
+   "model": "tree_group02_sh.3do",
+   "referenceName": "",
+   "position": [
+    -110.89247131347656,
+    -391.6485900878906,
+    24.899999618530273
+   ],
+   "rotation": [
+    0.33161255787872196,
+    0.006108652334660292,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group02_sh.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 85,
+   "handle": 145,
+   "model": "tree_group01_sh.3do",
+   "referenceName": "",
+   "position": [
+    -190.62318420410156,
+    -385.7557678222656,
+    26.100000381469727
+   ],
+   "rotation": [
+    0.29670597283885647,
+    0.019198622554540634,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group01_sh.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 86,
+   "handle": 146,
+   "model": "tree18.3do",
+   "referenceName": "",
+   "position": [
+    -172.94325256347656,
+    -366.1180114746094,
+    25.399999618530273
+   ],
+   "rotation": [
+    2.9321531433486996,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree18.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 87,
+   "handle": 147,
+   "model": "tree02.3do",
+   "referenceName": "",
+   "position": [
+    -206.3772430419922,
+    -364.60748291015625,
+    25.5
+   ],
+   "rotation": [
+    -1.9896753472723316,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree02.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 88,
+   "handle": 148,
+   "model": "tree_group04.3do",
+   "referenceName": "",
+   "position": [
+    -163.35916137695312,
+    -259.6716003417969,
+    25.5
+   ],
+   "rotation": [
+    -2.1293016874317936,
+    -0.017453292519932734,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group04.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 89,
+   "handle": 150,
+   "model": "tree_group_ltd.3do",
+   "referenceName": "",
+   "position": [
+    9.700417518615723,
+    -436.71295166015625,
+    22.0
+   ],
+   "rotation": [
+    1.3264502315148878,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group_ltd.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 90,
+   "handle": 152,
+   "model": "tree16.3do",
+   "referenceName": "",
+   "position": [
+    -13.091058731079102,
+    -399.6464538574219,
+    23.0
+   ],
+   "rotation": [
+    -2.024581932312197,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree16.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 91,
+   "handle": 153,
+   "model": "bud_building.3do",
+   "referenceName": "",
+   "position": [
+    362.2085876464844,
+    319.79156494140625,
+    33.70000076293945
+   ],
+   "rotation": [
+    0.17453292519932734,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'bud_building.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 92,
+   "handle": 155,
+   "model": "bboards06b.3do",
+   "referenceName": "",
+   "position": [
+    -329.3984680175781,
+    275.9415283203125,
+    28.0
+   ],
+   "rotation": [
+    0.6562437415122986,
+    -0.013962633907794952,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'bboards06b.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 93,
+   "handle": 156,
+   "model": "bboard01c.3do",
+   "referenceName": "",
+   "position": [
+    370.7599792480469,
+    319.71221923828125,
+    33.400001525878906
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'bboard01c.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 94,
+   "handle": 158,
+   "model": "tree16.3do",
+   "referenceName": "",
+   "position": [
+    341.0766906738281,
+    319.28643798828125,
+    33.29999923706055
+   ],
+   "rotation": [
+    -0.925024503556435,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree16.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 95,
+   "handle": 159,
+   "model": "tree_group04sh.3do",
+   "referenceName": "",
+   "position": [
+    291.2507629394531,
+    300.6620178222656,
+    33.599998474121094
+   ],
+   "rotation": [
+    0.4712388980381838,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group04sh.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 96,
+   "handle": 161,
+   "model": "tree17.3do",
+   "referenceName": "",
+   "position": [
+    355.55596923828125,
+    311.7700500488281,
+    33.5
+   ],
+   "rotation": [
+    -1.3089969389949552,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree17.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 97,
+   "handle": 162,
+   "model": "tree02.3do",
+   "referenceName": "",
+   "position": [
+    250.04531860351562,
+    308.0150146484375,
+    33.5
+   ],
+   "rotation": [
+    -1.0471975511959641,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree02.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 98,
+   "handle": 163,
+   "model": "zippo_tower.3do",
+   "referenceName": "",
+   "position": [
+    661.0391845703125,
+    326.99285888671875,
+    33.400001525878906
+   ],
+   "rotation": [
+    -1.5009831567142151,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'zippo_tower.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 99,
+   "handle": 165,
+   "model": "bboard01d.3do",
+   "referenceName": "",
+   "position": [
+    11.820185661315918,
+    -307.08197021484375,
+    22.0
+   ],
+   "rotation": [
+    -2.6179938779899103,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'bboard01d.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 100,
+   "handle": 167,
+   "model": "house_32.3do",
+   "referenceName": "",
+   "position": [
+    -635.3416137695312,
+    164.5635528564453,
+    7.300000190734863
+   ],
+   "rotation": [
+    1.1344640137956277,
+    0.0,
+    -0.03490658476948738
+   ],
+   "secondaryModel": "(an instance of 'house_32.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 101,
+   "handle": 169,
+   "model": "tree07.3do",
+   "referenceName": "",
+   "position": [
+    -423.10760498046875,
+    285.1907653808594,
+    25.0
+   ],
+   "rotation": [
+    -1.1344640137956277,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree07.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 102,
+   "handle": 170,
+   "model": "tree01.3do",
+   "referenceName": "",
+   "position": [
+    -376.60491943359375,
+    305.81976318359375,
+    26.0
+   ],
+   "rotation": [
+    -1.6580627893936097,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 103,
+   "handle": 171,
+   "model": "tree18.3do",
+   "referenceName": "",
+   "position": [
+    -316.2027893066406,
+    319.6052551269531,
+    28.0
+   ],
+   "rotation": [
+    -3.1415926535878924,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree18.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 104,
+   "handle": 172,
+   "model": "bboard01b.3do",
+   "referenceName": "",
+   "position": [
+    713.1668090820312,
+    318.12823486328125,
+    27.0
+   ],
+   "rotation": [
+    -0.36651914291858745,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'bboard01b.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 105,
+   "handle": 174,
+   "model": "m_winston.3do",
+   "referenceName": "",
+   "position": [
+    27.870046615600586,
+    -97.97392272949219,
+    24.299999237060547
+   ],
+   "rotation": [
+    1.5009831567142151,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'm_winston.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 106,
+   "handle": 176,
+   "model": "tree02.3do",
+   "referenceName": "",
+   "position": [
+    30.518138885498047,
+    -80.43031311035156,
+    25.0
+   ],
+   "rotation": [
+    -1.4835298641942825,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree02.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 107,
+   "handle": 177,
+   "model": "tree18.3do",
+   "referenceName": "",
+   "position": [
+    44.2551155090332,
+    -107.57325744628906,
+    25.200000762939453
+   ],
+   "rotation": [
+    -3.1415926535878924,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree18.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 108,
+   "handle": 178,
+   "model": "tree_group04sh.3do",
+   "referenceName": "",
+   "position": [
+    58.30238342285156,
+    -170.816650390625,
+    25.0
+   ],
+   "rotation": [
+    1.8151424220730044,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group04sh.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 109,
+   "handle": 179,
+   "model": "tree16.3do",
+   "referenceName": "",
+   "position": [
+    141.54129028320312,
+    -30.22189712524414,
+    27.0
+   ],
+   "rotation": [
+    -1.902408884672668,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree16.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 110,
+   "handle": 180,
+   "model": "tree17.3do",
+   "referenceName": "",
+   "position": [
+    50.721046447753906,
+    -77.48612976074219,
+    26.0
+   ],
+   "rotation": [
+    -1.448623279154417,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree17.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 111,
+   "handle": 181,
+   "model": "tree02.3do",
+   "referenceName": "",
+   "position": [
+    41.91322708129883,
+    -205.3048858642578,
+    25.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree02.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 112,
+   "handle": 182,
+   "model": "tree_group04sh.3do",
+   "referenceName": "",
+   "position": [
+    -270.74078369140625,
+    -424.63470458984375,
+    27.299999237060547
+   ],
+   "rotation": [
+    1.4137166941145516,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group04sh.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 113,
+   "handle": 183,
+   "model": "tree18.3do",
+   "referenceName": "",
+   "position": [
+    -241.8962860107422,
+    -365.059326171875,
+    26.799999237060547
+   ],
+   "rotation": [
+    -2.5307274153902464,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree18.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 114,
+   "handle": 184,
+   "model": "tree02.3do",
+   "referenceName": "",
+   "position": [
+    -852.4302368164062,
+    -331.672119140625,
+    6.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree02.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 115,
+   "handle": 185,
+   "model": "tree16.3do",
+   "referenceName": "",
+   "position": [
+    -858.008056640625,
+    -322.18768310546875,
+    5.0
+   ],
+   "rotation": [
+    -2.164208272471659,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree16.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 116,
+   "handle": 186,
+   "model": "tree07.3do",
+   "referenceName": "",
+   "position": [
+    -880.1107177734375,
+    -248.1344757080078,
+    5.0
+   ],
+   "rotation": [
+    -1.256637061435157,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree07.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 117,
+   "handle": 187,
+   "model": "tree_group_ltd.3do",
+   "referenceName": "",
+   "position": [
+    299.75946044921875,
+    -2.754535436630249,
+    27.5
+   ],
+   "rotation": [
+    0.20943951023919283,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group_ltd.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 118,
+   "handle": 188,
+   "model": "tree02.3do",
+   "referenceName": "",
+   "position": [
+    361.47430419921875,
+    17.32576560974121,
+    27.0
+   ],
+   "rotation": [
+    -1.3962634015946187,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree02.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 119,
+   "handle": 189,
+   "model": "tree18.3do",
+   "referenceName": "",
+   "position": [
+    268.04376220703125,
+    9.483874320983887,
+    27.5
+   ],
+   "rotation": [
+    1.85004900711287,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree18.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 120,
+   "handle": 190,
+   "model": "house_45.3do",
+   "referenceName": "",
+   "position": [
+    52.58629608154297,
+    37.325721740722656,
+    28.299999237060547
+   ],
+   "rotation": [
+    -2.6529004630297757,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'house_45.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 121,
+   "handle": 192,
+   "model": "pyramid.3do",
+   "referenceName": "",
+   "position": [
+    23.501708984375,
+    31.240083694458008,
+    27.299999237060547
+   ],
+   "rotation": [
+    2.775073510669305,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'pyramid.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 122,
+   "handle": 194,
+   "model": "out_hill01.3do",
+   "referenceName": "",
+   "position": [
+    -982.4950561523438,
+    -180.6711883544922,
+    -23.0
+   ],
+   "rotation": [
+    0.0,
+    0.05235987901687622,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'out_hill01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 123,
+   "handle": 196,
+   "model": "grand_loop1.3do",
+   "referenceName": "",
+   "position": [
+    499.7928161621094,
+    371.1849060058594,
+    34.0
+   ],
+   "rotation": [
+    -3.1241393089294434,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'grand_loop1.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 124,
+   "handle": 198,
+   "model": "grand_loop2.3do",
+   "referenceName": "",
+   "position": [
+    512.9794311523438,
+    247.38999938964844,
+    34.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'grand_loop2.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 125,
+   "handle": 200,
+   "model": "grand_geen04.3do",
+   "referenceName": "",
+   "position": [
+    6.045053958892822,
+    3.6848304271698,
+    27.0
+   ],
+   "rotation": [
+    -2.565634000430112,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'grand_geen04.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 126,
+   "handle": 202,
+   "model": "big_pole01.3do",
+   "referenceName": "",
+   "position": [
+    766.2765502929688,
+    289.83282470703125,
+    28.299999237060547
+   ],
+   "rotation": [
+    0.6108652381976457,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'big_pole01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 127,
+   "handle": 204,
+   "model": "tree17.3do",
+   "referenceName": "",
+   "position": [
+    770.3722534179688,
+    375.398681640625,
+    32.5
+   ],
+   "rotation": [
+    -2.7925268031892374,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree17.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 128,
+   "handle": 205,
+   "model": "tree16.3do",
+   "referenceName": "",
+   "position": [
+    814.071044921875,
+    350.27191162109375,
+    31.0
+   ],
+   "rotation": [
+    -1.972222054752399,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree16.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 129,
+   "handle": 206,
+   "model": "tree18.3do",
+   "referenceName": "",
+   "position": [
+    846.5062255859375,
+    154.84481811523438,
+    27.799999237060547
+   ],
+   "rotation": [
+    1.6231562043537444,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree18.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 130,
+   "handle": 207,
+   "model": "tree16.3do",
+   "referenceName": "",
+   "position": [
+    590.0176391601562,
+    64.27863311767578,
+    26.200000762939453
+   ],
+   "rotation": [
+    -1.4137166941145516,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree16.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 131,
+   "handle": 208,
+   "model": "tree_group03_sh.3do",
+   "referenceName": "",
+   "position": [
+    542.607177734375,
+    -40.96320724487305,
+    23.0
+   ],
+   "rotation": [
+    0.925024503556435,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group03_sh.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 132,
+   "handle": 209,
+   "model": "tree_group3.3do",
+   "referenceName": "",
+   "position": [
+    -120.36093139648438,
+    407.30987548828125,
+    40.0
+   ],
+   "rotation": [
+    -2.7925268031892374,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group3.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 133,
+   "handle": 210,
+   "model": "tree_group1.3do",
+   "referenceName": "",
+   "position": [
+    707.3273315429688,
+    450.250244140625,
+    43.0
+   ],
+   "rotation": [
+    -2.9146998508287667,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group1.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 134,
+   "handle": 211,
+   "model": "tree02.3do",
+   "referenceName": "",
+   "position": [
+    663.28173828125,
+    432.2074890136719,
+    40.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree02.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 135,
+   "handle": 212,
+   "model": "tree_group2.3do",
+   "referenceName": "",
+   "position": [
+    345.41082763671875,
+    271.9453430175781,
+    33.560001373291016
+   ],
+   "rotation": [
+    -0.6108652381976457,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group2.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 136,
+   "handle": 213,
+   "model": "commerce01.3do",
+   "referenceName": "",
+   "position": [
+    21.322956085205078,
+    -134.0018768310547,
+    24.100000381469727
+   ],
+   "rotation": [
+    -0.4363323129983184,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'commerce01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 137,
+   "handle": 215,
+   "model": "mark_group01.3do",
+   "referenceName": "",
+   "position": [
+    292.70001220703125,
+    348.3999938964844,
+    33.5
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'mark_group01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 138,
+   "handle": 217,
+   "model": "tree_group1.3do",
+   "referenceName": "",
+   "position": [
+    474.8310546875,
+    -56.64750289916992,
+    25.200000762939453
+   ],
+   "rotation": [
+    -1.4137166941145516,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group1.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 139,
+   "handle": 218,
+   "model": "commerce02.3do",
+   "referenceName": "",
+   "position": [
+    680.347900390625,
+    327.0360412597656,
+    32.5
+   ],
+   "rotation": [
+    3.089232776028094,
+    0.01745329238474369,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'commerce02.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 140,
+   "handle": 220,
+   "model": "commerce03.3do",
+   "referenceName": "",
+   "position": [
+    103.45092010498047,
+    -13.789679527282715,
+    27.0
+   ],
+   "rotation": [
+    0.19198621809482574,
+    -0.01745329238474369,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'commerce03.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 141,
+   "handle": 222,
+   "model": "markerg02.3do",
+   "referenceName": "",
+   "position": [
+    -716.9296264648438,
+    -319.9167785644531,
+    8.899999618530273
+   ],
+   "rotation": [
+    3.1398472785949707,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'markerg02.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 142,
+   "handle": 224,
+   "model": "markerg03.3do",
+   "referenceName": "",
+   "position": [
+    78.34741973876953,
+    3.935741662979126,
+    27.299999237060547
+   ],
+   "rotation": [
+    -2.9321531433486996,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'markerg03.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 143,
+   "handle": 226,
+   "model": "house_32.3do",
+   "referenceName": "",
+   "position": [
+    -407.0820007324219,
+    75.5405502319336,
+    21.700000762939453
+   ],
+   "rotation": [
+    1.2740903539550896,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'house_32.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 144,
+   "handle": 227,
+   "model": "tower03.3do",
+   "referenceName": "",
+   "position": [
+    -873.7685546875,
+    -360.0096435546875,
+    6.0
+   ],
+   "rotation": [
+    0.36651914291858745,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tower03.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 145,
+   "handle": 228,
+   "model": "tree_group03_sh.3do",
+   "referenceName": "",
+   "position": [
+    158.0,
+    -64.0,
+    27.5
+   ],
+   "rotation": [
+    0.01745329238474369,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group03_sh.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 146,
+   "handle": 229,
+   "model": "tree_group04sh.3do",
+   "referenceName": "",
+   "position": [
+    87.0,
+    -69.30000305175781,
+    26.799999237060547
+   ],
+   "rotation": [
+    0.9250245094299316,
+    -0.01745329238474369,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group04sh.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 147,
+   "handle": 230,
+   "model": "tree_group_ltd.3do",
+   "referenceName": "",
+   "position": [
+    -407.0,
+    -403.0,
+    26.0
+   ],
+   "rotation": [
+    0.296705961227417,
+    -0.024434609338641167,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group_ltd.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 148,
+   "handle": 231,
+   "model": "tree_group01_sh.3do",
+   "referenceName": "",
+   "position": [
+    -546.0,
+    -391.0,
+    19.799999237060547
+   ],
+   "rotation": [
+    0.3839724361896515,
+    -0.0593411959707737,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group01_sh.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 149,
+   "handle": 232,
+   "model": "tree_group_dtl.3do",
+   "referenceName": "",
+   "position": [
+    -682.0,
+    -379.0,
+    11.5
+   ],
+   "rotation": [
+    0.0,
+    -0.06981316953897476,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group_dtl.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 150,
+   "handle": 234,
+   "model": "grand_new.3do",
+   "referenceName": "",
+   "position": [
+    -856.2471923828125,
+    -239.47824096679688,
+    4.599999904632568
+   ],
+   "rotation": [
+    -1.6755160819135426,
+    -0.017453292519932734,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'grand_new.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 151,
+   "handle": 236,
+   "model": "pole_group01.3do",
+   "referenceName": "",
+   "position": [
+    -561.2831420898438,
+    -327.06158447265625,
+    18.799999237060547
+   ],
+   "rotation": [
+    3.08225154876709,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'pole_group01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 152,
+   "handle": 238,
+   "model": "pole01.3do",
+   "referenceName": "",
+   "position": [
+    -83.59825134277344,
+    -306.5586242675781,
+    24.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'pole01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 153,
+   "handle": 240,
+   "model": "pole01.3do",
+   "referenceName": "",
+   "position": [
+    -791.7696533203125,
+    -106.23294830322266,
+    0.0
+   ],
+   "rotation": [
+    1.2217304763952914,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'pole01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 154,
+   "handle": 241,
+   "model": "pole01.3do",
+   "referenceName": "",
+   "position": [
+    -797.8056030273438,
+    -144.20083618164062,
+    0.0
+   ],
+   "rotation": [
+    1.2217304706573486,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'pole01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 155,
+   "handle": 242,
+   "model": "pole01.3do",
+   "referenceName": "",
+   "position": [
+    -373.1428527832031,
+    189.56248474121094,
+    25.799999237060547
+   ],
+   "rotation": [
+    -2.0769418098719954,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'pole01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 156,
+   "handle": 243,
+   "model": "pole01.3do",
+   "referenceName": "",
+   "position": [
+    -359.1374206542969,
+    204.10086059570312,
+    25.799999237060547
+   ],
+   "rotation": [
+    -2.3911010752307846,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'pole01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 157,
+   "handle": 244,
+   "model": "pole01.3do",
+   "referenceName": "",
+   "position": [
+    735.839111328125,
+    273.1788024902344,
+    28.299999237060547
+   ],
+   "rotation": [
+    2.216568150031457,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'pole01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 158,
+   "handle": 245,
+   "model": "pole01.3do",
+   "referenceName": "",
+   "position": [
+    692.0325927734375,
+    161.64476013183594,
+    26.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'pole01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 159,
+   "handle": 246,
+   "model": "pole01.3do",
+   "referenceName": "",
+   "position": [
+    495.843994140625,
+    117.60743713378906,
+    31.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'pole01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 160,
+   "handle": 247,
+   "model": "pole01.3do",
+   "referenceName": "",
+   "position": [
+    295.9358215332031,
+    75.77715301513672,
+    31.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'pole01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 161,
+   "handle": 248,
+   "model": "pole_group03.3do",
+   "referenceName": "",
+   "position": [
+    -818.3910522460938,
+    -296.5140686035156,
+    6.0
+   ],
+   "rotation": [
+    2.9146998508287667,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'pole_group03.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 162,
+   "handle": 250,
+   "model": "pole_group04.3do",
+   "referenceName": "",
+   "position": [
+    -758.7723388671875,
+    -32.96683883666992,
+    0.0
+   ],
+   "rotation": [
+    1.3264502315148878,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'pole_group04.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 163,
+   "handle": 252,
+   "model": "pole_group02.3do",
+   "referenceName": "",
+   "position": [
+    -428.881591796875,
+    -294.9513244628906,
+    21.200000762939453
+   ],
+   "rotation": [
+    -0.12217304855585098,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'pole_group02.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 164,
+   "handle": 254,
+   "model": "flagger_sf_l.3do",
+   "referenceName": "",
+   "position": [
+    -307.3800048828125,
+    -341.124267578125,
+    32.599998474121094
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'flagger_sf_l.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 165,
+   "handle": 256,
+   "model": "vc_light.3do",
+   "referenceName": "",
+   "position": [
+    -592.3209228515625,
+    119.36541748046875,
+    11.0
+   ],
+   "rotation": [
+    -1.256637061435157,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'vc_light.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 166,
+   "handle": 258,
+   "model": "vc_light.3do",
+   "referenceName": "",
+   "position": [
+    -352.7840270996094,
+    231.3577117919922,
+    26.399999618530273
+   ],
+   "rotation": [
+    -0.9075712110365022,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'vc_light.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 167,
+   "handle": 259,
+   "model": "vc_light.3do",
+   "referenceName": "",
+   "position": [
+    398.1926574707031,
+    339.7282409667969,
+    33.70000076293945
+   ],
+   "rotation": [
+    -1.6755160819135426,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'vc_light.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 168,
+   "handle": 260,
+   "model": "vc_light.3do",
+   "referenceName": "",
+   "position": [
+    676.3927001953125,
+    363.82061767578125,
+    33.5
+   ],
+   "rotation": [
+    -1.2740903539550896,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'vc_light.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 169,
+   "handle": 261,
+   "model": "flagger_stopgo_0.3do",
+   "referenceName": "",
+   "position": [
+    -651.5065307617188,
+    -290.61334228515625,
+    14.100000381469727
+   ],
+   "rotation": [
+    -1.5707963267939462,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'flagger_stopgo_0.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 170,
+   "handle": 263,
+   "model": "flagger_pit_0.3do",
+   "referenceName": "",
+   "position": [
+    -75.98238372802734,
+    -342.876708984375,
+    24.3700008392334
+   ],
+   "rotation": [
+    1.448623279154417,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'flagger_pit_0.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 171,
+   "handle": 265,
+   "model": "tree17.3do",
+   "referenceName": "",
+   "position": [
+    293.6004638671875,
+    54.75536346435547,
+    29.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree17.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 172,
+   "handle": 266,
+   "model": "tree17.3do",
+   "referenceName": "",
+   "position": [
+    276.925537109375,
+    53.1285400390625,
+    29.0
+   ],
+   "rotation": [
+    -1.2217304763952914,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree17.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 173,
+   "handle": 267,
+   "model": "tree07.3do",
+   "referenceName": "",
+   "position": [
+    331.8642272949219,
+    83.31378936767578,
+    31.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree07.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 174,
+   "handle": 268,
+   "model": "tree01.3do",
+   "referenceName": "",
+   "position": [
+    283.8980712890625,
+    79.76074981689453,
+    30.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 175,
+   "handle": 269,
+   "model": "truck_group.3do",
+   "referenceName": "",
+   "position": [
+    -166.20521545410156,
+    -229.105224609375,
+    26.0
+   ],
+   "rotation": [
+    2.3736477827108518,
+    0.0,
+    0.008726646192371845
+   ],
+   "secondaryModel": "(an instance of 'truck_group.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 176,
+   "handle": 271,
+   "model": "truck_group.3do",
+   "referenceName": "",
+   "position": [
+    -109.07158660888672,
+    -169.3541717529297,
+    25.0
+   ],
+   "rotation": [
+    2.3736477827108518,
+    0.0,
+    0.008726646192371845
+   ],
+   "secondaryModel": "(an instance of 'truck_group.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 177,
+   "handle": 272,
+   "model": "truck_group.3do",
+   "referenceName": "",
+   "position": [
+    -192.49346923828125,
+    -142.81460571289062,
+    25.0
+   ],
+   "rotation": [
+    -0.7853981633969731,
+    0.0,
+    -0.008726646192371845
+   ],
+   "secondaryModel": "(an instance of 'truck_group.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 178,
+   "handle": 273,
+   "model": "trailer.3do",
+   "referenceName": "",
+   "position": [
+    -434.3036193847656,
+    222.82131958007812,
+    25.100000381469727
+   ],
+   "rotation": [
+    0.4712388980381838,
+    0.0,
+    0.017453292519932734
+   ],
+   "secondaryModel": "(an instance of 'trailer.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 179,
+   "handle": 275,
+   "model": "peop_01.3do",
+   "referenceName": "",
+   "position": [
+    -423.09918212890625,
+    200.93687438964844,
+    8.84000015258789
+   ],
+   "rotation": [
+    -3.0368728637695312,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'peop_01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 180,
+   "handle": 277,
+   "model": "peop_02.3do",
+   "referenceName": "",
+   "position": [
+    427.0,
+    140.96502685546875,
+    8.75
+   ],
+   "rotation": [
+    -3.0298917293548584,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'peop_02.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 181,
+   "handle": 279,
+   "model": "trailer01.3do",
+   "referenceName": "",
+   "position": [
+    -429.1759033203125,
+    226.98936462402344,
+    25.299999237060547
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.017453292519932734
+   ],
+   "secondaryModel": "(an instance of 'trailer01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 182,
+   "handle": 281,
+   "model": "peop_03.3do",
+   "referenceName": "",
+   "position": [
+    666.9613647460938,
+    357.913818359375,
+    29.299999237060547
+   ],
+   "rotation": [
+    0.29670597283885647,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'peop_03.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 183,
+   "handle": 283,
+   "model": "peop_04.3do",
+   "referenceName": "",
+   "position": [
+    -678.7504272460938,
+    -319.9914855957031,
+    7.349999904632568
+   ],
+   "rotation": [
+    -0.5759586531577803,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'peop_04.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 184,
+   "handle": 285,
+   "model": "peop_05.3do",
+   "referenceName": "",
+   "position": [
+    -48.013702392578125,
+    -214.4569091796875,
+    17.700000762939453
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'peop_05.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 185,
+   "handle": 287,
+   "model": "tree_group_dtl.3do",
+   "referenceName": "",
+   "position": [
+    221.51351928710938,
+    238.9425506591797,
+    33.599998474121094
+   ],
+   "rotation": [
+    1.2740903539550896,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group_dtl.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 186,
+   "handle": 288,
+   "model": "tree_group04sh.3do",
+   "referenceName": "",
+   "position": [
+    350.0,
+    152.0,
+    31.0
+   ],
+   "rotation": [
+    -2.460914134979248,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree_group04sh.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 187,
+   "handle": 289,
+   "model": "truck_led.3do",
+   "referenceName": "",
+   "position": [
+    -324.76995849609375,
+    -299.9996643066406,
+    27.299999237060547
+   ],
+   "rotation": [
+    -1.7278759594733406,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'truck_led.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 188,
+   "handle": 291,
+   "model": "tree19.3do",
+   "referenceName": "",
+   "position": [
+    -730.948974609375,
+    50.449005126953125,
+    0.0
+   ],
+   "rotation": [
+    -0.7679448708770403,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'tree19.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 189,
+   "handle": 293,
+   "model": "bus.3do",
+   "referenceName": "",
+   "position": [
+    -738.4225463867188,
+    -157.3701171875,
+    2.5999999046325684
+   ],
+   "rotation": [
+    -0.20943951023919283,
+    0.0,
+    -0.03490658476948738
+   ],
+   "secondaryModel": "(an instance of 'bus.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 190,
+   "handle": 295,
+   "model": "trailer.3do",
+   "referenceName": "",
+   "position": [
+    -735.705078125,
+    -167.560791015625,
+    2.9000000953674316
+   ],
+   "rotation": [
+    -1.7627825445132062,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'trailer.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 191,
+   "handle": 296,
+   "model": "trailer01.3do",
+   "referenceName": "",
+   "position": [
+    -737.6588745117188,
+    -145.7046356201172,
+    2.200000047683716
+   ],
+   "rotation": [
+    -1.5707963267939462,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'trailer01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 192,
+   "handle": 297,
+   "model": "trailer.3do",
+   "referenceName": "",
+   "position": [
+    717.1323852539062,
+    230.92886352539062,
+    27.0
+   ],
+   "rotation": [
+    -0.15707963267939462,
+    0.0,
+    -0.06981317007973094
+   ],
+   "secondaryModel": "(an instance of 'trailer.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 193,
+   "handle": 298,
+   "model": "trailer01.3do",
+   "referenceName": "",
+   "position": [
+    720.3322143554688,
+    249.62261962890625,
+    27.100000381469727
+   ],
+   "rotation": [
+    0.03490658503986547,
+    0.0,
+    0.08726646192371845
+   ],
+   "secondaryModel": "(an instance of 'trailer01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 194,
+   "handle": 299,
+   "model": "bus.3do",
+   "referenceName": "",
+   "position": [
+    624.38525390625,
+    142.11265563964844,
+    29.100000381469727
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'bus.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 195,
+   "handle": 300,
+   "model": "trailer01.3do",
+   "referenceName": "",
+   "position": [
+    505.38043212890625,
+    114.60932922363281,
+    31.0
+   ],
+   "rotation": [
+    -0.17453292519932734,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'trailer01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 196,
+   "handle": 301,
+   "model": "m_van1.3do",
+   "referenceName": "",
+   "position": [
+    733.1925659179688,
+    224.85386657714844,
+    27.100000381469727
+   ],
+   "rotation": [
+    1.3089969389949552,
+    0.06981317007973094,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'm_van1.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 197,
+   "handle": 303,
+   "model": "car1.3do",
+   "referenceName": "",
+   "position": [
+    680.7974243164062,
+    173.89193725585938,
+    28.200000762939453
+   ],
+   "rotation": [
+    0.4712388980381838,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'car1.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 198,
+   "handle": 305,
+   "model": "car3.3do",
+   "referenceName": "",
+   "position": [
+    687.3468017578125,
+    179.69281005859375,
+    28.299999237060547
+   ],
+   "rotation": [
+    0.4363323129983184,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'car3.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 199,
+   "handle": 307,
+   "model": "suv.3do",
+   "referenceName": "",
+   "position": [
+    692.7734375,
+    186.61642456054688,
+    28.299999237060547
+   ],
+   "rotation": [
+    2.0594885173520625,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'suv.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 200,
+   "handle": 309,
+   "model": "car2.3do",
+   "referenceName": "",
+   "position": [
+    -522.8475952148438,
+    87.37345886230469,
+    16.5
+   ],
+   "rotation": [
+    -1.5358897417540807,
+    0.0,
+    0.06981317007973094
+   ],
+   "secondaryModel": "(an instance of 'car2.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 201,
+   "handle": 311,
+   "model": "suv.3do",
+   "referenceName": "",
+   "position": [
+    -521.8164672851562,
+    82.27104187011719,
+    16.299999237060547
+   ],
+   "rotation": [
+    0.0,
+    -0.06981316953897476,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'suv.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 202,
+   "handle": 312,
+   "model": "m_van1.3do",
+   "referenceName": "",
+   "position": [
+    -522.4403076171875,
+    76.44938659667969,
+    16.399999618530273
+   ],
+   "rotation": [
+    -1.5707963267939462,
+    0.0,
+    0.06981316953897476
+   ],
+   "secondaryModel": "(an instance of 'm_van1.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 203,
+   "handle": 313,
+   "model": "m_van6.3do",
+   "referenceName": "",
+   "position": [
+    -522.6481323242188,
+    70.00397491455078,
+    16.399999618530273
+   ],
+   "rotation": [
+    -1.5707963267939462,
+    0.0,
+    0.06981316953897476
+   ],
+   "secondaryModel": "(an instance of 'm_van6.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 204,
+   "handle": 315,
+   "model": "m_van4.3do",
+   "referenceName": "",
+   "position": [
+    -522.648193359375,
+    91.83519744873047,
+    16.5
+   ],
+   "rotation": [
+    -1.5707963267939462,
+    0.0,
+    0.06981316953897476
+   ],
+   "secondaryModel": "(an instance of 'm_van4.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 205,
+   "handle": 317,
+   "model": "vehicle_group.3do",
+   "referenceName": "",
+   "position": [
+    -512.1788330078125,
+    -219.9112091064453,
+    20.899999618530273
+   ],
+   "rotation": [
+    -0.06981317007973094,
+    -0.05235987901687622,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'vehicle_group.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 206,
+   "handle": 319,
+   "model": "bus.3do",
+   "referenceName": "",
+   "position": [
+    -442.8701171875,
+    87.71995544433594,
+    20.899999618530273
+   ],
+   "rotation": [
+    -2.687807048069641,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'bus.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 207,
+   "handle": 320,
+   "model": "trailer.3do",
+   "referenceName": "",
+   "position": [
+    -441.9317321777344,
+    102.19573211669922,
+    21.299999237060547
+   ],
+   "rotation": [
+    -0.925024503556435,
+    0.0,
+    0.03490658503986547
+   ],
+   "secondaryModel": "(an instance of 'trailer.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 208,
+   "handle": 321,
+   "model": "peop_03.3do",
+   "referenceName": "",
+   "position": [
+    45.04852294921875,
+    -187.16079711914062,
+    20.200000762939453
+   ],
+   "rotation": [
+    0.7853981633969731,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'peop_03.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 209,
+   "handle": 322,
+   "model": "trailer.3do",
+   "referenceName": "",
+   "position": [
+    35.67934036254883,
+    -211.45553588867188,
+    24.399999618530273
+   ],
+   "rotation": [
+    -1.5707963267939462,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'trailer.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 210,
+   "handle": 323,
+   "model": "trailer01.3do",
+   "referenceName": "",
+   "position": [
+    35.03959274291992,
+    -221.05908203125,
+    24.399999618530273
+   ],
+   "rotation": [
+    -1.5358897417540807,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'trailer01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 211,
+   "handle": 324,
+   "model": "trailer01.3do",
+   "referenceName": "",
+   "position": [
+    34.63652038574219,
+    -230.73287963867188,
+    24.399999618530273
+   ],
+   "rotation": [
+    -1.5882496193138789,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'trailer01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 212,
+   "handle": 325,
+   "model": "m_van6.3do",
+   "referenceName": "",
+   "position": [
+    29.598073959350586,
+    -238.5928497314453,
+    24.399999618530273
+   ],
+   "rotation": [
+    -1.6231562043537444,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'm_van6.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 213,
+   "handle": 326,
+   "model": "suv.3do",
+   "referenceName": "",
+   "position": [
+    29.396533966064453,
+    -245.6466827392578,
+    24.399999618530273
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'suv.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 214,
+   "handle": 327,
+   "model": "trailer.3do",
+   "referenceName": "",
+   "position": [
+    238.69195556640625,
+    295.2957458496094,
+    33.5
+   ],
+   "rotation": [
+    3.019419605948363,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'trailer.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 215,
+   "handle": 328,
+   "model": "m_van2.3do",
+   "referenceName": "",
+   "position": [
+    230.7853240966797,
+    299.1298828125,
+    33.5
+   ],
+   "rotation": [
+    3.0019663134284302,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'm_van2.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 216,
+   "handle": 330,
+   "model": "m_van4.3do",
+   "referenceName": "",
+   "position": [
+    -215.39369201660156,
+    292.9751281738281,
+    30.799999237060547
+   ],
+   "rotation": [
+    -2.775073510669305,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'm_van4.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 217,
+   "handle": 331,
+   "model": "m_van1.3do",
+   "referenceName": "",
+   "position": [
+    -202.69464111328125,
+    292.0025939941406,
+    31.100000381469727
+   ],
+   "rotation": [
+    -2.687807048069641,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'm_van1.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 218,
+   "handle": 332,
+   "model": "m_van2.3do",
+   "referenceName": "",
+   "position": [
+    -194.46954345703125,
+    294.0588684082031,
+    31.200000762939453
+   ],
+   "rotation": [
+    -2.6179938779899103,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'm_van2.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 219,
+   "handle": 333,
+   "model": "peop_03.3do",
+   "referenceName": "",
+   "position": [
+    -117.79778289794922,
+    307.8630065917969,
+    27.5
+   ],
+   "rotation": [
+    -0.27925268031892375,
+    -0.008726646192371845,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'peop_03.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 220,
+   "handle": 334,
+   "model": "people_bs01.3do",
+   "referenceName": "",
+   "position": [
+    93.5186767578125,
+    314.3537902832031,
+    31.399999618530273
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'people_bs01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 221,
+   "handle": 336,
+   "model": "bus.3do",
+   "referenceName": "",
+   "position": [
+    644.413818359375,
+    289.93798828125,
+    33.20000076293945
+   ],
+   "rotation": [
+    -3.0019663134284302,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'bus.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 222,
+   "handle": 337,
+   "model": "m_van6.3do",
+   "referenceName": "",
+   "position": [
+    659.80029296875,
+    300.3505859375,
+    33.0
+   ],
+   "rotation": [
+    -2.9321531433486996,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'm_van6.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 223,
+   "handle": 338,
+   "model": "peop_03.3do",
+   "referenceName": "",
+   "position": [
+    710.5244750976562,
+    321.3638610839844,
+    28.200000762939453
+   ],
+   "rotation": [
+    0.0,
+    0.013962633907794952,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'peop_03.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 224,
+   "handle": 339,
+   "model": "m_van4.3do",
+   "referenceName": "",
+   "position": [
+    674.3139038085938,
+    304.7919616699219,
+    32.849998474121094
+   ],
+   "rotation": [
+    -3.0019663134284302,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'm_van4.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 225,
+   "handle": 340,
+   "model": "peop_03.3do",
+   "referenceName": "",
+   "position": [
+    769.9205322265625,
+    229.58676147460938,
+    21.5
+   ],
+   "rotation": [
+    -1.3962634015946187,
+    0.05235987901687622,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'peop_03.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 226,
+   "handle": 341,
+   "model": "trailer01.3do",
+   "referenceName": "",
+   "position": [
+    720.3170776367188,
+    292.7911376953125,
+    30.0
+   ],
+   "rotation": [
+    2.5307274153902464,
+    -0.03490658503986547,
+    0.017453292519932734
+   ],
+   "secondaryModel": "(an instance of 'trailer01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 227,
+   "handle": 342,
+   "model": "m_van2.3do",
+   "referenceName": "",
+   "position": [
+    734.2202758789062,
+    244.25143432617188,
+    26.799999237060547
+   ],
+   "rotation": [
+    1.8151424220730044,
+    -0.03490658503986547,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'm_van2.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 228,
+   "handle": 343,
+   "model": "suv.3do",
+   "referenceName": "",
+   "position": [
+    731.271484375,
+    233.98158264160156,
+    26.700000762939453
+   ],
+   "rotation": [
+    -3.1066860685480266,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'suv.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 229,
+   "handle": 344,
+   "model": "trailer.3do",
+   "referenceName": "",
+   "position": [
+    -736.5166015625,
+    -137.2401123046875,
+    2.0999999046325684
+   ],
+   "rotation": [
+    -1.5707963267939462,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'trailer.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 230,
+   "handle": 345,
+   "model": "m_van4.3do",
+   "referenceName": "",
+   "position": [
+    -733.2158203125,
+    -126.16667938232422,
+    1.7999999523162842
+   ],
+   "rotation": [
+    -1.5882496193138789,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'm_van4.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 231,
+   "handle": 346,
+   "model": "m_van2.3do",
+   "referenceName": "",
+   "position": [
+    -731.6187133789062,
+    -114.13497161865234,
+    1.600000023841858
+   ],
+   "rotation": [
+    -1.6231562043537444,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'm_van2.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 232,
+   "handle": 347,
+   "model": "peop_03.3do",
+   "referenceName": "",
+   "position": [
+    -727.3380126953125,
+    -81.29536437988281,
+    -3.0999999046325684
+   ],
+   "rotation": [
+    1.0122909661560986,
+    0.0,
+    -0.05235987715423107
+   ],
+   "secondaryModel": "(an instance of 'peop_03.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 233,
+   "handle": 348,
+   "model": "vc_light_l.3do",
+   "referenceName": "",
+   "position": [
+    -433.5113220214844,
+    -335.21038818359375,
+    24.799999237060547
+   ],
+   "rotation": [
+    1.4835298641942825,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'vc_light_l.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 234,
+   "handle": 350,
+   "model": "vc_light_l.3do",
+   "referenceName": "",
+   "position": [
+    -567.3593139648438,
+    -323.93768310546875,
+    18.5
+   ],
+   "rotation": [
+    1.5009831567142151,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'vc_light_l.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 235,
+   "handle": 351,
+   "model": "vc_light_l.3do",
+   "referenceName": "",
+   "position": [
+    -847.170654296875,
+    -272.8582763671875,
+    5.5
+   ],
+   "rotation": [
+    1.3613568165547534,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'vc_light_l.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 236,
+   "handle": 352,
+   "model": "vc_light_l.3do",
+   "referenceName": "",
+   "position": [
+    -788.3426513671875,
+    -173.05397033691406,
+    3.5
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'vc_light_l.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 237,
+   "handle": 353,
+   "model": "vc_light_l.3do",
+   "referenceName": "",
+   "position": [
+    -768.061279296875,
+    -84.56137084960938,
+    0.8999999761581421
+   ],
+   "rotation": [
+    -0.12217304763952914,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'vc_light_l.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 238,
+   "handle": 354,
+   "model": "vc_light.3do",
+   "referenceName": "",
+   "position": [
+    -681.4503173828125,
+    70.2659683227539,
+    1.7999999523162842
+   ],
+   "rotation": [
+    -1.0471975511959641,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'vc_light.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 239,
+   "handle": 355,
+   "model": "vc_light_l.3do",
+   "referenceName": "",
+   "position": [
+    -481.5110778808594,
+    138.42691040039062,
+    19.700000762939453
+   ],
+   "rotation": [
+    -0.925024503556435,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'vc_light_l.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 240,
+   "handle": 356,
+   "model": "vc_light.3do",
+   "referenceName": "",
+   "position": [
+    -214.15257263183594,
+    315.83135986328125,
+    28.600000381469727
+   ],
+   "rotation": [
+    -1.3089969389949552,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'vc_light.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 241,
+   "handle": 357,
+   "model": "vc_light_l.3do",
+   "referenceName": "",
+   "position": [
+    -70.0085220336914,
+    353.5569152832031,
+    31.0
+   ],
+   "rotation": [
+    -1.448623279154417,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'vc_light_l.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 242,
+   "handle": 358,
+   "model": "vc_light_l.3do",
+   "referenceName": "",
+   "position": [
+    50.48442077636719,
+    355.170166015625,
+    32.400001525878906
+   ],
+   "rotation": [
+    -1.4835298641942825,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'vc_light_l.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 243,
+   "handle": 359,
+   "model": "vc_light_l.3do",
+   "referenceName": "",
+   "position": [
+    174.71763610839844,
+    356.3056640625,
+    33.5
+   ],
+   "rotation": [
+    -1.6580627893936097,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'vc_light_l.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 244,
+   "handle": 360,
+   "model": "vc_light_l.3do",
+   "referenceName": "",
+   "position": [
+    320.0064697265625,
+    357.76934814453125,
+    33.599998474121094
+   ],
+   "rotation": [
+    -1.5358897417540807,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'vc_light_l.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 245,
+   "handle": 361,
+   "model": "vc_light.3do",
+   "referenceName": "",
+   "position": [
+    640.2845458984375,
+    343.88287353515625,
+    34.0
+   ],
+   "rotation": [
+    -1.5707963267939462,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'vc_light.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 246,
+   "handle": 362,
+   "model": "vc_light.3do",
+   "referenceName": "",
+   "position": [
+    736.8236694335938,
+    324.261474609375,
+    30.399999618530273
+   ],
+   "rotation": [
+    -2.1118483949118607,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'vc_light.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 247,
+   "handle": 363,
+   "model": "vc_light.3do",
+   "referenceName": "",
+   "position": [
+    778.4969482421875,
+    227.54071044921875,
+    26.299999237060547
+   ],
+   "rotation": [
+    2.8797932657889014,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'vc_light.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 248,
+   "handle": 364,
+   "model": "vc_light.3do",
+   "referenceName": "",
+   "position": [
+    701.1423950195312,
+    128.08685302734375,
+    25.600000381469727
+   ],
+   "rotation": [
+    1.8151424220730044,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'vc_light.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 249,
+   "handle": 365,
+   "model": "vc_light.3do",
+   "referenceName": "",
+   "position": [
+    605.742919921875,
+    107.84812927246094,
+    27.5
+   ],
+   "rotation": [
+    1.6580627893936097,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'vc_light.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 250,
+   "handle": 366,
+   "model": "vc_light.3do",
+   "referenceName": "",
+   "position": [
+    507.68798828125,
+    88.23356628417969,
+    27.399999618530273
+   ],
+   "rotation": [
+    1.6755160819135426,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'vc_light.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 251,
+   "handle": 367,
+   "model": "vc_light.3do",
+   "referenceName": "",
+   "position": [
+    408.4583435058594,
+    68.0140380859375,
+    27.5
+   ],
+   "rotation": [
+    1.7278759594733406,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'vc_light.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 252,
+   "handle": 368,
+   "model": "vc_light.3do",
+   "referenceName": "",
+   "position": [
+    313.13568115234375,
+    49.30727005004883,
+    27.5
+   ],
+   "rotation": [
+    1.710422666953408,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'vc_light.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 253,
+   "handle": 369,
+   "model": "vc_light.3do",
+   "referenceName": "",
+   "position": [
+    208.89710998535156,
+    29.222537994384766,
+    27.399999618530273
+   ],
+   "rotation": [
+    1.6231562043537444,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'vc_light.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 254,
+   "handle": 370,
+   "model": "vc_light_l.3do",
+   "referenceName": "",
+   "position": [
+    18.22442626953125,
+    -98.755615234375,
+    25.299999237060547
+   ],
+   "rotation": [
+    -3.1415926535878924,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'vc_light_l.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 255,
+   "handle": 371,
+   "model": "vc_light_l.3do",
+   "referenceName": "",
+   "position": [
+    11.581205368041992,
+    -209.06781005859375,
+    24.399999618530273
+   ],
+   "rotation": [
+    -3.0543261909882284,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'vc_light_l.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 256,
+   "handle": 372,
+   "model": "vc_light.3do",
+   "referenceName": "",
+   "position": [
+    -18.634550094604492,
+    -291.7403259277344,
+    23.399999618530273
+   ],
+   "rotation": [
+    2.9146998508287667,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'vc_light.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 257,
+   "handle": 373,
+   "model": "vc_light_l.3do",
+   "referenceName": "",
+   "position": [
+    -205.70054626464844,
+    -354.7141418457031,
+    26.100000381469727
+   ],
+   "rotation": [
+    1.5707963267939462,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'vc_light_l.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 258,
+   "handle": 374,
+   "model": "c_light_br.3do",
+   "referenceName": "",
+   "position": [
+    -307.4883117675781,
+    -341.52239990234375,
+    31.049999237060547
+   ],
+   "rotation": [
+    1.483529806137085,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'c_light_br.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 259,
+   "handle": 376,
+   "model": "vc_light_l.3do",
+   "referenceName": "",
+   "position": [
+    -95.62388610839844,
+    -365.7254943847656,
+    24.700000762939453
+   ],
+   "rotation": [
+    1.7976891295530717,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'vc_light_l.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 260,
+   "handle": 377,
+   "model": "vc_light.3do",
+   "referenceName": "",
+   "position": [
+    70.27252197265625,
+    2.61031436920166,
+    27.399999618530273
+   ],
+   "rotation": [
+    1.4137166941145516,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'vc_light.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 261,
+   "handle": 378,
+   "model": "c_light.3do",
+   "referenceName": "",
+   "position": [
+    -307.588134765625,
+    -340.979248046875,
+    -3000.0
+   ],
+   "rotation": [
+    1.7627825445132062,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'c_light.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 262,
+   "handle": 380,
+   "model": "cone01.3do",
+   "referenceName": "",
+   "position": [
+    420.61712646484375,
+    354.01593017578125,
+    33.540000915527344
+   ],
+   "rotation": [
+    0.29670597283885647,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(an instance of 'cone01.3do')",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 263,
+   "handle": 382,
+   "model": "b737.3do",
+   "referenceName": "737.wav",
+   "position": [
+    -618.0309448242188,
+    343.4847106933594,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\b737.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 264,
+   "handle": 384,
+   "model": "blimp.3do",
+   "referenceName": "blimp.wav",
+   "position": [
+    -651.9437255859375,
+    407.5422058105469,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\blimp.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 265,
+   "handle": 386,
+   "model": "cessna.3do",
+   "referenceName": "cessna.wav",
+   "position": [
+    -638.7554321289062,
+    367.977294921875,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cessna.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 266,
+   "handle": 388,
+   "model": "hele2.3do",
+   "referenceName": "helicopter.wav",
+   "position": [
+    -731.0735473632812,
+    360.4411315917969,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\hele2.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 267,
+   "handle": 390,
+   "model": "helecam.3do",
+   "referenceName": "helicopter.wav",
+   "position": [
+    -676.436279296875,
+    303.9198303222656,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\helecam.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 268,
+   "handle": 392,
+   "model": "heli_01.3do",
+   "referenceName": "helicopter.wav",
+   "position": [
+    -686.3893432617188,
+    354.911376953125,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\heli_01.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 269,
+   "handle": 394,
+   "model": "ambulance.3do",
+   "referenceName": "",
+   "position": [
+    621.4541015625,
+    46.466697692871094,
+    25.399999618530273
+   ],
+   "rotation": [
+    2.286381320111188,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\ambulance.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 270,
+   "handle": 396,
+   "model": "ambulance.3do",
+   "referenceName": "",
+   "position": [
+    -128.79786682128906,
+    -322.0263671875,
+    24.799999237060547
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\ambulance.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 271,
+   "handle": 397,
+   "model": "ambulance.3do",
+   "referenceName": "",
+   "position": [
+    -573.28564453125,
+    90.32898712158203,
+    12.399999618530273
+   ],
+   "rotation": [
+    2.949606435868632,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\ambulance.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 272,
+   "handle": 398,
+   "model": "ambulance.3do",
+   "referenceName": "",
+   "position": [
+    -578.8031616210938,
+    -277.3326721191406,
+    17.700000762939453
+   ],
+   "rotation": [
+    -0.03490658476948738,
+    -0.03490658476948738,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\ambulance.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 273,
+   "handle": 399,
+   "model": "tow_truck.3do",
+   "referenceName": "",
+   "position": [
+    -578.5467529296875,
+    89.5984878540039,
+    11.699999809265137
+   ],
+   "rotation": [
+    2.827433388229103,
+    0.10471975511959641,
+    -0.017453292519932734
+   ],
+   "secondaryModel": "(instance) ..\\shared\\tow_truck.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 274,
+   "handle": 401,
+   "model": "tow_truck.3do",
+   "referenceName": "",
+   "position": [
+    -122.04524230957031,
+    -322.9201965332031,
+    24.700000762939453
+   ],
+   "rotation": [
+    -0.4363323129983184,
+    0.017453292519932734,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\tow_truck.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 275,
+   "handle": 402,
+   "model": "tow_truck.3do",
+   "referenceName": "",
+   "position": [
+    615.2174072265625,
+    48.6795539855957,
+    25.5
+   ],
+   "rotation": [
+    2.1293016874317936,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\tow_truck.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 276,
+   "handle": 403,
+   "model": "tow_truck.3do",
+   "referenceName": "",
+   "position": [
+    -583.1922607421875,
+    -277.1583251953125,
+    17.5
+   ],
+   "rotation": [
+    -0.06981317007973094,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\tow_truck.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 277,
+   "handle": 404,
+   "model": "cmpr_curv.3do",
+   "referenceName": "",
+   "position": [
+    681.8238525390625,
+    194.18785095214844,
+    28.299999237060547
+   ],
+   "rotation": [
+    -0.6981317007973094,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_curv.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 278,
+   "handle": 406,
+   "model": "cmpr_line1.3do",
+   "referenceName": "",
+   "position": [
+    338.8016662597656,
+    118.51091003417969,
+    31.299999237060547
+   ],
+   "rotation": [
+    0.12217304763952914,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line1.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 279,
+   "handle": 408,
+   "model": "cmpr_line2.3do",
+   "referenceName": "",
+   "position": [
+    377.42236328125,
+    126.10476684570312,
+    31.25
+   ],
+   "rotation": [
+    0.15707963267939462,
+    0.017453292519932734,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line2.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 280,
+   "handle": 410,
+   "model": "nbc_wagon.3do",
+   "referenceName": "",
+   "position": [
+    -529.7260131835938,
+    -279.1059265136719,
+    20.25
+   ],
+   "rotation": [
+    -1.640609496873677,
+    0.0,
+    0.03490658503986547
+   ],
+   "secondaryModel": "(instance) ..\\shared\\nbc_wagon.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 281,
+   "handle": 412,
+   "model": "red_track_truck.3do",
+   "referenceName": "",
+   "position": [
+    -183.67813110351562,
+    -316.3707580566406,
+    25.700000762939453
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\red_track_truck.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 282,
+   "handle": 414,
+   "model": "pickup_new.3do",
+   "referenceName": "",
+   "position": [
+    -189.94969177246094,
+    -315.73388671875,
+    25.899999618530273
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\pickup_new.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 283,
+   "handle": 416,
+   "model": "truck_fire.3do",
+   "referenceName": "",
+   "position": [
+    -555.0122680664062,
+    -255.55572509765625,
+    18.899999618530273
+   ],
+   "rotation": [
+    0.0,
+    -0.03490658503986547,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\truck_fire.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 284,
+   "handle": 418,
+   "model": "cmpr_line1.3do",
+   "referenceName": "",
+   "position": [
+    60.77511215209961,
+    -222.50643920898438,
+    24.399999618530273
+   ],
+   "rotation": [
+    -1.640609496873677,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line1.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 285,
+   "handle": 419,
+   "model": "cmpr_line2.3do",
+   "referenceName": "",
+   "position": [
+    59.28160858154297,
+    -256.7204284667969,
+    24.399999618530273
+   ],
+   "rotation": [
+    -1.6406095027923584,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line2.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 286,
+   "handle": 420,
+   "model": "cmpr_line1.3do",
+   "referenceName": "",
+   "position": [
+    52.62995529174805,
+    -292.474609375,
+    24.399999618530273
+   ],
+   "rotation": [
+    1.1693705988354932,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line1.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 287,
+   "handle": 421,
+   "model": "cmpr_line2.3do",
+   "referenceName": "",
+   "position": [
+    40.786319732666016,
+    -319.08953857421875,
+    24.399999618530273
+   ],
+   "rotation": [
+    1.1344640137956277,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line2.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 288,
+   "handle": 422,
+   "model": "cmpr_line1.3do",
+   "referenceName": "",
+   "position": [
+    -704.9963989257812,
+    -117.35552978515625,
+    1.600000023841858
+   ],
+   "rotation": [
+    1.3439035240348205,
+    0.017453292519932734,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line1.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 289,
+   "handle": 423,
+   "model": "cmpr_line2.3do",
+   "referenceName": "",
+   "position": [
+    -713.2603149414062,
+    -145.14149475097656,
+    2.299999952316284
+   ],
+   "rotation": [
+    1.3264502315148878,
+    0.017453292519932734,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line2.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 290,
+   "handle": 424,
+   "model": "cmpr_line1.3do",
+   "referenceName": "",
+   "position": [
+    -387.59149169921875,
+    102.54932403564453,
+    23.5
+   ],
+   "rotation": [
+    0.4886921905581166,
+    -0.03490658503986547,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line1.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 291,
+   "handle": 425,
+   "model": "cmpr_line2.3do",
+   "referenceName": "",
+   "position": [
+    -417.4205017089844,
+    88.42001342773438,
+    22.200000762939453
+   ],
+   "rotation": [
+    0.4363323129983184,
+    -0.05235987755979821,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line2.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 292,
+   "handle": 426,
+   "model": "cmpr_line1.3do",
+   "referenceName": "",
+   "position": [
+    -469.8053283691406,
+    198.08399963378906,
+    22.399999618530273
+   ],
+   "rotation": [
+    0.4014257279584529,
+    -0.07853981852531433,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line1.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 293,
+   "handle": 427,
+   "model": "cmpr_line2.3do",
+   "referenceName": "",
+   "position": [
+    -497.9281921386719,
+    187.93251037597656,
+    20.0
+   ],
+   "rotation": [
+    0.4014257279584529,
+    -0.08726646259966367,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line2.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 294,
+   "handle": 428,
+   "model": "cmpr_line1.3do",
+   "referenceName": "",
+   "position": [
+    -218.78323364257812,
+    263.56182861328125,
+    30.0
+   ],
+   "rotation": [
+    0.4712388980381838,
+    -0.06981317007973094,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line1.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 295,
+   "handle": 429,
+   "model": "cmpr_line1.3do",
+   "referenceName": "",
+   "position": [
+    -317.1710205078125,
+    194.42987060546875,
+    26.399999618530273
+   ],
+   "rotation": [
+    -2.1991148575115247,
+    0.017453292519932734,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line1.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 296,
+   "handle": 430,
+   "model": "cmpr_line2.3do",
+   "referenceName": "",
+   "position": [
+    -334.76861572265625,
+    166.947509765625,
+    25.799999237060547
+   ],
+   "rotation": [
+    0.9075712110365022,
+    -0.017453292519932734,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line2.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 297,
+   "handle": 431,
+   "model": "cmpr_line1.3do",
+   "referenceName": "",
+   "position": [
+    -354.8967590332031,
+    132.97341918945312,
+    25.0
+   ],
+   "rotation": [
+    0.8726646259966367,
+    -0.03490658503986547,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line1.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 298,
+   "handle": 432,
+   "model": "cmpr_line1.3do",
+   "referenceName": "",
+   "position": [
+    -111.67161560058594,
+    291.2987060546875,
+    32.0
+   ],
+   "rotation": [
+    0.08726646259966367,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line1.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 299,
+   "handle": 433,
+   "model": "cmpr_line2.3do",
+   "referenceName": "",
+   "position": [
+    -77.07132720947266,
+    294.4801330566406,
+    32.0
+   ],
+   "rotation": [
+    0.08726646259966367,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line2.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 300,
+   "handle": 434,
+   "model": "cmpr_line1.3do",
+   "referenceName": "",
+   "position": [
+    -46.50614547729492,
+    298.3986511230469,
+    32.5
+   ],
+   "rotation": [
+    -3.089232776028094,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line1.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 301,
+   "handle": 435,
+   "model": "cmpr_line2.3do",
+   "referenceName": "",
+   "position": [
+    -15.936633110046387,
+    299.7255554199219,
+    32.5
+   ],
+   "rotation": [
+    3.1415927410125732,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line2.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 302,
+   "handle": 436,
+   "model": "cmpr_line1.3do",
+   "referenceName": "",
+   "position": [
+    19.42963981628418,
+    300.2144470214844,
+    33.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line1.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 303,
+   "handle": 437,
+   "model": "cmpr_line2.3do",
+   "referenceName": "",
+   "position": [
+    53.825618743896484,
+    302.4179382324219,
+    33.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line2.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 304,
+   "handle": 438,
+   "model": "cmpr_line1.3do",
+   "referenceName": "",
+   "position": [
+    82.91881561279297,
+    303.751220703125,
+    33.20000076293945
+   ],
+   "rotation": [
+    -3.1415926535878924,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line1.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 305,
+   "handle": 439,
+   "model": "cmpr_line2.3do",
+   "referenceName": "",
+   "position": [
+    112.60103607177734,
+    303.00946044921875,
+    33.29999923706055
+   ],
+   "rotation": [
+    -3.1415926535878924,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line2.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 306,
+   "handle": 440,
+   "model": "cmpr_line1.3do",
+   "referenceName": "",
+   "position": [
+    148.98545837402344,
+    300.6352844238281,
+    33.29999923706055
+   ],
+   "rotation": [
+    -0.08726646259966367,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line1.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 307,
+   "handle": 441,
+   "model": "cmpr_line2.3do",
+   "referenceName": "",
+   "position": [
+    177.82211303710938,
+    297.7642517089844,
+    33.29999923706055
+   ],
+   "rotation": [
+    3.019419605948363,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line2.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 308,
+   "handle": 442,
+   "model": "cmpr_line1.3do",
+   "referenceName": "",
+   "position": [
+    212.6945037841797,
+    291.8073425292969,
+    33.400001525878906
+   ],
+   "rotation": [
+    -0.15707963267939462,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line1.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 309,
+   "handle": 443,
+   "model": "cmpr_line1.3do",
+   "referenceName": "",
+   "position": [
+    -142.2823486328125,
+    287.7964172363281,
+    31.5
+   ],
+   "rotation": [
+    0.08726646259966367,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line1.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 310,
+   "handle": 444,
+   "model": "cmpr_line2.3do",
+   "referenceName": "",
+   "position": [
+    -172.150146484375,
+    282.9655456542969,
+    31.5
+   ],
+   "rotation": [
+    0.29670597283885647,
+    -0.008726646192371845,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line2.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 311,
+   "handle": 445,
+   "model": "cmpr_line1.3do",
+   "referenceName": "",
+   "position": [
+    -280.58770751953125,
+    231.9197235107422,
+    27.299999237060547
+   ],
+   "rotation": [
+    0.7155849933172421,
+    0.0,
+    0.008726646192371845
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line1.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 312,
+   "handle": 446,
+   "model": "cmpr_line2.3do",
+   "referenceName": "",
+   "position": [
+    -249.33914184570312,
+    252.2418212890625,
+    28.0
+   ],
+   "rotation": [
+    0.4886921905581166,
+    -0.03490658503986547,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line2.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 313,
+   "handle": 447,
+   "model": "cmpr_line1.3do",
+   "referenceName": "",
+   "position": [
+    265.4672546386719,
+    108.42950439453125,
+    31.299999237060547
+   ],
+   "rotation": [
+    -3.019419605948363,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line1.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 314,
+   "handle": 448,
+   "model": "cmpr_line2.3do",
+   "referenceName": "",
+   "position": [
+    235.7677764892578,
+    101.97541046142578,
+    31.299999237060547
+   ],
+   "rotation": [
+    0.13962634015946188,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line2.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 315,
+   "handle": 449,
+   "model": "cmpr_line1.3do",
+   "referenceName": "",
+   "position": [
+    130.033203125,
+    82.54478454589844,
+    31.0
+   ],
+   "rotation": [
+    -2.949606435868632,
+    0.017453292519932734,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line1.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 316,
+   "handle": 450,
+   "model": "cmpr_line2.3do",
+   "referenceName": "",
+   "position": [
+    168.74473571777344,
+    90.1872787475586,
+    31.299999237060547
+   ],
+   "rotation": [
+    0.15707963267939462,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line2.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 317,
+   "handle": 451,
+   "model": "cmpr_line1.3do",
+   "referenceName": "",
+   "position": [
+    201.43472290039062,
+    95.17755126953125,
+    31.299999237060547
+   ],
+   "rotation": [
+    0.10471975511959641,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line1.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 318,
+   "handle": 452,
+   "model": "cmpr_line2.3do",
+   "referenceName": "",
+   "position": [
+    299.648681640625,
+    113.45491027832031,
+    31.299999237060547
+   ],
+   "rotation": [
+    -2.984513020908498,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line2.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 319,
+   "handle": 453,
+   "model": "cmpr_line1.3do",
+   "referenceName": "",
+   "position": [
+    -70.74736022949219,
+    -48.098602294921875,
+    26.200000762939453
+   ],
+   "rotation": [
+    1.1344640137956277,
+    -0.017453292519932734,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line1.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 320,
+   "handle": 454,
+   "model": "cmpr_line2.3do",
+   "referenceName": "",
+   "position": [
+    -82.24720764160156,
+    -76.136474609375,
+    26.0
+   ],
+   "rotation": [
+    1.117010721275695,
+    -0.017453292519932734,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line2.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 321,
+   "handle": 455,
+   "model": "cmpr_line2.3do",
+   "referenceName": "",
+   "position": [
+    93.37979125976562,
+    71.81809997558594,
+    30.0
+   ],
+   "rotation": [
+    -2.9146998508287667,
+    0.03490658503986547,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line2.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 322,
+   "handle": 456,
+   "model": "cmpr_line1.3do",
+   "referenceName": "",
+   "position": [
+    61.366939544677734,
+    63.40489196777344,
+    29.0
+   ],
+   "rotation": [
+    -2.8623399732689685,
+    0.017453292519932734,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line1.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 323,
+   "handle": 457,
+   "model": "cmpr_line2.3do",
+   "referenceName": "",
+   "position": [
+    -49.019386291503906,
+    -14.846761703491211,
+    26.5
+   ],
+   "rotation": [
+    0.8203047484368385,
+    -0.017453292519932734,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line2.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 324,
+   "handle": 458,
+   "model": "cmpr_line1.3do",
+   "referenceName": "",
+   "position": [
+    553.1027221679688,
+    159.2661895751953,
+    31.0
+   ],
+   "rotation": [
+    0.12217304763952914,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line1.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 325,
+   "handle": 459,
+   "model": "cmpr_line2.3do",
+   "referenceName": "",
+   "position": [
+    589.1796875,
+    164.89320373535156,
+    30.0
+   ],
+   "rotation": [
+    0.15707963267939462,
+    0.03490658503986547,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line2.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 326,
+   "handle": 460,
+   "model": "cmpr_line1.3do",
+   "referenceName": "",
+   "position": [
+    618.8140258789062,
+    172.0028839111328,
+    29.5
+   ],
+   "rotation": [
+    0.17453292519932734,
+    0.03490658503986547,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line1.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 327,
+   "handle": 461,
+   "model": "cmpr_line2.3do",
+   "referenceName": "",
+   "position": [
+    516.2688598632812,
+    152.69815063476562,
+    31.0
+   ],
+   "rotation": [
+    -2.984513020908498,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line2.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 328,
+   "handle": 462,
+   "model": "cmpr_line1.3do",
+   "referenceName": "",
+   "position": [
+    417.82598876953125,
+    139.65460205078125,
+    31.0
+   ],
+   "rotation": [
+    -0.12217304763952914,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line1.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 329,
+   "handle": 463,
+   "model": "cmpr_line2.3do",
+   "referenceName": "",
+   "position": [
+    456.5859680175781,
+    146.88308715820312,
+    31.0
+   ],
+   "rotation": [
+    0.10471975511959641,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line2.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 330,
+   "handle": 464,
+   "model": "cmpr_line1.3do",
+   "referenceName": "",
+   "position": [
+    484.737548828125,
+    147.41305541992188,
+    31.0
+   ],
+   "rotation": [
+    -3.019419605948363,
+    -0.017453292519932734,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line1.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 331,
+   "handle": 465,
+   "model": "d_vehicle_gr1.3do",
+   "referenceName": "",
+   "position": [
+    -540.0137939453125,
+    -246.14889526367188,
+    19.600000381469727
+   ],
+   "rotation": [
+    -0.06981317007973094,
+    -0.05235987755979821,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\d_vehicle_gr1.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 332,
+   "handle": 467,
+   "model": "d_vehicle_gr2.3do",
+   "referenceName": "",
+   "position": [
+    -528.5464477539062,
+    -252.4539794921875,
+    20.100000381469727
+   ],
+   "rotation": [
+    -0.017453292519932734,
+    -0.04363323003053665,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\d_vehicle_gr2.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 333,
+   "handle": 469,
+   "model": "d_vehicle_gr2.3do",
+   "referenceName": "",
+   "position": [
+    -511.8930969238281,
+    -253.8292694091797,
+    21.0
+   ],
+   "rotation": [
+    -0.08726646259966367,
+    -0.05235987755979821,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\d_vehicle_gr2.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 334,
+   "handle": 470,
+   "model": "d_vehicle_gr1.3do",
+   "referenceName": "",
+   "position": [
+    -524.1058349609375,
+    -247.9498748779297,
+    20.399999618530273
+   ],
+   "rotation": [
+    -0.06981317007973094,
+    -0.03490658503986547,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\d_vehicle_gr1.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 335,
+   "handle": 471,
+   "model": "d_vehicle_gr2.3do",
+   "referenceName": "",
+   "position": [
+    -544.3289184570312,
+    -251.75714111328125,
+    19.299999237060547
+   ],
+   "rotation": [
+    -0.06981317007973094,
+    -0.05235987755979821,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\d_vehicle_gr2.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 336,
+   "handle": 472,
+   "model": "cmpr_line1.3do",
+   "referenceName": "",
+   "position": [
+    428.81903076171875,
+    204.1808319091797,
+    34.0
+   ],
+   "rotation": [
+    -0.06981317007973094,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line1.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 337,
+   "handle": 473,
+   "model": "cmpr_line2.3do",
+   "referenceName": "",
+   "position": [
+    592.2000122070312,
+    215.1694793701172,
+    34.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line2.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 338,
+   "handle": 474,
+   "model": "cmpr_line1.3do",
+   "referenceName": "",
+   "position": [
+    558.0858764648438,
+    206.3466033935547,
+    34.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line1.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 339,
+   "handle": 475,
+   "model": "cmpr_line2.3do",
+   "referenceName": "",
+   "position": [
+    657.7131958007812,
+    230.8680877685547,
+    33.5
+   ],
+   "rotation": [
+    0.0,
+    0.03490658503986547,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line2.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 340,
+   "handle": 476,
+   "model": "cmpr_line1.3do",
+   "referenceName": "",
+   "position": [
+    622.2427978515625,
+    217.70498657226562,
+    34.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line1.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 341,
+   "handle": 477,
+   "model": "cmpr_line2.3do",
+   "referenceName": "",
+   "position": [
+    528.1154174804688,
+    202.84959411621094,
+    34.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line2.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 342,
+   "handle": 478,
+   "model": "cmpr_line1.3do",
+   "referenceName": "",
+   "position": [
+    694.4764404296875,
+    238.24468994140625,
+    30.0
+   ],
+   "rotation": [
+    0.0,
+    0.13962634015946188,
+    0.017453292519932734
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line1.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 343,
+   "handle": 479,
+   "model": "cmpr_line2.3do",
+   "referenceName": "",
+   "position": [
+    464.0304870605469,
+    203.9448699951172,
+    34.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line2.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 344,
+   "handle": 480,
+   "model": "cmpr_line1.3do",
+   "referenceName": "",
+   "position": [
+    493.5919189453125,
+    203.11492919921875,
+    34.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) ..\\shared\\cmpr_line1.3do",
+   "modelFlags": 1,
+   "conditionalFlag": 0
+  },
+  {
+   "index": 345,
+   "handle": 481,
+   "model": "infield.3do",
+   "referenceName": "",
+   "position": [
+    -529.2789916992188,
+    -99.97799682617188,
+    -0.699999988079071
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "secondaryModel": "(instance) infield.3do",
+   "modelFlags": 0,
+   "conditionalFlag": 0
+  }
+ ],
+ "sections": [
+  {
+   "index": 0,
+   "kind": 0,
+   "xSections": 4,
+   "fSections": 8,
+   "wSections": 5
+  },
+  {
+   "index": 1,
+   "kind": 0,
+   "xSections": 4,
+   "fSections": 8,
+   "wSections": 5
+  },
+  {
+   "index": 2,
+   "kind": 0,
+   "xSections": 4,
+   "fSections": 8,
+   "wSections": 5
+  },
+  {
+   "index": 3,
+   "kind": 0,
+   "xSections": 4,
+   "fSections": 11,
+   "wSections": 5
+  },
+  {
+   "index": 4,
+   "kind": 0,
+   "xSections": 5,
+   "fSections": 11,
+   "wSections": 5
+  },
+  {
+   "index": 5,
+   "kind": 0,
+   "xSections": 8,
+   "fSections": 12,
+   "wSections": 5
+  },
+  {
+   "index": 6,
+   "kind": 1,
+   "xSections": 8,
+   "fSections": 13,
+   "wSections": 4
+  },
+  {
+   "index": 7,
+   "kind": 1,
+   "xSections": 8,
+   "fSections": 13,
+   "wSections": 4
+  },
+  {
+   "index": 8,
+   "kind": 1,
+   "xSections": 8,
+   "fSections": 13,
+   "wSections": 4
+  },
+  {
+   "index": 9,
+   "kind": 1,
+   "xSections": 8,
+   "fSections": 13,
+   "wSections": 5
+  },
+  {
+   "index": 10,
+   "kind": 1,
+   "xSections": 9,
+   "fSections": 12,
+   "wSections": 5
+  },
+  {
+   "index": 11,
+   "kind": 0,
+   "xSections": 9,
+   "fSections": 12,
+   "wSections": 5
+  },
+  {
+   "index": 12,
+   "kind": 0,
+   "xSections": 8,
+   "fSections": 9,
+   "wSections": 4
+  },
+  {
+   "index": 13,
+   "kind": 0,
+   "xSections": 7,
+   "fSections": 8,
+   "wSections": 4
+  },
+  {
+   "index": 14,
+   "kind": 0,
+   "xSections": 6,
+   "fSections": 8,
+   "wSections": 4
+  },
+  {
+   "index": 15,
+   "kind": 0,
+   "xSections": 6,
+   "fSections": 7,
+   "wSections": 3
+  },
+  {
+   "index": 16,
+   "kind": 0,
+   "xSections": 5,
+   "fSections": 8,
+   "wSections": 3
+  },
+  {
+   "index": 17,
+   "kind": 0,
+   "xSections": 7,
+   "fSections": 7,
+   "wSections": 3
+  },
+  {
+   "index": 18,
+   "kind": 0,
+   "xSections": 7,
+   "fSections": 7,
+   "wSections": 2
+  },
+  {
+   "index": 19,
+   "kind": 1,
+   "xSections": 7,
+   "fSections": 9,
+   "wSections": 2
+  },
+  {
+   "index": 20,
+   "kind": 1,
+   "xSections": 7,
+   "fSections": 9,
+   "wSections": 2
+  },
+  {
+   "index": 21,
+   "kind": 0,
+   "xSections": 7,
+   "fSections": 9,
+   "wSections": 4
+  },
+  {
+   "index": 22,
+   "kind": 0,
+   "xSections": 7,
+   "fSections": 7,
+   "wSections": 3
+  },
+  {
+   "index": 23,
+   "kind": 1,
+   "xSections": 5,
+   "fSections": 9,
+   "wSections": 3
+  },
+  {
+   "index": 24,
+   "kind": 1,
+   "xSections": 6,
+   "fSections": 9,
+   "wSections": 4
+  },
+  {
+   "index": 25,
+   "kind": 1,
+   "xSections": 6,
+   "fSections": 7,
+   "wSections": 3
+  },
+  {
+   "index": 26,
+   "kind": 1,
+   "xSections": 7,
+   "fSections": 7,
+   "wSections": 4
+  },
+  {
+   "index": 27,
+   "kind": 1,
+   "xSections": 7,
+   "fSections": 7,
+   "wSections": 3
+  },
+  {
+   "index": 28,
+   "kind": 1,
+   "xSections": 7,
+   "fSections": 7,
+   "wSections": 2
+  },
+  {
+   "index": 29,
+   "kind": 0,
+   "xSections": 7,
+   "fSections": 7,
+   "wSections": 2
+  },
+  {
+   "index": 30,
+   "kind": 0,
+   "xSections": 6,
+   "fSections": 7,
+   "wSections": 2
+  },
+  {
+   "index": 31,
+   "kind": 0,
+   "xSections": 6,
+   "fSections": 7,
+   "wSections": 2
+  },
+  {
+   "index": 32,
+   "kind": 0,
+   "xSections": 5,
+   "fSections": 7,
+   "wSections": 2
+  },
+  {
+   "index": 33,
+   "kind": 0,
+   "xSections": 6,
+   "fSections": 10,
+   "wSections": 2
+  },
+  {
+   "index": 34,
+   "kind": 0,
+   "xSections": 6,
+   "fSections": 11,
+   "wSections": 2
+  },
+  {
+   "index": 35,
+   "kind": 0,
+   "xSections": 6,
+   "fSections": 11,
+   "wSections": 2
+  },
+  {
+   "index": 36,
+   "kind": 0,
+   "xSections": 6,
+   "fSections": 11,
+   "wSections": 2
+  },
+  {
+   "index": 37,
+   "kind": 0,
+   "xSections": 6,
+   "fSections": 10,
+   "wSections": 2
+  },
+  {
+   "index": 38,
+   "kind": 0,
+   "xSections": 6,
+   "fSections": 10,
+   "wSections": 2
+  },
+  {
+   "index": 39,
+   "kind": 0,
+   "xSections": 6,
+   "fSections": 10,
+   "wSections": 2
+  },
+  {
+   "index": 40,
+   "kind": 0,
+   "xSections": 5,
+   "fSections": 11,
+   "wSections": 2
+  },
+  {
+   "index": 41,
+   "kind": 0,
+   "xSections": 7,
+   "fSections": 11,
+   "wSections": 2
+  },
+  {
+   "index": 42,
+   "kind": 0,
+   "xSections": 7,
+   "fSections": 14,
+   "wSections": 4
+  },
+  {
+   "index": 43,
+   "kind": 0,
+   "xSections": 8,
+   "fSections": 14,
+   "wSections": 4
+  },
+  {
+   "index": 44,
+   "kind": 0,
+   "xSections": 8,
+   "fSections": 14,
+   "wSections": 4
+  },
+  {
+   "index": 45,
+   "kind": 0,
+   "xSections": 8,
+   "fSections": 13,
+   "wSections": 4
+  },
+  {
+   "index": 46,
+   "kind": 0,
+   "xSections": 8,
+   "fSections": 13,
+   "wSections": 4
+  },
+  {
+   "index": 47,
+   "kind": 0,
+   "xSections": 8,
+   "fSections": 14,
+   "wSections": 4
+  },
+  {
+   "index": 48,
+   "kind": 0,
+   "xSections": 5,
+   "fSections": 14,
+   "wSections": 4
+  },
+  {
+   "index": 49,
+   "kind": 0,
+   "xSections": 8,
+   "fSections": 14,
+   "wSections": 4
+  },
+  {
+   "index": 50,
+   "kind": 0,
+   "xSections": 8,
+   "fSections": 13,
+   "wSections": 4
+  },
+  {
+   "index": 51,
+   "kind": 0,
+   "xSections": 7,
+   "fSections": 13,
+   "wSections": 4
+  },
+  {
+   "index": 52,
+   "kind": 0,
+   "xSections": 7,
+   "fSections": 12,
+   "wSections": 4
+  },
+  {
+   "index": 53,
+   "kind": 0,
+   "xSections": 5,
+   "fSections": 12,
+   "wSections": 5
+  },
+  {
+   "index": 54,
+   "kind": 0,
+   "xSections": 5,
+   "fSections": 11,
+   "wSections": 5
+  },
+  {
+   "index": 55,
+   "kind": 0,
+   "xSections": 7,
+   "fSections": 11,
+   "wSections": 5
+  },
+  {
+   "index": 56,
+   "kind": 0,
+   "xSections": 7,
+   "fSections": 11,
+   "wSections": 5
+  },
+  {
+   "index": 57,
+   "kind": 0,
+   "xSections": 5,
+   "fSections": 10,
+   "wSections": 5
+  },
+  {
+   "index": 58,
+   "kind": 0,
+   "xSections": 5,
+   "fSections": 10,
+   "wSections": 5
+  },
+  {
+   "index": 59,
+   "kind": 0,
+   "xSections": 5,
+   "fSections": 9,
+   "wSections": 5
+  },
+  {
+   "index": 60,
+   "kind": 0,
+   "xSections": 5,
+   "fSections": 9,
+   "wSections": 5
+  },
+  {
+   "index": 61,
+   "kind": 0,
+   "xSections": 7,
+   "fSections": 9,
+   "wSections": 5
+  },
+  {
+   "index": 62,
+   "kind": 0,
+   "xSections": 7,
+   "fSections": 9,
+   "wSections": 5
+  },
+  {
+   "index": 63,
+   "kind": 0,
+   "xSections": 7,
+   "fSections": 8,
+   "wSections": 5
+  },
+  {
+   "index": 64,
+   "kind": 0,
+   "xSections": 4,
+   "fSections": 7,
+   "wSections": 5
+  },
+  {
+   "index": 65,
+   "kind": 0,
+   "xSections": 5,
+   "fSections": 7,
+   "wSections": 3
+  },
+  {
+   "index": 66,
+   "kind": 1,
+   "xSections": 5,
+   "fSections": 7,
+   "wSections": 3
+  },
+  {
+   "index": 67,
+   "kind": 1,
+   "xSections": 7,
+   "fSections": 9,
+   "wSections": 4
+  },
+  {
+   "index": 68,
+   "kind": 1,
+   "xSections": 7,
+   "fSections": 9,
+   "wSections": 4
+  },
+  {
+   "index": 69,
+   "kind": 1,
+   "xSections": 7,
+   "fSections": 8,
+   "wSections": 3
+  },
+  {
+   "index": 70,
+   "kind": 1,
+   "xSections": 7,
+   "fSections": 8,
+   "wSections": 3
+  },
+  {
+   "index": 71,
+   "kind": 1,
+   "xSections": 7,
+   "fSections": 8,
+   "wSections": 2
+  },
+  {
+   "index": 72,
+   "kind": 1,
+   "xSections": 7,
+   "fSections": 8,
+   "wSections": 2
+  },
+  {
+   "index": 73,
+   "kind": 1,
+   "xSections": 7,
+   "fSections": 10,
+   "wSections": 3
+  },
+  {
+   "index": 74,
+   "kind": 1,
+   "xSections": 7,
+   "fSections": 10,
+   "wSections": 3
+  },
+  {
+   "index": 75,
+   "kind": 0,
+   "xSections": 6,
+   "fSections": 7,
+   "wSections": 3
+  },
+  {
+   "index": 76,
+   "kind": 0,
+   "xSections": 6,
+   "fSections": 10,
+   "wSections": 3
+  },
+  {
+   "index": 77,
+   "kind": 0,
+   "xSections": 7,
+   "fSections": 10,
+   "wSections": 4
+  },
+  {
+   "index": 78,
+   "kind": 0,
+   "xSections": 9,
+   "fSections": 11,
+   "wSections": 6
+  },
+  {
+   "index": 79,
+   "kind": 0,
+   "xSections": 7,
+   "fSections": 9,
+   "wSections": 5
+  },
+  {
+   "index": 80,
+   "kind": 0,
+   "xSections": 7,
+   "fSections": 8,
+   "wSections": 4
+  },
+  {
+   "index": 81,
+   "kind": 0,
+   "xSections": 6,
+   "fSections": 7,
+   "wSections": 4
+  },
+  {
+   "index": 82,
+   "kind": 0,
+   "xSections": 6,
+   "fSections": 7,
+   "wSections": 4
+  },
+  {
+   "index": 83,
+   "kind": 0,
+   "xSections": 6,
+   "fSections": 8,
+   "wSections": 3
+  },
+  {
+   "index": 84,
+   "kind": 0,
+   "xSections": 6,
+   "fSections": 9,
+   "wSections": 5
+  },
+  {
+   "index": 85,
+   "kind": 0,
+   "xSections": 6,
+   "fSections": 8,
+   "wSections": 4
+  },
+  {
+   "index": 86,
+   "kind": 0,
+   "xSections": 6,
+   "fSections": 9,
+   "wSections": 4
+  },
+  {
+   "index": 87,
+   "kind": 0,
+   "xSections": 6,
+   "fSections": 7,
+   "wSections": 3
+  },
+  {
+   "index": 88,
+   "kind": 0,
+   "xSections": 6,
+   "fSections": 7,
+   "wSections": 3
+  },
+  {
+   "index": 89,
+   "kind": 0,
+   "xSections": 6,
+   "fSections": 6,
+   "wSections": 3
+  },
+  {
+   "index": 90,
+   "kind": 0,
+   "xSections": 6,
+   "fSections": 7,
+   "wSections": 3
+  },
+  {
+   "index": 91,
+   "kind": 0,
+   "xSections": 7,
+   "fSections": 7,
+   "wSections": 3
+  },
+  {
+   "index": 92,
+   "kind": 1,
+   "xSections": 7,
+   "fSections": 7,
+   "wSections": 3
+  },
+  {
+   "index": 93,
+   "kind": 1,
+   "xSections": 6,
+   "fSections": 11,
+   "wSections": 4
+  },
+  {
+   "index": 94,
+   "kind": 1,
+   "xSections": 6,
+   "fSections": 11,
+   "wSections": 4
+  },
+  {
+   "index": 95,
+   "kind": 1,
+   "xSections": 6,
+   "fSections": 11,
+   "wSections": 4
+  },
+  {
+   "index": 96,
+   "kind": 1,
+   "xSections": 6,
+   "fSections": 11,
+   "wSections": 4
+  },
+  {
+   "index": 97,
+   "kind": 0,
+   "xSections": 6,
+   "fSections": 10,
+   "wSections": 5
+  },
+  {
+   "index": 98,
+   "kind": 0,
+   "xSections": 5,
+   "fSections": 10,
+   "wSections": 6
+  },
+  {
+   "index": 99,
+   "kind": 0,
+   "xSections": 5,
+   "fSections": 10,
+   "wSections": 5
+  },
+  {
+   "index": 100,
+   "kind": 0,
+   "xSections": 4,
+   "fSections": 9,
+   "wSections": 5
+  },
+  {
+   "index": 101,
+   "kind": 0,
+   "xSections": 5,
+   "fSections": 10,
+   "wSections": 3
+  },
+  {
+   "index": 102,
+   "kind": 1,
+   "xSections": 5,
+   "fSections": 12,
+   "wSections": 3
+  },
+  {
+   "index": 103,
+   "kind": 1,
+   "xSections": 5,
+   "fSections": 11,
+   "wSections": 3
+  },
+  {
+   "index": 104,
+   "kind": 1,
+   "xSections": 5,
+   "fSections": 12,
+   "wSections": 3
+  },
+  {
+   "index": 105,
+   "kind": 1,
+   "xSections": 5,
+   "fSections": 13,
+   "wSections": 3
+  },
+  {
+   "index": 106,
+   "kind": 1,
+   "xSections": 5,
+   "fSections": 12,
+   "wSections": 4
+  },
+  {
+   "index": 107,
+   "kind": 1,
+   "xSections": 5,
+   "fSections": 11,
+   "wSections": 4
+  },
+  {
+   "index": 108,
+   "kind": 1,
+   "xSections": 5,
+   "fSections": 11,
+   "wSections": 4
+  },
+  {
+   "index": 109,
+   "kind": 1,
+   "xSections": 6,
+   "fSections": 12,
+   "wSections": 4
+  },
+  {
+   "index": 110,
+   "kind": 1,
+   "xSections": 8,
+   "fSections": 13,
+   "wSections": 4
+  },
+  {
+   "index": 111,
+   "kind": 0,
+   "xSections": 7,
+   "fSections": 13,
+   "wSections": 4
+  },
+  {
+   "index": 112,
+   "kind": 0,
+   "xSections": 7,
+   "fSections": 11,
+   "wSections": 4
+  },
+  {
+   "index": 113,
+   "kind": 0,
+   "xSections": 7,
+   "fSections": 9,
+   "wSections": 4
+  },
+  {
+   "index": 114,
+   "kind": 0,
+   "xSections": 7,
+   "fSections": 9,
+   "wSections": 4
+  },
+  {
+   "index": 115,
+   "kind": 0,
+   "xSections": 5,
+   "fSections": 8,
+   "wSections": 4
+  },
+  {
+   "index": 116,
+   "kind": 0,
+   "xSections": 5,
+   "fSections": 8,
+   "wSections": 4
+  },
+  {
+   "index": 117,
+   "kind": 0,
+   "xSections": 5,
+   "fSections": 8,
+   "wSections": 4
+  },
+  {
+   "index": 118,
+   "kind": 0,
+   "xSections": 4,
+   "fSections": 8,
+   "wSections": 4
+  },
+  {
+   "index": 119,
+   "kind": 0,
+   "xSections": 4,
+   "fSections": 8,
+   "wSections": 4
+  },
+  {
+   "index": 120,
+   "kind": 0,
+   "xSections": 4,
+   "fSections": 8,
+   "wSections": 4
+  },
+  {
+   "index": 121,
+   "kind": 0,
+   "xSections": 4,
+   "fSections": 8,
+   "wSections": 4
+  },
+  {
+   "index": 122,
+   "kind": 0,
+   "xSections": 4,
+   "fSections": 8,
+   "wSections": 4
+  }
+ ],
+ "bytesConsumed": 1083674,
+ "objectClasses": {
+  "Track": 1,
+  "TrackDetail": 4,
+  "Appearance": 2341,
+  "Texture": 65,
+  "TSOReference": 346,
+  "TSO": 119,
+  "Segment": 123,
+  "X_Section": 763,
+  "F_Section": 1189,
+  "TextureCoords": 2337,
+  "W_Section": 457
+ }
+}

@@ -1,0 +1,64 @@
+{
+ "criterion": "original005150fa vs mesh-linear interpolation at 5 triangle-edge midpoints and 2 triangle centroids per quad",
+ "scope": "all authored terrain; driving surface codes1,2,3,9,12; central driving subset |dlat|<=25m",
+ "toleranceMetres": 0.002,
+ "terrainToleranceMetres": 0.002,
+ "initialQuads": 24476,
+ "finalQuads": 460772,
+ "refinementPasses": 4,
+ "checkedDrivingPoints": 387744,
+ "checkedTerrainPoints": 3225404,
+ "initialWorstTerrain": {
+  "distance": 0.2914632729488748,
+  "vertical": 0.0034451491205,
+  "dlong": 765.4088134765625,
+  "dlat": 65.26920318603516,
+  "geometry": "terrain_019_07",
+  "surfaceCode": 4
+ },
+ "initialWorstDriving": {
+  "distance": 0.03644761215721116,
+  "vertical": 0.0007851099999998112,
+  "dlong": 515.394775390625,
+  "dlat": -28.449310302734375,
+  "geometry": "terrain_010_01",
+  "surfaceCode": 1
+ },
+ "finalWorstDriving": {
+  "distance": 0.0019999511612784986,
+  "vertical": 0.0001735500000030754,
+  "dlong": 3375.791748046875,
+  "dlat": 5.588774681091309,
+  "geometry": "terrain_095_06",
+  "surfaceCode": 1
+ },
+ "finalWorstCentralDriving": {
+  "distance": 0.0019999511612784986,
+  "vertical": 0.0001735500000030754,
+  "dlong": 3375.791748046875,
+  "dlat": 5.588774681091309,
+  "geometry": "terrain_095_06",
+  "surfaceCode": 1
+ },
+ "finalWorstTerrain": {
+  "distance": 0.001999986689966367,
+  "vertical": 7.5999999999964984e-06,
+  "dlong": 2547.1201171875,
+  "dlat": -34.11829376220703,
+  "geometry": "terrain_069_00",
+  "surfaceCode": 4
+ },
+ "finalWorstDrivingVertical": {
+  "distance": 0.0019988536135529217,
+  "vertical": 0.0019988499999961107,
+  "dlong": 3278.829345703125,
+  "dlat": -3.2021982669830322,
+  "geometry": "terrain_091_02",
+  "surfaceCode": 1
+ },
+ "initialWidestQuadMetres": 140.28113842010498,
+ "finalWidestDrivingQuadMetres": 81.5977897644043,
+ "limitation": "sampled criterion does not establish a uniform bound between checks; original collision continues to use the continuous recovered runtime",
+ "nativeFloat32DecimalRecoveryBoundMetres": 1.4149009239390915e-06,
+ "auditStorage": "legacy nine-digit decimal audit; corrected native-f32 vertex displacement bounded by the reported decimal recovery bound"
+}

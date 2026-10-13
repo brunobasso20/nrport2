@@ -999,7 +999,7 @@ def build_surfaces(root, section_spans, sample_many, max_step=2.0, road_toleranc
         terrain_buckets[detail["name"]] = detail
     limitations = [
         "Visual meshes use finite tessellation (maximum centerline step %.6g m); contact uses the original continuous runtime." % max_step,
-        "Original additional texture-slot blending and X-section seam triangulation are preserved as descriptors but not executed by this exporter.",
+        "Texture stages beyond the recovered base/lightmap pass and original X-section seam triangulation are retained as descriptors; the exporter uses the recovered continuous surface for mesh geometry.",
     ]
     if wall_profile_transitions:
         limitations.append("%d wall boundary sides cross different endpoint X-profile chords; shifted ground uses the original continuous query, while the native renderer boundary-transition compiler is not yet lifted." % len(wall_profile_transitions))

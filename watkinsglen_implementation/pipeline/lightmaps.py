@@ -99,7 +99,7 @@ def _tile_geometry(g, lower, upper, name):
 def bake(geometries, stream, texture_meta, texture_dir, max_texture_size=4096):
     """Return terrain with the recovered slot-2 colour pass baked into its base map."""
     result, report = [], {"sourceStrips": 0, "bakedTextures": 0, "texels": 0, "maxTextureSize": max_texture_size,
-        "shader": "Original rend_dxg.dll1002cf00 stage1 D3DTOP_MODULATE4 RGB; base alpha retained",
+        "shader": "Original rend_dxg.dll1002cf00 stage1 D3DTOP_MODULATE (enum 4) RGB; base alpha retained",
         "uvStreams": ["TextureCoords0/1", "TextureCoords16/17"],
         "limitation": "Finite colour bake uses largest original MIP and bilinear sampling; Roblox regenerates mipmaps and performs its own lighting/filtering. It cannot reproduce every original view-dependent GPU sample bit for bit."}
     images = {}
