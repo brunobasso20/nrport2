@@ -2,6 +2,10 @@
   "schema": 1,
   "track": "watkins_glen",
   "metresPerStud": 0.28,
+  "previousBundles": [
+    "1319036a4aa1a515efe4d8d1f5d025e2eae0faf37e13a5d5e06adcb18cdff554",
+    "70d0e30f93e39831f64c4d530d3866cf34327463e400fde3b97b5f80a3892bb6"
+  ],
   "baselineModelSHA256": "a7a6ea2103db3d76a5aab5210ef71c565a9c184c7f3012433c3dcc672eaaab94",
   "moduleGroups": {
     "NR2003CupTrackCode": 6,
@@ -816,20 +820,20 @@
   ],
   "installerSources": {
     "Apply": {
-      "bytes": 9187,
-      "fnv32": 501155072,
-      "sha256": "ceb2fe9db2eb7882b08e3d11c379757f7b3f4ca1cb772aed05da0cc6c1cd5ab6"
+      "bytes": 9741,
+      "fnv32": 4035937136,
+      "sha256": "6efc5b05b469b24e1aaecedb4d647f34851f844b244dabeb6b21d3cf0e20bba5"
     },
     "Support": {
-      "bytes": 5637,
-      "fnv32": 588606724,
-      "sha256": "6a3ff3a62a84a7c5bd0447f8778d58b98630af4a1936d442b447eb76df55e554"
+      "bytes": 10512,
+      "fnv32": 3405408869,
+      "sha256": "6422fa74e16c3675f05e60c02edb714418e02057dcd2b1fa5c1e825147254641"
     },
     "Rollback": {
-      "bytes": 4537,
-      "fnv32": 4069098779,
-      "sha256": "cb1d8c2708a2dd73076db493afbc23ab09f12027cf7ebba36eb5bf5c73991f3d"
+      "bytes": 4735,
+      "fnv32": 900666820,
+      "sha256": "5311a4e745ae72d17f08910489f4da0f7c0390b0f3db60eebe1d04d9b1fbd5ff"
     }
   },
-  "bundle": "70d0e30f93e39831f64c4d530d3866cf34327463e400fde3b97b5f80a3892bb6"
+  "bundle": "54db48606e6707168be02c9fa2fad06e308c4fa1a9b8892a718195f1f736cca1"
 }

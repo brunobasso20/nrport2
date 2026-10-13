@@ -1,2 +1,2 @@
 -- Insert NR2003_WatkinsGlen_Install.rbxmx into Workspace; run after all visual installers, outside Play.
-require(workspace.NR2003_WatkinsGlen_InstallV2.Apply)()
+require(workspace.NR2003_WatkinsGlen_InstallV3.Apply)()

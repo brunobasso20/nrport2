@@ -1,13 +1,10 @@
 -- Run outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()
 -- Restores the pre-install source/attributes and any moved generated bench. Track visuals stay imported.
-return function()
-    local backup = script.Parent
-    local H = require(backup.Support)
-    H.stop()
+local function rollbackLocked(backup, H, manifest)
     assert(backup.Name == "NR2003Backup_WatkinsGlen" and backup.ClassName == "Folder",
         "Run the Rollback module stored in ServerStorage.NR2003Backup_WatkinsGlen")
     local pkg, folders = H.folders()
-    local entries = H.child(backup, "Entries")
+    local entries = H.backupEntries(backup, manifest)
     local plan, problems = {}, {}
     local activePatch = pkg:GetAttribute("NR2003WatkinsGlenPatch")
     assert(activePatch == nil or activePatch == backup:GetAttribute("Bundle"),
@@ -74,4 +71,11 @@ return function()
     backup:Destroy()
     print("Watkins Glen patch rolled back. Previous sources, package attributes and generated bench restored; imported car and track visuals retained.")
     return true
+end
+
+return function()
+    local backup = script.Parent
+    local H = require(backup.Support)
+    local manifest = require(backup.Manifest)
+    return H.exclusive(backup, "rollback", function() return rollbackLocked(backup, H, manifest) end)
 end

@@ -1,20 +1,18 @@
 -- Run in Studio's Command Bar outside Play:
--- require(workspace.NR2003_WatkinsGlen_InstallV2.Apply)()
+-- require(workspace.NR2003_WatkinsGlen_InstallV3.Apply)()
 -- No simulation modules or uploaded scripts are executed by this installer.
-return function()
-    local install = script.Parent
-    local H = require(install.Support)
-    local manifest = require(install.Manifest)
-    H.stop()
+local function applyLocked(install, H, manifest)
     local pkg, folders = H.folders()
     H.origin()
     local storage = game:GetService("ServerStorage")
     local existingBackup = H.child(storage, "NR2003Backup_WatkinsGlen", true)
     if existingBackup then
-        assert(existingBackup.ClassName == "Folder" and existingBackup:GetAttribute("Bundle") == manifest.bundle,
-            "A backup from a different Watkins Glen patch exists; roll back that patch before updating")
-        assert(existingBackup:GetAttribute("Complete") == true,
-            "An incomplete Watkins Glen backup needs recovery before applying the patch")
+        assert(existingBackup.ClassName == "Folder", "Watkins Glen backup is not a Folder")
+        if existingBackup:GetAttribute("Complete") == true then
+            assert(existingBackup:GetAttribute("Bundle") == manifest.bundle,
+                "A backup from a different Watkins Glen patch exists; roll back that patch before updating")
+            H.backupEntries(existingBackup, manifest)
+        end
     end
 
     -- All payloads, targets and required solver dependencies are checked before mutation.
@@ -60,9 +58,14 @@ return function()
     end
     assert(#problems == 0, "Watkins Glen patch refused; nothing was changed:\n  " .. table.concat(problems, "\n  "))
 
+    if existingBackup and existingBackup:GetAttribute("Complete") ~= true then
+        H.archiveRestoredBackup(existingBackup, manifest, plan, pkg)
+        existingBackup = nil
+    end
+
     local backup = existingBackup
     local createdBackup = backup == nil
-    local entries
+    local entries, verifiedEntries
     if createdBackup then
         local prepared, prepareReason = pcall(function()
             backup = Instance.new("Folder")
@@ -94,6 +97,8 @@ return function()
                     entry:SetAttribute("OldBytes", bytes); entry:SetAttribute("OldHash", hash)
                 end
             end
+            entries, verifiedEntries = H.backupEntries(backup, manifest)
+            backup:SetAttribute("Prepared", true)
         end)
         if not prepared then
             local cleaned, cleanReason = pcall(function() if backup then backup:Destroy() end end)
@@ -103,15 +108,7 @@ return function()
                 tostring(prepareReason))
         end
     else
-        entries = H.child(backup, "Entries")
-        for _, change in ipairs(plan) do
-            local entry = H.child(entries, change.item.key)
-            local original = H.child(entry, "Original", true)
-            if original then
-                assert(H.matches(H.source(original), {bytes = entry:GetAttribute("OldBytes"),
-                    fnv32 = entry:GetAttribute("OldHash")}), "Original backup was edited: " .. change.item.key)
-            end
-        end
+        entries, verifiedEntries = H.backupEntries(backup, manifest)
     end
 
     local touched, movedBench = {}, nil
@@ -119,15 +116,20 @@ return function()
     local function apply()
         for _, change in ipairs(plan) do
             if not change.current then
+                local saved = verifiedEntries[change.item.key]
+                assert(entries.Parent == backup and saved.entry.Parent == entries and saved.reference.Parent == saved.entry,
+                    "Backup entry was removed during installation: " .. change.item.key)
                 local object = change.object
                 if not object then
                     object = Instance.new(change.item.class); object.Name = change.name
                     object.Parent = change.parent
                 end
                 table.insert(touched, {object = object, old = change.old, added = change.object == nil})
+                saved.reference.Value = object
                 H.write(object, change.payload, change.old)
                 assert(H.matches(H.source(object), change.item.new), "Source verification failed: " .. change.item.key)
-                H.child(H.child(entries, change.item.key), "Target").Value = object
+                assert(entries.Parent == backup and saved.entry.Parent == entries and saved.reference.Parent == saved.entry,
+                    "Backup entry was removed during installation: " .. change.item.key)
             end
         end
         if bench then
@@ -162,4 +164,11 @@ return function()
     print("Watkins Glen physics installed. Original car assets and client retained; backup: ServerStorage.NR2003Backup_WatkinsGlen")
     print("Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()")
     return true, manifest.bundle
+end
+
+return function()
+    local install = script.Parent
+    local H = require(install.Support)
+    local manifest = require(install.Manifest)
+    return H.exclusive(install, "install", function() return applyLocked(install, H, manifest) end)
 end

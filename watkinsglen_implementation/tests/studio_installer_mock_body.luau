@@ -62,7 +62,7 @@ function Instance.GetPivot(o) return CFrame.identity end
 local CFrame={identity={GetComponents=function() return 0,0,0,1,0,0,0,1,0,0,0,1 end}}
 -- Methods close over this identity without needing native vector operations.
 function Instance.GetPivot(o) return CFrame.identity end
-local services, running, failWrite, cache={},false,nil,{}
+local services, running, failWrite, cache, writeHook={},false,nil,{},nil
 local SES={GetEditorSource=function(_,s) return s._editorSource or s.Source or "" end,
  UpdateSourceAsync=function(_,s,cb)
   local parent=s.Parent;local inDataModel=false
@@ -71,6 +71,7 @@ local SES={GetEditorSource=function(_,s) return s._editorSource or s.Source or "
    parent=parent.Parent
   end
   assert(inDataModel,"ScriptEditorService requires a script in the DataModel")
+  if writeHook then writeHook(s) end
   if failWrite and failWrite(s) then failWrite=nil;error("injected source write failure") end
   rawset(s,"Source",cb(s.Source or ""))
  end}
@@ -92,7 +93,7 @@ local function atKey(folders,key)
  return parent,bits[#bits]
 end
 local function fixture()
- services={};cache={};running=false;failWrite=nil
+ services={};cache={};running=false;failWrite=nil;writeHook=nil
  for _,name in ipairs({"ReplicatedStorage","ServerScriptService","ServerStorage","StarterPlayer","Workspace"}) do services[name]=make(name,name,nil) end
  local pkg=make("Folder","NR2003Lab",services.ReplicatedStorage)
  local core=make("Folder","Core",pkg);local rb=make("Folder","Roblox",pkg);make("Folder","NR2003Cup",core)
@@ -109,7 +110,7 @@ local function fixture()
  visual:SetAttribute("TrackOriginEnabled",true);visual:SetAttribute("NR2003MetresPerStud",.28)
  local terrain=make("Model","Terrain",visual);terrain:SetAttribute("NR2003VisualKind","terrain")
  local part=make("Part","Mesh",terrain);part.Anchored=true;part.CanCollide=false;part.CanTouch=false;part.CanQuery=false
- local install=make("Model","NR2003_WatkinsGlen_InstallV2",services.Workspace)
+ local install=make("Model","NR2003_WatkinsGlen_InstallV3",services.Workspace)
  for name,source in pairs(TEMPLATES) do make("ModuleScript",name,install,source) end
  local sources=make("Folder","Sources",install);local sf={}
  for _,name in ipairs({"Core","Roblox","Server"}) do sf[name]=make("Folder",name,sources) end
@@ -156,7 +157,7 @@ check("incompatible solver dependency refuses before mutation",not ok and not ba
 -- Exact supported CupTune edit from the current Studio source.
 for _,trimFinalNewline in ipairs({false,true}) do
  f=fixture();local tune=f.pkg.Core.CupTune;local instance=tune
- local source,count=tune.Source:gsub("momentumKeys=nil,","momentumKeys=0,")
+ local source,count=CUPTUNE_BASELINE:gsub("momentumKeys=nil,","momentumKeys=0,")
  assert(count==1)
  if trimFinalNewline then source=source:gsub("\n+$","") end
  tune.Source=source
@@ -208,4 +209,86 @@ check("injected mid-install write failure restores sources, attrs and bench",not
 f=fixture();assert(apply(f));failWrite=function(s) return s.Name=="NR2003CupFrame" and s.Parent and s.Parent.Name=="NR2003Cup" end
 ok,reason=rollback()
 check("injected rollback write failure restores installed state",not ok and allNew(f) and backup() and f.pkg:GetAttribute("NR2003Track")=="watkins_glen" and f.bench.Parent==backup().MovedBench,reason)
+
+-- UpdateSourceAsync yields in Studio. Keep one transaction suspended at a real
+-- source-write boundary while other imported copies attempt to enter it.
+local function operation() return services.ServerStorage:FindFirstChild("NR2003WatkinsGlenOperation") end
+f=fixture()
+writeHook=function(s) if s.Name=="Original" then writeHook=nil;coroutine.yield("preparing backup") end end
+local worker=coroutine.create(function() return mockRequire(f.install.Apply)() end)
+local resumed,pause=coroutine.resume(worker)
+local held=operation();local incomplete=backup()
+check("source-write yield holds operation lock",resumed and pause=="preparing backup" and held~=nil and incomplete:GetAttribute("Complete")==false)
+ok,reason=apply(f)
+check("overlapping same-model install refuses without disturbing first transaction",not ok and tostring(reason):find("already running",1,true)~=nil and operation()==held and backup()==incomplete and allOriginal(f),reason)
+local other=f.install:Clone();other.Name="AnotherInstallerCopy";other.Parent=services.Workspace
+ok,reason=pcall(mockRequire(other.Apply))
+check("separate imported installer copy shares operation lock",not ok and operation()==held and backup()==incomplete and allOriginal(f),reason)
+resumed,reason=coroutine.resume(worker)
+check("first installer resumes to completion and releases lock",resumed and coroutine.status(worker)=="dead" and allNew(f) and not operation(),not resumed and reason or nil)
+ok=rollback()
+check("successful rollback releases operation lock",ok and allOriginal(f) and not operation())
+
+f=fixture()
+writeHook=function(s) if s.Name=="NR2003CupBuild" and s.Parent.Name=="NR2003Cup" then writeHook=nil;coroutine.yield("applying sources") end end
+worker=coroutine.create(function() return mockRequire(f.install.Apply)() end)
+resumed,pause=coroutine.resume(worker);held=operation();incomplete=backup()
+ok,reason=rollback()
+check("rollback cannot remove backup during a yielding install",resumed and pause=="applying sources" and not ok and operation()==held and backup()==incomplete and tostring(reason):find("already running",1,true)~=nil,reason)
+resumed,reason=coroutine.resume(worker)
+check("install finishes after blocked concurrent rollback",resumed and allNew(f) and not operation(),not resumed and reason or nil)
+
+f=fixture();assert(apply(f));local missing=backup().Entries["Core.NR2003Cup.NR2003CupTrackData3"]
+missing:Destroy();local saved=backup();ok,reason=apply(f)
+check("missing backup entry refuses repeated install before mutation",not ok and allNew(f) and backup()==saved and not operation(),reason)
+ok,reason=rollback()
+check("missing backup entry refuses rollback before mutation",not ok and allNew(f) and backup()==saved and not operation(),reason)
+
+f=fixture();assert(apply(f));saved=backup()
+local forged=saved.Entries["Core.NR2003Cup.NR2003CupBuild"]
+forged.Original:Destroy();forged:SetAttribute("Added",true)
+ok,reason=rollback()
+check("existing core target cannot be mislabeled as added and deleted on rollback",not ok and backup()==saved and allNew(f) and not operation(),reason)
+
+f=fixture()
+writeHook=function(s)
+ if s.Name=="NR2003CupTrackData3" and s.Parent.Name=="NR2003Cup" then
+  writeHook=nil;backup().Entries["Core.NR2003Cup.NR2003CupTrackData3"]:Destroy()
+ end
+end
+ok,reason=apply(f)
+check("entry removed during source write restores all live sources and releases lock",not ok and allOriginal(f) and not backup() and not operation() and f.bench.Parent==f.world,reason)
+
+local manifest=mockRequire(f.install.Manifest)
+local function unfinished(f,bundle)
+ local stale=make("Folder","NR2003Backup_WatkinsGlen",services.ServerStorage)
+ stale:SetAttribute("Bundle",bundle or manifest.previousBundles[2]);stale:SetAttribute("Complete",false)
+ stale:SetAttribute("Previous_NR2003Track_Present",true);stale:SetAttribute("Previous_NR2003Track",false)
+ stale:SetAttribute("Previous_NR2003WatkinsGlenPatch_Present",false)
+ local entries=make("Folder","Entries",stale)
+ make("ModuleScript","PartialOriginal",entries,"-- retained backup data, never required")
+ return stale
+end
+for _,previous in ipairs(manifest.previousBundles) do
+ f=fixture();local stale=unfinished(f,previous);local tune=f.pkg.Core.CupTune;local src=tune.Source
+ ok,reason=apply(f)
+ check("restored unfinished backup is archived intact and install completes: "..previous:sub(1,8),ok and allNew(f) and backup()~=stale and stale.Parent==services.ServerStorage and stale.Name:find("_Recovered_",1,true)~=nil and stale.Entries.PartialOriginal.Source=="-- retained backup data, never required" and tune.Source==src and not operation(),not ok and reason or nil)
+ ok,reason=rollback()
+ check("rollback after recovery preserves archived backup and starting sources",ok and allOriginal(f) and stale.Parent==services.ServerStorage and not backup(),not ok and reason or nil)
+end
+f=fixture();local stale=unfinished(f,"unknown");ok,reason=apply(f)
+check("unrecognized unfinished backup is retained without source mutation",not ok and backup()==stale and allOriginal(f) and not operation(),reason)
+f=fixture();stale=unfinished(f)
+f.pkg.Core.NR2003Cup.NR2003CupBuild.Source=PAYLOADS["Core.NR2003Cup.NR2003CupBuild"]
+ok,reason=apply(f)
+check("partially patched live state is refused without discarding unfinished backup",not ok and backup()==stale and f.pkg.Core.NR2003Cup.NR2003CupBuild.Source==PAYLOADS["Core.NR2003Cup.NR2003CupBuild"] and not operation(),reason)
+f=fixture();stale=unfinished(f);f.pkg:SetAttribute("NR2003Track","watkins_glen");ok,reason=apply(f)
+check("active track attributes prevent unfinished-backup archive",not ok and backup()==stale and allOriginal(f) and not operation(),reason)
+f=fixture();stale=unfinished(f);f.pkg:SetAttribute("NR2003Track","another_track");ok,reason=apply(f)
+check("unrestored package attribute prevents unfinished-backup archive",not ok and backup()==stale and allOriginal(f) and not operation(),reason)
+f=fixture();stale=unfinished(f);local moved=make("Folder","MovedBench",stale);f.bench.Parent=moved;ok,reason=apply(f)
+check("saved moved bench prevents unfinished-backup archive",not ok and backup()==stale and f.bench.Parent==moved and allOriginal(f) and not operation(),reason)
+f=fixture();stale=unfinished(f);f.pkg.Core.CupTune.Source..="\n-- unverified change";ok,reason=apply(f)
+check("dependency preflight refuses before archiving unfinished backup",not ok and backup()==stale and not operation(),reason)
+check("failed operations leave no operation lock",not operation())
 print(string.format("installer mock: %d passed, %d failed",passed,failed));assert(failed==0,"installer mock failures")

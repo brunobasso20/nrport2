@@ -1,0 +1,7 @@
+Verified restored live sources; unfinished backup retained as ServerStorage.NR2003Backup_WatkinsGlen_Recovered_1791880097
+Watkins Glen physics installed. Original car assets and client retained; backup: ServerStorage.NR2003Backup_WatkinsGlen
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()
+PASS  exported absent package attributes: unfinished backup archived and installation completes
+Watkins Glen patch rolled back. Previous sources, package attributes and generated bench restored; imported car and track visuals retained.
+PASS  exported absent package attributes: rollback restores nil attributes and exact sources
+current attributes mock: 2 passed, 0 failed

@@ -1,0 +1,11 @@
+Current uploaded model SHA256: 825e9a5bda5ee6ef72c63a3cc43dbe7bf555a2798f4e5e98f6d42181a26a884a
+600 instances; 147 script sources extracted read-only.
+All 30 required solver dependency sources match accepted profiles.
+All 10 existing car targets present in this export match the original baseline.
+All 26 newly added track targets are absent from the live package.
+V2 Apply, Support, Rollback and Manifest sources match the published V2 bundle.
+Server.NR2003Server, track visuals and ServerStorage backup were not included in this export.
+Current-source installer fixture overlays the exported required sources and uses the original server/visual fixture.
+No uploaded script was executed during extraction or source audit.
+
+Raw AttributesSerialize audit: NR2003Track and NR2003WatkinsGlenPatch are absent from the exported live package.

@@ -20,7 +20,11 @@ STUDIO = ROOT / 'watkinsglen_implementation/studio'
 TRACK = ROOT / 'watkinsglen_implementation/core/NR2003Cup'
 BASELINE = ROOT / 'tools/watkinsglen_studio_baseline.json'
 LIMIT = 199000
-MODEL_NAME = 'NR2003_WatkinsGlen_InstallV2'
+MODEL_NAME = 'NR2003_WatkinsGlen_InstallV3'
+PREVIOUS_BUNDLES = (
+    '1319036a4aa1a515efe4d8d1f5d025e2eae0faf37e13a5d5e06adcb18cdff554',
+    '70d0e30f93e39831f64c4d530d3866cf34327463e400fde3b97b5f80a3892bb6',
+)
 HOOKS = (
     'Core.NR2003CupVehicle',
     'Core.NR2003Cup.NR2003CupGarage',
@@ -129,6 +133,7 @@ def build() -> dict[Path, bytes]:
 
     support = {name: read_source(STUDIO / (name + '.lua')) for name in ('Apply', 'Support', 'Rollback')}
     manifest = {'schema': 1, 'track': 'watkins_glen', 'metresPerStud': 0.28,
+                'previousBundles': list(PREVIOUS_BUNDLES),
                 'baselineModelSHA256': baseline['uploaded_model_sha256'],
                 'moduleGroups': groups,
                 'targets': targets, 'dependencies': dependencies,
