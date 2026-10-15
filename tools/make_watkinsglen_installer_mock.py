@@ -16,6 +16,7 @@ manifest = json.loads((root / 'watkinsglen_implementation/studio/manifest.json')
 rows = json.loads((root / 'work/rbxm_audit/extracted/scripts.json').read_text())
 originals = {row['path'].removeprefix('NR2003Lab/').replace('/', '.'): row for row in rows}
 originals['Server.NR2003Server'] = next(row for row in rows if row['path'] == 'NR2003Server')
+originals['Client.NR2003Client'] = next(row for row in rows if row['path'] == 'NR2003Client')
 source_root = root / 'work/rbxm_audit/extracted'
 sources = {key: (source_root / row['source_file']).read_text() for key, row in originals.items()}
 cup_baseline = sources['Core.CupTune']

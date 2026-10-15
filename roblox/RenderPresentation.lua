@@ -16,11 +16,24 @@ function M.new(car,tune,remote)
     local self=setmetatable({car=car,tune=tune,remote=remote,buffer=Buffer.new(Config.buffer),sampled={wheels={}},
         visual=Visual.new(car,tune),dynamics={wheels={}},contacts={},active=false,frames=0,fps=0,fpsClock=os.clock()},M)
     for j=1,4 do self.dynamics.wheels[j]={compression=0,steer=0,angle=0};self.contacts[j]={point=Vector3.zero,grounded=false} end
+    self.normalBufferConfig=table.clone(self.buffer.cfg)
     self.connection=remote.OnClientEvent:Connect(function(packet)
         local s=Snap.decode(packet);if not s or s.vehicleId~=Config.vehicleId then return end
         self.buffer:push(s,workspace:GetServerTimeNow())
     end)
     return self
+end
+function M:setDriverActive(active)
+    local enabled=active==true and self.car:GetAttribute("NR2003Track")=="watkins_glen"
+    if enabled==self.lowDelayDriver then return end
+    self.lowDelayDriver=enabled
+    local cfg=self.buffer.cfg
+    for name,value in pairs(self.normalBufferConfig) do cfg[name]=value end
+    if enabled then
+        for name,value in pairs(Config.driverBuffer or {}) do cfg[name]=value end
+        self.buffer.delay=math.min(self.buffer.delay,cfg.initialDelay)
+        self.buffer.targetDelay=math.max(cfg.minDelay,math.min(self.buffer.targetDelay,cfg.maxDelay))
+    end
 end
 function M:update()
     self.frames=self.frames+1;local clock=os.clock();local span=clock-self.fpsClock

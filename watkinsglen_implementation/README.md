@@ -8,25 +8,27 @@ The recovered lap is **3942.875732421875 metres**, or **14081.699044363839 Roblo
 
 ## Studio installation
 
+**Existing V4 installation:** use the [small V5 handling update](handling/README.md). It corrects original keyboard throttle/clutch processing, loads Watkins Glen's original setup files, expands the existing per-wheel HUD and reduces the active driver's presentation delay. It has a separate backup and retains the V4 installation. Numerical dynamics differences remain documented in [handling/VALIDATION.md](handling/VALIDATION.md).
+
 Use your existing place containing the exported NR2003Lab, NR2003Server and NR2003Client. Preserve its imported car model.
 
 For a browser download, use the [complete Studio package](downloads/README_DOWNLOAD.md), which contains the actual GLBs/PNGs and installers. For a repository checkout, use **Git LFS**. GitHub's repository Download ZIP can contain pointer text instead of binary assets. Download/import details are in [assets/README_IMPORT.md](assets/README_IMPORT.md).
 
 1. Stop Play. Import the supplied `assets/glb/*.glb` files with Studio's 3D Importer. Keep the generated chunk names; their textures are embedded.
 2. Insert `assets/studio/NR2003TrackVisualInstallers.rbxmx`, then follow `assets/studio/INSTALL_ALL_TRACK_VISUALS.lua` to calibrate the imported chunks.
-3. Insert `studio/NR2003_WatkinsGlen_Install.rbxmx`. Run this in the Command Bar outside Play:
+3. For a fresh installation, insert `studio/NR2003_WatkinsGlen_InstallV5.rbxmx`. Run this in the Command Bar outside Play:
 
 ```lua
-require(workspace.NR2003_WatkinsGlen_InstallV4.Apply)()
+require(workspace.NR2003_WatkinsGlen_InstallV5.Apply)()
 ```
 
 4. Start Play. The car is placed by the original track placement routine in pit stall 0. The avatar spawns beside it; approach the seat and use the existing F/entry controls. Drive with your existing control bindings and cockpit/camera controls.
 
-The installer checks the exported baseline, preserves the car assets and client, and backs up changed scripts. Full installation and rollback instructions are in `studio/README_INSTALL.md`. Visual geometry stays non-colliding; terrain answers presentation camera queries, while the recovered car world evaluates its own contacts. A small invisible SpawnLocation is used only as a walking surface for the avatar beside the car.
+The installer checks the exported baseline, preserves car assets and the main server, updates the original client's telemetry panel, and backs up changed scripts. Full installation and rollback instructions are in `studio/README_INSTALL.md`. Visual geometry stays non-colliding; terrain answers presentation camera queries, while the recovered car world evaluates its own contacts. A small invisible SpawnLocation is used only as a walking surface for the avatar beside the car.
 
 For alternate test positions, set the TestCar numeric attributes `TrackDlong`, `TrackDlat` (metres) and `TrackYaw` (radians relative to the track) before initializing the car. The default is `(341.13, -19.61, 0)`. These are original track coordinates, not Roblox studs. Track diagnostics include `TrackDlongCurrent`, `TrackDlatCurrent`, `TrackSurface` and `TrackContactMode`.
 
-For a useful NR2003 comparison, match the garage setup, weather, tire condition, fuel and damage options. This integration preserves your existing garage baseline; it does not automatically select one of Watkins Glen's separate setup files. For nonzero wind, match the track orientation input as well (`TrackNorth` is radians; the supplied track.ini specifies 180 degrees).
+For a useful NR2003 comparison, match the garage setup, weather, tire condition, fuel and damage options. V5 defaults to the supplied original `fast.cup.sim`; the TestCar attribute `WatkinsGlenSetup` selects `fast`, `easy`, `qualify` or `jasper`. Existing `Setup_*` attributes override individual items. For nonzero wind, match the track orientation input as well (`TrackNorth` is radians; the supplied track.ini specifies 180 degrees).
 
 ## Fidelity and verification
 

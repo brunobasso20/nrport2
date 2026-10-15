@@ -1,5 +1,7 @@
 # Watkins Glen driving-test validation
 
+V5 handling changes have their own [validation report](handling/VALIDATION.md): original raw keyboard pedal processing, independent binary setup loading, per-wheel HUD, actual V4 upgrade/rollback and current driving comparisons. The older trajectory fixtures below injected already-processed throttle; they did not validate the missing keyboard stage. V5 retains the reported numerical dynamics differences.
+
 The export and recovered contacts are packaged for the supplied Stage 13 car place. **100% NR2003 gameplay/rendering equality has not been established.** Actual Studio driving, appearance and performance have not been tested in this headless environment.
 
 ## Scale and contacts

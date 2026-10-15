@@ -1,0 +1,5 @@
+fast: pedals 0, gears 0, surfaces 0 mismatches; state fields 5592 differ; max position 0.0230102539 m, velocity 0.0267174244 m/s, tire force 6139.76575 N, slip velocity 1.4114337 m/s
+force RMS error 360.927 N; net sampled Fx impulse -969.597 / original -1040.040 Ns, Fy 1050.515 / 836.763 Ns; max yaw-rate error 0.005661 rad/s; frame 61 wheel 3 component 1 got 5003.458 original -1136.307
+easy: pedals 0, gears 0, surfaces 0 mismatches; state fields 4681 differ; max position 0.0113525391 m, velocity 0.0247924328 m/s, tire force 7673.47705 N, slip velocity 1.30909634 m/s
+force RMS error 375.161 N; net sampled Fx impulse -713.478 / original -886.175 Ns, Fy 613.457 / 527.770 Ns; max yaw-rate error 0.006503 rad/s; frame 50 wheel 3 component 1 got 5891.607 original -1781.870
+Original keyboard input, stock setup placement and track surface comparisons passed; dynamics differences reported above.

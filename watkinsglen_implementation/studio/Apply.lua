@@ -1,5 +1,5 @@
 -- Run in Studio's Command Bar outside Play:
--- require(workspace.NR2003_WatkinsGlen_InstallV4.Apply)()
+-- require(workspace.NR2003_WatkinsGlen_InstallV5.Apply)()
 -- No simulation modules or uploaded scripts are executed by this installer.
 local function applyLocked(install, H, manifest)
     local pkg, folders = H.folders()
@@ -53,6 +53,9 @@ local function applyLocked(install, H, manifest)
     end
     local car = world and H.child(world, "TestCar", true)
     if car then
+        local setup = car:GetAttribute("WatkinsGlenSetup")
+        assert(setup == nil or setup == "fast" or setup == "easy" or setup == "qualify" or setup == "jasper",
+            "TestCar.WatkinsGlenSetup must be fast, easy, qualify or jasper")
         assert(car:GetAttribute("AeroSession") ~= false and car:GetAttribute("Stage11Runtime") ~= "frozen",
             "Watkins Glen requires AeroSession enabled and Stage11Runtime original")
     end
@@ -161,7 +164,7 @@ local function applyLocked(install, H, manifest)
         end
         error("Watkins Glen installation failed; prior sources, attributes and bench were restored:\n" .. tostring(reason))
     end
-    print("Watkins Glen physics installed. Original car assets and client retained; backup: ServerStorage.NR2003Backup_WatkinsGlen")
+    print("Watkins Glen V5 installed: original track setups/pedals and per-wheel track HUD; backup: ServerStorage.NR2003Backup_WatkinsGlen")
     print("Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()")
     return true, manifest.bundle
 end

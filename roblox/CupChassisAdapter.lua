@@ -104,7 +104,7 @@ local LEGACY_SETUP={brakeBias="SetupBrakeBias",grilleTape="SetupGrilleTape",spoi
 function M:garageSetup()
     local Setup=self.core.V.Setup
     if not Setup then return nil end
-    local s=Setup.cupGarageDefault()
+    local s=self.originalTrack and TrackHost.garageSetup(self,Setup) or Setup.cupGarageDefault()
     for i=0,70 do
         if Setup.adjustable(i) then
             local name=Setup.ITEM[i].name
@@ -115,7 +115,7 @@ function M:garageSetup()
     end
     -- Stage 12.1: bench default of the garage steering ratio (item 0x30) when no Setup_steeringRatio attribute is set
     local ratio=self.tune.driver and self.tune.driver.setupSteeringRatio
-    if U.finite(ratio) and not U.finite(self.car:GetAttribute("Setup_steeringRatio")) then Setup.set(s,"steeringRatio",ratio) end
+    if not self.originalTrack and U.finite(ratio) and not U.finite(self.car:GetAttribute("Setup_steeringRatio")) then Setup.set(s,"steeringRatio",ratio) end
     return s
 end
 function M:applyGarageSetup(s)
@@ -125,6 +125,11 @@ function M:applyGarageSetup(s)
     self.car:SetAttribute("SetupStructure",rep.structure);self.car:SetAttribute("SetupApplySeconds",rep.seconds)
     if ok then
         self.appliedSetupKey=key;self.car:SetAttribute("SetupError",nil)
+        if self.originalTrack then
+            self.trackSetupName=self.requestedTrackSetupName
+            self.car:SetAttribute("TrackSetupApplied",self.trackSetupName)
+            self.car:SetAttribute("TrackSetupSHA256",self.requestedTrackSetupSHA256)
+        end
         local d=self.core:setupDump()
         local r=d.runtime
         print(string.format("[NR2003 Stage 10] setup aplicado (%s, %.2f s): molas %.0f/%.0f/%.0f/%.0f N/m, freio %.0f/%.0f N*m, marchas %.3f/%.3f/%.3f/%.3f x %.3f",
@@ -325,7 +330,7 @@ function M:tickCore(input)
         local throttle=U.clamp(input.throttle or 0,0,1)
         controls={throttle=throttle,throttleControl=throttle,throttleDigital=input.throttleAxis~=true,
             brakeControl=U.clamp(input.brake or 0,0,1),brakeDigital=input.brakeAxis~=true,
-            clutch=1-U.clamp(input.clutch or 0,0,1)}
+            clutch=1-U.clamp(input.clutch or 0,0,1),originalPedals=self.originalTrack==true}
         steerControls(controls,input)
     end
     if frame and self.pendingShift~=0 and controls.driver~=false then
@@ -518,6 +523,11 @@ function M:telemetry()
     local forward=st[2]*r[1]+st[4]*r[4]+st[6]*r[7]
     local lf,rf,thr,brk,clu,gearIn=self.core:inputs()
     local wheels={}
+    local track
+    if self.originalTrack then
+        local p=self.core.V.trackPosition(self.trackPositionOut)
+        track={name="Watkins Glen",setup=self.trackSetupName,dlong=p.dlong,dlat=p.dlat,wheels={}}
+    end
     -- Stage 11: ORIGINAL runtime state (read-only view of the core cells)
     local s11=self.core.V.stage11State and self.core:stage11State(self.stage11Out) or nil
     for j,c in ipairs(self.tune.corners) do
@@ -527,6 +537,17 @@ function M:telemetry()
         -- Stage 8: original per-wheel brake/tire cells (no side effects on the core)
         local b=self.core:wheelBrake(j-1)
         local ty=s11 and s11.tyres[j]
+        if track then
+            local contact=self.core.V.trackContact(j-1,{})
+            local grounded=contact.grounded==true
+            local fx,fy,fz=grounded and b.fx or 0,grounded and b.fy or 0,grounded and b.fz or 0
+            local surface=grounded and contact.surface or nil
+            track.wheels[j]={name=c.name,grounded=grounded,surface=surface,
+                surfaceGrip=surface and self.core.V.rf32(0x74fb30+4*surface) or 0,
+                fx=fx,fy=fy,fz=fz,forceXY=math.sqrt(fx*fx+fy*fy),
+                muUsed=fz>1 and math.sqrt(fx*fx+fy*fy)/fz or 0,
+                slipVelocity=b.vslip,wearFactor=ty and ty.gripWear or 1}
+        end
         wheels[j]={name=c.name,load=self.inContact[j] and fz or 0,compression=travel,
             slip=b.vslip/math.max(math.abs(b.vx),2),
             omega=w.rate,temperature=ty and ty.surface[2]-273.15 or self.tune.environment.ambientC,grounded=self.inContact[j],
@@ -553,7 +574,7 @@ function M:telemetry()
         brakePedal=pedal,brakeTarget=target,brakeTick=tickValue,brakeCore=coreBrake,brakeBias=self.brakeBias,
         droppedTime=0,fault=self.fault,mode="NR2003_CUP",tick=self.core:tick(),backlog=self.runner.accumulator,
         chassisStateCount=45,chassisIntegration="NR2003 original JIT (005b39a0/005b3180/005b3e50/005b2fb0)",
-        collision=self.collision==true,aero=aero,
+        collision=self.collision==true,aero=aero,track=track,
         stage11=s11 and {mode=s11.mode,fuelKg=s11.fuel.kg,fuelRecordKg=s11.fuel.massRecord,water=s11.engine.water,oil=s11.engine.oil,
             coolantLevel=s11.engine.coolantLevel,oilLevel=s11.engine.oilLevel,power=s11.engine.power,life=s11.engine.life,
             overRev=s11.engine.overRev,damageScale=s11.damage.scale,engineDamage=s11.damage.engine,leakRadiator=s11.damage.radiator,

@@ -1,0 +1,16 @@
+PASS existing avatar is queued without blocking core startup
+PASS avatar born before core initialization is moved within actual entry distance
+PASS avatar velocity cleared and next respawn selects track platform
+PASS avatar-only platform stays outside car query/contact flags
+PASS actual SeatAccess admits existing avatar and confirms seat Occupant
+PASS repeated preparation keeps seated driver and one player binding
+PASS cleanup restores prior respawn and removes track platform
+PASS later player and root arriving after CharacterAdded reach track
+PASS subsequent respawn reaches same track platform
+PASS stale character callback does not move replaced character
+PASS queued callbacks stop after controller cleanup
+PASS external platform destruction avoids recursive Destroy and releases binding
+PASS valid original player RespawnLocation preserved through cleanup
+PASS external respawn selection made during driving is preserved
+PASS legacy bench mode keeps original car and avatar spawn
+track spawn mock: 15 passed, 0 failed

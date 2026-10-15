@@ -1,5 +1,7 @@
 # Watkins Glen runtime validation
 
+For V5 stock-setup/raw-keyboard tests, see [handling/VALIDATION.md](handling/VALIDATION.md). The older scenarios below injected a processed throttle value and therefore did not cover original `00552df0`. V5 adds independent original pedal and file-loader tests; complete dynamics equality remains unproven.
+
 This is a driving test build. The recovered track algorithms and material data run, and every runtime section
 passes the placement/contact coverage test. **The complete physics trajectories are not bit-identical to NR2003.**
 The strict tests retain their failures and return a nonzero exit status.

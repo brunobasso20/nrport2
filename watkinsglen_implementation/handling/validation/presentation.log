@@ -1,0 +1,9 @@
+PASS driver buffer leaves observer settings intact
+PASS presentation leaves the authoritative snapshot inputs unchanged
+PASS both streams remain renderable
+PASS active driver has less deliberate view delay
+PASS driver sees the later authoritative pose
+PASS leaving seat restores buffer without rewinding time
+PASS bench driving keeps the existing presentation policy
+PASS stale stream is not extrapolated indefinitely
+presentation: 8 passed; stable driver delay 20.7 ms / observer 55.0 ms

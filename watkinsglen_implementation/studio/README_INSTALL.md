@@ -1,17 +1,17 @@
 # Install the Watkins Glen physics patch
 
-This patch targets the Stage 13 package exported in the supplied Roblox models, preserving its existing server/client scripts, car assets, cockpit, gauges, entry controls and client cameras. It adds the recovered track runtime and updates the nine existing core hooks and Cup host adapter. V4 has 36 source targets: ten existing core/adapter modules and 26 new track modules. ServerScriptService and StarterPlayerScripts are not source-write targets.
+This is the **fresh V5 installer** for the supplied Stage 13 car package. It retains the main server, car assets, cockpit, entry and cameras; the existing original client receives the requested track telemetry HUD. There are 40 source targets, including the recovered world, original stock setups and throttle/clutch processing. For an already installed V4 place, use the smaller [handling update](../handling/README.md), which keeps the V4 backup intact.
 
 1. Open the existing place in Roblox Studio and stop Play/Run. Keep a saved copy of the place.
 2. Import and calibrate the track visual asset chunks using their supplied visual installers. They must create `Workspace.NR2003WatkinsGlen` with identity pivot, `TrackOriginEnabled = true` and `NR2003MetresPerStud = 0.28`. The original track physics owns collisions; imported visuals stay anchored with `CanCollide = false` and `CanTouch = false`. Terrain tagged `NR2003TerrainQuery = true` remains queryable for the existing chase camera's ground clearance. Walls and scenery remain non-queryable; these camera queries do not feed the original car physics.
-3. Insert `NR2003_WatkinsGlen_Install.rbxmx` into Workspace through **Insert from File**. It creates `Workspace.NR2003_WatkinsGlen_InstallV4`; do not move its individual source modules into the live package manually.
+3. Insert `NR2003_WatkinsGlen_InstallV5.rbxmx` into Workspace through **Insert from File**. It creates `Workspace.NR2003_WatkinsGlen_InstallV5`; do not move its individual source modules into the live package manually.
 4. Run this one line once in Studio's Command Bar outside Play, then wait for its final output:
 
 ```lua
-require(workspace.NR2003_WatkinsGlen_InstallV4.Apply)()
+require(workspace.NR2003_WatkinsGlen_InstallV5.Apply)()
 ```
 
-The installer checks all replaced sources, all bundled track modules and the required recovered Cup dependencies before changing the package. Source fingerprints normalize CRLF/CR to LF. The known CupTune variant with `driver.momentumKeys = 0` is accepted and preserved, including a missing final newline; other unverified CupTune edits are refused. Unknown edits in replaced or required solver modules stop installation; unrelated client/car presentation edits remain intact. Save open script editors before running it.
+The installer checks all replaced sources, all bundled track modules and the required recovered Cup dependencies before changing the package. Source fingerprints normalize CRLF/CR to LF. The known CupTune variant with `driver.momentumKeys = 0` is accepted and preserved, including a missing final newline; other unverified CupTune edits are refused. Unknown edits to the client or other replaced/required modules stop installation before writes. Save open script editors before running it.
 
 The installer writes source through `ScriptEditorService`, verifies the saved result, and sets `ReplicatedStorage.NR2003Lab.NR2003Track` to `watkins_glen`. If `Workspace.NR2003LabWorld.TestTrack` exists, its complete generated bench folder moves into the backup so it cannot overlap the original track. `TestCar` and the imported car assets remain in place.
 
@@ -46,7 +46,7 @@ python tools/build_watkinsglen.py --check
 
 The build verifies every generated module group is contiguous and checks the XML source payloads. Every individual source stays below 199,000 UTF-8 bytes, avoiding the Script.Source paste limit. The optional `--zip` flag packages the Studio patch, required source/dependency files and validation evidence after generation. `manifest.json` records uploaded baseline fingerprints, bundled source hashes and solver compatibility checks.
 
-`validation/installer.log` records 57 passing headless installer checks, including source integrity, car/asset preservation, idempotence, rollback, overlapping operations, unfinished-backup recovery and custom main-server preservation. `validation/installer_current_export.log` runs the same checks with the supplied current car sources (the server was not exported and uses the original fixture). `validation/spawn.log` records 15 avatar lifecycle checks using the actual SeatAccess module; `validation/adapter_track.log` records ten original-core startup/contact/reset checks with momentumKeys=0. These checks do not replace the actual Roblox Studio driving/visual check.
+Current V5 results are in `../handling/VALIDATION.md`: 60 fresh-installer checks, 24 checks of the actual shipped V4 followed by the handling update, plus original-input/setup comparisons and the expanded HUD. The earlier V4 evidence remains under `validation/`. These checks do not replace actual Roblox Studio driving/visual validation.
 
 Reproduce the installer transaction checks after the original model script audit:
 
@@ -59,4 +59,4 @@ python3 tools/make_adapter_mock.py --track
 luau watkinsglen_implementation/tests/adapter_track.luau
 ```
 
-The new V4 Model name prevents reuse of old cached modules. If a previous attempt was refused or the original state was fully restored, insert V4 and run its command directly. V4 checks and archives any remaining recognized unfinished backup before retrying. Earlier incomplete backups also verify restoration of their old server target before archival, even though V4 does not write that Script. A completed older installation still requires its own rollback before updating. Wait for previous commands to finish; run only the V4 command during this retry.
+The V5 model, physical filename and command all carry V5. A fresh imported instance avoids reusing old cached installer functions. V5 can archive a recognized unfinished backup only after the starting state is verified. Server restoration is required for the older bundles that changed that Script; V4 is checked without that obsolete server requirement. Use the dedicated handling updater for completed V4 installations. Other completed older installations require their own rollback before a fresh V5 installation. Never delete a backup to bypass these checks.

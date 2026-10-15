@@ -125,6 +125,9 @@ function M.archiveRestoredBackup(backup, manifest, plan, pkg, folders)
     end
     if bundle ~= manifest.bundle then
         for _, item in ipairs(manifest.recoveryTargets) do
+            local relevant = item.bundles == nil
+            for _, oldBundle in ipairs(item.bundles or {}) do if oldBundle == bundle then relevant = true end end
+            if not relevant then continue end
             local object = M.resolve(folders, item.key, true)
             assert(object and object.ClassName == item.class and M.matches(M.source(object), item.old),
                 "Unfinished earlier backup retained: original server was not restored: " .. item.key)

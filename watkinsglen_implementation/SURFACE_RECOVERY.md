@@ -170,13 +170,15 @@ The hint contains section index in bits 0–14, validity flag `0x8000`, height-b
 material-band index in bits 24–31. Fields `+0x44` and `+0x48` are not assigned by `005f58d0`; do not invent
 semantics for them. The additional material metadata's exact meaning is not established by this audit.
 
-## Car specification and preserved garage baseline
+## Car specification and garage profiles
 
 Cup chassis type 2 selects the specification at `007238e0`; type 4 selects `00723c70` through the original
 series table at `00725ab8`. The complete **0x1c8-byte** specification records are byte-identical in the restored
 NR2003 image. This confirms the earlier observation despite Watkins Glen selecting road-course type 4.
-The existing user garage baseline is preserved. This comparison does not establish that all garage default
-choices or track-provided setup files are interchangeable; no unsupported setup change is introduced.
+The earlier V4 integration preserved the existing user garage baseline. V5 loads the supplied original
+track setup files through the recovered input/validation representation instead; the independent original
+binary decoder checks and remaining driving differences are documented in `handling/VALIDATION.md`.
+Identical specification records alone do not make different garage setups interchangeable.
 
 ## Startup pose publication before collision broadphase
 

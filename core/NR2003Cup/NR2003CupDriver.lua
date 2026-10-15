@@ -26,7 +26,8 @@
 -- the 005524f0 not-driven branch while bf6eb8 (player controls suspended, 00550070) is set.
 -- Not ported (documented): replay/telemetry recording, auto-shift 005536b0 (transmission
 -- mode 0), H-pattern mode (bf6f0c 1/2), ignition states driven by 005524f0/0057af40(0x19),
--- throttle/clutch device processing (00552df0/005534f0 - Stage 7 host values).
+-- controls.originalPedals enables recovered throttle/clutch device processing
+-- (00552df0 / 005534f0). Absent keeps the processed-pedal contract of older fixtures.
 return function(V)
 	local rf32, r32, ri32, w32, r8, w8 = V.rf32, V.r32, V.ri32, V.w32, V.r8, V.w8
 	local wf32d, fd, rf64, wf64 = V.wf32d, V.fd, V.rf64, V.wf64
@@ -232,6 +233,57 @@ return function(V)
 	V.attitudeOriginal = attitude
 	V.axisOriginal = axis
 
+	-- 00550180: throttle help is independent of the keyboard pedal ramp.
+	local function throttleHelp()
+		if bit32.band(r32(0xc0692a + 0x4c), 0x20000000) ~= 0 then return false end
+		return r8(0xbf6f05) ~= 0
+	end
+	-- 00552df0. Explicit fd() calls correspond to the original local float stores.
+	-- Even with traction control OFF a digital binding rises by 0.1/frame and
+	-- falls by 0.05/frame (0.15 while braking); analog pedals keep their axis value.
+	local function throttlePedal()
+		local value = fd(axis(THROTTLE_CTL))
+		local previous = rf32(0xbf6390)
+		if ri32(CTRL_TYPE + 29 * THROTTLE_CTL) == 1 then
+			w8(0xbf6eba, 0)
+		else
+			w8(0xbf6eba, value > K_HALF and 1 or 0)
+			local brake = fd(axis(BRAKE_CTL))
+			if previous < value then value = previous + rf32(0x6ea4cc)
+			elseif previous > value then
+				value = previous - (brake < K_HALF and rf32(0x6ea508) or rf32(0x6ee4c4))
+			else value = previous end
+			if value < K_ZERO then value = K_ZERO elseif value > K_ONE then value = K_ONE end
+			value = fd(value)
+		end
+		if throttleHelp() and ri32(0x74c97c) ~= 1 and previous <= value then
+			local slip = math.max(abs(rf32(0xbf513e)), abs(rf32(0xbf5b77)))
+			local low, high = rf32(0x6f598c), rf32(0x6f5988)
+			local velocity = math.max(speed(), rf32(0x6ea4a4))
+			local candidate
+			if velocity < low then candidate = previous + K_THROTTLE_ON
+			else
+				if velocity < high then slip = fd((velocity - low) / (high - low) * slip) end
+				local limit = math.max((high - speed()) / (high - low), K_ZERO)
+				limit = limit * rf32(0x6f5a10) + rf32(0x6f5a0c)
+				local fraction
+				if slip <= limit then fraction = (limit - slip) / limit
+				else fraction = -(slip - limit) / (rf32(0x6f5a08) - limit) end
+				candidate = math.max(fraction * rf32(0x6ee398) + previous, K_FLOOR)
+			end
+			if candidate <= value then return candidate end
+		end
+		return value
+	end
+	-- 005534f0: manual-transmission low-speed gate, then 1 - raw clutch control 4.
+	local function clutchPedal()
+		if ri32(0x74c974) ~= 0 and abs(fd(rf32(0xbf6d88) * rf32(0x6f5a50))) < rf32(0x6ea478)
+			and rf32(0xbf6390) < K_THROTTLE_ON then return K_ZERO end
+		return zsub(K_ONE, rf32(CTRL_RAW + 10 * 4))
+	end
+	V.throttlePedalOriginal = throttlePedal
+	V.clutchPedalOriginal = clutchPedal
+
 	-- 005524f0 'car not driven' branch (another car / no driver): pedal held at 1.0
 	local function notDriven()
 		for _, a in ipairs({0xbf63c8, 0xbf6f14, 0x74c98c, 0xbf6388, 0xbf6e84, 0xbf63bc, 0xbf638c, 0xbf6390, 0xbf6eb0}) do w32(a, 0) end
@@ -264,11 +316,14 @@ return function(V)
 				if tc == nil then tc = c.throttle or 0 end
 				wf32(CTRL_RAW + 10 * THROTTLE_CTL, math.clamp(tonumber(tc) or 0, 0, 1))
 				w32(CTRL_TYPE + 29 * THROTTLE_CTL, c.throttleDigital == false and 1 or 0)
+				if c.originalPedals then
+					wf32(CTRL_RAW + 10 * 4, K_ONE - math.clamp(c.clutch or 0, 0, 1))
+				end
 				if r8(0xbf6eb9) ~= 0 then -- 005524f0: car held (bf6eb9)
 					w32(0xbf6eac, 0x3f800000); w32(0xbf6eb0, 0)
 				else
 					wf32d(0xbf6eac, pedal()) -- ORIGINAL 00553080 (reads the previous frame's bf6390)
-					wf32d(0xbf6eb0, c.clutch or 0)
+					wf32d(0xbf6eb0, c.originalPedals and clutchPedal() or (c.clutch or 0))
 				end
 			else
 				wf32d(0xbf6eac, c.brake or 0)
@@ -276,7 +331,7 @@ return function(V)
 			end
 			-- Stage 12: bf63c8 = ORIGINAL 00552720 (steering devices), NR2003CupSteering
 			if V._steerDevices then V._steerDevices(c) end
-			wf32d(0xbf6390, c.throttle or 0)
+			wf32d(0xbf6390, c.originalPedals and throttlePedal() or (c.throttle or 0))
 		end
 		for w = 0, 3 do -- per-frame tire accumulators cleared by 00551e80 (bf3ccc.., bf4705.., ...)
 			local t = 0xbf3a20 + w * 0xa39

@@ -34,6 +34,7 @@ from unicorn import UC_HOOK_CODE      # noqa: E402
 
 HDEV = 0xf7a900                       # harness-only host bytes (unreferenced BSS above the Stage 11 host blocks)
 HCAP, HACQ, HEFF = HDEV, HDEV + 1, HDEV + 2
+THROTTLE_STUB, CLUTCH_STUB = HDEV + 0x80, HDEV + 0x90
 FG_DIRECT = 0x5f79de
 SUSPENDED, ACQUIRED, AXIS, DIRSIGN = 0xbf6eb8, 0xbf6ebb, 0xbf6ebc, 0x74c95c
 FF_ON, STRENGTH, DAMPING, LATENCY = 0xbf6f1c, 0x74c9a4, 0xbf6f24, 0xbf6f20
@@ -46,6 +47,8 @@ def _p(a): return struct.pack('<I', a)
 
 def _stubs13():
     s = {}
+    for stub, entry, result in ((THROTTLE_STUB, 0x552df0, 0xbf6390), (CLUTCH_STUB, 0x5534f0, 0xbf6eb0)):
+        s[stub] = b'\xe8' + struct.pack('<i', entry - (stub + 5)) + b'\xd9\x1d' + _p(result) + b'\xc3'
     s[0x5f79a0] = b'\xe9' + struct.pack('<i', FG_DIRECT - (0x5f79a0 + 5))
     s[0x5d0820] = b'\xa0' + _p(HCAP) + b'\xc3'
     # mov al,[HCAP] ; test ; jz fail ; mov al,[HACQ] ; test ; jz fail ; mov byte [HEFF],1 ; mov eax,1 ; ret ; fail: xor eax,eax ; ret
@@ -134,11 +137,14 @@ def steer_frame13(o, c, shaped=None):
         if 'brakeControl' in c:
             OB.control_cells(m, OB.BRAKE_CTL, c['brakeControl'], c.get('brakeDigital', True))
             OB.control_cells(m, OB.THROTTLE_CTL, c.get('throttleControl', c.get('throttle', 0.0)), c.get('throttleDigital', True))
+            if c.get('originalPedals'):
+                OB.control_cells(m, 4, 1.0 - c.get('clutch', 0.0), True)
             if m.uc.mem_read(0xbf6eb9, 1)[0]:
                 m.w32(0xbf6eac, 0x3f800000); m.w32(0xbf6eb0, 0)
             else:
                 m.call(OB.STUBADDR)
-                _w(m, 0xbf6eb0, c.get('clutch', 0.0))
+                if c.get('originalPedals'): m.call(CLUTCH_STUB)
+                else: _w(m, 0xbf6eb0, c.get('clutch', 0.0))
         else:
             _w(m, 0xbf6eac, c.get('brake', 0.0))
             _w(m, 0xbf6eb0, c.get('clutch', 0.0))
@@ -146,7 +152,8 @@ def steer_frame13(o, c, shaped=None):
         m.call(STEERSTUB)
         if m.i32(REC7 + 0x10) != o.configured_kind and (u8(m, FF_ON) or u8(m, ACQUIRED)):
             o.controls(0)
-        _w(m, 0xbf6390, c.get('throttle', 0.0))
+        if c.get('originalPedals'): m.call(THROTTLE_STUB)
+        else: _w(m, 0xbf6390, c.get('throttle', 0.0))
     run_tail(m, shaped)
     if driven and m.i32(0xbf6f0c) != 2 and m.i32(0xbf63cc) == 0 and m.i32(0x74c974) != 0 and m.i32(0xbf6f0c) == 0:
         d = (1 if c.get('shiftUp') else 0) - (1 if c.get('shiftDown') else 0)

@@ -20,11 +20,12 @@ STUDIO = ROOT / 'watkinsglen_implementation/studio'
 TRACK = ROOT / 'watkinsglen_implementation/core/NR2003Cup'
 BASELINE = ROOT / 'tools/watkinsglen_studio_baseline.json'
 LIMIT = 199000
-MODEL_NAME = 'NR2003_WatkinsGlen_InstallV4'
+MODEL_NAME = 'NR2003_WatkinsGlen_InstallV5'
 PREVIOUS_BUNDLES = (
     '1319036a4aa1a515efe4d8d1f5d025e2eae0faf37e13a5d5e06adcb18cdff554',
     '70d0e30f93e39831f64c4d530d3866cf34327463e400fde3b97b5f80a3892bb6',
     '54db48606e6707168be02c9fa2fad06e308c4fa1a9b8892a718195f1f736cca1',
+    '16dc1dd714c5dfe1f02b8b7ce4869f497c540694c0edbc4d2d8ad1e98fd25749',
 )
 HOOKS = (
     'Core.NR2003CupVehicle',
@@ -104,6 +105,10 @@ def build() -> dict[Path, bytes]:
         target('Core.NR2003Cup.' + name, TRACK / (name + '.lua'))
     target('Roblox.CupChassisAdapter', ROOT / 'roblox/CupChassisAdapter.lua')
     target('Roblox.NR2003WatkinsGlen', ROOT / 'roblox/NR2003WatkinsGlen.lua')
+    target('Roblox.NR2003WatkinsGlenSetup', ROOT / 'roblox/NR2003WatkinsGlenSetup.lua')
+    target('Roblox.RenderConfig', ROOT / 'roblox/RenderConfig.lua')
+    target('Roblox.RenderPresentation', ROOT / 'roblox/RenderPresentation.lua')
+    target('Client.NR2003Client', ROOT / 'nr2003carmodel_implementation/roblox/Bench/Client.client.lua', 'LocalScript')
     targets.sort(key=lambda entry: entry['key'])
 
     changed = {entry['key'] for entry in targets}
@@ -136,7 +141,7 @@ def build() -> dict[Path, bytes]:
                 'previousBundles': list(PREVIOUS_BUNDLES),
                 # Earlier versions patched this Script. An unfinished earlier
                 # backup must still verify its restoration before archival.
-                'recoveryTargets': [{'key': 'Server.NR2003Server', 'class': 'Script',
+                'recoveryTargets': [{'key': 'Server.NR2003Server', 'class': 'Script', 'bundles': list(PREVIOUS_BUNDLES[:3]),
                     'old': {k: originals['Server.NR2003Server'][k] for k in ('bytes', 'fnv32', 'sha256')}}],
                 'baselineModelSHA256': baseline['uploaded_model_sha256'],
                 'moduleGroups': groups,
@@ -178,23 +183,23 @@ def build() -> dict[Path, bytes]:
         instance(folders['.'.join(parts[:-1])], parts[-1], 'ModuleScript', payloads[key])
     ET.indent(xml, space='  ')
     outputs = {
-        STUDIO / 'NR2003_WatkinsGlen_Install.rbxmx': ET.tostring(xml, encoding='utf-8', xml_declaration=True),
+        STUDIO / f'{MODEL_NAME}.rbxmx': ET.tostring(xml, encoding='utf-8', xml_declaration=True),
         STUDIO / 'manifest.json': (json.dumps(manifest, indent=2, ensure_ascii=False) + '\n').encode(),
         STUDIO / 'Manifest.lua': manifest_lua.encode(),
-        STUDIO / 'INSTALL_WATKINSGLEN.lua': (
-            '-- Insert NR2003_WatkinsGlen_Install.rbxmx into Workspace; run after all visual installers, outside Play.\n'
+        STUDIO / 'INSTALL_WATKINSGLEN_V5.lua': (
+            f'-- Insert {MODEL_NAME}.rbxmx into Workspace; run after all visual installers, outside Play.\n'
             f'require(workspace.{MODEL_NAME}.Apply)()\n').encode(),
         STUDIO / 'ROLLBACK_WATKINSGLEN.lua': (
             '-- Outside Play; restores the saved starting state, preserving imported car and track visual assets.\n'
             'require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()\n').encode(),
     }
-    parsed = ET.fromstring(outputs[STUDIO / 'NR2003_WatkinsGlen_Install.rbxmx'])
+    parsed = ET.fromstring(outputs[STUDIO / f'{MODEL_NAME}.rbxmx'])
     source_nodes = parsed.findall('.//ProtectedString[@name="Source"]')
     assert len(source_nodes) == len(targets) + 4
     assert all(len((node.text or '').encode()) < LIMIT for node in source_nodes)
     print(json.dumps({'bundle': digest, 'patchedSources': len(targets), 'solverDependencyChecks': len(dependencies),
                       'largestSourceBytes': max(len((node.text or '').encode()) for node in source_nodes),
-                      'rbxmxBytes': len(outputs[STUDIO / 'NR2003_WatkinsGlen_Install.rbxmx'])}, indent=2))
+                      'rbxmxBytes': len(outputs[STUDIO / f'{MODEL_NAME}.rbxmx'])}, indent=2))
     return outputs
 
 

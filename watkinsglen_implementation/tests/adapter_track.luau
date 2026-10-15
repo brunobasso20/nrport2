@@ -765,7 +765,7 @@ local LEGACY_SETUP={brakeBias="SetupBrakeBias",grilleTape="SetupGrilleTape",spoi
 function M:garageSetup()
     local Setup=self.core.V.Setup
     if not Setup then return nil end
-    local s=Setup.cupGarageDefault()
+    local s=self.originalTrack and TrackHost.garageSetup(self,Setup) or Setup.cupGarageDefault()
     for i=0,70 do
         if Setup.adjustable(i) then
             local name=Setup.ITEM[i].name
@@ -776,7 +776,7 @@ function M:garageSetup()
     end
     -- Stage 12.1: bench default of the garage steering ratio (item 0x30) when no Setup_steeringRatio attribute is set
     local ratio=self.tune.driver and self.tune.driver.setupSteeringRatio
-    if U.finite(ratio) and not U.finite(self.car:GetAttribute("Setup_steeringRatio")) then Setup.set(s,"steeringRatio",ratio) end
+    if not self.originalTrack and U.finite(ratio) and not U.finite(self.car:GetAttribute("Setup_steeringRatio")) then Setup.set(s,"steeringRatio",ratio) end
     return s
 end
 function M:applyGarageSetup(s)
@@ -786,6 +786,11 @@ function M:applyGarageSetup(s)
     self.car:SetAttribute("SetupStructure",rep.structure);self.car:SetAttribute("SetupApplySeconds",rep.seconds)
     if ok then
         self.appliedSetupKey=key;self.car:SetAttribute("SetupError",nil)
+        if self.originalTrack then
+            self.trackSetupName=self.requestedTrackSetupName
+            self.car:SetAttribute("TrackSetupApplied",self.trackSetupName)
+            self.car:SetAttribute("TrackSetupSHA256",self.requestedTrackSetupSHA256)
+        end
         local d=self.core:setupDump()
         local r=d.runtime
         print(string.format("[NR2003 Stage 10] setup aplicado (%s, %.2f s): molas %.0f/%.0f/%.0f/%.0f N/m, freio %.0f/%.0f N*m, marchas %.3f/%.3f/%.3f/%.3f x %.3f",
@@ -986,7 +991,7 @@ function M:tickCore(input)
         local throttle=U.clamp(input.throttle or 0,0,1)
         controls={throttle=throttle,throttleControl=throttle,throttleDigital=input.throttleAxis~=true,
             brakeControl=U.clamp(input.brake or 0,0,1),brakeDigital=input.brakeAxis~=true,
-            clutch=1-U.clamp(input.clutch or 0,0,1)}
+            clutch=1-U.clamp(input.clutch or 0,0,1),originalPedals=self.originalTrack==true}
         steerControls(controls,input)
     end
     if frame and self.pendingShift~=0 and controls.driver~=false then
@@ -1179,6 +1184,11 @@ function M:telemetry()
     local forward=st[2]*r[1]+st[4]*r[4]+st[6]*r[7]
     local lf,rf,thr,brk,clu,gearIn=self.core:inputs()
     local wheels={}
+    local track
+    if self.originalTrack then
+        local p=self.core.V.trackPosition(self.trackPositionOut)
+        track={name="Watkins Glen",setup=self.trackSetupName,dlong=p.dlong,dlat=p.dlat,wheels={}}
+    end
     -- Stage 11: ORIGINAL runtime state (read-only view of the core cells)
     local s11=self.core.V.stage11State and self.core:stage11State(self.stage11Out) or nil
     for j,c in ipairs(self.tune.corners) do
@@ -1188,6 +1198,17 @@ function M:telemetry()
         -- Stage 8: original per-wheel brake/tire cells (no side effects on the core)
         local b=self.core:wheelBrake(j-1)
         local ty=s11 and s11.tyres[j]
+        if track then
+            local contact=self.core.V.trackContact(j-1,{})
+            local grounded=contact.grounded==true
+            local fx,fy,fz=grounded and b.fx or 0,grounded and b.fy or 0,grounded and b.fz or 0
+            local surface=grounded and contact.surface or nil
+            track.wheels[j]={name=c.name,grounded=grounded,surface=surface,
+                surfaceGrip=surface and self.core.V.rf32(0x74fb30+4*surface) or 0,
+                fx=fx,fy=fy,fz=fz,forceXY=math.sqrt(fx*fx+fy*fy),
+                muUsed=fz>1 and math.sqrt(fx*fx+fy*fy)/fz or 0,
+                slipVelocity=b.vslip,wearFactor=ty and ty.gripWear or 1}
+        end
         wheels[j]={name=c.name,load=self.inContact[j] and fz or 0,compression=travel,
             slip=b.vslip/math.max(math.abs(b.vx),2),
             omega=w.rate,temperature=ty and ty.surface[2]-273.15 or self.tune.environment.ambientC,grounded=self.inContact[j],
@@ -1214,7 +1235,7 @@ function M:telemetry()
         brakePedal=pedal,brakeTarget=target,brakeTick=tickValue,brakeCore=coreBrake,brakeBias=self.brakeBias,
         droppedTime=0,fault=self.fault,mode="NR2003_CUP",tick=self.core:tick(),backlog=self.runner.accumulator,
         chassisStateCount=45,chassisIntegration="NR2003 original JIT (005b39a0/005b3180/005b3e50/005b2fb0)",
-        collision=self.collision==true,aero=aero,
+        collision=self.collision==true,aero=aero,track=track,
         stage11=s11 and {mode=s11.mode,fuelKg=s11.fuel.kg,fuelRecordKg=s11.fuel.massRecord,water=s11.engine.water,oil=s11.engine.oil,
             coolantLevel=s11.engine.coolantLevel,oilLevel=s11.engine.oilLevel,power=s11.engine.power,life=s11.engine.life,
             overRev=s11.engine.overRev,damageScale=s11.damage.scale,engineDamage=s11.damage.engine,leakRadiator=s11.damage.radiator,
@@ -1260,6 +1281,14 @@ SOURCES['Roblox.NR2003WatkinsGlen'] = [=[
 local M = {}
 M.TRACK = "watkins_glen"
 M.METRES_PER_STUD = 0.28
+
+function M.garageSetup(controller, Setup)
+    local Setups = require(script.Parent.NR2003WatkinsGlenSetup)
+    local items, name, hash = Setups.new(Setup, controller.car:GetAttribute("WatkinsGlenSetup"))
+    controller.requestedTrackSetupName = name
+    controller.requestedTrackSetupSHA256 = hash
+    return items
+end
 
 function M.enabled(package)
     return package:GetAttribute("NR2003Track") == M.TRACK
@@ -1412,6 +1441,26 @@ function M.prepareDriverSpawn(controller, world)
     return spawn
 end
 
+return M
+]=]
+SOURCES['Roblox.NR2003WatkinsGlenSetup'] = [=[
+-- Generated by tools/build_watkinsglen_setups.py from the supplied original .sim files.
+-- Raw setup values; retain file values between garage UI steps.
+local DATA = {
+    fast = {file="fast.cup.sim",sha256="fd85e5c432c07272808e184e6e74304d580081cf4a57513e1fdc386dc30291e3",items={[0]=0x41b40000,[1]=0x41b40000,[2]=0x41b40000,[3]=0x41b40000,[4]=0x00000003,[5]=0x00000003,[6]=0x00000002,[7]=0x00000002,[8]=0x00000000,[9]=0x00000000,[10]=0x00000000,[11]=0x00000000,[12]=0x00000004,[13]=0x00000004,[14]=0x00000004,[15]=0x00000004,[16]=0x00000000,[17]=0x00000000,[18]=0x00000000,[19]=0x00000000,[20]=0xc7320e41,[21]=0xc7320e41,[22]=0xc7142b40,[23]=0xc7142b40,[24]=0x00000000,[25]=0x00000000,[26]=0x00000000,[27]=0x00000000,[28]=0x3d020c4a,[29]=0x3d020c4a,[30]=0x3d020c4a,[31]=0x3d020c4a,[32]=0xbd567781,[33]=0xbd567770,[34]=0xbd00ae00,[35]=0xbd00ae00,[36]=0x3dea161e,[38]=0x3e1c0e2b,[39]=0x3e1c0ebf,[40]=0x3f2b851e,[41]=0xbbcd88b8,[42]=0xbb12cf5f,[43]=0x0000000a,[44]=0x0000000f,[45]=0x3e820c05,[46]=0x3e820c05,[47]=0x00000000,[48]=0x41800000,[49]=0x4279b75b,[50]=0x00000001,[51]=0x00000004,[52]=0x00000000,[53]=0x00000011,[54]=0x0000001e,[55]=0x00000033,[56]=0x00000042,[57]=0x0000007a,[58]=0x00000000,[59]=0x3f000000,[60]=0x3f000000,[61]=0x41c80000,[62]=0xc1b570a4,[63]=0x401126e9,[64]=0x00000000,[65]=0x00000000,[66]=0x00000000,[67]=0x3d8efa61,[68]=0x3d8efa61}},
+    easy = {file="easy.cup.sim",sha256="57bfd898dc8b293c058333a6957239b8dd0931e47298a3b0035cff2f0104292d",items={[0]=0x41b80000,[1]=0x41b80000,[2]=0x41b80000,[3]=0x41b80000,[4]=0x00000004,[5]=0x00000004,[6]=0x00000002,[7]=0x00000002,[8]=0x00000000,[9]=0x00000000,[10]=0x00000000,[11]=0x00000000,[12]=0x00000005,[13]=0x00000005,[14]=0x00000004,[15]=0x00000004,[16]=0x00000000,[17]=0x00000000,[18]=0x00000000,[19]=0x00000000,[20]=0xc771a5a1,[21]=0xc771a5a1,[22]=0xc7208430,[23]=0xc7208430,[24]=0x00000000,[25]=0x00000000,[26]=0x00000000,[27]=0x00000000,[28]=0x3d020c4a,[29]=0x3d020c4a,[30]=0x3d020c4a,[31]=0x3d020c4a,[32]=0xbcd6775a,[33]=0xbcd6775a,[34]=0xbd00ae00,[35]=0xbd00ae00,[36]=0x3dea161e,[38]=0x3e1c0e95,[39]=0x3e1c0ebf,[40]=0x3f2e147b,[41]=0xbbcd88b8,[42]=0xbb12cf5f,[43]=0x0000000b,[44]=0x0000000b,[45]=0x3e5d14e4,[46]=0x3e5d14e4,[47]=0x00000000,[48]=0x41a00000,[49]=0x4279b75b,[50]=0x00000001,[51]=0x00000004,[52]=0x00000000,[53]=0x00000011,[54]=0x0000001f,[55]=0x00000034,[56]=0x00000043,[57]=0x0000007a,[58]=0x00000000,[59]=0x3e999999,[60]=0x3e999999,[61]=0x41c80000,[62]=0x4159ba5e,[63]=0xc1b570a4,[64]=0x00000000,[65]=0x00000000,[66]=0x00000000,[67]=0x3d8efa4d,[68]=0x3d8efa4d}},
+    qualify = {file="qualify.cup.sim",sha256="ca3eb866392a2459210f3ffa6602ab703979eb0a55707c7092885ccaf66bb8fb",items={[0]=0x41c00000,[1]=0x41c00000,[2]=0x41c00000,[3]=0x41c00000,[4]=0x00000003,[5]=0x00000003,[6]=0x00000002,[7]=0x00000002,[8]=0x00000000,[9]=0x00000000,[10]=0x00000000,[11]=0x00000000,[12]=0x00000005,[13]=0x00000005,[14]=0x00000004,[15]=0x00000004,[16]=0x00000000,[17]=0x00000000,[18]=0x00000000,[19]=0x00000000,[20]=0xc7320e41,[21]=0xc7320e41,[22]=0xc707d250,[23]=0xc707d250,[24]=0x00000000,[25]=0x00000000,[26]=0x00000000,[27]=0x00000000,[28]=0x3d020c4a,[29]=0x3d020c4a,[30]=0x3d020c4a,[31]=0x3d020c4a,[32]=0xbd64c395,[33]=0xbd64c395,[34]=0xbd00ae00,[35]=0xbd00ae00,[36]=0x3dea161e,[38]=0x3e1c0e17,[39]=0x3e1c0ebf,[40]=0x3f2b851e,[41]=0xbbcd88b8,[42]=0xbb12cf5f,[43]=0x0000000a,[44]=0x0000000e,[45]=0x3e820c39,[46]=0x3e820c39,[47]=0x00000000,[48]=0x41800000,[49]=0x4279b75b,[50]=0x00000001,[51]=0x00000004,[52]=0x00000000,[53]=0x00000011,[54]=0x0000001e,[55]=0x00000033,[56]=0x00000042,[57]=0x0000007a,[58]=0x00000000,[59]=0x3f4ccccc,[60]=0x3f4ccccc,[61]=0x41c80000,[62]=0xc1b570a4,[63]=0x00000000,[64]=0x00000000,[65]=0x00000000,[66]=0x00000000,[67]=0x3d8efa65,[68]=0x3d8efa65}},
+    jasper = {file="jasper.cup.sim",sha256="99e32fd4f6cc752e55bcd3c697f761446489d4e672a232c3fcef95981dae57bf",items={[0]=0x41a80000,[1]=0x41a80000,[2]=0x41a80000,[3]=0x41a80000,[4]=0x00000004,[5]=0x00000004,[6]=0x00000002,[7]=0x00000002,[8]=0x00000000,[9]=0x00000000,[10]=0x00000000,[11]=0x00000000,[12]=0x00000005,[13]=0x00000005,[14]=0x00000004,[15]=0x00000004,[16]=0x00000000,[17]=0x00000000,[18]=0x00000000,[19]=0x00000000,[20]=0xc77e5d81,[21]=0xc77e5d81,[22]=0xc7142b40,[23]=0xc7142b40,[24]=0x00000000,[25]=0x00000000,[26]=0x00000000,[27]=0x00000000,[28]=0x3d020c4a,[29]=0x3d020c4a,[30]=0x3d020c4a,[31]=0x3d020c4a,[32]=0xbd87d424,[33]=0xbd87d424,[34]=0xbd00ae00,[35]=0xbd00ae00,[36]=0x3dea161e,[38]=0x3e0f0d84,[39]=0x3e1c0ebf,[40]=0x3f2e147b,[41]=0xbb92cf5f,[42]=0xbb12cf5f,[43]=0x00000007,[44]=0x00000003,[45]=0x3e771718,[46]=0x3e771718,[47]=0x00000000,[48]=0x41e00000,[49]=0x4279b75b,[50]=0x00000001,[51]=0x00000004,[52]=0x00000000,[53]=0x00000012,[54]=0x0000001e,[55]=0x00000033,[56]=0x00000041,[57]=0x0000007c,[58]=0x00000000,[59]=0x3f199999,[60]=0x3f199999,[61]=0x41c80000,[62]=0xc1b570a4,[63]=0xc13570a4,[64]=0x00000000,[65]=0x00000000,[66]=0x00000000,[67]=0x3d8efa41,[68]=0x3d8efa41}},
+}
+local M = {}
+function M.new(Setup, name)
+    name = name or "fast"
+    local data = assert(DATA[name], "WatkinsGlenSetup must be fast, easy, qualify or jasper")
+    local items = Setup.defaults()
+    for i, raw in pairs(data.items) do items[i] = raw end
+    assert(Setup.validateLoaded(items), "Original Watkins Glen setup validation failed")
+    return items, name, data.sha256
+end
 return M
 ]=]
 -- ===== minimal Roblox API mock (only what CupChassisAdapter and its helpers use) =====

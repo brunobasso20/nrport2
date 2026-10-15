@@ -1,0 +1,28 @@
+[
+  {
+    "file": "WatkinsGlen_Physics_Installer_V5.zip",
+    "model": "NR2003_WatkinsGlen_InstallV5",
+    "bytes": 901890,
+    "sha256": "54fdde72d37372b881ce72f1255450de92b256322ee1579cd9b7db47b4517c91",
+    "targets": 40,
+    "compiledXMLSources": 44,
+    "largestSourceBytes": 170392,
+    "zipEntries": 4,
+    "zipCRCVerified": true,
+    "sourceFingerprintsVerified": true,
+    "bundle": "29f9211b80ac30e545e26ea403610cf27597bb549e2cfa56d59b41ee852f1a65"
+  },
+  {
+    "file": "WatkinsGlen_Handling_Patch_V5.zip",
+    "model": "NR2003_WatkinsGlen_HandlingV5",
+    "bytes": 79530,
+    "sha256": "e8301d430d52427121abc7fa9c78124928b513520254008b9efad71e93ef93a5",
+    "targets": 8,
+    "compiledXMLSources": 13,
+    "largestSourceBytes": 143293,
+    "zipEntries": 15,
+    "zipCRCVerified": true,
+    "sourceFingerprintsVerified": true,
+    "bundle": "cdc2fdf62a37f5719824554d54c6fd14089c5101b44f7a70e31e2c009638e2b4"
+  }
+]

@@ -92,7 +92,7 @@ local function atKey(folders,key)
  for i=2,#bits-1 do parent=parent:FindFirstChild(bits[i]) or make("Folder",bits[i],parent) end
  return parent,bits[#bits]
 end
-local function fixture()
+local function fixture(customTemplates,customPayloads,modelName)
  services={};cache={};running=false;failWrite=nil;writeHook=nil
  for _,name in ipairs({"ReplicatedStorage","ServerScriptService","ServerStorage","StarterPlayer","Workspace"}) do services[name]=make(name,name,nil) end
  local pkg=make("Folder","NR2003Lab",services.ReplicatedStorage)
@@ -100,7 +100,7 @@ local function fixture()
  local sp=make("StarterPlayerScripts","StarterPlayerScripts",services.StarterPlayer)
  local folders={Core=core,Roblox=rb,Server=services.ServerScriptService,Client=sp}
  for key,entry in pairs(ORIGINALS) do local parent,name=atKey(folders,key);make(entry.class,name,parent,entry.source) end
- local client=make("LocalScript","NR2003Client",sp,"-- custom client is preserved")
+ local client=sp:FindFirstChild("NR2003Client")
  local assets=make("Folder","CarModel",pkg);make("Model","Assets",assets):SetAttribute("UserAssetMarker","retain")
  pkg:SetAttribute("NR2003Track",false)
  local world=make("Folder","NR2003LabWorld",services.Workspace)
@@ -110,11 +110,11 @@ local function fixture()
  visual:SetAttribute("TrackOriginEnabled",true);visual:SetAttribute("NR2003MetresPerStud",.28)
  local terrain=make("Model","Terrain",visual);terrain:SetAttribute("NR2003VisualKind","terrain")
  local part=make("Part","Mesh",terrain);part.Anchored=true;part.CanCollide=false;part.CanTouch=false;part.CanQuery=false
- local install=make("Model","NR2003_WatkinsGlen_InstallV4",services.Workspace)
- for name,source in pairs(TEMPLATES) do make("ModuleScript",name,install,source) end
+ local install=make("Model",modelName or "NR2003_WatkinsGlen_InstallV5",services.Workspace)
+ for name,source in pairs(customTemplates or TEMPLATES) do make("ModuleScript",name,install,source) end
  local sources=make("Folder","Sources",install);local sf={}
- for _,name in ipairs({"Core","Roblox","Server"}) do sf[name]=make("Folder",name,sources) end
- for key,source in pairs(PAYLOADS) do local parent,name=atKey(sf,key);make("ModuleScript",name,parent,source) end
+ for _,name in ipairs({"Core","Roblox","Server","Client"}) do sf[name]=make("Folder",name,sources) end
+ for key,source in pairs(customPayloads or PAYLOADS) do local parent,name=atKey(sf,key);make("ModuleScript",name,parent,source) end
  return {pkg=pkg,folders=folders,world=world,bench=bench,car=car,client=client,assets=assets,visual=visual,install=install}
 end
 local function apply(f) return pcall(mockRequire(f.install.Apply)) end
@@ -138,6 +138,8 @@ local f=fixture();local H=mockRequire(f.install.Support)
 check("FNV-1a UTF-8 source normalization",select(2,H.fingerprint("hello"))==1335831723 and H.matches("a\r\nb\r",{bytes=4,fnv32=select(2,H.fingerprint("a\nb\n"))}))
 running=true;local ok,reason=apply(f)
 check("Play refusal has no mutation",not ok and not backup() and allOriginal(f));running=false
+f=fixture();f.car:SetAttribute("WatkinsGlenSetup","unknown");ok,reason=apply(f)
+check("invalid track setup refuses before sources change",not ok and not backup() and allOriginal(f),reason)
 f.visual:SetAttribute("TrackOriginEnabled",false);ok=apply(f)
 check("uncalibrated visuals refuse before mutation",not ok and not backup() and allOriginal(f))
 f=fixture();f.visual.Terrain.Mesh.CanQuery=true
@@ -192,7 +194,7 @@ ok,reason=apply(f)
 check("complete patch applies exact source payloads",ok and allNew(f),not ok and reason or nil)
 local same=true;for key,o in pairs(identities) do local p,n=atKey(f.folders,key);if p[n]~=o then same=false end end
 check("changed source instance identities preserved",same)
-check("client, assets and car preserved; bench moved intact",f.client.Source=="-- custom client is preserved" and f.assets.Assets:GetAttribute("UserAssetMarker")=="retain" and f.car.Parent==f.world and f.bench.Parent==backup().MovedBench)
+check("client identity and car assets retained; track HUD installed; bench moved intact",f.client==f.folders.Client.NR2003Client and f.client.Source==PAYLOADS['Client.NR2003Client'] and f.assets.Assets:GetAttribute("UserAssetMarker")=="retain" and f.car.Parent==f.world and f.bench.Parent==backup().MovedBench)
 local savedBackup=backup();local entries=savedBackup.Entries;local added,old=0,0
 for _,e in ipairs(entries:GetChildren()) do if e:GetAttribute("Added") then added+=1 else old+=1 end end
 local expectedAdded,expectedOld=0,0

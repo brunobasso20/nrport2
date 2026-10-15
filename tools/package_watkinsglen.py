@@ -105,18 +105,19 @@ def build_visual_recovery():
 
 
 def build_physics_installer():
-    target = TRACK / 'downloads/WatkinsGlen_Physics_Installer_V4.zip'
+    target = TRACK / 'downloads/WatkinsGlen_Physics_Installer_V5.zip'
     files = {
-        'NR2003_WatkinsGlen_Install.rbxmx': TRACK / 'studio/NR2003_WatkinsGlen_Install.rbxmx',
-        'INSTALL_WATKINSGLEN.lua': TRACK / 'studio/INSTALL_WATKINSGLEN.lua',
-        'README_FIRST.md': TRACK / 'downloads/README_PHYSICS_V4.md',
+        'NR2003_WatkinsGlen_InstallV5.rbxmx': TRACK / 'studio/NR2003_WatkinsGlen_InstallV5.rbxmx',
+        'INSTALL_WATKINSGLEN_V5.lua': TRACK / 'studio/INSTALL_WATKINSGLEN_V5.lua',
+        'README_FIRST.md': TRACK / 'downloads/README_PHYSICS_V5.md',
+        'VALIDATION.md': TRACK / 'handling/VALIDATION.md',
     }
     with zipfile.ZipFile(target, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=6) as archive:
         for name, source in files.items():
             archive.write(source, name)
     with zipfile.ZipFile(target) as archive:
         assert archive.testzip() is None
-        assert b'NR2003_WatkinsGlen_InstallV4' in archive.read('INSTALL_WATKINSGLEN.lua')
+        assert b'NR2003_WatkinsGlen_InstallV5' in archive.read('INSTALL_WATKINSGLEN_V5.lua')
     print('Physics installer:', target.name, target.stat().st_size, 'bytes')
 
 

@@ -5,6 +5,9 @@ return {
     snapshotHz=60,
     vehicleId=1,
     diagnosticsDefault=false,
+    -- Host presentation choice for the active Watkins Glen driver. Observe
+    -- network delay in H diagnostics; this does not alter any tire/car state.
+    driverBuffer={initialDelay=1/30,minDelay=1/60,intervalSafety=1.0},
     buffer={
         capacity=64,
         initialDelay=0.090,

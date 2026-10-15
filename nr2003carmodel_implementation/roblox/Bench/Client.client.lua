@@ -57,6 +57,13 @@ local s11Line=label(panel,"Stage11",212,30,11);s11Line.Text="";s11Line.TextColor
 local steerLine=label(panel,"Stage12",246,16,11);steerLine.Text="";steerLine.TextColor3=Color3.fromRGB(190,172,244)
 -- Stage 13: force-feedback line (ORIGINAL FFB cells + the constant force sent to the device; display only)
 local ffbLine=label(panel,"Stage13",263,16,11);ffbLine.Text="";ffbLine.TextColor3=Color3.fromRGB(244,172,190)
+local hasTrack=false
+local trackTitle=label(panel,"Track",282,16,11)
+local trackHeader=label(panel,"TrackHeader",300,14,11)
+trackHeader.Text="RODA SOLO (ID)       gSolo    Fx N    Fy N    Fz N  Fxy/Fz (uso)"
+local trackRows={};for j=1,4 do trackRows[j]=label(panel,"TrackWheel"..j,316+(j-1)*16,16,11) end
+local surfaceNames={[0]="indef.","asfalto","concreto","zebra","tinta","grama","terra","areia","cascalho","água",
+    "guardrail","pneus","feno","alambrado","arbusto","floresta","madeira"}
 local hint=label(panel,"Controls",282,50,11)
 hint.Text="W/S acelerar/frear   A/D direção (gamepad: analógico esquerdo)   E/Q marchas\nShift embreagem   Espaço freio de mão   X sair\nT painel   G contatos   H render diag   V/B câmera +/-   Z/C olhar   [ ] FOV   R reposicionar"
 local status=label(panel,"Status",331,16,11);status.Text="Tune de teste | contato por raycast"
@@ -125,7 +132,7 @@ local function unbind() for _,b in ipairs(bindings) do CAS:UnbindAction("NR2003_
 UIS.WindowFocusReleased:Connect(function() keys={} end)
 telemetry.OnClientEvent:Connect(function(data)
     if not driving then return end
-    title.Text=data.mode=="NR2003_CUP" and "NR2003 Cup / núcleo original 45 estados · estágios 6-8"
+    title.Text=data.mode=="NR2003_CUP" and "NR2003 Cup / telemetria de teste"
         or (data.mode=="NR2003_CORE" and "NR2003 / chassi numérico · estágio 5 estabilizado" or "NR2003 / adaptador Roblox")
     local gear=data.gear==-1 and "R" or (data.gear==0 and "N" or tostring(data.gear))
     gauge.Text=string.format("%3.0f km/h | %4.0f rpm | %s",data.speed,data.rpm,gear)
@@ -138,6 +145,18 @@ telemetry.OnClientEvent:Connect(function(data)
         else
             rows[j].Text=string.format("%s   %7.0f  %8.1f  %6.1f  %7.1f",w.name,w.load,w.compression*1000,w.slip*100,w.temperature)
             rows[j].TextColor3=w.grounded and Color3.fromRGB(216,228,237) or Color3.fromRGB(246,147,106)
+        end
+    end
+    local tr=data.track
+    hasTrack=type(tr)=="table"
+    if hasTrack then
+        trackTitle.Text=string.format("%s | setup %s | s %.1f m | lat %.2f m | atraso física %.1f ms",
+            tr.name or "",tr.setup or "",tr.dlong or 0,tr.dlat or 0,math.max(0,data.backlog or 0)*1000)
+        for j,w in ipairs(tr.wheels or {}) do
+            local solo=w.grounded and string.format("%s(%d)",surfaceNames[w.surface] or "outro",w.surface or 0) or "SEM CONTATO"
+            trackRows[j].Text=string.format("%s %-14s %5.3f %+7.0f %+7.0f %7.0f %5.2f",
+                w.name,solo,w.surfaceGrip or 0,w.fx or 0,w.fy or 0,w.fz or 0,w.muUsed or 0)
+            trackRows[j].TextColor3=w.grounded and Color3.fromRGB(170,225,195) or Color3.fromRGB(246,147,106)
         end
     end
     local a=data.aero
@@ -216,9 +235,10 @@ local function updateRenderDiag(dt)
         tostring(s.mode),s.alpha or 0,tostring(s.active))
 end
 local function frame(dt)
+    local nowDriving=isDriver() and true or false
+    presentation:setDriverActive(nowDriving)
     presentation:update() -- MUST precede every camera path; render state never feeds physics.
     entry.Visible=os.clock()<entryUntil
-    local nowDriving=isDriver() and true or false
     if nowDriving~=driving then
         driving=nowDriving;panel.Visible=driving
         if driving then
@@ -240,7 +260,11 @@ local function frame(dt)
     if not driving then return end
     header.Visible=expanded;for _,r in ipairs(rows) do r.Visible=expanded end
     aeroLine.Visible=expanded;s11Line.Visible=expanded;steerLine.Visible=expanded;ffbLine.Visible=expanded
-    hint.Visible=expanded;status.Visible=expanded;panel.Size=UDim2.fromOffset(600,expanded and 352 or 76)
+    trackTitle.Visible=expanded and hasTrack;trackHeader.Visible=expanded and hasTrack
+    for _,row in ipairs(trackRows) do row.Visible=expanded and hasTrack end
+    hint.Position=UDim2.fromOffset(14,hasTrack and 386 or 282)
+    status.Position=UDim2.fromOffset(14,hasTrack and 435 or 331)
+    hint.Visible=expanded;status.Visible=expanded;panel.Size=UDim2.fromOffset(680,expanded and (hasTrack and 456 or 352) or 76)
     updateRumble()
     local camera=workspace.CurrentCamera
     if modelActive and carModel:applyCamera(camera) then
@@ -257,8 +281,9 @@ local function frame(dt)
         camera.CameraType=Enum.CameraType.Custom;camera.CameraSubject=seat;camera.FieldOfView=savedFieldOfView or 70
     end
     sendTimer=sendTimer+dt
-    if sendTimer>=1/30 then
-        sendTimer=sendTimer%(1/30)
+    local inputInterval=car:GetAttribute("NR2003Track")=="watkins_glen" and 1/36 or 1/30
+    if sendTimer>=inputInterval then
+        sendTimer=sendTimer%inputInterval
         -- Stage 12: raw steering controls (the NR2003 device layer 0057abc0 on the server side splits them into
         -- controls 7 / 8): keys A/D or arrows = key bindings (digital); a gamepad thumbstick (last input from a
         -- gamepad) = one analog axis, already normalised -1..1 by Roblox (deadzone: DriverConfig, 0 = none)

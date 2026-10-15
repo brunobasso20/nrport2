@@ -1,0 +1,5 @@
+fast	build/world/contact passed; pressure	22.5	steering ratio	16	structure	generic
+easy	build/world/contact passed; pressure	23	steering ratio	20	structure	generic
+qualify	build/world/contact passed; pressure	24	steering ratio	16	structure	generic
+jasper	build/world/contact passed; pressure	21	steering ratio	28	structure	generic
+Four original setup profiles build and drive with original track contacts.

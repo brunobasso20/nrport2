@@ -44,7 +44,7 @@ class IndexControl(FoldControl2):
         return (kind, len(self.seq))
 
 
-def run(structure):
+def run(structure, items=None, force_override=None, follow_override=None, allow_violations=False, setup_file=None):
     """ORIGINAL placement with the emitter controls of `structure` on during the in-place rebuild; returns the machine
     after the placement, the decision tables and the reference summary"""
     import ref_track as R
@@ -59,17 +59,40 @@ def run(structure):
         force = {({'Z': 'z', 'O': 'o', 'N': 'a'}[c], i) for i, c in enumerate(gfold) if c in 'ZON'}
         follow = pickle.load(open(REPO / 'recovery' / 'stage10' / 'generic_force.pkl', 'rb'))[1]
         Control = IndexControl
+        if force_override is not None: force = force_override
+        if follow_override is not None: follow = follow_override
     rec = {}
     base_place = W.OriginalWorld.place
 
     def place(self, *a):
         m = self.m
+        if items is not None or setup_file is not None:
+            import orig_setup
+            oldcw = m.fpcw
+            m.fpcw = 0x027f  # the original setup file validation runs on the foreground thread
+            if setup_file is not None:
+                import struct
+                data = Path(setup_file).read_bytes()
+                chunk = data.index(b'DGTS'); version, size = struct.unpack_from('<II',data,chunk+4)
+                packed = m.alloc(size,data[chunk+12:chunk+12+size])
+                assert m.call(0x558830,0,version,packed,size,ecx=orig_setup.GARAGE) == size
+            else:
+                for index, raw in items.items(): m.w32(orig_setup.GARAGE + 4 * int(index), raw)
+            assert m.call(0x558da0, ecx=orig_setup.GARAGE) != 0
+            m.fpcw = oldcw
+            validated = {i: m.u32(orig_setup.GARAGE + 4 * i) for i in range(184)}
+            previous_bg = bytes(m.uc.mem_read(orig_setup.BG_FLAG, 1))
+            m.uc.mem_write(orig_setup.BG_FLAG, b'\x00')
+            try:
+                orig_setup.apply(m, validated)
+            finally:
+                m.uc.mem_write(orig_setup.BG_FLAG, previous_bg)
         fc = Control(m, force)
         lc = LiteralControl(m, follow)
         fc.on = lc.on = True
         base_place(self, *a)
         fc.on = lc.on = False
-        assert not lc.violations, lc.violations[:5]
+        if not allow_violations: assert not lc.violations, lc.violations[:5]
         n = len(lc.seq)
         rec['tables'] = (fold_table(fc.seq, force), [(follow or {}).get(k, lc.seq[k]) == 'append' for k in range(n)],
                          [lc.addr_of[k] for k in range(n)])

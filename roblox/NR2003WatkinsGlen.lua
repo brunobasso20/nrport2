@@ -5,6 +5,14 @@ local M = {}
 M.TRACK = "watkins_glen"
 M.METRES_PER_STUD = 0.28
 
+function M.garageSetup(controller, Setup)
+    local Setups = require(script.Parent.NR2003WatkinsGlenSetup)
+    local items, name, hash = Setups.new(Setup, controller.car:GetAttribute("WatkinsGlenSetup"))
+    controller.requestedTrackSetupName = name
+    controller.requestedTrackSetupSHA256 = hash
+    return items
+end
+
 function M.enabled(package)
     return package:GetAttribute("NR2003Track") == M.TRACK
 end
