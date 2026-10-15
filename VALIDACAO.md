@@ -1,5 +1,22 @@
 # Validação — Stage 13 (torque de direção / force feedback original)
 
+## Auditoria do patch oficial 1.2.0.1
+
+A referência usada pelos estágios **já é 1.2.0.1**; veja [PATCH1201_AUDIT.md](PATCH1201_AUDIT.md).
+O teste novo `luau -O2 --codegen tests/patch1201/run.luau` compara 90 poses controladas com x86 original:
+360 escalares (camber efetivo LF/RF e eixos visuais), erro máximo observado 0, tolerância absoluta `2e-6`.
+Os fixtures e o gerador ficam em `tests/patch1201` e `recovery/patch1201`.
+
+Para conferir no Studio, pare o Play e instale o pacote conforme [STUDIO_PATCH1201.md](STUDIO_PATCH1201.md).
+O pacote corrige FAST/QUALIFY para os arquivos do patch oficial; EASY/JASPER continuam nos valores originais que
+esse patch não substitui em Watkins Glen. Entre no carro e pressione **K** para alternar os quatro presets e
+reiniciar no spawn; **,** oculta/mostra a telemetria. Confirme o nome do setup na HUD e teste curva lenta,
+entrada em curva, asfalto/concreto e saídas para grama/areia. K limpa overrides individuais `Setup_*`.
+A orientação visual da roda não inclui todo o camber do caminho do pneu: não diagnostique a força apenas pela malha.
+O snapshot do Studio passou 27 verificações de superfícies/contatos; os 20 escalares de aderência e seis tabelas
+foram conferidos com o original 1.2.0.1. Esses ensaios de integração não provam equivalência completa do jogo.
+O Studio em si não foi executado no ambiente Linux; instalador/atalhos têm testes com mocks e rollback.
+
 Ferramentas: Luau CLI 0.741 (codegen nativo), Python 3 + Unicorn 2.1.4 + Capstone, Ghidra 11.1.2 sobre o projeto do
 OpenNR2003 (`TChapman500/OpenNR2003`, memória exportada = `NR2003_MEM`). `tools/run_stage13_tests.sh` / `.ps1` refaz as
 entregas do Stage 12 e 12.1 (congeladas, byte a byte) e do 13 e roda tudo; saídas em `tests/stage13/RESULTS_STAGE13.txt`

@@ -1,0 +1,50 @@
+{
+  "sha256": "27e76919be6722bee0dcaddc92454fea338e99a97404df6220448314feb4500a",
+  "size": 5423105,
+  "crc32": "d6335778",
+  "pe_timestamp": 1062705638,
+  "versions": [
+    {
+      "language": 1033,
+      "offset": 5107536,
+      "size": 840,
+      "file": "1.2.0.1",
+      "product": "1.2.0.1"
+    }
+  ],
+  "committed_chunks": [
+    {
+      "file": "00400000.bin",
+      "bytes": 2883584,
+      "file_offset": 0,
+      "sha256": "050bfced894537e3bacbf09f62eb0e2b3e9d62b2e7f427bb15ea22b1911d945f",
+      "exact_match": true
+    },
+    {
+      "file": "006e9000.bin",
+      "bytes": 204800,
+      "file_offset": 3051520,
+      "sha256": "16dc95d49d96e687ce09e8a293e47403d59258b68d6e5df07b9df38ca3fe82e5",
+      "exact_match": true
+    },
+    {
+      "file": "0071b000.bin",
+      "bytes": 282624,
+      "file_offset": 3256320,
+      "sha256": "e2ecdc6f471dfe964caec08fc67ebb146a67b69b2f3e6209e51631cbd6248e8c",
+      "exact_match": true
+    }
+  ],
+  "patch_target": {
+    "stream": 15,
+    "kind": "binary_delta",
+    "sha256": "0cc44ebe3eaa8a7d78448bad469afe51463b5781e021421680bb45ea37a2a89c",
+    "crc32_offset": 5,
+    "size_offset": 9,
+    "crc32": "d6335778",
+    "size": 5423105,
+    "crc32_matches": true,
+    "size_matches": true
+  },
+  "verified_1201_reference": true
+}

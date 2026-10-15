@@ -1,0 +1,42 @@
+[
+  {
+    "id": "setup",
+    "path": "roblox/NR2003WatkinsGlenSetup.lua",
+    "old_bytes": 5349,
+    "old_fnv": 734809296,
+    "new_bytes": 5362,
+    "new_fnv": 559407406
+  },
+  {
+    "id": "controls",
+    "path": "roblox/SetupTestControls.lua",
+    "old_bytes": 0,
+    "old_fnv": 0,
+    "new_bytes": 1683,
+    "new_fnv": 2035896022
+  },
+  {
+    "id": "bindings",
+    "path": "roblox/SetupTestBindings.client.lua",
+    "old_bytes": 0,
+    "old_fnv": 0,
+    "new_bytes": 1704,
+    "new_fnv": 1453482639
+  },
+  {
+    "id": "prediction",
+    "path": "roblox/PredictionServer.lua",
+    "old_bytes": 12132,
+    "old_fnv": 2873754171,
+    "new_bytes": 12555,
+    "new_fnv": 469903293
+  },
+  {
+    "id": "legacy",
+    "path": "roblox/Server.server.lua",
+    "old_bytes": 4742,
+    "old_fnv": 3952310422,
+    "new_bytes": 5077,
+    "new_fnv": 457098053
+  }
+]

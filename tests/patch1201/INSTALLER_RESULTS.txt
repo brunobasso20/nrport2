@@ -1,0 +1,16 @@
+PASS  actual generated installer accepts uploaded prediction baseline
+PASS  installer writes exact patched setup, helper and client sources
+PASS  prediction module updated while legacy server stays unchanged
+PASS  backup records both original scripts and two added scripts
+PASS  reapply is a no-op and cannot overwrite original backup
+PASS  rollback restores complete original tree and sources
+PASS  rollback removes added helper, client script and backup
+PASS  edited setup preflight refuses before any mutation
+PASS  edited prediction preflight refuses before any mutation
+PASS  injected fourth Source write failure is reported
+PASS  failed apply restores prior writes, removes added scripts and backup
+PASS  rollback preflight preserves edited patched source and all other scripts
+PASS  legacy install updates actual legacy server without creating prediction module
+PASS  legacy rollback restores all original sources and removes additions
+PASS  Play-mode preflight refuses without mutation
+Studio patch installer: 15 checks passed

@@ -1,0 +1,20 @@
+PASS  fast official DGTS payload size
+PASS  fast raw values match original official patch bytes  68 fields, 0 differences
+PASS  fast selected source hash
+PASS  fast file load matches original x86 decoder/validator  70 fields, 0 differences
+PASS  qualify official DGTS payload size
+PASS  qualify raw values match original official patch bytes  68 fields, 0 differences
+PASS  qualify selected source hash
+PASS  qualify file load matches original x86 decoder/validator  70 fields, 0 differences
+PASS  jasper source and loaded settings preserved
+PASS  easy source and loaded settings preserved
+PASS  default profile is patched fast
+PASS  unknown setup rejected
+PASS  original road-course track loads
+PASS  fast original road-course setup build  structure=generic
+PASS  fast all four official tyre pressures reach the built car
+PASS  fast finite placed state with original tyre contacts
+PASS  qualify original road-course setup build  structure=generic
+PASS  qualify all four official tyre pressures reach the built car
+PASS  qualify finite placed state with original tyre contacts
+Patch 1.2.0.1 Watkins setups: 19 passed, 0 failed

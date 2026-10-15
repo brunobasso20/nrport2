@@ -1,5 +1,9 @@
 # OpenNR2003 para Roblox — Stage 13 (torque de direção / force feedback original do NR2003)
 
+**Versão original confirmada: NR2003 1.2.0.1.** O projeto Ghidra do OpenNR2003 e os três exports de código usados
+pelos estágios já correspondem ao executável atualizado. Não reaplique reduções de camber ou de vácuo sobre essa base.
+Evidência, limites da comparação com 1.0 e regressão de camber: [PATCH1201_AUDIT.md](PATCH1201_AUDIT.md).
+
 ## Aplicar o Stage 13 sobre o Stage 12.1
 
 1. Studio, **fora do Play**, na **Command Bar**, sobre a bancada **Stage 12.1 publicada** (se ainda estiver no Stage 12,
