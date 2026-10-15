@@ -1,5 +1,7 @@
 # Watkins Glen runtime validation
 
+**V6 correction:** earlier track driving references inherited the wrong speedway chassis type. See [roadcourse/VALIDATION.md](roadcourse/VALIDATION.md) for the explicit chassis-4 references, correction and remaining numerical discrepancies.
+
 For V5 stock-setup/raw-keyboard tests, see [handling/VALIDATION.md](handling/VALIDATION.md). The older scenarios below injected a processed throttle value and therefore did not cover original `00552df0`. V5 adds independent original pedal and file-loader tests; complete dynamics equality remains unproven.
 
 This is a driving test build. The recovered track algorithms and material data run, and every runtime section

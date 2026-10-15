@@ -1,5 +1,7 @@
 # Fresh Watkins Glen V5 physics installation
 
+**Após instalar V5, aplique a [correção road course V6](../roadcourse/README.md).** V5 mantinha a especificação speedway da bancada; trocar o setup não corrigia essa seleção.
+
 This is for the original Stage 13 car place after the track visuals have been
 imported and calibrated. If V4 is already installed, use
 **WatkinsGlen_Handling_Patch_V5.zip** instead, preserving its existing backup.

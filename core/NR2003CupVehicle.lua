@@ -80,7 +80,8 @@ function M.fromLoader(get)
     -- Watkins Glen port: installed last (its enterTrack / reset / session wrappers are the outermost)
     if trackHost then
         trackHost(V,collect(get,"NR2003CupTrackCode"),trackData,
-            {build=get("NR2003CupTrackBuild"),placed=collect(get,"NR2003CupJITP"),placedGeneric=collect(get,"NR2003CupJITPG")})
+            {build=get("NR2003CupTrackBuild"),placed=collect(get,"NR2003CupJITP"),placedGeneric=collect(get,"NR2003CupJITPG"),
+                vehicle=get("NR2003CupWatkinsGlenSpec"),roadGeneric=collect(get,"NR2003CupJITWG")})
     end
     return setmetatable({V=V,state=table.create(45,0),pos={0,0,0},rot={1,0,0,0,1,0,0,0,1}},M)
 end

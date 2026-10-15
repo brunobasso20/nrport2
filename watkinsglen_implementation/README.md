@@ -8,6 +8,8 @@ The recovered lap is **3942.875732421875 metres**, or **14081.699044363839 Roblo
 
 ## Studio installation
 
+**V6 road-course correction is required after V5:** [installation and setup instructions](roadcourse/README.md). V4/V5 retained the bench speedway specification even when a Watkins Glen setup was loaded. V6 selects the original road-course chassis and tire profile. New original-code comparisons and remaining discrepancies are in [roadcourse/VALIDATION.md](roadcourse/VALIDATION.md).
+
 **Existing V4 installation:** use the [small V5 handling update](handling/README.md). It corrects original keyboard throttle/clutch processing, loads Watkins Glen's original setup files, expands the existing per-wheel HUD and reduces the active driver's presentation delay. It has a separate backup and retains the V4 installation. Numerical dynamics differences remain documented in [handling/VALIDATION.md](handling/VALIDATION.md).
 
 Use your existing place containing the exported NR2003Lab, NR2003Server and NR2003Client. Preserve its imported car model.
@@ -22,7 +24,8 @@ For a browser download, use the [complete Studio package](downloads/README_DOWNL
 require(workspace.NR2003_WatkinsGlen_InstallV5.Apply)()
 ```
 
-4. Start Play. The car is placed by the original track placement routine in pit stall 0. The avatar spawns beside it; approach the seat and use the existing F/entry controls. Drive with your existing control bindings and cockpit/camera controls.
+4. Apply the [V6 road-course correction](roadcourse/README.md) outside Play.
+5. Start Play. The car is placed by the original track placement routine in pit stall 0. The avatar spawns beside it; approach the seat and use the existing F/entry controls. Drive with your existing control bindings and cockpit/camera controls.
 
 The installer checks the exported baseline, preserves car assets and the main server, updates the original client's telemetry panel, and backs up changed scripts. Full installation and rollback instructions are in `studio/README_INSTALL.md`. Visual geometry stays non-colliding; terrain answers presentation camera queries, while the recovered car world evaluates its own contacts. A small invisible SpawnLocation is used only as a walking surface for the avatar beside the car.
 

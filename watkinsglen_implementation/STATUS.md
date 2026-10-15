@@ -1,5 +1,7 @@
 # Watkins Glen continuation status
 
+**Current V6:** [road-course correction](roadcourse/README.md) selects chassis 4 and tire profile 8. V4/V5 incorrectly retained the bench speedway specification. [New explicit road-course references](roadcourse/VALIDATION.md) document the correction and remaining dynamics differences. The older counts below are historical.
+
 The original-track driving test is implemented and packaged. Scope is scale/topography, textures, surface behavior and body/barrier contacts. Stage 14/15, race rules, lap timing and pit limiting have not been started.
 
 ## Completed

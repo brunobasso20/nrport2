@@ -526,7 +526,9 @@ function M:telemetry()
     local track
     if self.originalTrack then
         local p=self.core.V.trackPosition(self.trackPositionOut)
-        track={name="Watkins Glen",setup=self.trackSetupName,dlong=p.dlong,dlat=p.dlat,wheels={}}
+        local vehicle=self.core.V.trackInfo()
+        track={name="Watkins Glen",setup=self.trackSetupName,dlong=p.dlong,dlat=p.dlat,wheels={},
+            chassisType=vehicle.chassisType,tireProfiles=vehicle.tireProfiles}
     end
     -- Stage 11: ORIGINAL runtime state (read-only view of the core cells)
     local s11=self.core.V.stage11State and self.core:stage11State(self.stage11Out) or nil

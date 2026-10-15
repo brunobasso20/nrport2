@@ -150,8 +150,9 @@ telemetry.OnClientEvent:Connect(function(data)
     local tr=data.track
     hasTrack=type(tr)=="table"
     if hasTrack then
-        trackTitle.Text=string.format("%s | setup %s | s %.1f m | lat %.2f m | atraso física %.1f ms",
-            tr.name or "",tr.setup or "",tr.dlong or 0,tr.dlat or 0,math.max(0,data.backlog or 0)*1000)
+        local profiles=tr.tireProfiles and table.concat(tr.tireProfiles,"/") or "?"
+        trackTitle.Text=string.format("WG | setup %s | chassi %s | pneus %s | s %.1f m | atraso %.1f ms",
+            tr.setup or "",tostring(tr.chassisType or "?"),profiles,tr.dlong or 0,math.max(0,data.backlog or 0)*1000)
         for j,w in ipairs(tr.wheels or {}) do
             local solo=w.grounded and string.format("%s(%d)",surfaceNames[w.surface] or "outro",w.surface or 0) or "SEM CONTATO"
             trackRows[j].Text=string.format("%s %-14s %5.3f %+7.0f %+7.0f %7.0f %5.2f",

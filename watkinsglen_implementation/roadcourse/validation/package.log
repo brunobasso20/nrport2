@@ -1,0 +1,13 @@
+{
+  "file": "WatkinsGlen_RoadCourse_Patch_V6.zip",
+  "model": "NR2003_WatkinsGlen_RoadCourseV6",
+  "bytes": 177336,
+  "sha256": "9d7fdc82ad34b510c4f7f0e990bb8960d714807a4622486750ae816a377ff3d7",
+  "targets": 16,
+  "compiledXMLSources": 22,
+  "largestSourceBytes": 143285,
+  "zipEntries": 13,
+  "zipCRCVerified": true,
+  "sourceFingerprintsVerified": true,
+  "bundle": "61e4073ad4c80904d829afae7bb839cefd4db4df7c23ca7f3c6a36b799ef973c"
+}

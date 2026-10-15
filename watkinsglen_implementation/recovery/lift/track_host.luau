@@ -156,11 +156,17 @@ return function(V, codeParts, dataParts, extra)
 			B.addStructure(name, extra.build[name])
 			V._garageAddCode(name, extra[name])
 		end
+		assert(extra.vehicle and #extra.roadGeneric > 0, "NR2003 track: original road-course vehicle modules missing")
+		B.addStructure("generic", extra.vehicle.generic)
+		V._garageAddCode("generic", extra.roadGeneric)
+		for off, value in pairs(extra.vehicle.inputs) do BUILD_INPUTS[off] = value end
 		B.setInputOverrides(BUILD_INPUTS)
 		-- the car built once with the track loaded (ORIGINAL Stage 10 sequence, default garage setup), as the game builds it
 		-- after the track load: the reset image then holds the complete post-build state, which the in-place rebuild of
 		-- every placement (00551760 -> 005b2f20) starts from
-		local ok, rep = V.applySetup(V.Setup.cupGarageDefault(), {rebuild = true})
+		local initialSetup = V.Setup.cupGarageDefault()
+		initialSetup[182] = extra.vehicle.chassisType
+		local ok, rep = V.applySetup(initialSetup, {rebuild = true, structure = "generic"})
 		if not ok then error("NR2003 track: car build with the track failed: " .. tostring(rep.error or rep.violations)) end
 		V._garageRefreshImage()
 		local fc = V._frameCtx
@@ -182,7 +188,11 @@ return function(V, codeParts, dataParts, extra)
 	function V.trackStart() return start[1], start[2], start[3] end
 	V.trackStalls = STALLS
 	V.trackInfo = function()
-		return {name = TRACK_NAME, sections = r32(0xbad920), length = rf32(0xbad918), stalls = #STALLS}
+		local profiles = {}
+		local spec = r32(CAR + 0x58a)
+		for w = 0, 3 do profiles[w+1] = r32(spec + 0x4c + 4*w) end
+		return {name = TRACK_NAME, sections = r32(0xbad920), length = rf32(0xbad918), stalls = #STALLS,
+			chassisType = ri32(CAR + 0x58e), spec = spec, tireProfiles = profiles}
 	end
 
 	-- ORIGINAL 005512f0 at its place inside the Frame's 00550a50 subset

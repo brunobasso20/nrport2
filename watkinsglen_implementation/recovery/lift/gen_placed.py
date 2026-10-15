@@ -44,7 +44,8 @@ class IndexControl(FoldControl2):
         return (kind, len(self.seq))
 
 
-def run(structure, items=None, force_override=None, follow_override=None, allow_violations=False, setup_file=None):
+def run(structure, items=None, force_override=None, follow_override=None, allow_violations=False, setup_file=None,
+        chassis_type=2):
     """ORIGINAL placement with the emitter controls of `structure` on during the in-place rebuild; returns the machine
     after the placement, the decision tables and the reference summary"""
     import ref_track as R
@@ -101,7 +102,7 @@ def run(structure, items=None, force_override=None, follow_override=None, allow_
         W.configure(os.environ['WG_TRACK'], os.environ['WG_SHARED'], os.environ.get('SERVER_MEM'), stall=STALL,
                     rts_mem=os.environ.get('RTS_MEM'))
         W.SNAPSHOT['on'] = False
-        o = W.OriginalWorld(state=list(R.STATE0), weather=R.DEFAULT_SESSION, ffb=dict(enabled=True), device=R.DEV,
+        o = W.OriginalWorld(chassis_type=chassis_type, state=list(R.STATE0), weather=R.DEFAULT_SESSION, ffb=dict(enabled=True), device=R.DEV,
                             damage_level=0)
     finally:
         W.OriginalWorld.place = base_place

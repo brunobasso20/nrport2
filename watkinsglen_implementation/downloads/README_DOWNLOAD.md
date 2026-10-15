@@ -1,5 +1,7 @@
 # Download the real Watkins Glen Studio package
 
+**V5 already installed:** download [RoadCourse Patch V6](WatkinsGlen_RoadCourse_Patch_V6.zip) and follow [these steps](../roadcourse/README.md). It corrects the vehicle/tire specification. No meshes need reimporting. For a fresh place, install V5 and then V6 before driving.
+
 **V4 track already installed:** download the [V5 handling update](WatkinsGlen_Handling_Patch_V5.zip) and follow [its instructions](../handling/README.md). No track meshes need reimporting. For a fresh physics installation after importing the assets, use [Physics Installer V5](WatkinsGlen_Physics_Installer_V5.zip).
 
 [Download WatkinsGlen_Studio_Package.zip](https://media.githubusercontent.com/media/brunobasso20/nrport2/codex/watkinsglen-driving-test/watkinsglen_implementation/downloads/WatkinsGlen_Studio_Package.zip)

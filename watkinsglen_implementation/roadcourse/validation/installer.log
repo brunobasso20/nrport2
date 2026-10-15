@@ -1,0 +1,123 @@
+Watkins Glen physics installed. Original car assets and client retained; backup: ServerStorage.NR2003Backup_WatkinsGlen
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()
+Watkins Glen V5 installed: original track setups/pedals and per-wheel track HUD; backup: ServerStorage.NR2003Backup_WatkinsGlenHandlingV5
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlenHandlingV5.Rollback)()
+Watkins Glen V6 installed: road-course chassis 4, original tire profile 8 and track HUD; backup: ServerStorage.NR2003Backup_WatkinsGlenRoadCourseV6
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlenRoadCourseV6.Rollback)()
+PASS  V4 + V5 updater installs actual V6 sources
+PASS  V5 backup, car, cockpit/client and setup selection retained
+PASS  own complete backup records all V6 changes
+Watkins Glen V6 installed: road-course chassis 4, original tire profile 8 and track HUD; backup: ServerStorage.NR2003Backup_WatkinsGlenRoadCourseV6
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlenRoadCourseV6.Rollback)()
+PASS  cached V6 apply is idempotent
+Watkins Glen V6 installed: road-course chassis 4, original tire profile 8 and track HUD; backup: ServerStorage.NR2003Backup_WatkinsGlenRoadCourseV6
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlenRoadCourseV6.Rollback)()
+PASS  new imported V6 copy reuses complete backup
+PASS  previous rollback refuses while V6 is active | [string "Rollback"]:10: A different Watkins Glen patch is active; this backup cannot roll it back
+Watkins Glen road-course correction rolled back to V5. Previous sources, package attributes and generated bench restored; imported car and track visuals retained.
+PASS  V6 rollback restores exact V5 and removes only new road modules
+Watkins Glen handling update rolled back to V4. Previous sources, package attributes and generated bench restored; imported car and track visuals retained.
+PASS  previous V5 rollback remains usable
+Watkins Glen patch rolled back. Previous sources, package attributes and generated bench restored; imported car and track visuals retained.
+PASS  original V4 rollback still works after both updates
+Watkins Glen V5 installed: original track setups/pedals and per-wheel track HUD; backup: ServerStorage.NR2003Backup_WatkinsGlen
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()
+Watkins Glen V6 installed: road-course chassis 4, original tire profile 8 and track HUD; backup: ServerStorage.NR2003Backup_WatkinsGlenRoadCourseV6
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlenRoadCourseV6.Rollback)()
+PASS  full V5 installs actual V6 sources
+PASS  V5 backup, car, cockpit/client and setup selection retained
+PASS  own complete backup records all V6 changes
+Watkins Glen V6 installed: road-course chassis 4, original tire profile 8 and track HUD; backup: ServerStorage.NR2003Backup_WatkinsGlenRoadCourseV6
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlenRoadCourseV6.Rollback)()
+PASS  cached V6 apply is idempotent
+Watkins Glen V6 installed: road-course chassis 4, original tire profile 8 and track HUD; backup: ServerStorage.NR2003Backup_WatkinsGlenRoadCourseV6
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlenRoadCourseV6.Rollback)()
+PASS  new imported V6 copy reuses complete backup
+PASS  previous rollback refuses while V6 is active | [string "Rollback"]:10: A different Watkins Glen patch is active; this backup cannot roll it back
+Watkins Glen road-course correction rolled back to V5. Previous sources, package attributes and generated bench restored; imported car and track visuals retained.
+PASS  V6 rollback restores exact V5 and removes only new road modules
+Watkins Glen patch rolled back. Previous sources, package attributes and generated bench restored; imported car and track visuals retained.
+PASS  previous V5 rollback remains usable
+Watkins Glen physics installed. Original car assets and client retained; backup: ServerStorage.NR2003Backup_WatkinsGlen
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()
+Watkins Glen V5 installed: original track setups/pedals and per-wheel track HUD; backup: ServerStorage.NR2003Backup_WatkinsGlenHandlingV5
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlenHandlingV5.Rollback)()
+PASS  unknown client edits refuse before writes | [string "Apply"]:72: Watkins Glen patch refused; nothing was changed:
+  Client.NR2003Client contains local changes; this patch will not overwrite them
+Watkins Glen physics installed. Original car assets and client retained; backup: ServerStorage.NR2003Backup_WatkinsGlen
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()
+Watkins Glen V5 installed: original track setups/pedals and per-wheel track HUD; backup: ServerStorage.NR2003Backup_WatkinsGlenHandlingV5
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlenHandlingV5.Rollback)()
+PASS  unsaved editor changes refuse before backup | [string "Support"]:28: Save the open script editor before installing: StarterPlayer.StarterPlayerScripts.NR2003Client
+Watkins Glen physics installed. Original car assets and client retained; backup: ServerStorage.NR2003Backup_WatkinsGlen
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()
+Watkins Glen V5 installed: original track setups/pedals and per-wheel track HUD; backup: ServerStorage.NR2003Backup_WatkinsGlenHandlingV5
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlenHandlingV5.Rollback)()
+PASS  incomplete V5 backup refuses safely | [string "Apply"]:11: V6 requires the complete retained V5 backup
+Watkins Glen physics installed. Original car assets and client retained; backup: ServerStorage.NR2003Backup_WatkinsGlen
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()
+Watkins Glen V5 installed: original track setups/pedals and per-wheel track HUD; backup: ServerStorage.NR2003Backup_WatkinsGlenHandlingV5
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlenHandlingV5.Rollback)()
+PASS  damaged V5 backup refuses safely | [string "Support"]:102: Original backup was edited: Core.NR2003Cup.NR2003CupDriver
+Watkins Glen physics installed. Original car assets and client retained; backup: ServerStorage.NR2003Backup_WatkinsGlen
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()
+Watkins Glen V5 installed: original track setups/pedals and per-wheel track HUD; backup: ServerStorage.NR2003Backup_WatkinsGlenHandlingV5
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlenHandlingV5.Rollback)()
+PASS  Play mode refuses safely | [string "Support"]:58: Stop Play/Run before applying or rolling back this patch
+Watkins Glen physics installed. Original car assets and client retained; backup: ServerStorage.NR2003Backup_WatkinsGlen
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()
+Watkins Glen V5 installed: original track setups/pedals and per-wheel track HUD; backup: ServerStorage.NR2003Backup_WatkinsGlenHandlingV5
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlenHandlingV5.Rollback)()
+PASS  invalid setup selection refuses before writing | [string "Apply"]:67: TestCar.WatkinsGlenSetup must be fast, easy, qualify or jasper
+Watkins Glen physics installed. Original car assets and client retained; backup: ServerStorage.NR2003Backup_WatkinsGlen
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()
+Watkins Glen V5 installed: original track setups/pedals and per-wheel track HUD; backup: ServerStorage.NR2003Backup_WatkinsGlenHandlingV5
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlenHandlingV5.Rollback)()
+PASS  failed live write restores exact V5: NR2003CupGarage | [string "Apply"]:175: Watkins Glen installation failed; prior sources, attributes and bench were restored:
+./work/feeling_v5/installer_mock.luau:218526: injected source write failure
+Watkins Glen physics installed. Original car assets and client retained; backup: ServerStorage.NR2003Backup_WatkinsGlen
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()
+Watkins Glen V5 installed: original track setups/pedals and per-wheel track HUD; backup: ServerStorage.NR2003Backup_WatkinsGlenHandlingV5
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlenHandlingV5.Rollback)()
+PASS  failed live write restores exact V5: NR2003Client | [string "Apply"]:175: Watkins Glen installation failed; prior sources, attributes and bench were restored:
+./work/feeling_v5/installer_mock.luau:218526: injected source write failure
+Watkins Glen physics installed. Original car assets and client retained; backup: ServerStorage.NR2003Backup_WatkinsGlen
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()
+Watkins Glen V5 installed: original track setups/pedals and per-wheel track HUD; backup: ServerStorage.NR2003Backup_WatkinsGlenHandlingV5
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlenHandlingV5.Rollback)()
+PASS  failed backup preparation leaves V5 unchanged | [string "Apply"]:120: Watkins Glen backup preparation failed; live sources and attributes were not changed:
+./work/feeling_v5/installer_mock.luau:218526: injected source write failure
+Watkins Glen physics installed. Original car assets and client retained; backup: ServerStorage.NR2003Backup_WatkinsGlen
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()
+Watkins Glen V5 installed: original track setups/pedals and per-wheel track HUD; backup: ServerStorage.NR2003Backup_WatkinsGlenHandlingV5
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlenHandlingV5.Rollback)()
+Watkins Glen V6 installed: road-course chassis 4, original tire profile 8 and track HUD; backup: ServerStorage.NR2003Backup_WatkinsGlenRoadCourseV6
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlenRoadCourseV6.Rollback)()
+PASS  rollback protects later edits | [string "Rollback"]:38: Rollback refused; nothing was changed:
+  Client.NR2003Client has local changes; rollback will not overwrite them
+Watkins Glen physics installed. Original car assets and client retained; backup: ServerStorage.NR2003Backup_WatkinsGlen
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()
+Watkins Glen V5 installed: original track setups/pedals and per-wheel track HUD; backup: ServerStorage.NR2003Backup_WatkinsGlenHandlingV5
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlenHandlingV5.Rollback)()
+Watkins Glen V6 installed: road-course chassis 4, original tire profile 8 and track HUD; backup: ServerStorage.NR2003Backup_WatkinsGlenRoadCourseV6
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlenRoadCourseV6.Rollback)()
+PASS  corrupt V6 original backup refuses rollback | [string "Support"]:102: Original backup was edited: Client.NR2003Client
+Watkins Glen physics installed. Original car assets and client retained; backup: ServerStorage.NR2003Backup_WatkinsGlen
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()
+Watkins Glen V5 installed: original track setups/pedals and per-wheel track HUD; backup: ServerStorage.NR2003Backup_WatkinsGlenHandlingV5
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlenHandlingV5.Rollback)()
+Watkins Glen V6 installed: road-course chassis 4, original tire profile 8 and track HUD; backup: ServerStorage.NR2003Backup_WatkinsGlenRoadCourseV6
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlenRoadCourseV6.Rollback)()
+PASS  failed rollback restores complete V6 state | [string "Rollback"]:68: Rollback failed; installed state was restored:
+./work/feeling_v5/installer_mock.luau:218526: injected source write failure
+Watkins Glen physics installed. Original car assets and client retained; backup: ServerStorage.NR2003Backup_WatkinsGlen
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlen.Rollback)()
+Watkins Glen V5 installed: original track setups/pedals and per-wheel track HUD; backup: ServerStorage.NR2003Backup_WatkinsGlenHandlingV5
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlenHandlingV5.Rollback)()
+PASS  yielding backup holds shared lock
+PASS  concurrent V6 copies cannot race | [string "Support"]:66: A Watkins Glen install or rollback is already running; wait for its final output before running another command
+PASS  V5 rollback shares the operation lock | [string "Support"]:66: A Watkins Glen install or rollback is already running; wait for its final output before running another command
+Watkins Glen V6 installed: road-course chassis 4, original tire profile 8 and track HUD; backup: ServerStorage.NR2003Backup_WatkinsGlenRoadCourseV6
+Rollback outside Play: require(game.ServerStorage.NR2003Backup_WatkinsGlenRoadCourseV6.Rollback)()
+PASS  yielded update completes coherently | 61e4073ad4c80904d829afae7bb839cefd4db4df7c23ca7f3c6a36b799ef973c
+road-course installer: 33 passed, 0 failed

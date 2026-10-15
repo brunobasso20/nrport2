@@ -1,5 +1,7 @@
 # Watkins Glen — correção de dirigibilidade V5
 
+**Após instalar V5, aplique a [correção road course V6](../roadcourse/README.md).** V5 mantinha a especificação speedway da bancada; trocar o setup não corrigia essa seleção.
+
 Para o place com o Watkins Glen V4 instalado. Pare o Play, extraia o ZIP e insira
 **NR2003_WatkinsGlen_HandlingV5.rbxmx** no Workspace. Execute na Command Bar:
 

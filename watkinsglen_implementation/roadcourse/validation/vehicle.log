@@ -1,0 +1,7 @@
+fast	road chassis / four road tires / native contacts / reset passed
+easy	road chassis / four road tires / native contacts / reset passed
+qualify	road chassis / four road tires / native contacts / reset passed
+jasper	road chassis / four road tires / native contacts / reset passed
+Independent bench keeps original speedway specification and callback layouts
+Default-image restore retains road callback selection
+Road-course vehicle regression passed

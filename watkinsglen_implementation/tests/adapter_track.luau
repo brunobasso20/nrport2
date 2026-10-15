@@ -82,7 +82,8 @@ function M.fromLoader(get)
     -- Watkins Glen port: installed last (its enterTrack / reset / session wrappers are the outermost)
     if trackHost then
         trackHost(V,collect(get,"NR2003CupTrackCode"),trackData,
-            {build=get("NR2003CupTrackBuild"),placed=collect(get,"NR2003CupJITP"),placedGeneric=collect(get,"NR2003CupJITPG")})
+            {build=get("NR2003CupTrackBuild"),placed=collect(get,"NR2003CupJITP"),placedGeneric=collect(get,"NR2003CupJITPG"),
+                vehicle=get("NR2003CupWatkinsGlenSpec"),roadGeneric=collect(get,"NR2003CupJITWG")})
     end
     return setmetatable({V=V,state=table.create(45,0),pos={0,0,0},rot={1,0,0,0,1,0,0,0,1}},M)
 end
@@ -1187,7 +1188,9 @@ function M:telemetry()
     local track
     if self.originalTrack then
         local p=self.core.V.trackPosition(self.trackPositionOut)
-        track={name="Watkins Glen",setup=self.trackSetupName,dlong=p.dlong,dlat=p.dlat,wheels={}}
+        local vehicle=self.core.V.trackInfo()
+        track={name="Watkins Glen",setup=self.trackSetupName,dlong=p.dlong,dlat=p.dlat,wheels={},
+            chassisType=vehicle.chassisType,tireProfiles=vehicle.tireProfiles}
     end
     -- Stage 11: ORIGINAL runtime state (read-only view of the core cells)
     local s11=self.core.V.stage11State and self.core:stage11State(self.stage11Out) or nil

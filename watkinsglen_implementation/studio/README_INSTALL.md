@@ -1,5 +1,7 @@
 # Install the Watkins Glen physics patch
 
+**Após instalar V5, aplique a [correção road course V6](../roadcourse/README.md).** V5 mantinha a especificação speedway da bancada; trocar o setup não corrigia essa seleção.
+
 This is the **fresh V5 installer** for the supplied Stage 13 car package. It retains the main server, car assets, cockpit, entry and cameras; the existing original client receives the requested track telemetry HUD. There are 40 source targets, including the recovered world, original stock setups and throttle/clutch processing. For an already installed V4 place, use the smaller [handling update](../handling/README.md), which keeps the V4 backup intact.
 
 1. Open the existing place in Roblox Studio and stop Play/Run. Keep a saved copy of the place.
@@ -37,7 +39,9 @@ Rollback verifies that affected sources have not acquired unknown edits, restore
 
 ## Build and verify the installer
 
-From the repository root:
+The following V5 rebuild commands require the historical source tree at commit `3dced7f`. On the current V6 tree use `python3 tools/build_watkinsglen_roadcourse.py` and `python3 tools/verify_watkinsglen_roadcourse.py`; the V5 ZIPs remain the shipped historical binaries.
+
+From that historical repository root:
 
 ```sh
 python tools/build_watkinsglen.py

@@ -44,6 +44,7 @@ return function(V, Setup, Build, genericJIT)
 	end
 	-- the shipped reset image is the original build of the Cup default garage setup (00559950)
 	local IMAGE_FOOTPRINT = Build.saveFootprint(PRISTINE)
+	local IMAGE_STRUCTURE = "natural"
 	-- default garage setup before (00559950) and after (c055c0 of the image, items derived by 00559820)
 	-- the application; both rebuild to the shipped image (00559820 recomputes the derived items)
 	local DEFAULT = Setup.cupGarageDefault()
@@ -56,7 +57,10 @@ return function(V, Setup, Build, genericJIT)
 	V.Setup = Setup
 	V.Build = Build
 	-- Watkins Glen port: a loaded track changes the reset image (NR2003CupTrack): the shipped-image footprint follows it
-	function V._garageRefreshImage() IMAGE_FOOTPRINT = Build.saveFootprint(PRISTINE) end
+	function V._garageRefreshImage()
+		IMAGE_FOOTPRINT = Build.saveFootprint(PRISTINE)
+		IMAGE_STRUCTURE = active == "generic" and "generic" or "natural"
+	end
 	function V._garageStructure() return active == "generic" and "generic" or "natural" end
 	-- further callback sets (Watkins Glen port: the car placed on the track) and their selection by name
 	function V._garageAddCode(name, modules) CODE[name] = V._jitLoad(modules) end
@@ -88,9 +92,9 @@ return function(V, Setup, Build, genericJIT)
 		local t0 = os.clock()
 		if isDefault(items) and not opts.rebuild and not opts.structure then
 			Build.loadFootprint(PRISTINE, IMAGE_FOOTPRINT)
-			selectCode("natural")
-			active = "image"
-			lastReport = {ok = true, structure = "image", violations = 0, imposed = 0, seconds = os.clock() - t0}
+			selectCode(IMAGE_STRUCTURE)
+			active = IMAGE_STRUCTURE == "natural" and "image" or "generic"
+			lastReport = {ok = true, structure = active, violations = 0, imposed = 0, seconds = os.clock() - t0}
 			V.reset()
 			if V._bindDriverCells then V._bindDriverCells() end
 			for i = 0, 183 do current[i] = r32(ACTIVE + 4 * i) end

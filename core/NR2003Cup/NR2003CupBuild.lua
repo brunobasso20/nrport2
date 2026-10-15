@@ -36,6 +36,7 @@ local BUILD_STACK_TOP = 0xf7c000
 
 -- V: core (NR2003CupCore) ; codeParts: NR2003CupBuildCode1..n ; dataParts: NR2003CupBuildData1..n
 return function(V, codeParts, dataParts)
+	local REF = table.clone(REF) -- callback layouts belong to this vehicle instance
 	assert(#codeParts == CODE_PARTS, "NR2003CupBuildCode: expected " .. CODE_PARTS .. " parts, found " .. #codeParts)
 	assert(#dataParts == DATA_PARTS, "NR2003CupBuildData: expected " .. DATA_PARTS .. " parts, found " .. #dataParts)
 	local M, BASE = V.memory(), V.base
