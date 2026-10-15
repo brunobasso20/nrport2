@@ -1,4 +1,9 @@
-Stage 14 — local NR2003 simulation for the supplied Watkins Glen V6
+Stage 14 Fix 1 — checkpoint transport repair for Watkins Glen V6
+
+This supersedes the first Stage 14 package. The original package lost native
+zero-indexed contact/register tables across RemoteEvents, causing the reported
+`NR2003CupTrack: attempt to index nil with 'fx'` errors. Fix 1 transmits a flat
+table graph using dense arrays and preserves native numeric key types.
 
 The driver runs the recovered V6 vehicle solver locally. Steering, throttle,
 brake, clutch and shift commands enter the next original device-processing
@@ -10,12 +15,15 @@ necessary, and replicates its accepted motion to other clients.
 **Install into your existing V6 place**
 
 1. Stop Play/Run and save any open script editors.
-2. Extract this ZIP. Insert `NR2003_Stage14_Install.rbxmx` into Workspace using
-   Insert from File. Its Model name is `NR2003_Stage14_Install`.
-3. Run this exact command in Studio's Command Bar:
+2. Extract this ZIP. Insert `NR2003_Stage14_Fix1_Install.rbxmx` into Workspace
+   using Insert from File. Its Model name is `NR2003_Stage14_Fix1`.
+3. Run this in Studio's Command Bar. It first restores V6 if an earlier Stage 14
+   is installed; if you already rolled back, it goes directly to installation:
 
 ```lua
-require(workspace.NR2003_Stage14_Install.Apply)()
+local backup=game.ServerStorage:FindFirstChild("NR2003Backup_Stage14")
+if backup then require(backup.Rollback)() end
+require(workspace.NR2003_Stage14_Fix1.Apply)()
 ```
 
 Wait for `Stage 14 installed`, then start Play. Save the place after reviewing
@@ -51,9 +59,11 @@ rollback is self-contained in ServerStorage.
 
 **Validation and limits**
 
-717 checks passed across deterministic/network tests, the actual V6 adapter,
-client/server orchestration, installer transactions, and Stage 10/13
-regressions. Roblox APIs and transport were mocked where required. There was
+The reported errors were reproduced with the original solver and a transport
+boundary double. Fix 1 passes 688 checks across native checkpoint replay,
+the V6 adapter/spawn path, networking/fault handling, reversible installation,
+and the Stage 13 regression. The unchanged Stage 10 suite retains its earlier
+61-check result. Roblox APIs and transport were modeled where required. There was
 no connected Roblox Studio session, so actual Studio multiplayer, renderer,
 input-to-photon latency and hardware performance remain unverified.
 
@@ -65,7 +75,7 @@ Read `STAGE14_REPORT.md` for measurements, state ownership, checkpoint coverage,
 network policy, the exact test scope and inherited NR2003 numerical differences.
 `validation/` contains the raw logs. `source/` is the reconstructed runtime and
 headless test snapshot for review; the installer performs the selective Studio
-update described above. No subagents were used.
+update described above. See `STAGE14_FIX1.md` for the fix and Studio checks.
 
 **Run the supplied headless checks**
 
@@ -73,6 +83,7 @@ From `source/`, with Luau 0.741 available:
 
 ```sh
 luau -O2 --codegen stage14_implementation/tests/run.luau
+luau -O2 --codegen stage14_implementation/tests/remote_checkpoint.luau
 luau -O2 --codegen stage14_implementation/tests/adapter_integration.luau
 luau -O2 stage14_implementation/tests/runtime_mock.luau
 luau -O2 stage14_implementation/tests/installer_mock.luau

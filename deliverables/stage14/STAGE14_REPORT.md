@@ -1,10 +1,28 @@
-Stage 14 implementation and validation report
+Stage 14 Fix 1 implementation and validation report
+
+Fix 1 supersedes the original Stage 14 delivery after the user's Studio report.
+Mixed numeric tables in checkpoint metadata (including track contacts indexed
+0..3, register zero and sparse x87 slots) were sent directly through RemoteEvents.
+The headless transport previously passed these tables by reference, missing the
+engine's table serialization boundary. This caused the exact reported nil `fx`
+reads at NR2003CupTrack lines 346 and 268. Fix 1 carries keys as scalar values in
+dense entry arrays, with a flat node list to bound nesting. No missing contacts
+are invented and no solver formulas are changed. The native regression now
+reproduces both old failures and verifies full-memory replay after wire transfer.
+
+Fatal local faults discard the failed warm instance and stop automatic restart
+storms. Deferred starts and corrections share the protected receive path. Server
+vehicle faults latch until reset, initialization failures release registered
+resources, and snapshots are sent only after clients register their listeners.
+The V6 spawn host remains unchanged; its server car/avatar placement and cleanup
+are now exercised with the native adapter and Roblox API doubles. Actual Studio
+spawn correctness remains to be checked in the user's place.
 
 Implemented against the supplied V4 → V5 → RoadCourse V6 runtime sources,
 including chassis type 4, tire profile 8, original Watkins Glen setups and
 contacts, and 0.28 metres/stud. The supplied attachments were used as project
 specification and implementation evidence. Older stage instructions were not
-used to restart earlier recovery or seat-entry work. All work used one agent.
+used to restart earlier recovery or seat-entry work.
 
 **Ownership and flow**
 
@@ -141,14 +159,14 @@ Studio session or GPU/display/input hardware capture.
 
 | Measurement | Result |
 | --- | ---: |
-| Five-run median recovered V6 solver time | 0.995357 ms/tick |
-| Solver cost at 288 ticks/s, one vehicle | 28.67% of one CPU core |
-| Five measured solver runs | 0.962332–1.034266 ms/tick |
-| Cold core/track/setup/session initialization | 3.118 s |
+| Five-run median recovered V6 solver time | 1.040906 ms/tick |
+| Solver cost at 288 ticks/s, one vehicle | 29.98% of one CPU core |
+| Five measured solver runs | 0.997781–1.132673 ms/tick |
+| Cold core/track/setup/session initialization | 3.552 s |
 | Full core memory buffer | 11,956,224 bytes |
 | Initial sparse checkpoint data | 1,688,576 bytes / 1,649 pages |
 | Representative correction/history delta | 100,352 bytes / 98 pages |
-| Median sparse packing / restoration allocation | 8.519 / 8.712 ms |
+| Median sparse packing / restoration allocation | 8.842 / 7.000 ms |
 
 Checkpoint sizes exclude metadata, transport framing and Roblox compression.
 These results do not establish Studio bandwidth or latency. An active instance
@@ -159,7 +177,7 @@ unpack and replay costs. Raw profiling logs include the slower measurements
 observed while other checks ran concurrently.
 
 A shadow solver therefore has a material cost. Two active validators would
-consume approximately 57% of one measured core before networking, presentation,
+consume approximately 60% of one measured core before networking, presentation,
 checkpoint work and idle vehicles. Three would exceed the 12 ms/frame shared
 verification budget at 60 callbacks/s on this host. Actual Roblox server/client
 performance and supported grid size must be profiled in Studio. No large-grid
@@ -185,12 +203,13 @@ from the ongoing local simulation dependency chain.
 | Suite | Passed | Scope |
 | --- | ---: | --- |
 | Stage 14 deterministic/network/checkpoint tests | 575 | Real V6 core plus isolated transport tests |
-| Actual V6 adapter integration | 8 | Real adapter/core; Roblox API doubles |
-| Actual client/server orchestration | 14 | Real networking modules; toy solver and transport doubles |
-| Actual reversible installer | 19 | Studio DataModel/editor doubles |
-| Existing Stage 10 regression | 61 | Original garage/setup vectors |
+| Native checkpoint across modeled RemoteEvent boundary | 11 | Reproduces both reported errors, exact native replay and key types |
+| Actual V6 adapter integration | 13 | Real adapter/core, wire checkpoint and server spawn; Roblox API doubles |
+| Actual client/server orchestration | 25 | Real networking modules; toy solver and wire/fault doubles |
+| Actual reversible installer | 24 | Studio doubles, including rollback from the original shipped installer |
+| Existing Stage 10 regression | 61 | Retained prior run; garage/setup code unchanged in Fix 1 |
 | Existing Stage 13 regression | 40 | Original FFB vectors/traces |
-| Total | 717 | 0 failures |
+| Total | 749 | 688 rerun for Fix 1, 61 retained; 0 failures |
 
 The deterministic suite compares 576 real V6 ticks using the same indexed
 commands in offline, predicted and validation runs, with exact equality of the

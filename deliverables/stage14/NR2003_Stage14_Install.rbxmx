@@ -1,4 +1,4 @@
-<roblox version="4"><Item class="Model" referent="RBX26"><Properties><string name="Name">NR2003_Stage14_Install</string></Properties><Item class="ModuleScript" referent="RBX21"><Properties><string name="Name">Apply</string><ProtectedString name="Source">return function()
+<roblox version="4"><Item class="Model" referent="RBX26"><Properties><string name="Name">NR2003_Stage14_Fix1</string></Properties><Item class="ModuleScript" referent="RBX21"><Properties><string name="Name">Apply</string><ProtectedString name="Source">return function()
     local install=script.Parent;local H=require(install.Support);local manifest=require(install.Manifest)
     return H.lock(function()
         local pkg=game:GetService("ReplicatedStorage").NR2003Lab
@@ -6,6 +6,8 @@
         local oldBackup=game:GetService("ServerStorage"):FindFirstChild(H.BACKUP)
         if oldBackup then
             assert(oldBackup:GetAttribute("Complete")==true and not oldBackup:GetAttribute("RolledBack"),"Retained incomplete backup; run its Rollback before reinstalling")
+            assert(oldBackup:GetAttribute("Bundle")==manifest.bundle,
+                "Roll back the preceding Stage 14 build first: require(game.ServerStorage.NR2003Backup_Stage14.Rollback)()")
             for _,r in ipairs(H.records(oldBackup,manifest)) do
                 assert(r.object and H.normal(H.source(r.object))==H.normal(r.new),"Stage 14 live source changed: "..r.item.key)
             end
@@ -162,7 +164,7 @@ function M.restore(backup,manifest,archive)
     end
 end
 return M
-</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX23"><Properties><string name="Name">Manifest</string><ProtectedString name="Source">return {["version"]=14,["bundle"]="stage14-a6d244bacac32a87",["items"]={{["key"]="CarModel.NR2003CarModelClient",["class"]="ModuleScript",["old"]={["bytes"]=13750,["fnv32"]=1621377553},["new"]={["bytes"]=13817,["fnv32"]=1432679600},["file"]="nr2003carmodel_implementation/roblox/CarModel/NR2003CarModelClient.lua"},{["key"]="Client.NR2003Client",["class"]="LocalScript",["old"]={["bytes"]=21549,["fnv32"]=2119123907},["new"]={["bytes"]=21832,["fnv32"]=1492540207},["file"]="nr2003carmodel_implementation/roblox/Bench/Client.client.lua"},{["key"]="Core.NR2003Cup.NR2003CupAero",["class"]="ModuleScript",["old"]={["bytes"]=24048,["fnv32"]=2996434456},["new"]={["bytes"]=24285,["fnv32"]=3106855419},["file"]="core/NR2003Cup/NR2003CupAero.lua"},{["key"]="Core.NR2003Cup.NR2003CupCore",["class"]="ModuleScript",["old"]={["bytes"]=172961,["fnv32"]=3970145072},["new"]={["bytes"]=174162,["fnv32"]=715788098},["file"]="core/NR2003Cup/NR2003CupCore.lua"},{["key"]="Core.NR2003Cup.NR2003CupFFB",["class"]="ModuleScript",["old"]={["bytes"]=30938,["fnv32"]=3259516721},["new"]={["bytes"]=31245,["fnv32"]=3491798103},["file"]="core/NR2003Cup/NR2003CupFFB.lua"},{["key"]="Core.NR2003Cup.NR2003CupFrame",["class"]="ModuleScript",["old"]={["bytes"]=19894,["fnv32"]=3334463608},["new"]={["bytes"]=20193,["fnv32"]=2816773156},["file"]="core/NR2003Cup/NR2003CupFrame.lua"},{["key"]="Core.NR2003Cup.NR2003CupGarage",["class"]="ModuleScript",["old"]={["bytes"]=9074,["fnv32"]=4186699810},["new"]={["bytes"]=9483,["fnv32"]=2360502931},["file"]="core/NR2003Cup/NR2003CupGarage.lua"},{["key"]="Core.NR2003Cup.NR2003CupSteering",["class"]="ModuleScript",["old"]={["bytes"]=21927,["fnv32"]=1014127710},["new"]={["bytes"]=22469,["fnv32"]=3811679489},["file"]="core/NR2003Cup/NR2003CupSteering.lua"},{["key"]="Core.NR2003Cup.NR2003CupTrack",["class"]="ModuleScript",["old"]={["bytes"]=18353,["fnv32"]=1248282231},["new"]={["bytes"]=18720,["fnv32"]=3874394234},["file"]="watkinsglen_implementation/core/NR2003Cup/NR2003CupTrack.lua"},{["key"]="Roblox.CupChassisAdapter",["class"]="ModuleScript",["old"]={["bytes"]=39839,["fnv32"]=1331715496},["new"]={["bytes"]=40480,["fnv32"]=3201489678},["file"]="roblox/CupChassisAdapter.lua"},{["key"]="Roblox.RenderPresentation",["class"]="ModuleScript",["old"]={["bytes"]=3643,["fnv32"]=3783584621},["new"]={["bytes"]=3892,["fnv32"]=1231954362},["file"]="roblox/RenderPresentation.lua"},{["key"]="Roblox.PredictionConfig",["class"]="ModuleScript",["new"]={["bytes"]=567,["fnv32"]=4143230486},["file"]="roblox/PredictionConfig.lua"},{["key"]="Roblox.PredictionCheckpoint",["class"]="ModuleScript",["new"]={["bytes"]=1469,["fnv32"]=3904316224},["file"]="roblox/PredictionCheckpoint.lua"},{["key"]="Roblox.PredictionProtocol",["class"]="ModuleScript",["new"]={["bytes"]=2194,["fnv32"]=36093748},["file"]="roblox/PredictionProtocol.lua"},{["key"]="Roblox.PredictionSession",["class"]="ModuleScript",["new"]={["bytes"]=3662,["fnv32"]=2874483152},["file"]="roblox/PredictionSession.lua"},{["key"]="Roblox.LocalPrediction",["class"]="ModuleScript",["new"]={["bytes"]=4553,["fnv32"]=1599627741},["file"]="roblox/LocalPrediction.lua"},{["key"]="Roblox.PredictionSimulation",["class"]="ModuleScript",["new"]={["bytes"]=1700,["fnv32"]=1342521464},["file"]="roblox/PredictionSimulation.lua"},{["key"]="Roblox.PredictionServer",["class"]="ModuleScript",["new"]={["bytes"]=11308,["fnv32"]=2532350664},["file"]="roblox/PredictionServer.lua"},{["key"]="Roblox.PredictionClient",["class"]="ModuleScript",["new"]={["bytes"]=11720,["fnv32"]=391965313},["file"]="roblox/PredictionClient.lua"},{["key"]="Roblox.Stage14SelfTest",["class"]="ModuleScript",["new"]={["bytes"]=1214,["fnv32"]=1931223880},["file"]="roblox/Stage14SelfTest.lua"},{["key"]="Server.NR2003Server",["class"]="Script",["server"]=true,["file"]="roblox/Server.server.lua"}},["dependencies"]={{["class"]="ModuleScript",["key"]="Core.CupTune",["accepted"]={{["bytes"]=5569,["sha256"]="c1db7fbad097e1684f1d2b8d7c343b82e5869073d3edc53a51bfa227bbb0de7b",["fnv32"]=669310955},{["bytes"]=5568,["sha256"]="e7b2330c80c1ba5cf8139b378f75dcc507ff3051f530a7e283d358b7ae3394a2",["fnv32"]=222428995},{["bytes"]=5567,["sha256"]="20b6ee7f72a24ab967b49a3644b0537f10b5fc5e528a3ed0b18e79073465b1ff",["fnv32"]=1522935590},{["bytes"]=5566,["sha256"]="d5c85ea5c8e1f6c75a8034e4d624102df4a31f47b803caa568b802f3bcfae425",["fnv32"]=1367854088}}},{["class"]="ModuleScript",["key"]="Core.MathUtil",["accepted"]={{["bytes"]=704,["sha256"]="e7d0252edf90e723289d07493dbc7d8bcf5f6e986acffa7335735137fe0cf14f",["fnv32"]=4088009230}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupBuildCode1",["accepted"]={{["bytes"]=161018,["sha256"]="6a1af29b82f5588865e12c989c3d0bf71ddce9da1f8e0f1fb6acd7c09e867fda",["fnv32"]=763173257}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupBuildCode2",["accepted"]={{["bytes"]=164236,["sha256"]="d0950b2801ee93f4c1c5f5aa01ae24b917f16a2a1af72c6a6e7ef52204f3f3ab",["fnv32"]=991861595}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupBuildCode3",["accepted"]={{["bytes"]=164713,["sha256"]="db0b4336e2fb655962cba2163f0f5fa414d9241cca26167c6e88cd0612fd62c0",["fnv32"]=1230036091}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupBuildCode4",["accepted"]={{["bytes"]=164303,["sha256"]="8f1f8b3feb43840233f7a11b7a1bb32d329516ffc03715d584d94849dc521f58",["fnv32"]=3173788398}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupBuildCode5",["accepted"]={{["bytes"]=167501,["sha256"]="1a5f7d296678f4dcdfbbc403ee7495aca9e3e3e928ee179e97e75411810d309f",["fnv32"]=1759276609}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupBuildCode6",["accepted"]={{["bytes"]=152476,["sha256"]="30655be1cceecd084c566d37d7f193de4174d3b217940be037bc68da4936e069",["fnv32"]=2112296471}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupBuildData1",["accepted"]={{["bytes"]=169926,["sha256"]="43f65caf794d031f6041d59d32d32ad4863d7d2e2669b00e402db9aae1db1eb0",["fnv32"]=218954011}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupBuildData2",["accepted"]={{["bytes"]=19080,["sha256"]="87a4401b9ebaee1a2176752298fa4a004acf81e9198531d124a6afcfc1ec1275",["fnv32"]=16550323}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupFrameData1",["accepted"]={{["bytes"]=44797,["sha256"]="30e7f63074f5083d8ea7a8373a1a2eaf0f4afe434326cd3b8d85c46132d816f5",["fnv32"]=1627984694}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupImage1",["accepted"]={{["bytes"]=132187,["sha256"]="34d956905f32a066f9cc1616048058409990e1253a2987d63d8bf775484c3ff2",["fnv32"]=884386363}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupImage2",["accepted"]={{["bytes"]=86421,["sha256"]="6c394c5798c9604cf043db02c245061d9d9317999b3a0fc6f302318ee01a9490",["fnv32"]=2967396158}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupJIT1",["accepted"]={{["bytes"]=90223,["sha256"]="2379d119dbb2705de6feeb2e68bc595baf9f93459a57224bdc97eb1cd9035172",["fnv32"]=3789447392}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupJIT2",["accepted"]={{["bytes"]=140093,["sha256"]="339b2ef1919e1bc09d48fc3a49a672a79993821d383c7fe8225a7125cf65bfef",["fnv32"]=1688988121}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupJIT3",["accepted"]={{["bytes"]=74706,["sha256"]="5e669e94e3916d30d3caff4d38f536a5a42695f709f8c873a375118d4411c02c",["fnv32"]=1291548965}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupJIT4",["accepted"]={{["bytes"]=125674,["sha256"]="84ce0870301b49f08015366c62d2547bec60e749f999b53d90cd99a051f8f8cd",["fnv32"]=2368369749}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupJITG1",["accepted"]={{["bytes"]=90759,["sha256"]="1e1d9832adec3698302e9250969c5c7d11ab9754da5867475b68e157a1117890",["fnv32"]=223982303}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupJITG2",["accepted"]={{["bytes"]=142333,["sha256"]="28d5ca904effcb3341de0b92bdc8c8a662d9066f5819935efee253b53708312e",["fnv32"]=735763358}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupJITG3",["accepted"]={{["bytes"]=74909,["sha256"]="6ba894262eae21b9dfbad1848d874cd1ca84be04adf2a448bc70b7f1adf0ab19",["fnv32"]=1321354163}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupJITG4",["accepted"]={{["bytes"]=126210,["sha256"]="7fe86ccb4a18e3f31d47f3097718a3b9652976c3cbe48159355a7879894ac96f",["fnv32"]=2746445935}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupSetup",["accepted"]={{["bytes"]=15595,["sha256"]="f64c333bde054302b6adf6e42a06ca94b8bb6049d27140058d11666d76886970",["fnv32"]=1793818626}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupSetupData",["accepted"]={{["bytes"]=46531,["sha256"]="7ce9c697975881d7c112d549f389669ae0a0c76b5570c5746acc8b38c30075a2",["fnv32"]=1948031370}}},{["class"]="ModuleScript",["key"]="Core.NR2003FixedStep",["accepted"]={{["bytes"]=1517,["sha256"]="296a12735aad21988a928757387efcfbe45e00ed906ca8809a94517573760093",["fnv32"]=1176039564}}},{["class"]="ModuleScript",["key"]="Core.TestTune",["accepted"]={{["bytes"]=3619,["sha256"]="59d62066fe9a0ca48118c9e72572a7d2364550bc66d296b3316912eae3315420",["fnv32"]=2932223513},{["bytes"]=3669,["sha256"]="53c0ab26c8072f3c3fcbc233cbb6804ee10cfacb5a906f2b4677f770f2f8b22c",["fnv32"]=3096397366}}},{["class"]="ModuleScript",["key"]="Roblox.ModeConfig",["accepted"]={{["bytes"]=156,["sha256"]="440bd2ca07f902ad5731427164ac15e2a27eab5f9389a9df6dede93ab71af8a2",["fnv32"]=1433281705}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupDriver",["accepted"]={{["bytes"]=28922,["sha256"]="4b9eb0736a92e080231face93f34cad88c59210c4ffe3d04552c342cdc19f5f4",["fnv32"]=2406267304}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupFrameCode1",["accepted"]={{["bytes"]=163947,["sha256"]="884a0dec6224331e86b9eb2fa1b796aac981c53166fb6803ef43049460711dad",["fnv32"]=438766272}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupFrameCode2",["accepted"]={{["bytes"]=167426,["sha256"]="a3dd9e20510ab5f31faade6aa2e242113db248fef76c4d2ea5fa7561e426a2fd",["fnv32"]=4251665167}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupFrameCode3",["accepted"]={{["bytes"]=168447,["sha256"]="f2cae0209bf44fc49df78fd542f00b48c1ad480bf65b428c394efb4020df9c06",["fnv32"]=3277936712}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupFrameCode4",["accepted"]={{["bytes"]=135177,["sha256"]="35faaff592ccf98307c768cee54be163b4f3b875d537f7eea38fb6e6c9704ef6",["fnv32"]=1151482468}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupJITP1",["accepted"]={{["bytes"]=90509,["sha256"]="45652bf76befe17e31dae4b2cd215dc0a1448f6b6ed04429aaf6a2aeb9143a9f",["fnv32"]=1489823990}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupJITP2",["accepted"]={{["bytes"]=140379,["sha256"]="e38147f2aca5d5a0d94ffd14f6610cb652aaec6c4dda771e1aee5a4075dd30db",["fnv32"]=3921034995}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupJITP3",["accepted"]={{["bytes"]=74992,["sha256"]="5d54a18aaec45ad38c60cf71396c324b32a86f840fe8e4d4bd62901c4807d465",["fnv32"]=1729850399}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupJITP4",["accepted"]={{["bytes"]=125960,["sha256"]="12aeb9d8fd24480392624eadae0f3802f5c63b12f5bd3d09f5789aad5a7f239a",["fnv32"]=216731307}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupTrackCode1",["accepted"]={{["bytes"]=163726,["sha256"]="9233aa95b87b8e873a46bf9617010c2a66f73fb7b941a14f116789ebea7b6055",["fnv32"]=2001730675}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupTrackCode2",["accepted"]={{["bytes"]=167653,["sha256"]="352d54acd5acd29ae8202b657e816e5e8594b777879e1cd27b3320e2b766566a",["fnv32"]=3245464624}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupTrackCode3",["accepted"]={{["bytes"]=164872,["sha256"]="5a0fbbf16d5046a7c0ecaf3d2e19d61d6061f6338c4250b43f4bb545035fa7a5",["fnv32"]=102725258}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupTrackCode4",["accepted"]={{["bytes"]=168283,["sha256"]="4447df5220e9600176b1e43de93a0feea7659433ef3ac162628e000ba4e0d064",["fnv32"]=3047876970}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupTrackCode5",["accepted"]={{["bytes"]=168327,["sha256"]="2954b3781e17d52d7bab09fafc5e6985035f39c6d17746751496187745efdfa6",["fnv32"]=3477791480}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupTrackCode6",["accepted"]={{["bytes"]=14790,["sha256"]="45c68d31046a9bdbcb6dbb879990127065321dc0dbfaac4d0a1df7db6c4017b8",["fnv32"]=2308959165}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupTrackData1",["accepted"]={{["bytes"]=169109,["sha256"]="d79b8809c522d39a78d52f26dbb0920adc917b75eed2b34344d4f4925811a600",["fnv32"]=3771327525}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupTrackData2",["accepted"]={{["bytes"]=170392,["sha256"]="b66e0d9fc9dafbd93b30d6a98accac91defce993e769c517d1a946bec1a5bada",["fnv32"]=3371847051}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupTrackData3",["accepted"]={{["bytes"]=170387,["sha256"]="fb400cb8730f4f6e8f2b13643e81f57fa6edfa7c078da71cee7888d27da48b6c",["fnv32"]=3386213733}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupTrackData4",["accepted"]={{["bytes"]=170389,["sha256"]="4a707a24bb0ed4f9e9af08090654840c6d6c209d554929a32c13d026e0c37647",["fnv32"]=1238440561}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupTrackData5",["accepted"]={{["bytes"]=169858,["sha256"]="51352236b7dfda4716004b17edcd739a12afe8209f5e14308d2b6d4e0436f125",["fnv32"]=3254205144}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupTrackData6",["accepted"]={{["bytes"]=168915,["sha256"]="a48dc4262ffbe4e92515cd5c88680b0fadd26c3af3a8679e2338e1cb9c7ba07f",["fnv32"]=1553541179}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupTrackData7",["accepted"]={{["bytes"]=169934,["sha256"]="604010620a5f7ad7e292638fe4cd82f6f18d7ae59d19231443989084f76cfa63",["fnv32"]=4176297414}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupTrackData8",["accepted"]={{["bytes"]=166414,["sha256"]="6476c114ebd1d7993685b725346e0523bf331bdd8a69d4a334f29d1d2090bcf2",["fnv32"]=3148663224}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupTrackData9",["accepted"]={{["bytes"]=115727,["sha256"]="5a89096169ec83cddfe87ab77f89301ab8898de8899be476298fb4ee68bbed33",["fnv32"]=968429767}}},{["class"]="ModuleScript",["key"]="Roblox.NR2003WatkinsGlen",["accepted"]={{["bytes"]=7805,["sha256"]="541b71e34fe5cb4f2a1d11a21d5f8b3163ea70183beca7d73aba476836fb2cc7",["fnv32"]=3840189536}}},{["class"]="ModuleScript",["key"]="Roblox.NR2003WatkinsGlenSetup",["accepted"]={{["bytes"]=5349,["sha256"]="5faaccd7628518a2923c331fc709e1c29969f7b1cabdcdcdb1dc99074afab2c2",["fnv32"]=734809296}}},{["class"]="ModuleScript",["key"]="Roblox.RenderConfig",["accepted"]={{["bytes"]=865,["sha256"]="1522e21a8175e0c1a29aa222e8e7cadbabb71f72909979ffd670e69b5116cb7a",["fnv32"]=3549820158}}},{["key"]="Core.NR2003Cup.NR2003CupBuild",["class"]="ModuleScript",["accepted"]={{["bytes"]=12202,["sha256"]="bb5852b5bb9f60063b62cba4e5e565e14d119217c3e13614e442897eba4f0259",["fnv32"]=4039559273}}},{["key"]="Core.NR2003Cup.NR2003CupJITPG1",["class"]="ModuleScript",["accepted"]={{["bytes"]=90638,["sha256"]="8f0231afee929c149af1ae481c99095d6bede8a102dad0d7b07959bad52eb276",["fnv32"]=1499156389}}},{["key"]="Core.NR2003Cup.NR2003CupJITPG2",["class"]="ModuleScript",["accepted"]={{["bytes"]=142212,["sha256"]="f68d2dd5291ba3799af048dcc95f47eeb107e13dc428e224b40088c25f4831b6",["fnv32"]=980421067}}},{["key"]="Core.NR2003Cup.NR2003CupJITPG3",["class"]="ModuleScript",["accepted"]={{["bytes"]=74788,["sha256"]="32362343837ca2a8e23b1a5614a566dc5e137817da41f04d7f8438d0566382eb",["fnv32"]=1140034572}}},{["key"]="Core.NR2003Cup.NR2003CupJITPG4",["class"]="ModuleScript",["accepted"]={{["bytes"]=126089,["sha256"]="5e72896222e0ed6bbf0cbc757aeadd53190a0fa96c5cfb2f10fc3c4e715053c1",["fnv32"]=1636573426}}},{["key"]="Core.NR2003Cup.NR2003CupJITWG1",["class"]="ModuleScript",["accepted"]={{["bytes"]=90639,["sha256"]="e8fec7e787bfda5754e2e5f68b1a47247b1aa7a74ed1249460da3d2d0ca3af6f",["fnv32"]=117086621}}},{["key"]="Core.NR2003Cup.NR2003CupJITWG2",["class"]="ModuleScript",["accepted"]={{["bytes"]=142213,["sha256"]="c48db7eaadf8be02c237a897813d1b8ea54dfb2fa7b44c6eed6a8abb801a91d5",["fnv32"]=3019099107}}},{["key"]="Core.NR2003Cup.NR2003CupJITWG3",["class"]="ModuleScript",["accepted"]={{["bytes"]=74789,["sha256"]="26c4de6b67bbb50d21e62fbea37f502a67cb427855cf60cec476de7c905410a1",["fnv32"]=4215266900}}},{["key"]="Core.NR2003Cup.NR2003CupJITWG4",["class"]="ModuleScript",["accepted"]={{["bytes"]=126090,["sha256"]="53c157260edc28467ad06079d72ec216ab0c58bd6c7c9c83dc018c7e3a4e2b5e",["fnv32"]=212818250}}},{["key"]="Core.NR2003Cup.NR2003CupTrackBuild",["class"]="ModuleScript",["accepted"]={{["bytes"]=143285,["sha256"]="1e06b2c88bdc078f7f3da02b0cab8401772dd67207e995196480e9c2faad21ef",["fnv32"]=1546747036}}},{["key"]="Core.NR2003Cup.NR2003CupWatkinsGlenSpec",["class"]="ModuleScript",["accepted"]={{["bytes"]=71885,["sha256"]="8b2e4e1ceace473f229f6f326f127d2475dce23c77812217d4cd4fb460bd1042",["fnv32"]=3868429419}}},{["key"]="Core.NR2003CupVehicle",["class"]="ModuleScript",["accepted"]={{["bytes"]=11559,["sha256"]="669c73328e6bb9ace39da18991a8a3877ca62540fc26dc68a0ce7e210fdd97cc",["fnv32"]=23420924}}},{["key"]="CarModel.NR2003DrawState",["class"]="ModuleScript",["accepted"]={{["bytes"]=9267,["fnv32"]=66146001}}},{["key"]="CarModel.NR2003Scale",["class"]="ModuleScript",["accepted"]={{["bytes"]=3914,["fnv32"]=3623640481}}}},["serverPrefix"]="-- Stage 14: exactly one controller path runs for NR2003_CUP.\ndo\n    local p=game:GetService(\"ReplicatedStorage\"):WaitForChild(\"NR2003Lab\")\n    if require(p.Roblox.ModeConfig).mode==\"NR2003_CUP\" then\n        require(p.Roblox.PredictionServer).start(script)\n        return\n    end\nend\n"}
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX23"><Properties><string name="Name">Manifest</string><ProtectedString name="Source">return {["version"]=14,["bundle"]="stage14-f839758896a632b5",["items"]={{["key"]="CarModel.NR2003CarModelClient",["class"]="ModuleScript",["old"]={["bytes"]=13750,["fnv32"]=1621377553},["new"]={["bytes"]=13817,["fnv32"]=1432679600},["file"]="nr2003carmodel_implementation/roblox/CarModel/NR2003CarModelClient.lua"},{["key"]="Client.NR2003Client",["class"]="LocalScript",["old"]={["bytes"]=21549,["fnv32"]=2119123907},["new"]={["bytes"]=21832,["fnv32"]=1492540207},["file"]="nr2003carmodel_implementation/roblox/Bench/Client.client.lua"},{["key"]="Core.NR2003Cup.NR2003CupAero",["class"]="ModuleScript",["old"]={["bytes"]=24048,["fnv32"]=2996434456},["new"]={["bytes"]=24285,["fnv32"]=3106855419},["file"]="core/NR2003Cup/NR2003CupAero.lua"},{["key"]="Core.NR2003Cup.NR2003CupCore",["class"]="ModuleScript",["old"]={["bytes"]=172961,["fnv32"]=3970145072},["new"]={["bytes"]=174162,["fnv32"]=715788098},["file"]="core/NR2003Cup/NR2003CupCore.lua"},{["key"]="Core.NR2003Cup.NR2003CupFFB",["class"]="ModuleScript",["old"]={["bytes"]=30938,["fnv32"]=3259516721},["new"]={["bytes"]=31245,["fnv32"]=3491798103},["file"]="core/NR2003Cup/NR2003CupFFB.lua"},{["key"]="Core.NR2003Cup.NR2003CupFrame",["class"]="ModuleScript",["old"]={["bytes"]=19894,["fnv32"]=3334463608},["new"]={["bytes"]=20193,["fnv32"]=2816773156},["file"]="core/NR2003Cup/NR2003CupFrame.lua"},{["key"]="Core.NR2003Cup.NR2003CupGarage",["class"]="ModuleScript",["old"]={["bytes"]=9074,["fnv32"]=4186699810},["new"]={["bytes"]=9483,["fnv32"]=2360502931},["file"]="core/NR2003Cup/NR2003CupGarage.lua"},{["key"]="Core.NR2003Cup.NR2003CupSteering",["class"]="ModuleScript",["old"]={["bytes"]=21927,["fnv32"]=1014127710},["new"]={["bytes"]=22469,["fnv32"]=3811679489},["file"]="core/NR2003Cup/NR2003CupSteering.lua"},{["key"]="Core.NR2003Cup.NR2003CupTrack",["class"]="ModuleScript",["old"]={["bytes"]=18353,["fnv32"]=1248282231},["new"]={["bytes"]=18720,["fnv32"]=3874394234},["file"]="watkinsglen_implementation/core/NR2003Cup/NR2003CupTrack.lua"},{["key"]="Roblox.CupChassisAdapter",["class"]="ModuleScript",["old"]={["bytes"]=39839,["fnv32"]=1331715496},["new"]={["bytes"]=40480,["fnv32"]=3201489678},["file"]="roblox/CupChassisAdapter.lua"},{["key"]="Roblox.RenderPresentation",["class"]="ModuleScript",["old"]={["bytes"]=3643,["fnv32"]=3783584621},["new"]={["bytes"]=3892,["fnv32"]=1231954362},["file"]="roblox/RenderPresentation.lua"},{["key"]="Roblox.PredictionConfig",["class"]="ModuleScript",["new"]={["bytes"]=567,["fnv32"]=4143230486},["file"]="roblox/PredictionConfig.lua"},{["key"]="Roblox.PredictionCheckpoint",["class"]="ModuleScript",["new"]={["bytes"]=3737,["fnv32"]=4221039373},["file"]="roblox/PredictionCheckpoint.lua"},{["key"]="Roblox.PredictionProtocol",["class"]="ModuleScript",["new"]={["bytes"]=2194,["fnv32"]=36093748},["file"]="roblox/PredictionProtocol.lua"},{["key"]="Roblox.PredictionSession",["class"]="ModuleScript",["new"]={["bytes"]=3662,["fnv32"]=2874483152},["file"]="roblox/PredictionSession.lua"},{["key"]="Roblox.LocalPrediction",["class"]="ModuleScript",["new"]={["bytes"]=4553,["fnv32"]=1599627741},["file"]="roblox/LocalPrediction.lua"},{["key"]="Roblox.PredictionSimulation",["class"]="ModuleScript",["new"]={["bytes"]=1700,["fnv32"]=1342521464},["file"]="roblox/PredictionSimulation.lua"},{["key"]="Roblox.PredictionServer",["class"]="ModuleScript",["new"]={["bytes"]=12132,["fnv32"]=2873754171},["file"]="roblox/PredictionServer.lua"},{["key"]="Roblox.PredictionClient",["class"]="ModuleScript",["new"]={["bytes"]=12153,["fnv32"]=3717572790},["file"]="roblox/PredictionClient.lua"},{["key"]="Roblox.Stage14SelfTest",["class"]="ModuleScript",["new"]={["bytes"]=2248,["fnv32"]=3238421556},["file"]="roblox/Stage14SelfTest.lua"},{["key"]="Server.NR2003Server",["class"]="Script",["server"]=true,["file"]="roblox/Server.server.lua"}},["dependencies"]={{["class"]="ModuleScript",["key"]="Core.CupTune",["accepted"]={{["bytes"]=5569,["sha256"]="c1db7fbad097e1684f1d2b8d7c343b82e5869073d3edc53a51bfa227bbb0de7b",["fnv32"]=669310955},{["bytes"]=5568,["sha256"]="e7b2330c80c1ba5cf8139b378f75dcc507ff3051f530a7e283d358b7ae3394a2",["fnv32"]=222428995},{["bytes"]=5567,["sha256"]="20b6ee7f72a24ab967b49a3644b0537f10b5fc5e528a3ed0b18e79073465b1ff",["fnv32"]=1522935590},{["bytes"]=5566,["sha256"]="d5c85ea5c8e1f6c75a8034e4d624102df4a31f47b803caa568b802f3bcfae425",["fnv32"]=1367854088}}},{["class"]="ModuleScript",["key"]="Core.MathUtil",["accepted"]={{["bytes"]=704,["sha256"]="e7d0252edf90e723289d07493dbc7d8bcf5f6e986acffa7335735137fe0cf14f",["fnv32"]=4088009230}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupBuildCode1",["accepted"]={{["bytes"]=161018,["sha256"]="6a1af29b82f5588865e12c989c3d0bf71ddce9da1f8e0f1fb6acd7c09e867fda",["fnv32"]=763173257}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupBuildCode2",["accepted"]={{["bytes"]=164236,["sha256"]="d0950b2801ee93f4c1c5f5aa01ae24b917f16a2a1af72c6a6e7ef52204f3f3ab",["fnv32"]=991861595}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupBuildCode3",["accepted"]={{["bytes"]=164713,["sha256"]="db0b4336e2fb655962cba2163f0f5fa414d9241cca26167c6e88cd0612fd62c0",["fnv32"]=1230036091}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupBuildCode4",["accepted"]={{["bytes"]=164303,["sha256"]="8f1f8b3feb43840233f7a11b7a1bb32d329516ffc03715d584d94849dc521f58",["fnv32"]=3173788398}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupBuildCode5",["accepted"]={{["bytes"]=167501,["sha256"]="1a5f7d296678f4dcdfbbc403ee7495aca9e3e3e928ee179e97e75411810d309f",["fnv32"]=1759276609}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupBuildCode6",["accepted"]={{["bytes"]=152476,["sha256"]="30655be1cceecd084c566d37d7f193de4174d3b217940be037bc68da4936e069",["fnv32"]=2112296471}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupBuildData1",["accepted"]={{["bytes"]=169926,["sha256"]="43f65caf794d031f6041d59d32d32ad4863d7d2e2669b00e402db9aae1db1eb0",["fnv32"]=218954011}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupBuildData2",["accepted"]={{["bytes"]=19080,["sha256"]="87a4401b9ebaee1a2176752298fa4a004acf81e9198531d124a6afcfc1ec1275",["fnv32"]=16550323}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupFrameData1",["accepted"]={{["bytes"]=44797,["sha256"]="30e7f63074f5083d8ea7a8373a1a2eaf0f4afe434326cd3b8d85c46132d816f5",["fnv32"]=1627984694}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupImage1",["accepted"]={{["bytes"]=132187,["sha256"]="34d956905f32a066f9cc1616048058409990e1253a2987d63d8bf775484c3ff2",["fnv32"]=884386363}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupImage2",["accepted"]={{["bytes"]=86421,["sha256"]="6c394c5798c9604cf043db02c245061d9d9317999b3a0fc6f302318ee01a9490",["fnv32"]=2967396158}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupJIT1",["accepted"]={{["bytes"]=90223,["sha256"]="2379d119dbb2705de6feeb2e68bc595baf9f93459a57224bdc97eb1cd9035172",["fnv32"]=3789447392}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupJIT2",["accepted"]={{["bytes"]=140093,["sha256"]="339b2ef1919e1bc09d48fc3a49a672a79993821d383c7fe8225a7125cf65bfef",["fnv32"]=1688988121}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupJIT3",["accepted"]={{["bytes"]=74706,["sha256"]="5e669e94e3916d30d3caff4d38f536a5a42695f709f8c873a375118d4411c02c",["fnv32"]=1291548965}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupJIT4",["accepted"]={{["bytes"]=125674,["sha256"]="84ce0870301b49f08015366c62d2547bec60e749f999b53d90cd99a051f8f8cd",["fnv32"]=2368369749}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupJITG1",["accepted"]={{["bytes"]=90759,["sha256"]="1e1d9832adec3698302e9250969c5c7d11ab9754da5867475b68e157a1117890",["fnv32"]=223982303}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupJITG2",["accepted"]={{["bytes"]=142333,["sha256"]="28d5ca904effcb3341de0b92bdc8c8a662d9066f5819935efee253b53708312e",["fnv32"]=735763358}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupJITG3",["accepted"]={{["bytes"]=74909,["sha256"]="6ba894262eae21b9dfbad1848d874cd1ca84be04adf2a448bc70b7f1adf0ab19",["fnv32"]=1321354163}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupJITG4",["accepted"]={{["bytes"]=126210,["sha256"]="7fe86ccb4a18e3f31d47f3097718a3b9652976c3cbe48159355a7879894ac96f",["fnv32"]=2746445935}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupSetup",["accepted"]={{["bytes"]=15595,["sha256"]="f64c333bde054302b6adf6e42a06ca94b8bb6049d27140058d11666d76886970",["fnv32"]=1793818626}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupSetupData",["accepted"]={{["bytes"]=46531,["sha256"]="7ce9c697975881d7c112d549f389669ae0a0c76b5570c5746acc8b38c30075a2",["fnv32"]=1948031370}}},{["class"]="ModuleScript",["key"]="Core.NR2003FixedStep",["accepted"]={{["bytes"]=1517,["sha256"]="296a12735aad21988a928757387efcfbe45e00ed906ca8809a94517573760093",["fnv32"]=1176039564}}},{["class"]="ModuleScript",["key"]="Core.TestTune",["accepted"]={{["bytes"]=3619,["sha256"]="59d62066fe9a0ca48118c9e72572a7d2364550bc66d296b3316912eae3315420",["fnv32"]=2932223513},{["bytes"]=3669,["sha256"]="53c0ab26c8072f3c3fcbc233cbb6804ee10cfacb5a906f2b4677f770f2f8b22c",["fnv32"]=3096397366}}},{["class"]="ModuleScript",["key"]="Roblox.ModeConfig",["accepted"]={{["bytes"]=156,["sha256"]="440bd2ca07f902ad5731427164ac15e2a27eab5f9389a9df6dede93ab71af8a2",["fnv32"]=1433281705}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupDriver",["accepted"]={{["bytes"]=28922,["sha256"]="4b9eb0736a92e080231face93f34cad88c59210c4ffe3d04552c342cdc19f5f4",["fnv32"]=2406267304}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupFrameCode1",["accepted"]={{["bytes"]=163947,["sha256"]="884a0dec6224331e86b9eb2fa1b796aac981c53166fb6803ef43049460711dad",["fnv32"]=438766272}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupFrameCode2",["accepted"]={{["bytes"]=167426,["sha256"]="a3dd9e20510ab5f31faade6aa2e242113db248fef76c4d2ea5fa7561e426a2fd",["fnv32"]=4251665167}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupFrameCode3",["accepted"]={{["bytes"]=168447,["sha256"]="f2cae0209bf44fc49df78fd542f00b48c1ad480bf65b428c394efb4020df9c06",["fnv32"]=3277936712}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupFrameCode4",["accepted"]={{["bytes"]=135177,["sha256"]="35faaff592ccf98307c768cee54be163b4f3b875d537f7eea38fb6e6c9704ef6",["fnv32"]=1151482468}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupJITP1",["accepted"]={{["bytes"]=90509,["sha256"]="45652bf76befe17e31dae4b2cd215dc0a1448f6b6ed04429aaf6a2aeb9143a9f",["fnv32"]=1489823990}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupJITP2",["accepted"]={{["bytes"]=140379,["sha256"]="e38147f2aca5d5a0d94ffd14f6610cb652aaec6c4dda771e1aee5a4075dd30db",["fnv32"]=3921034995}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupJITP3",["accepted"]={{["bytes"]=74992,["sha256"]="5d54a18aaec45ad38c60cf71396c324b32a86f840fe8e4d4bd62901c4807d465",["fnv32"]=1729850399}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupJITP4",["accepted"]={{["bytes"]=125960,["sha256"]="12aeb9d8fd24480392624eadae0f3802f5c63b12f5bd3d09f5789aad5a7f239a",["fnv32"]=216731307}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupTrackCode1",["accepted"]={{["bytes"]=163726,["sha256"]="9233aa95b87b8e873a46bf9617010c2a66f73fb7b941a14f116789ebea7b6055",["fnv32"]=2001730675}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupTrackCode2",["accepted"]={{["bytes"]=167653,["sha256"]="352d54acd5acd29ae8202b657e816e5e8594b777879e1cd27b3320e2b766566a",["fnv32"]=3245464624}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupTrackCode3",["accepted"]={{["bytes"]=164872,["sha256"]="5a0fbbf16d5046a7c0ecaf3d2e19d61d6061f6338c4250b43f4bb545035fa7a5",["fnv32"]=102725258}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupTrackCode4",["accepted"]={{["bytes"]=168283,["sha256"]="4447df5220e9600176b1e43de93a0feea7659433ef3ac162628e000ba4e0d064",["fnv32"]=3047876970}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupTrackCode5",["accepted"]={{["bytes"]=168327,["sha256"]="2954b3781e17d52d7bab09fafc5e6985035f39c6d17746751496187745efdfa6",["fnv32"]=3477791480}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupTrackCode6",["accepted"]={{["bytes"]=14790,["sha256"]="45c68d31046a9bdbcb6dbb879990127065321dc0dbfaac4d0a1df7db6c4017b8",["fnv32"]=2308959165}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupTrackData1",["accepted"]={{["bytes"]=169109,["sha256"]="d79b8809c522d39a78d52f26dbb0920adc917b75eed2b34344d4f4925811a600",["fnv32"]=3771327525}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupTrackData2",["accepted"]={{["bytes"]=170392,["sha256"]="b66e0d9fc9dafbd93b30d6a98accac91defce993e769c517d1a946bec1a5bada",["fnv32"]=3371847051}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupTrackData3",["accepted"]={{["bytes"]=170387,["sha256"]="fb400cb8730f4f6e8f2b13643e81f57fa6edfa7c078da71cee7888d27da48b6c",["fnv32"]=3386213733}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupTrackData4",["accepted"]={{["bytes"]=170389,["sha256"]="4a707a24bb0ed4f9e9af08090654840c6d6c209d554929a32c13d026e0c37647",["fnv32"]=1238440561}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupTrackData5",["accepted"]={{["bytes"]=169858,["sha256"]="51352236b7dfda4716004b17edcd739a12afe8209f5e14308d2b6d4e0436f125",["fnv32"]=3254205144}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupTrackData6",["accepted"]={{["bytes"]=168915,["sha256"]="a48dc4262ffbe4e92515cd5c88680b0fadd26c3af3a8679e2338e1cb9c7ba07f",["fnv32"]=1553541179}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupTrackData7",["accepted"]={{["bytes"]=169934,["sha256"]="604010620a5f7ad7e292638fe4cd82f6f18d7ae59d19231443989084f76cfa63",["fnv32"]=4176297414}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupTrackData8",["accepted"]={{["bytes"]=166414,["sha256"]="6476c114ebd1d7993685b725346e0523bf331bdd8a69d4a334f29d1d2090bcf2",["fnv32"]=3148663224}}},{["class"]="ModuleScript",["key"]="Core.NR2003Cup.NR2003CupTrackData9",["accepted"]={{["bytes"]=115727,["sha256"]="5a89096169ec83cddfe87ab77f89301ab8898de8899be476298fb4ee68bbed33",["fnv32"]=968429767}}},{["class"]="ModuleScript",["key"]="Roblox.NR2003WatkinsGlen",["accepted"]={{["bytes"]=7805,["sha256"]="541b71e34fe5cb4f2a1d11a21d5f8b3163ea70183beca7d73aba476836fb2cc7",["fnv32"]=3840189536}}},{["class"]="ModuleScript",["key"]="Roblox.NR2003WatkinsGlenSetup",["accepted"]={{["bytes"]=5349,["sha256"]="5faaccd7628518a2923c331fc709e1c29969f7b1cabdcdcdb1dc99074afab2c2",["fnv32"]=734809296}}},{["class"]="ModuleScript",["key"]="Roblox.RenderConfig",["accepted"]={{["bytes"]=865,["sha256"]="1522e21a8175e0c1a29aa222e8e7cadbabb71f72909979ffd670e69b5116cb7a",["fnv32"]=3549820158}}},{["key"]="Core.NR2003Cup.NR2003CupBuild",["class"]="ModuleScript",["accepted"]={{["bytes"]=12202,["sha256"]="bb5852b5bb9f60063b62cba4e5e565e14d119217c3e13614e442897eba4f0259",["fnv32"]=4039559273}}},{["key"]="Core.NR2003Cup.NR2003CupJITPG1",["class"]="ModuleScript",["accepted"]={{["bytes"]=90638,["sha256"]="8f0231afee929c149af1ae481c99095d6bede8a102dad0d7b07959bad52eb276",["fnv32"]=1499156389}}},{["key"]="Core.NR2003Cup.NR2003CupJITPG2",["class"]="ModuleScript",["accepted"]={{["bytes"]=142212,["sha256"]="f68d2dd5291ba3799af048dcc95f47eeb107e13dc428e224b40088c25f4831b6",["fnv32"]=980421067}}},{["key"]="Core.NR2003Cup.NR2003CupJITPG3",["class"]="ModuleScript",["accepted"]={{["bytes"]=74788,["sha256"]="32362343837ca2a8e23b1a5614a566dc5e137817da41f04d7f8438d0566382eb",["fnv32"]=1140034572}}},{["key"]="Core.NR2003Cup.NR2003CupJITPG4",["class"]="ModuleScript",["accepted"]={{["bytes"]=126089,["sha256"]="5e72896222e0ed6bbf0cbc757aeadd53190a0fa96c5cfb2f10fc3c4e715053c1",["fnv32"]=1636573426}}},{["key"]="Core.NR2003Cup.NR2003CupJITWG1",["class"]="ModuleScript",["accepted"]={{["bytes"]=90639,["sha256"]="e8fec7e787bfda5754e2e5f68b1a47247b1aa7a74ed1249460da3d2d0ca3af6f",["fnv32"]=117086621}}},{["key"]="Core.NR2003Cup.NR2003CupJITWG2",["class"]="ModuleScript",["accepted"]={{["bytes"]=142213,["sha256"]="c48db7eaadf8be02c237a897813d1b8ea54dfb2fa7b44c6eed6a8abb801a91d5",["fnv32"]=3019099107}}},{["key"]="Core.NR2003Cup.NR2003CupJITWG3",["class"]="ModuleScript",["accepted"]={{["bytes"]=74789,["sha256"]="26c4de6b67bbb50d21e62fbea37f502a67cb427855cf60cec476de7c905410a1",["fnv32"]=4215266900}}},{["key"]="Core.NR2003Cup.NR2003CupJITWG4",["class"]="ModuleScript",["accepted"]={{["bytes"]=126090,["sha256"]="53c157260edc28467ad06079d72ec216ab0c58bd6c7c9c83dc018c7e3a4e2b5e",["fnv32"]=212818250}}},{["key"]="Core.NR2003Cup.NR2003CupTrackBuild",["class"]="ModuleScript",["accepted"]={{["bytes"]=143285,["sha256"]="1e06b2c88bdc078f7f3da02b0cab8401772dd67207e995196480e9c2faad21ef",["fnv32"]=1546747036}}},{["key"]="Core.NR2003Cup.NR2003CupWatkinsGlenSpec",["class"]="ModuleScript",["accepted"]={{["bytes"]=71885,["sha256"]="8b2e4e1ceace473f229f6f326f127d2475dce23c77812217d4cd4fb460bd1042",["fnv32"]=3868429419}}},{["key"]="Core.NR2003CupVehicle",["class"]="ModuleScript",["accepted"]={{["bytes"]=11559,["sha256"]="669c73328e6bb9ace39da18991a8a3877ca62540fc26dc68a0ce7e210fdd97cc",["fnv32"]=23420924}}},{["key"]="CarModel.NR2003DrawState",["class"]="ModuleScript",["accepted"]={{["bytes"]=9267,["fnv32"]=66146001}}},{["key"]="CarModel.NR2003Scale",["class"]="ModuleScript",["accepted"]={{["bytes"]=3914,["fnv32"]=3623640481}}}},["serverPrefix"]="-- Stage 14: exactly one controller path runs for NR2003_CUP.\ndo\n    local p=game:GetService(\"ReplicatedStorage\"):WaitForChild(\"NR2003Lab\")\n    if require(p.Roblox.ModeConfig).mode==\"NR2003_CUP\" then\n        require(p.Roblox.PredictionServer).start(script)\n        return\n    end\nend\n"}
 </ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX24"><Properties><string name="Name">Rollback</string><ProtectedString name="Source">return function()
     local backup=script.Parent;local H=require(backup.Support);local manifest=require(backup.Manifest)
     return H.lock(function()
@@ -10770,8 +10772,55 @@ return table.freeze({
 </ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX13"><Properties><string name="Name">Roblox.PredictionCheckpoint</string><ProtectedString name="Source">-- Lossless sparse pages against an immutable epoch baseline. No float quantization.
 local M={}
 function M.copy(x)
-    if type(x)~="table" then return x end
+    if typeof(x)~="table" then return x end
     local t={};for k,v in pairs(x) do t[k]=M.copy(v) end;return t
+end
+-- RemoteEvents do not preserve mixed/sparse numeric table keys. Keep every
+-- native key (wheel 0, register 0, sparse x87 slots, addresses) as a VALUE in
+-- a dense entry array. A flat node list also bounds wire nesting depth.
+local function packHost(root)
+    local nodes,ids={},{}
+    local function visit(value)
+        if ids[value] then return ids[value] end
+        local id=#nodes+1;local entries={};nodes[id]=entries;ids[value]=id
+        for key,item in pairs(value) do
+            assert(type(key)=="string" or type(key)=="number","checkpoint host key")
+            local kind=typeof(item)
+            if kind=="table" then
+                entries[#entries+1]={key,true,visit(item)}
+            else
+                assert(kind=="number" or kind=="boolean" or kind=="string" or kind=="buffer" or
+                    kind=="CFrame" or kind=="Vector3","checkpoint host value: "..kind)
+                entries[#entries+1]={key,false,item}
+            end
+        end
+        return id
+    end
+    assert(visit(root)==1)
+    return {version=1,nodes=nodes}
+end
+local function unpackHost(wire)
+    assert(type(wire)=="table" and wire.version==1 and type(wire.nodes)=="table","checkpoint host wire format")
+    local nodes=wire.nodes;assert(#nodes&gt;=1 and #nodes&lt;=4096,"checkpoint host nodes")
+    local values={};for i=1,#nodes do values[i]={} end
+    for i,entries in ipairs(nodes) do
+        assert(type(entries)=="table" and #entries&lt;=65536,"checkpoint host entries")
+        local out=values[i]
+        for _,entry in ipairs(entries) do
+            assert(type(entry)=="table" and #entry==3 and type(entry[2])=="boolean","checkpoint host entry")
+            local key,reference,item=entry[1],entry[2],entry[3]
+            assert(type(key)=="string" or (type(key)=="number" and key==key),"checkpoint host key")
+            assert(out[key]==nil,"checkpoint duplicate host key")
+            if reference then
+                assert(type(item)=="number" and item%1==0 and values[item],"checkpoint host reference")
+                out[key]=values[item]
+            else
+                assert(typeof(item)~="table","checkpoint unexpected nested host value")
+                out[key]=item
+            end
+        end
+    end
+    return values[1]
 end
 function M.pack(c,base)
     local m=c.memory;local n=buffer.len(m);local page=1024
@@ -10783,7 +10832,7 @@ function M.pack(c,base)
         if s~=b then offsets[#offsets+1]=off;parts[#parts+1]=s end
     end
     local h=M.copy(c);h.memory=nil
-    return {size=n,offsets=offsets,data=buffer.fromstring(table.concat(parts)),host=h}
+    return {size=n,offsets=offsets,data=buffer.fromstring(table.concat(parts)),host=packHost(h)}
 end
 function M.unpack(p,base)
     assert(type(p)=="table" and p.size&gt;0 and p.size&lt;=32*1024*1024,"checkpoint size")
@@ -10797,7 +10846,7 @@ function M.unpack(p,base)
         buffer.copy(m,off,p.data,cursor,n);cursor+=n;last=off
     end
     assert(cursor==buffer.len(p.data),"checkpoint trailing data")
-    local c=M.copy(p.host);c.memory=m;return c
+    local c=unpackHost(p.host);c.memory=m;return c
 end
 return M
 </ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX14"><Properties><string name="Name">Roblox.PredictionProtocol</string><ProtectedString name="Source">local C=require(script and script.Parent.PredictionConfig or "./PredictionConfig")
@@ -11036,8 +11085,7 @@ local Simulation=require(script.Parent.PredictionSimulation)
 local Snap=require(script.Parent.RenderSnapshot)
 local Tune=require(package.Core.TestTune)
 local M={}
-function M.start(ownerScript)
-    assert(not package:GetAttribute("PredictionServerRunning"),"Another Stage 14 server controller is already running")
+local function start(ownerScript,setCleanup)
     package:SetAttribute("PredictionServerRunning",true)
     assert(require(script.Parent.ModeConfig).mode=="NR2003_CUP","Stage 14 requires NR2003_CUP")
     local function event(name,class)
@@ -11058,6 +11106,15 @@ function M.start(ownerScript)
     local modelFolder=package:FindFirstChild("CarModel")
     local Draw=modelFolder and require(modelFolder.NR2003DrawState)
     local entries,conns={},{};local nextId=0;local ready={};local actionTimes={};local closed=false
+    local function stop()
+        if closed then return end
+        closed=true
+        for _,c in ipairs(conns) do c:Disconnect() end
+        for _,e in pairs(entries) do pcall(function() e.sim:destroy() end) end
+        package:SetAttribute("PredictionServerRunning",nil)
+    end
+    setCleanup(stop)
+    conns[#conns+1]=ownerScript.Destroying:Connect(stop)
     local function sendStart(e)
         if not e.driver or not ready[e.driver] then return end
         if e.sim:tick()%8~=0 then e.startRequested=true;return end
@@ -11138,7 +11195,7 @@ function M.start(ownerScript)
         actionTimes[player]=os.clock()
         if msg.kind=="exit" then e.sim.adapter:exit(player)
         elseif msg.kind=="reset" then
-            e.sim.adapter:reset();sendStart(e)
+            e.sim.adapter:reset();e.faulted=nil;e.driver=player;e.car:SetAttribute("PredictionFault",nil);sendStart(e)
         elseif msg.kind=="debug" then
             e.sim.adapter.debugVisible=not e.sim.adapter.debugVisible
             e.car:SetAttribute("DebugContacts",e.sim.adapter.debugVisible)
@@ -11158,6 +11215,7 @@ function M.start(ownerScript)
         for index=1,#ordered do
             local e=ordered[(M.cursor+index-2)%#ordered+1];local car=e.car
             if not car:IsDescendantOf(world) then e.sim:destroy();entries[car]=nil;continue end
+            if e.faulted then e.sim.adapter.access:step();continue end
             local ok,err=pcall(function()
                 local a=e.sim.adapter;a.access:step()
                 local driver=a:driver()
@@ -11212,24 +11270,34 @@ function M.start(ownerScript)
                     -- Accepted motion is entirely server-computed, even when a client witness is forged.
                     local snap=a:renderSnapshot(e.seq,time,e.id)
                     local draw=Draw and Draw.sample(a.core,{}, {})
-                    state:FireAllClients({id=e.id,epoch=e.epoch,snapshot=Snap.encode(snap),
-                        draw=draw and Draw.encode(e.seq,time,draw) or nil})
+                    local message={id=e.id,epoch=e.epoch,snapshot=Snap.encode(snap),
+                        draw=draw and Draw.encode(e.seq,time,draw) or nil}
+                    -- Clients register both listeners before declaring readiness.
+                    for player in pairs(ready) do
+                        if player.Parent==Players then state:FireClient(player,message) end
+                    end
                     e.lastSentTick=e.sim:tick();e.lastSentEpoch=e.epoch
                 end
             end)
             if not ok then
+                e.faulted=true
                 car:SetAttribute("PredictionFault",tostring(err));warn("Stage 14 vehicle "..e.id..": "..tostring(err))
                 if e.driver then e.sim.adapter:exit(e.driver) end;e.session=nil
             end
         end
     end)
-    conns[#conns+1]=ownerScript.Destroying:Connect(function()
-        closed=true
-        for _,c in ipairs(conns) do c:Disconnect() end
-        for _,e in pairs(entries) do e.sim:destroy() end
-        package:SetAttribute("PredictionServerRunning",nil)
-    end)
     return entries
+end
+function M.start(ownerScript)
+    assert(not package:GetAttribute("PredictionServerRunning"),"Another Stage 14 server controller is already running")
+    local cleanup
+    local ok,result=pcall(start,ownerScript,function(fn) cleanup=fn end)
+    if not ok then
+        if cleanup then pcall(cleanup) end
+        package:SetAttribute("PredictionServerRunning",nil)
+        error(result,0)
+    end
+    return result
 end
 return M
 </ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX19"><Properties><string name="Name">Roblox.PredictionClient</string><ProtectedString name="Source">local Run=game:GetService("RunService")
@@ -11268,8 +11336,7 @@ function M.new(primary,presentation,keys,showTelemetry)
         if child.Name=="DriverSeat" or child.Name=="Chassis" then deferAdd(child.Parent) end
     end) end
     self.connections[#self.connections+1]=self.control.OnClientEvent:Connect(function(msg)
-        local ok,err=pcall(function() self:receive(msg) end)
-        if not ok then self.fault=tostring(err);warn("Stage 14 local: "..self.fault) end
+        self:receive(msg)
     end)
     self.connections[#self.connections+1]=self.state.OnClientEvent:Connect(function(msg)
         if type(msg)~="table" then return end
@@ -11312,25 +11379,41 @@ function M:stop(e,discard)
     if e.model then e.model.localDrawState=nil end
     e.offset=nil
 end
-function M:receive(msg)
+function M:findEntry(msg)
     if type(msg)~="table" then return end
     local e=self.entries[msg.car]
     if not e then for _,candidate in pairs(self.entries) do
         if candidate.car:GetAttribute("PredictionVehicleId")==msg.id then e=candidate;break end
     end end
+    return e
+end
+function M:fail(e,err)
+    self.fault=tostring(err)
+    if e then
+        self:stop(e,true);e.pendingStart=nil;e.failed=true
+    end
+    warn("Stage 14 local paused: "..self.fault)
+end
+function M:receive(msg)
+    local e=self:findEntry(msg)
     if not e then return end
+    local ok,err=pcall(self.applyMessage,self,e,msg)
+    if not ok then self:fail(e,err) end
+    return ok
+end
+function M:applyMessage(e,msg)
     if msg.kind=="start" then
         if e.epoch and msg.epoch&lt;=e.epoch and e.predictor then return end
         if e.epoch and msg.epoch&lt;e.epoch then return end
         local h=self.player.Character and self.player.Character:FindFirstChildOfClass("Humanoid")
         if not h or h.SeatPart~=e.car.DriverSeat then e.pendingStart=msg;return end
-        self:stop(e);e.epoch=msg.epoch
+        self:stop(e);e.pendingStart=nil;e.epoch=msg.epoch
         -- Preparation can be costly; it happens once per ownership/reset, never per command.
         e.sim=e.warm or Simulation.new(e.car,Tune.new(),nil,true,function() return self.player end,false)
         e.warm=nil
         e.predictor=Predictor.new(e.sim,e.epoch,Codec.unpack(msg.checkpoint))
         e.presentation.localPredictor=e.predictor;e.sim:present()
-        self.pendingShift=0;self.fault=nil
+        self.pendingShift=0;self.fault=nil;e.failed=nil
     elseif msg.kind=="stop" and msg.epoch==e.epoch then
         e.pendingStart=nil;self:stop(e)
     elseif msg.kind=="pong" and e.predictor and msg.epoch==e.epoch and type(msg.echo)=="number" then
@@ -11384,13 +11467,15 @@ function M:frame(dt)
         if not car.Parent then self:stop(e,true);e.presentation:destroy();if e.model then e.model:destroy() end;self.entries[car]=nil;continue end
         local driving=seat==car:FindFirstChild("DriverSeat")
         if driving then focus=e end
+        if not driving then e.failed=nil end
         if driving and e.pendingStart then local start=e.pendingStart;e.pendingStart=nil;self:receive(start) end
         if e.predictor and not driving then self:stop(e) end
         if e.predictor and driving then
             local ok,err=pcall(function()
                 e.predictor:advance(dt,function() return self:sample() end,math.max(C.clientBudget,math.min(0.025,dt*0.5)))
                 if e.pendingAck and e.pendingAck.tick&lt;=e.sim:tick() then
-                    local ack=e.pendingAck;e.pendingAck=nil;self:receive(ack)
+                    local ack=e.pendingAck;e.pendingAck=nil
+                    if self:receive(ack)==false then return end
                 end
                 e.sim:present()
                 if e.offset then
@@ -11406,14 +11491,14 @@ function M:frame(dt)
                     e.model.localDrawState=e.drawModule.sample(e.sim.adapter.core,{}, {})
                 end
             end)
-            if not ok then self.fault=tostring(err);warn(self.fault);self:stop(e) end
+            if not ok then self:fail(e,err) end
         end
         if e~=focus then
             e.presentation:update();if e.model then e.model:update(dt,false) end
         end
     end
     self.focus=focus;self.sendTimer+=dt;self.telemetryTimer+=dt
-    if focus and not focus.predictor then
+    if focus and not focus.predictor and not focus.failed then
         self.readyTimer=(self.readyTimer or 0)+dt
         if self.readyTimer&gt;=1 then self.readyTimer=0;self.control:FireServer({kind="ready"}) end
     else self.readyTimer=0 end
@@ -11444,7 +11529,7 @@ function M:stats()
         local s=e.predictor:stats();s.mode="LOCAL NR2003";s.eventToPresent=self.eventToPresent
         s.divergence=e.divergence;s.fault=self.fault;return s
     end
-    return {mode=self.fault or "waiting for driver/initial state",tick=0,ack=0,ackTick=0,unacknowledged=0,
+    return {mode=self.fault and "LOCAL PAUSED (see Output)" or "waiting for driver/initial state",fault=self.fault,tick=0,ack=0,ackTick=0,unacknowledged=0,
         rtt=0,backlog=0,reconciliations=0,correction=0,remoteAge=e and e.lastRemote and workspace:GetServerTimeNow()-e.lastRemote}
 end
 function M:destroy()
@@ -11463,8 +11548,25 @@ function M.run()
     assert(P.input({throttle=2})==nil,"input range")
     assert(P.command({seq=2,tick=0,input={}},0)==nil,"tick sequence")
     local memory=buffer.create(4096);buffer.writeu32(memory,2048,123456)
-    local packed=Codec.pack({memory=memory,tick=8})
-    assert(buffer.tostring(Codec.unpack(packed).memory)==buffer.tostring(memory),"checkpoint round trip")
+    local packed=Codec.pack({memory=memory,tick=8,hosts={track={contacts={
+        [0]={fx=11},[1]={fx=22},[2]={fx=33},[3]={fx=44}},R={[0]=5,[9]=6}},
+        fpu={[0]=1,[6]=2}},sparse={[-1]=false,[0xc12030]=7,["0"]=8}})
+    local function wire(value)
+        if typeof(value)~="table" then return value end
+        local out,n,count,array,dict={},#value,0,true,true
+        for key in pairs(value) do
+            count+=1;array=array and type(key)=="number" and key%1==0 and key&gt;=1 and key&lt;=n
+            dict=dict and type(key)=="string"
+        end
+        assert((array and count==n) or dict,"unsafe checkpoint RemoteEvent table")
+        for key,item in pairs(value) do out[key]=wire(item) end
+        return out
+    end
+    local round=Codec.unpack(wire(packed))
+    assert(buffer.tostring(round.memory)==buffer.tostring(memory),"checkpoint round trip")
+    assert(round.hosts.track.contacts[0].fx==11 and round.hosts.track.contacts[3].fx==44,"zero-index contacts")
+    assert(round.hosts.track.R[0]==5 and round.hosts.fpu[0]==1 and round.hosts.fpu[6]==2,"sparse machine state")
+    assert(round.sparse[-1]==false and round.sparse[0xc12030]==7 and round.sparse["0"]==8,"host key types")
     local sim={t=0}
     function sim:tick() return self.t end
     function sim:state() return table.create(45,0) end
