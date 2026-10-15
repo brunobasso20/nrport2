@@ -359,5 +359,12 @@ return function(V, codeParts, dataParts, extra)
 		if active then return V.trackContactOut(i) end
 		return baseContactOut(i)
 	end
+	-- Preserve the checkpoint support already present in the supplied Stage 14 Studio model.
+	V._registerCheckpoint("track", function() return {loaded=loaded, active=active, start=start, contacts=contacts, R=ctx.R, F=ctx.F} end, function(h)
+		loaded, active, start = h.loaded, h.active, h.start
+		contacts = h.contacts
+		for k,v in pairs(h.R) do ctx.R[k]=v end
+		table.clear(ctx.F);for k,v in pairs(h.F) do ctx.F[k]=v end
+	end)
 	V._trackCtx = ctx
 end

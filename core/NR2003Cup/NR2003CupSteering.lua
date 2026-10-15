@@ -383,5 +383,13 @@ return function(V)
 		out.wheelAngle = wheelAngle(out.drawSteer, out.ratioNow)
 		return out
 	end
+
+	-- Stage 14 checkpoint: steering
+	V._registerCheckpoint("steering", function() return {mode=mode, options=options, baseRate=baseRate, lockK=lockK, drawLimit=drawLimit, shaped=lastShaped, ratio=lastRatio, target=lastTarget, sensitivity=sensitivity, yawLimiterFactor=yawLimiterFactor} end, function(h)
+		mode, options, lockK, drawLimit = h.mode, h.options, h.lockK, h.drawLimit
+		baseRate = h.baseRate
+		lastShaped, lastRatio, lastTarget = h.shaped, h.ratio, h.target
+		sensitivity, yawLimiterFactor = h.sensitivity, h.yawLimiterFactor
+	end)
 	return V
 end

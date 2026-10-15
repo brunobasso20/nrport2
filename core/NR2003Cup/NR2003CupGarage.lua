@@ -37,7 +37,9 @@ return function(V, Setup, Build, genericJIT)
 	local JIT = V._jitTable()
 	local CODE = {natural = table.clone(JIT), generic = V._jitLoad(genericJIT or {})}
 	assert(next(CODE.generic), "NR2003CupJITG modules missing")
+	local selectedCode = "natural"
 	local function selectCode(structure)
+		selectedCode = structure == "generic" and "generic" or "natural"
 		local src = CODE[structure == "generic" and "generic" or "natural"]
 		table.clear(JIT)
 		for a, f in pairs(src) do JIT[a] = f end
@@ -65,6 +67,7 @@ return function(V, Setup, Build, genericJIT)
 	-- further callback sets (Watkins Glen port: the car placed on the track) and their selection by name
 	function V._garageAddCode(name, modules) CODE[name] = V._jitLoad(modules) end
 	function V._garageUseCode(name)
+		selectedCode = name
 		local src = assert(CODE[name], "NR2003 garage: no callback set " .. tostring(name))
 		table.clear(JIT)
 		for a, f in pairs(src) do JIT[a] = f end
@@ -178,5 +181,12 @@ return function(V, Setup, Build, genericJIT)
 		out.report = lastReport
 		return out
 	end
+
+	-- Stage 14 checkpoint: garage
+	V._registerCheckpoint("garage", function() return {active=active, current=current, selected=selectedCode} end, function(h)
+		active, current = h.active, h.current
+		V._garageUseCode(h.selected)
+		if V._bindDriverCells then V._bindDriverCells() end
+	end)
 	return V
 end

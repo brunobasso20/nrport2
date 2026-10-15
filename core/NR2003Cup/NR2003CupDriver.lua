@@ -24,8 +24,9 @@
 -- Stage 9: frame start calls V._aeroFrame (005637e0 subset, NR2003CupAero) before frameStart.
 -- Stage 13: tickInputs runs the ORIGINAL 00554d30 (V._ffbTick, NR2003CupFFB) at its slot @00553a64; frameStart takes
 -- the 005524f0 not-driven branch while bf6eb8 (player controls suspended, 00550070) is set.
--- Not ported (documented): replay/telemetry recording, auto-shift 005536b0 (transmission
--- mode 0), H-pattern mode (bf6f0c 1/2), ignition states driven by 005524f0/0057af40(0x19),
+-- assist_implementation: NR2003CupAutomatic supplies ORIGINAL 005536b0 at the frame-tail slot.
+-- Not ported (documented): replay/telemetry recording, H-pattern device input (bf6f0c 1/2),
+-- ignition states driven by 005524f0/0057af40(0x19),
 -- controls.originalPedals enables recovered throttle/clutch device processing
 -- (00552df0 / 005534f0). Absent keeps the processed-pedal contract of older fixtures.
 return function(V)
@@ -361,7 +362,13 @@ return function(V)
 		wf32d(0xbf6e80, target)
 		-- sequential shift request (bf6f0c == 0, transmission mode 0074c974 ~= 0); the 'not driven'
 		-- branch of 005524f0 clears the shift keys (bf6e20/21/22)
-		if c.driver ~= false and ri32(0xbf6f0c) ~= 2 and ri32(0xbf63cc) == 0 and ri32(0x74c974) ~= 0 and ri32(0xbf6f0c) == 0 then
+		-- Original 00551e80: automatic selection precedes the manual-key branch.
+		local driven=c.driver~=false and r8(0xbf6eb8)==0
+		if ri32(0xbf6f0c) ~= 2 and ri32(0xbf63cc) == 0 and ri32(0x74c974) == 0 and V.automaticShiftOriginal then
+			w8(0xbf6e20,driven and c.shiftUp and 1 or 0)
+			w8(0xbf6e21,driven and c.shiftDown and 1 or 0)
+			V.automaticShiftOriginal()
+		elseif driven and ri32(0xbf6f0c) ~= 2 and ri32(0xbf63cc) == 0 and ri32(0x74c974) ~= 0 and ri32(0xbf6f0c) == 0 then
 			local d = (c.shiftUp and 1 or 0) - (c.shiftDown and 1 or 0)
 			local st = ri32(0xbf6ea0)
 			if d ~= 0 and (st == 0 or st == 3 or st == 4) then

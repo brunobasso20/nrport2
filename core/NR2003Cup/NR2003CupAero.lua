@@ -453,5 +453,10 @@ return function(V)
 	V._aeroConstants = KBITS
 	V._aeroWake = WAKE_BITS
 	V._aeroDamageCells = DAMAGE_CELLS
+
+	-- Stage 14 checkpoint: aero
+	V._registerCheckpoint("aero", function() return {session=session, draftEnv=draftEnv, trackNormal=trackNormal} end, function(h)
+		session, draftEnv, trackNormal = h.session, h.draftEnv, h.trackNormal
+	end)
 	return V
 end

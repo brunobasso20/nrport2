@@ -79,12 +79,16 @@ function M.fromLoader(get)
     -- follows the control-7 binding written by the steering device layer) and after the frame end (its hooks)
     local ffb=get("NR2003CupFFB")
     if ffb then ffb(V) end
+    local automatic=get("NR2003CupAutomatic")
+    if automatic then automatic(V) end
     -- Watkins Glen port: installed last (its enterTrack / reset / session wrappers are the outermost)
     if trackHost then
         trackHost(V,collect(get,"NR2003CupTrackCode"),trackData,
             {build=get("NR2003CupTrackBuild"),placed=collect(get,"NR2003CupJITP"),placedGeneric=collect(get,"NR2003CupJITPG"),
                 vehicle=get("NR2003CupWatkinsGlenSpec"),roadGeneric=collect(get,"NR2003CupJITWG")})
     end
+    local assists=get("NR2003CupAssists")
+    if assists then assists(V) end
     return setmetatable({V=V,state=table.create(45,0),pos={0,0,0},rot={1,0,0,0,1,0,0,0,1}},M)
 end
 function M.new(folder)
@@ -160,6 +164,8 @@ function M:setSteeringOptions(o) return self.V.setSteeringOptions(o) end
 function M:steeringOptions() return self.V.steeringOptions() end
 function M:steeringState(out) return self.V.steeringState(out) end
 function M:steeringWheelAngle() return self.V.steeringWheelAngle() end
+function M:setDrivingAssists(o) return self.V.setDrivingAssists(o) end
+function M:drivingAssists() return self.V.drivingAssists() end
 -- Stage 13 force feedback API (ORIGINAL chain; see CORE_API.md / STAGE13_FFB_STATE_MAP.md)
 function M:setForceFeedbackOptions(o) return self.V.setForceFeedbackOptions(o) end
 function M:forceFeedbackOptions() return self.V.forceFeedbackOptions() end
@@ -232,14 +238,16 @@ local T={
     --                        front-end default of a saved controls.cfg)
     --   cockpitLimit         cockpit wheel draw limit: "lock" = the full lock (180 deg per side at 360), "original" =
     --                        the 005662d0 limit 2.79 rad (160 deg)
-    driver={steeringLockDegrees=360,setupSteeringRatio=12,momentumKeys=nil,momentumAxis=0,cockpitLimit="lock",
+    driver={steeringLockDegrees=360,setupSteeringRatio=12,momentumKeys=0,momentumAxis=0,cockpitLimit="lock",
         -- Stage 13 bench defaults (car attributes override): force feedback ON with the image values of the executable
         -- (strength 80, damping 0, latency 0 = no controls.cfg), FF output present (HUD + gamepad motors). The original
         -- default without controls.cfg is OFF; the effect still needs the steering on an analog axis (0054fed0)
         ffbEnabled=true,ffbStrength=nil,ffbDamping=nil,ffbLatency=nil,ffbDevice=true,
         -- presentation only (NOT original): the constant force drives the large motor of the active gamepad with |force|
         -- (Roblox has no directional force feedback); false = HUD only
-        ffbRumble=true},
+        ffbRumble=true,
+        -- User-requested test defaults. The core maps these to original NR2003 option cells.
+        assists={automatic=true,autoClutch=true,abs=true,tractionControl=false,stabilityControl=false,steering=0}},
     engine={gears=4,limiterRPM=9300},          -- engine+0x444 / engine+0x438 (display)
     environment={ambientC=26.6667},            -- e0b830 (tire thermal frozen: Stage 11)
     adapter=U.copy(Base.adapter),
@@ -674,7 +682,7 @@ SOURCES['Roblox.CupChassisAdapter'] = [=[
 -- axis (gamepad / wheel, normalised -1..1 by Roblox) -> both controls split by sign. Driver options from car
 -- attributes: SteeringLinearity (controls.cfg value 0..100), SteeringMomentum (0..100, 0 = no slew),
 -- SteeringLowSpeedOverride (bool); absent = the original values when no controls.cfg was loaded. (The arcade
--- driving mode and steering assistance are not ported: the core refuses them.) The cockpit wheel draws the ORIGINAL 005662d0 angle; front wheels use the solver poses.
+-- driving mode is not ported; positive steering help requires the missing original racing lines.) The cockpit wheel draws the ORIGINAL 005662d0 angle; front wheels use the solver poses.
 -- Stage 11: the ORIGINAL per-frame runtime systems run inside the core (fuel burn and fuel mass, tyre thermal /
 -- hot pressure / wear / failure, brake temperature, engine thermal / damage / failure, random failures, collision
 -- damage). The adapter only starts the Stage 11 session with the race options (car attributes RaceDamageLevel 0..3,
@@ -718,7 +726,8 @@ local function localRotation(r)
         r[2],-r[3],r[1]
 end
 
-function M.new(car,tune,remote)
+function M.new(car,tune,remote,options)
+    options=options or {}
     local cup=CupTune.new()
     local self=setmetatable({car=car,root=car.Chassis,tune=cup,benchTune=tune,telemetryTimer=0,debugVisible=false,
         fault=nil,renderSpin={},lastRenderSnapshotTime=nil,renderTeleport=true,pendingShift=0,steeringOut={},
@@ -737,11 +746,18 @@ function M.new(car,tune,remote)
     local params=RaycastParams.new();params.FilterType=Enum.RaycastFilterType.Exclude
     params.FilterDescendantsInstances={car};params.RespectCanCollide=true;params.IgnoreWater=false
     self.params=params
-    self.visual=Visual.new(car,cup);self.access=SeatAccess.new(car,remote);Cockpit.ensure(car,cup)
+    self.clientSimulation=options.client==true
+    self.networked=options.networked==true
+    self.visual=Visual.new(car,cup)
+    if self.clientSimulation then
+        -- Local physics has no admission, spawn, or server seat connections.
+        self.access={driver=options.driver or function() return true end,step=function() end,destroy=function() end}
+    else self.access=SeatAccess.new(car,remote) end
+    Cockpit.ensure(car,cup)
     self.core=Vehicle.new(Core:WaitForChild("NR2003Cup"))
     if TrackHost then TrackHost.attach(self) end
     self:initialize()
-    if self.originalTrack then
+    if self.originalTrack and not self.clientSimulation and options.prepareSpawn~=false then
         TrackHost.prepareDriverSpawn(self, assert(car.Parent, "Parent TestCar before initializing the original track"))
     end
     return self
@@ -849,7 +865,7 @@ function M:initialize()
         local clamp=self.car:GetAttribute("CockpitWheelClamp")
         if clamp~="original" and clamp~="lock" then clamp=d.cockpitLimit end
         local o=self.core:setSteeringOptions({linearity=num("SteeringLinearity"),momentum=num("SteeringMomentum"),
-            lowSpeedOverride=flag("SteeringLowSpeedOverride"),lockDegrees=pick("SteeringLockDegrees",d.steeringLockDegrees),
+            lowSpeedOverride=flag("SteeringLowSpeedOverride")==true,lockDegrees=pick("SteeringLockDegrees",d.steeringLockDegrees),
             momentumKeys=pick("SteeringMomentumKeys",d.momentumKeys),momentumAxis=pick("SteeringMomentumAxis",d.momentumAxis),
             cockpitLimit=clamp})
         self.car:SetAttribute("SteeringLinearityApplied",o.linearity);self.car:SetAttribute("SteeringRateApplied",o.steerRate)
@@ -889,6 +905,16 @@ function M:initialize()
             windDirection=num("WeatherWindDirection"),conditions=num("WeatherConditions"),night=self.car:GetAttribute("WeatherNight")==true,
             trackNorth=num("TrackNorth")},{damageLevel=num("RaceDamageLevel"),consumptionRate=num("RaceConsumptionRate"),
             series=num("RosterSeries"),seed=num("RandomSeed")})
+    end
+    -- Apply after setup/build and placement: automatic thresholds depend on the active car and gear ratios.
+    if self.core.V.setDrivingAssists then
+        local d=(self.tune.driver and self.tune.driver.assists) or {}
+        local function flag(name,default) local v=self.car:GetAttribute(name);if type(v)=="boolean" then return v end;return default end
+        self.core:setDrivingAssists({automatic=flag("AutomaticTransmission",d.automatic==true),
+            autoClutch=flag("AutoClutch",d.autoClutch==true),abs=flag("ABS",d.abs==true),
+            tractionControl=flag("TractionControl",d.tractionControl==true),
+            stabilityControl=flag("StabilityControl",d.stabilityControl==true),
+            steering=num("SteeringAssistance") or d.steering or 0})
     end
     self.stage11Out={}
     self.car:SetAttribute("AirDensityApplied",self.weather and self.weather.density or 0)
@@ -992,7 +1018,7 @@ function M:tickCore(input)
         local throttle=U.clamp(input.throttle or 0,0,1)
         controls={throttle=throttle,throttleControl=throttle,throttleDigital=input.throttleAxis~=true,
             brakeControl=U.clamp(input.brake or 0,0,1),brakeDigital=input.brakeAxis~=true,
-            clutch=1-U.clamp(input.clutch or 0,0,1),originalPedals=self.originalTrack==true}
+            clutch=1-U.clamp(input.clutch or 0,0,1),originalPedals=true}
         steerControls(controls,input)
     end
     if frame and self.pendingShift~=0 and controls.driver~=false then
@@ -1006,7 +1032,7 @@ function M:tickCore(input)
         self.controlsSuspended=suspended;self.core:setControlsSuspended(suspended)
     end
     self.core:step(controls,self.contactFn)
-    if self.core:tick()%8==0 and self.weather then self:stage11TestEvents() end
+    if self.core:tick()%8==0 and self.weather and not self.networked then self:stage11TestEvents() end
     self:pose(false)
 end
 
@@ -1120,6 +1146,19 @@ function M:step(elapsed,input)
     if self.fault then return end
     local ok,reason=pcall(function()
         self.runner:advance(elapsed,input,nil)
+        self:present()
+    end)
+    if not ok then self.fault=tostring(reason);self.car:SetAttribute("PhysicsFault",self.fault);warn("NR2003 Cup core paused: "..self.fault) end
+end
+
+-- Presentation may run at any rate; fixed ticks do not depend on it.
+function M:present()
+        if self.core.V.drivingAssists then
+            local assists=self.core:drivingAssists()
+            for _,name in ipairs({"automatic","autoClutch","abs","tractionControl","stabilityControl","steering","steeringAvailable","lowSpeedSteering"}) do
+                self.car:SetAttribute("DrivingAssist_"..name,assists[name])
+            end
+        end
         if self.originalTrack then TrackHost.update(self) end
         self.car:PivotTo(self.rootCF)
         self.car:SetAttribute("CoreTick",self.core:tick());self.car:SetAttribute("CoreCollision",self.collision==true)
@@ -1136,8 +1175,6 @@ function M:step(elapsed,input)
             self.car:SetAttribute("FFBForce",f.force);self.car:SetAttribute("FFBMagnitude",f.magnitude)
             self.car:SetAttribute("FFBActive",f.acquired and f.effect and not f.suspended)
         end
-    end)
-    if not ok then self.fault=tostring(reason);self.car:SetAttribute("PhysicsFault",self.fault);warn("NR2003 Cup core paused: "..self.fault) end
 end
 
 -- Stage 12 presentation: the ORIGINAL steering-wheel angle of the car model (005662d0: clamp(-(00554fb0() *
@@ -1248,7 +1285,8 @@ function M:telemetry()
         -- a rotation about the inclined steering axis (caster 2.455 deg, inclination 9.215 deg); roadWheelAngle = mean
         -- front wheel yaw measured from the solver wheel poses (+ = right, Stage 5 sign; about -0.99 q, no Ackermann)
         hubSteerAngle=st[16]*0.5+st[22]*0.5,roadWheelAngle=(self.wheelPose[1].steer+self.wheelPose[2].steer)*0.5,
-        steeringWheelAngle=self:steeringWheelAngle(),steering=self:steeringTelemetry(),ffb=self:forceFeedbackTelemetry()}
+        steeringWheelAngle=self:steeringWheelAngle(),steering=self:steeringTelemetry(),ffb=self:forceFeedbackTelemetry(),
+        assists=self.core.V.drivingAssists and self.core:drivingAssists() or nil}
 end
 -- Stage 13 force-feedback telemetry (original cells + the last device output, see STAGE13_FFB_STATE_MAP.md)
 function M:forceFeedbackTelemetry()
@@ -1271,6 +1309,7 @@ function M:reset()
     self.rootCF=nil;self:initialize();self.car:PivotTo(self.rootCF)
 end
 function M:destroy()
+    if self.clientSimulation then self.access:destroy();return end
     if TrackHost then TrackHost.clearDriverSpawn(self) end
     self.access:destroy();self.car:SetAttribute("NR2003CorePoseOwner",nil)
     self.root.Anchored=self.oldAnchored;self.root.CanCollide=self.oldCollide
@@ -1447,12 +1486,12 @@ end
 return M
 ]=]
 SOURCES['Roblox.NR2003WatkinsGlenSetup'] = [=[
--- Generated by tools/build_watkinsglen_setups.py from the supplied original .sim files.
+-- Official patch 1.2.0.1 fast/qualify: recovery/patch1201/gen_patch_setups.py; easy/jasper retained.
 -- Raw setup values; retain file values between garage UI steps.
 local DATA = {
-    fast = {file="fast.cup.sim",sha256="fd85e5c432c07272808e184e6e74304d580081cf4a57513e1fdc386dc30291e3",items={[0]=0x41b40000,[1]=0x41b40000,[2]=0x41b40000,[3]=0x41b40000,[4]=0x00000003,[5]=0x00000003,[6]=0x00000002,[7]=0x00000002,[8]=0x00000000,[9]=0x00000000,[10]=0x00000000,[11]=0x00000000,[12]=0x00000004,[13]=0x00000004,[14]=0x00000004,[15]=0x00000004,[16]=0x00000000,[17]=0x00000000,[18]=0x00000000,[19]=0x00000000,[20]=0xc7320e41,[21]=0xc7320e41,[22]=0xc7142b40,[23]=0xc7142b40,[24]=0x00000000,[25]=0x00000000,[26]=0x00000000,[27]=0x00000000,[28]=0x3d020c4a,[29]=0x3d020c4a,[30]=0x3d020c4a,[31]=0x3d020c4a,[32]=0xbd567781,[33]=0xbd567770,[34]=0xbd00ae00,[35]=0xbd00ae00,[36]=0x3dea161e,[38]=0x3e1c0e2b,[39]=0x3e1c0ebf,[40]=0x3f2b851e,[41]=0xbbcd88b8,[42]=0xbb12cf5f,[43]=0x0000000a,[44]=0x0000000f,[45]=0x3e820c05,[46]=0x3e820c05,[47]=0x00000000,[48]=0x41800000,[49]=0x4279b75b,[50]=0x00000001,[51]=0x00000004,[52]=0x00000000,[53]=0x00000011,[54]=0x0000001e,[55]=0x00000033,[56]=0x00000042,[57]=0x0000007a,[58]=0x00000000,[59]=0x3f000000,[60]=0x3f000000,[61]=0x41c80000,[62]=0xc1b570a4,[63]=0x401126e9,[64]=0x00000000,[65]=0x00000000,[66]=0x00000000,[67]=0x3d8efa61,[68]=0x3d8efa61}},
+    fast = {file="fast.cup.sim",sha256="1b21a99a381f46336e26710dbeefb25939d428d2e29db1f6249f8075eba89f49",items={[0]=0x41a80000,[1]=0x41a80000,[2]=0x41a40000,[3]=0x41a40000,[4]=0x00000004,[5]=0x00000004,[6]=0x00000003,[7]=0x00000003,[8]=0x00000000,[9]=0x00000000,[10]=0x00000000,[11]=0x00000000,[12]=0x00000004,[13]=0x00000004,[14]=0x00000003,[15]=0x00000003,[16]=0x00000000,[17]=0x00000000,[18]=0x00000000,[19]=0x00000000,[20]=0xc740f000,[21]=0xc740f000,[22]=0xc7208430,[23]=0xc7208430,[24]=0x00000000,[25]=0x00000000,[26]=0x00000000,[27]=0x00000000,[28]=0x3d020c4a,[29]=0x3d020c4a,[30]=0x3d020c4a,[31]=0x3d020c4a,[32]=0xbd2b92b9,[33]=0xbd2b92b9,[34]=0xbd00ae00,[35]=0xbd00ae00,[36]=0x3dea161e,[38]=0x3e1c0dd8,[39]=0x3e1c0ebf,[40]=0x3f2b851e,[41]=0xbbcd88b8,[42]=0xbb12cf5f,[43]=0x0000000a,[44]=0x0000000f,[45]=0x3e820bbf,[46]=0x3e820c16,[47]=0x00000000,[48]=0x41800000,[49]=0x4279b75b,[50]=0x00000001,[51]=0x00000004,[52]=0x00000000,[53]=0x00000011,[54]=0x0000001e,[55]=0x00000033,[56]=0x00000042,[57]=0x0000007a,[58]=0x00000000,[59]=0x3ee66666,[60]=0x3ee66666,[61]=0x41c80000,[62]=0xc1b570a4,[63]=0xc09126e9,[64]=0x00000000,[65]=0x00000000,[66]=0x00000000,[67]=0x3d6856a3,[68]=0x3d6856a3}},
     easy = {file="easy.cup.sim",sha256="57bfd898dc8b293c058333a6957239b8dd0931e47298a3b0035cff2f0104292d",items={[0]=0x41b80000,[1]=0x41b80000,[2]=0x41b80000,[3]=0x41b80000,[4]=0x00000004,[5]=0x00000004,[6]=0x00000002,[7]=0x00000002,[8]=0x00000000,[9]=0x00000000,[10]=0x00000000,[11]=0x00000000,[12]=0x00000005,[13]=0x00000005,[14]=0x00000004,[15]=0x00000004,[16]=0x00000000,[17]=0x00000000,[18]=0x00000000,[19]=0x00000000,[20]=0xc771a5a1,[21]=0xc771a5a1,[22]=0xc7208430,[23]=0xc7208430,[24]=0x00000000,[25]=0x00000000,[26]=0x00000000,[27]=0x00000000,[28]=0x3d020c4a,[29]=0x3d020c4a,[30]=0x3d020c4a,[31]=0x3d020c4a,[32]=0xbcd6775a,[33]=0xbcd6775a,[34]=0xbd00ae00,[35]=0xbd00ae00,[36]=0x3dea161e,[38]=0x3e1c0e95,[39]=0x3e1c0ebf,[40]=0x3f2e147b,[41]=0xbbcd88b8,[42]=0xbb12cf5f,[43]=0x0000000b,[44]=0x0000000b,[45]=0x3e5d14e4,[46]=0x3e5d14e4,[47]=0x00000000,[48]=0x41a00000,[49]=0x4279b75b,[50]=0x00000001,[51]=0x00000004,[52]=0x00000000,[53]=0x00000011,[54]=0x0000001f,[55]=0x00000034,[56]=0x00000043,[57]=0x0000007a,[58]=0x00000000,[59]=0x3e999999,[60]=0x3e999999,[61]=0x41c80000,[62]=0x4159ba5e,[63]=0xc1b570a4,[64]=0x00000000,[65]=0x00000000,[66]=0x00000000,[67]=0x3d8efa4d,[68]=0x3d8efa4d}},
-    qualify = {file="qualify.cup.sim",sha256="ca3eb866392a2459210f3ffa6602ab703979eb0a55707c7092885ccaf66bb8fb",items={[0]=0x41c00000,[1]=0x41c00000,[2]=0x41c00000,[3]=0x41c00000,[4]=0x00000003,[5]=0x00000003,[6]=0x00000002,[7]=0x00000002,[8]=0x00000000,[9]=0x00000000,[10]=0x00000000,[11]=0x00000000,[12]=0x00000005,[13]=0x00000005,[14]=0x00000004,[15]=0x00000004,[16]=0x00000000,[17]=0x00000000,[18]=0x00000000,[19]=0x00000000,[20]=0xc7320e41,[21]=0xc7320e41,[22]=0xc707d250,[23]=0xc707d250,[24]=0x00000000,[25]=0x00000000,[26]=0x00000000,[27]=0x00000000,[28]=0x3d020c4a,[29]=0x3d020c4a,[30]=0x3d020c4a,[31]=0x3d020c4a,[32]=0xbd64c395,[33]=0xbd64c395,[34]=0xbd00ae00,[35]=0xbd00ae00,[36]=0x3dea161e,[38]=0x3e1c0e17,[39]=0x3e1c0ebf,[40]=0x3f2b851e,[41]=0xbbcd88b8,[42]=0xbb12cf5f,[43]=0x0000000a,[44]=0x0000000e,[45]=0x3e820c39,[46]=0x3e820c39,[47]=0x00000000,[48]=0x41800000,[49]=0x4279b75b,[50]=0x00000001,[51]=0x00000004,[52]=0x00000000,[53]=0x00000011,[54]=0x0000001e,[55]=0x00000033,[56]=0x00000042,[57]=0x0000007a,[58]=0x00000000,[59]=0x3f4ccccc,[60]=0x3f4ccccc,[61]=0x41c80000,[62]=0xc1b570a4,[63]=0x00000000,[64]=0x00000000,[65]=0x00000000,[66]=0x00000000,[67]=0x3d8efa65,[68]=0x3d8efa65}},
+    qualify = {file="qualify.cup.sim",sha256="57238c6233b9733dbf1296096df47f6c052371e3a7509bd17b821da8564b651e",items={[0]=0x41a80000,[1]=0x41a80000,[2]=0x41a40000,[3]=0x41a40000,[4]=0x00000005,[5]=0x00000005,[6]=0x00000003,[7]=0x00000003,[8]=0x00000000,[9]=0x00000000,[10]=0x00000000,[11]=0x00000000,[12]=0x00000005,[13]=0x00000005,[14]=0x00000003,[15]=0x00000003,[16]=0x00000000,[17]=0x00000000,[18]=0x00000000,[19]=0x00000000,[20]=0xc740f000,[21]=0xc740f000,[22]=0xc7208430,[23]=0xc7208430,[24]=0x00000000,[25]=0x00000000,[26]=0x00000000,[27]=0x00000000,[28]=0x3d020c4a,[29]=0x3d020c4a,[30]=0x3d020c4a,[31]=0x3d020c4a,[32]=0xbd2b92b4,[33]=0xbd2b92b4,[34]=0xbd00ae00,[35]=0xbd00ae00,[36]=0x3dea161e,[38]=0x3e1c0ded,[39]=0x3e1c0ebf,[40]=0x3f2b851e,[41]=0xbbcd88b8,[42]=0xbb12cf5f,[43]=0x0000000a,[44]=0x0000000f,[45]=0x3e70967a,[46]=0x3e70967a,[47]=0x00000000,[48]=0x41800000,[49]=0x4279b75a,[50]=0x00000001,[51]=0x00000004,[52]=0x00000000,[53]=0x00000011,[54]=0x0000001e,[55]=0x00000033,[56]=0x00000042,[57]=0x0000007a,[58]=0x00000000,[59]=0x3f599999,[60]=0x3f599999,[61]=0x41c80000,[62]=0xc1b570a4,[63]=0xc11126e9,[64]=0x00000000,[65]=0x00000000,[66]=0x00000000,[67]=0x3d6856a3,[68]=0x3d6856a3}},
     jasper = {file="jasper.cup.sim",sha256="99e32fd4f6cc752e55bcd3c697f761446489d4e672a232c3fcef95981dae57bf",items={[0]=0x41a80000,[1]=0x41a80000,[2]=0x41a80000,[3]=0x41a80000,[4]=0x00000004,[5]=0x00000004,[6]=0x00000002,[7]=0x00000002,[8]=0x00000000,[9]=0x00000000,[10]=0x00000000,[11]=0x00000000,[12]=0x00000005,[13]=0x00000005,[14]=0x00000004,[15]=0x00000004,[16]=0x00000000,[17]=0x00000000,[18]=0x00000000,[19]=0x00000000,[20]=0xc77e5d81,[21]=0xc77e5d81,[22]=0xc7142b40,[23]=0xc7142b40,[24]=0x00000000,[25]=0x00000000,[26]=0x00000000,[27]=0x00000000,[28]=0x3d020c4a,[29]=0x3d020c4a,[30]=0x3d020c4a,[31]=0x3d020c4a,[32]=0xbd87d424,[33]=0xbd87d424,[34]=0xbd00ae00,[35]=0xbd00ae00,[36]=0x3dea161e,[38]=0x3e0f0d84,[39]=0x3e1c0ebf,[40]=0x3f2e147b,[41]=0xbb92cf5f,[42]=0xbb12cf5f,[43]=0x00000007,[44]=0x00000003,[45]=0x3e771718,[46]=0x3e771718,[47]=0x00000000,[48]=0x41e00000,[49]=0x4279b75b,[50]=0x00000001,[51]=0x00000004,[52]=0x00000000,[53]=0x00000012,[54]=0x0000001e,[55]=0x00000033,[56]=0x00000041,[57]=0x0000007c,[58]=0x00000000,[59]=0x3f199999,[60]=0x3f199999,[61]=0x41c80000,[62]=0xc1b570a4,[63]=0xc13570a4,[64]=0x00000000,[65]=0x00000000,[66]=0x00000000,[67]=0x3d8efa41,[68]=0x3d8efa41}},
 }
 local M = {}
@@ -1689,6 +1728,12 @@ local input = {throttle=0,brake=0,steer=0,clutch=0}
 for _=1,5 do ctl:step(1/36,input) end
 check("original contact ticks complete without host queries", ctl.core:tick()==40 and not ctl.fault, tostring(ctl.fault))
 local tel=ctl:telemetry()
+local a=tel.assists
+check("production adapter applies requested default assists",a and a.automatic and a.autoClutch and a.abs
+    and not a.tractionControl and not a.stabilityControl and not a.steering and not a.lowSpeedSteering)
+check("HUD attributes reflect live core options",attributes.DrivingAssist_automatic==true and attributes.DrivingAssist_autoClutch==true
+    and attributes.DrivingAssist_abs==true and attributes.DrivingAssist_tractionControl==false
+    and attributes.DrivingAssist_stabilityControl==false and attributes.DrivingAssist_steeringAvailable==false)
 local supported=false
 for _,w in ipairs(tel.wheels) do if w.grounded and w.load>0 then supported=true end end
 check("telemetry reads original tire support", supported)
@@ -1700,5 +1745,16 @@ ctl:reset()
 check("reset reactivates the original world", ctl.core.V.worldActive() and ctl.origin==trackOrigin)
 ctl:step(1/36,input)
 check("reset remains drivable without host queries", not ctl.fault and ctl.core:tick()==8,tostring(ctl.fault))
+car:SetAttribute("AutomaticTransmission",false);car:SetAttribute("AutoClutch",false);car:SetAttribute("ABS",false)
+car:SetAttribute("TractionControl",true);car:SetAttribute("StabilityControl",true)
+ctl:reset();a=ctl:telemetry().assists
+check("car attributes select original manual clutch, TC and stability on reset",not a.automatic and not a.autoClutch
+    and not a.abs and a.tractionControl and a.stabilityControl)
+for _,name in ipairs({"AutomaticTransmission","AutoClutch","ABS","TractionControl","StabilityControl"}) do car:SetAttribute(name,nil) end
+local localHost=Adapter.new(car,TestTune,nil,{client=true,networked=true,driver=function() return true end,prepareSpawn=false})
+a=localHost:telemetry().assists
+check("Stage 14 local host uses same requested default assists",localHost.clientSimulation and localHost.networked
+    and a.automatic and a.autoClutch and a.abs and not a.tractionControl and not a.stabilityControl)
+check("local prediction warm-up never prepares avatar spawn",prepared==1)
 print(string.format("\ntrack adapter: %d passed, %d failed",passed,failed))
 if failed>0 then error("track adapter tests failed") end

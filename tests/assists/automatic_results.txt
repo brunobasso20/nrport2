@@ -1,0 +1,1 @@
+Original automatic shifts: 50 initializer cells exact; 102 predicted-RPM vectors (max relative 1.24e-16, f32-down exact); 588 selector cases bit-exact

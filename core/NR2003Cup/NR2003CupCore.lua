@@ -6827,15 +6827,40 @@ function V.translate(dx, dy, dz)
 	w32(0xe847c8, S); w32(0xe84664, 0xe84474)
 	callx(0x5b4560, ROOT)
 end
+-- Stage 14: closures are simulation state too. Registration never stores functions in packets.
+local checkpointHooks = {}
+local function copyState(x)
+    if type(x) ~= "table" then return x end
+    local t = {}; for k, v in pairs(x) do t[k] = copyState(v) end; return t
+end
+V._copyState = copyState
+function V._registerCheckpoint(name, capture, restore)
+    checkpointHooks[name] = {capture, restore}
+end
 function V.checkpoint()
 	local c = buffer.create(Image.size)
 	buffer.copy(c, 0, M, 0, Image.size)
-	return { memory = c, tick = V.tick }
+	local hosts = {}
+    for name, h in pairs(checkpointHooks) do hosts[name] = copyState(h[1]()) end
+    return { memory = c, tick = V.tick, schema = 14, hosts = hosts,
+        machine = {EAX, EBX, ECX, EDX, ESI, EDI, EBP, ESP, FT, FSW, FCW, FR, FZ, FS, FC, FO, FP, BG},
+        fpu = table.clone(F) }
 end
 function V.restore(c)
 	buffer.copy(M, 0, c.memory, 0, Image.size)
 	ESP = Image.stackTop; table.clear(F); FT = 0
-	V.tick = c.tick
+    assert(buffer.len(c.memory) == Image.size, "checkpoint memory size")
+    V.tick = c.tick
+    if c.schema == 14 then
+        local r = c.machine
+        EAX, EBX, ECX, EDX, ESI, EDI, EBP, ESP, FT, FSW, FCW = table.unpack(r, 1, 11)
+        FR, FZ, FS, FC, FO, FP, BG = table.unpack(r, 12, 18)
+        table.clear(F); for k, v in pairs(c.fpu) do F[k] = v end
+        for name, h in pairs(checkpointHooks) do
+            assert(c.hosts[name] ~= nil, "checkpoint host missing: " .. name)
+            h[2](copyState(c.hosts[name]))
+        end
+    end
 end
 
 -- 45-state export (005b2cb0) into a host scratch block, so that reading the state never

@@ -1,0 +1,1 @@
+Original stability: 36 vectors; 252/252 force/scalar bits exact, max abs error 0; 6 aid-on corrective vectors; disabled/hardcore add zero
