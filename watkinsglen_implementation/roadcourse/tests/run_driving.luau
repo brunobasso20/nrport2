@@ -1,6 +1,7 @@
 local Vehicle=require('../../../core/NR2003CupVehicle')
 local Setups=require('../../../roblox/NR2003WatkinsGlenSetup')
 local fixtures=require('./driving_fixtures')
+local recordedFast=require('./recorded_fast_setup') -- preserve the original fixture's input setup
 local function get(n)
  local ok,m=pcall(require,'../../../core/NR2003Cup/'..n)
  if not ok then ok,m=pcall(require,'../../core/NR2003Cup/'..n) end
@@ -9,7 +10,7 @@ end
 for _,name in ipairs({'pit_fast','pit_easy','concrete_fast'}) do
  local ref=fixtures[name]
  local c=Vehicle.fromLoader(get);local V=c.V
- c:loadTrack();local items=Setups.new(V.Setup,ref.setup);assert(c:applySetup(items))
+ c:loadTrack();local items=ref.setup=="fast" and recordedFast(V.Setup) or Setups.new(V.Setup,ref.setup);assert(c:applySetup(items))
  local statics=0
  for a,u in pairs(ref.static) do assert(V.r32(tonumber(a))==u,'Original spec/profile constant mismatch: '..a);statics+=1 end
  assert(V.r32(0xc125be)==4 and V.r32(0xc125ba)==0x723c70,'Original road chassis selection failed')

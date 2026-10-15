@@ -1,0 +1,278 @@
+{
+  "studio_sha256": "2db67cbb01093d604a84d3ea23ff24514275a76e9776710c54cc9c8628ac7024",
+  "reference_sha256": "27e76919be6722bee0dcaddc92454fea338e99a97404df6220448314feb4500a",
+  "reference_version": "1.2.0.1",
+  "executed_range": [
+    "00510011",
+    "0051002d"
+  ],
+  "fpcw": "0x077f",
+  "input_provenance": "Recovered Watkins Glen INI values in surface_tables.json; original INI file is not embedded in this snapshot",
+  "material_results": [
+    {
+      "index": 0,
+      "name": "undefined",
+      "multiplier": 1.0,
+      "original": 0.800000011920929,
+      "studio": 0.800000011920929,
+      "original_bits": "3f4ccccd",
+      "studio_bits": "3f4ccccd",
+      "exact_match": true
+    },
+    {
+      "index": 1,
+      "name": "asphalt",
+      "multiplier": 1.05,
+      "original": 0.8399999737739563,
+      "studio": 0.8399999737739563,
+      "original_bits": "3f570a3d",
+      "studio_bits": "3f570a3d",
+      "exact_match": true
+    },
+    {
+      "index": 2,
+      "name": "concrete",
+      "multiplier": 1.09,
+      "original": 0.837119996547699,
+      "studio": 0.837119996547699,
+      "original_bits": "3f564d7f",
+      "studio_bits": "3f564d7f",
+      "exact_match": true
+    },
+    {
+      "index": 3,
+      "name": "rumble",
+      "multiplier": 1.0,
+      "original": 0.7680000066757202,
+      "studio": 0.7680000066757202,
+      "original_bits": "3f449ba6",
+      "studio_bits": "3f449ba6",
+      "exact_match": true
+    },
+    {
+      "index": 4,
+      "name": "paint",
+      "multiplier": 1.0,
+      "original": 0.7199999690055847,
+      "studio": 0.7199999690055847,
+      "original_bits": "3f3851eb",
+      "studio_bits": "3f3851eb",
+      "exact_match": true
+    },
+    {
+      "index": 5,
+      "name": "grass",
+      "multiplier": 1.0,
+      "original": 0.46399998664855957,
+      "studio": 0.46399998664855957,
+      "original_bits": "3eed9168",
+      "studio_bits": "3eed9168",
+      "exact_match": true
+    },
+    {
+      "index": 6,
+      "name": "dirt",
+      "multiplier": 1.0,
+      "original": 0.5199999809265137,
+      "studio": 0.5199999809265137,
+      "original_bits": "3f051eb8",
+      "studio_bits": "3f051eb8",
+      "exact_match": true
+    },
+    {
+      "index": 7,
+      "name": "sand",
+      "multiplier": 1.0,
+      "original": 0.64000004529953,
+      "studio": 0.64000004529953,
+      "original_bits": "3f23d70b",
+      "studio_bits": "3f23d70b",
+      "exact_match": true
+    },
+    {
+      "index": 8,
+      "name": "gravel",
+      "multiplier": 1.0,
+      "original": 0.64000004529953,
+      "studio": 0.64000004529953,
+      "original_bits": "3f23d70b",
+      "studio_bits": "3f23d70b",
+      "exact_match": true
+    },
+    {
+      "index": 9,
+      "name": "water",
+      "multiplier": 1.0,
+      "original": 0.08000000566244125,
+      "studio": 0.08000000566244125,
+      "original_bits": "3da3d70b",
+      "studio_bits": "3da3d70b",
+      "exact_match": true
+    },
+    {
+      "index": 10,
+      "name": "armco",
+      "multiplier": 1.0,
+      "original": 0.7199999690055847,
+      "studio": 0.7199999690055847,
+      "original_bits": "3f3851eb",
+      "studio_bits": "3f3851eb",
+      "exact_match": true
+    },
+    {
+      "index": 11,
+      "name": "tire_wall",
+      "multiplier": 1.0,
+      "original": 0.800000011920929,
+      "studio": 0.800000011920929,
+      "original_bits": "3f4ccccd",
+      "studio_bits": "3f4ccccd",
+      "exact_match": true
+    },
+    {
+      "index": 12,
+      "name": "haybale",
+      "multiplier": 1.0,
+      "original": 0.35999998450279236,
+      "studio": 0.35999998450279236,
+      "original_bits": "3eb851eb",
+      "studio_bits": "3eb851eb",
+      "exact_match": true
+    },
+    {
+      "index": 13,
+      "name": "chain_fence",
+      "multiplier": 1.0,
+      "original": 0.5600000023841858,
+      "studio": 0.5600000023841858,
+      "original_bits": "3f0f5c29",
+      "studio_bits": "3f0f5c29",
+      "exact_match": true
+    },
+    {
+      "index": 14,
+      "name": "shrub",
+      "multiplier": 1.0,
+      "original": 0.320000022649765,
+      "studio": 0.320000022649765,
+      "original_bits": "3ea3d70b",
+      "studio_bits": "3ea3d70b",
+      "exact_match": true
+    },
+    {
+      "index": 15,
+      "name": "forest",
+      "multiplier": 1.0,
+      "original": 0.320000022649765,
+      "studio": 0.320000022649765,
+      "original_bits": "3ea3d70b",
+      "studio_bits": "3ea3d70b",
+      "exact_match": true
+    },
+    {
+      "index": 16,
+      "name": "wood_fence",
+      "multiplier": 1.0,
+      "original": 0.64000004529953,
+      "studio": 0.64000004529953,
+      "original_bits": "3f23d70b",
+      "studio_bits": "3f23d70b",
+      "exact_match": true
+    },
+    {
+      "index": 17,
+      "name": "chassis",
+      "multiplier": 1.0,
+      "original": 0.7199999690055847,
+      "studio": 0.7199999690055847,
+      "original_bits": "3f3851eb",
+      "studio_bits": "3f3851eb",
+      "exact_match": true
+    },
+    {
+      "index": 18,
+      "name": "opponent_wheel",
+      "multiplier": 1.0,
+      "original": 0.800000011920929,
+      "studio": 0.800000011920929,
+      "original_bits": "3f4ccccd",
+      "studio_bits": "3f4ccccd",
+      "exact_match": true
+    },
+    {
+      "index": 19,
+      "name": "wheel",
+      "multiplier": 1.0,
+      "original": 0.800000011920929,
+      "studio": 0.800000011920929,
+      "original_bits": "3f4ccccd",
+      "studio_bits": "3f4ccccd",
+      "exact_match": true
+    }
+  ],
+  "constant_tables": [
+    {
+      "address": "006f6570",
+      "bytes": 80,
+      "original_sha256": "e52f397cc035c46d075b397499e3f5b06ebf0a185be49b71c41ce5f25bdee043",
+      "exact_match": true
+    },
+    {
+      "address": "006f6148",
+      "bytes": 80,
+      "original_sha256": "4247ce50f99d0609c6dcff2e5a13b96003480370ad069e10538317fafba218e4",
+      "exact_match": true
+    },
+    {
+      "address": "006f6198",
+      "bytes": 80,
+      "original_sha256": "e440f95dd290b99fc986c0a646ec55c2dcf015bebfbf7eb15e286a46d183ab97",
+      "exact_match": true
+    },
+    {
+      "address": "006f63c8",
+      "bytes": 80,
+      "original_sha256": "1c37ca93149403db85089dbba1da1d29411c25b27e15b9c7d9f4d0e4fb3537a9",
+      "exact_match": true
+    },
+    {
+      "address": "006f6418",
+      "bytes": 80,
+      "original_sha256": "95f0af4cf87daf45b0ecaf77d619fd4ed0f4973727512897478a604925090b84",
+      "exact_match": true
+    },
+    {
+      "address": "006f65c0",
+      "bytes": 80,
+      "original_sha256": "2ae30b8966cdcfe03f739773193d2bec156813d64459abc758edfd6a8cf704cf",
+      "exact_match": true
+    }
+  ],
+  "thermal_inputs": [
+    {
+      "key": "track_tire_wear",
+      "expected": 1.0,
+      "studio": 1.0,
+      "exact_match": true
+    },
+    {
+      "key": "track_tire_heat",
+      "expected": 1.1200000047683716,
+      "studio": 1.1200000047683716,
+      "exact_match": true
+    },
+    {
+      "key": "track_tire_wear_loss",
+      "expected": 0.20000000298023224,
+      "studio": 0.20000000298023224,
+      "exact_match": true
+    },
+    {
+      "key": "track_tire_wear_exp",
+      "expected": 1.1100000143051147,
+      "studio": 1.1100000143051147,
+      "exact_match": true
+    }
+  ],
+  "all_exact": true
+}

@@ -1,0 +1,25 @@
+PASS  preset overrides are cleared before reset easy
+PASS  cycle selects easy
+PASS  preset overrides are cleared before reset qualify
+PASS  cycle selects qualify
+PASS  preset overrides are cleared before reset jasper
+PASS  cycle selects jasper
+PASS  preset overrides are cleared before reset fast
+PASS  cycle selects fast
+PASS  four cycles invoke four resets and preserve unrelated attributes
+PASS  next wraps and defaults unknown names
+PASS  configured selection is used without an applied selection
+PASS  missing selection starts from fast
+PASS  failed reset restores selection, overrides and applied source false
+PASS  failed reset restores selection, overrides and applied source true
+PASS  other tracks cannot cycle
+PASS  processed keys and focused text boxes ignore both shortcuts
+PASS  K sends one cycle request per key press
+PASS  K works again after key release
+PASS  HUD created after a hide shortcut stays hidden
+PASS  held Comma cannot toggle repeatedly
+PASS  Comma restores the telemetry HUD without sending network input
+PASS  period no longer changes HUD visibility
+PASS  focus loss releases held shortcuts
+PASS  client bindings disconnect cleanly
+Setup test controls: 24 checks passed

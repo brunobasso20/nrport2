@@ -1,0 +1,476 @@
+<roblox version="4"><Item class="ModuleScript" referent="RBX0"><Properties><string name="Name">NR2003_Patch1201Setups</string><ProtectedString name="Source">local function norm(s) return (s:gsub("\r\n", "\n")) end
+local function fnv(s)
+    local h=2166136261
+    for i=1,#s do
+        h=bit32.bxor(h,string.byte(s,i))
+        h=bit32.band(bit32.band(h,65535)*16777619+bit32.band(h,4294901760)*403,4294967295)
+    end
+    return h
+end
+local function apply()
+    assert(not game:GetService("RunService"):IsRunning(),"Stop Play before installing presets and controls")
+    local package=assert(game:GetService("ReplicatedStorage"):FindFirstChild("NR2003Lab"),"NR2003Lab missing")
+    local modules=assert(package:FindFirstChild("Roblox"),"NR2003Lab.Roblox missing")
+    local starter=game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts")
+    local servers=game:GetService("ServerScriptService")
+    local specs={
+{id="setup",parent=modules,name="NR2003WatkinsGlenSetup",class="ModuleScript",oldLen=5349,oldHash=734809296,source=[=[
+-- Official patch 1.2.0.1 fast/qualify: recovery/patch1201/gen_patch_setups.py; easy/jasper retained.
+-- Raw setup values; retain file values between garage UI steps.
+local DATA = {
+    fast = {file="fast.cup.sim",sha256="1b21a99a381f46336e26710dbeefb25939d428d2e29db1f6249f8075eba89f49",items={[0]=0x41a80000,[1]=0x41a80000,[2]=0x41a40000,[3]=0x41a40000,[4]=0x00000004,[5]=0x00000004,[6]=0x00000003,[7]=0x00000003,[8]=0x00000000,[9]=0x00000000,[10]=0x00000000,[11]=0x00000000,[12]=0x00000004,[13]=0x00000004,[14]=0x00000003,[15]=0x00000003,[16]=0x00000000,[17]=0x00000000,[18]=0x00000000,[19]=0x00000000,[20]=0xc740f000,[21]=0xc740f000,[22]=0xc7208430,[23]=0xc7208430,[24]=0x00000000,[25]=0x00000000,[26]=0x00000000,[27]=0x00000000,[28]=0x3d020c4a,[29]=0x3d020c4a,[30]=0x3d020c4a,[31]=0x3d020c4a,[32]=0xbd2b92b9,[33]=0xbd2b92b9,[34]=0xbd00ae00,[35]=0xbd00ae00,[36]=0x3dea161e,[38]=0x3e1c0dd8,[39]=0x3e1c0ebf,[40]=0x3f2b851e,[41]=0xbbcd88b8,[42]=0xbb12cf5f,[43]=0x0000000a,[44]=0x0000000f,[45]=0x3e820bbf,[46]=0x3e820c16,[47]=0x00000000,[48]=0x41800000,[49]=0x4279b75b,[50]=0x00000001,[51]=0x00000004,[52]=0x00000000,[53]=0x00000011,[54]=0x0000001e,[55]=0x00000033,[56]=0x00000042,[57]=0x0000007a,[58]=0x00000000,[59]=0x3ee66666,[60]=0x3ee66666,[61]=0x41c80000,[62]=0xc1b570a4,[63]=0xc09126e9,[64]=0x00000000,[65]=0x00000000,[66]=0x00000000,[67]=0x3d6856a3,[68]=0x3d6856a3}},
+    easy = {file="easy.cup.sim",sha256="57bfd898dc8b293c058333a6957239b8dd0931e47298a3b0035cff2f0104292d",items={[0]=0x41b80000,[1]=0x41b80000,[2]=0x41b80000,[3]=0x41b80000,[4]=0x00000004,[5]=0x00000004,[6]=0x00000002,[7]=0x00000002,[8]=0x00000000,[9]=0x00000000,[10]=0x00000000,[11]=0x00000000,[12]=0x00000005,[13]=0x00000005,[14]=0x00000004,[15]=0x00000004,[16]=0x00000000,[17]=0x00000000,[18]=0x00000000,[19]=0x00000000,[20]=0xc771a5a1,[21]=0xc771a5a1,[22]=0xc7208430,[23]=0xc7208430,[24]=0x00000000,[25]=0x00000000,[26]=0x00000000,[27]=0x00000000,[28]=0x3d020c4a,[29]=0x3d020c4a,[30]=0x3d020c4a,[31]=0x3d020c4a,[32]=0xbcd6775a,[33]=0xbcd6775a,[34]=0xbd00ae00,[35]=0xbd00ae00,[36]=0x3dea161e,[38]=0x3e1c0e95,[39]=0x3e1c0ebf,[40]=0x3f2e147b,[41]=0xbbcd88b8,[42]=0xbb12cf5f,[43]=0x0000000b,[44]=0x0000000b,[45]=0x3e5d14e4,[46]=0x3e5d14e4,[47]=0x00000000,[48]=0x41a00000,[49]=0x4279b75b,[50]=0x00000001,[51]=0x00000004,[52]=0x00000000,[53]=0x00000011,[54]=0x0000001f,[55]=0x00000034,[56]=0x00000043,[57]=0x0000007a,[58]=0x00000000,[59]=0x3e999999,[60]=0x3e999999,[61]=0x41c80000,[62]=0x4159ba5e,[63]=0xc1b570a4,[64]=0x00000000,[65]=0x00000000,[66]=0x00000000,[67]=0x3d8efa4d,[68]=0x3d8efa4d}},
+    qualify = {file="qualify.cup.sim",sha256="57238c6233b9733dbf1296096df47f6c052371e3a7509bd17b821da8564b651e",items={[0]=0x41a80000,[1]=0x41a80000,[2]=0x41a40000,[3]=0x41a40000,[4]=0x00000005,[5]=0x00000005,[6]=0x00000003,[7]=0x00000003,[8]=0x00000000,[9]=0x00000000,[10]=0x00000000,[11]=0x00000000,[12]=0x00000005,[13]=0x00000005,[14]=0x00000003,[15]=0x00000003,[16]=0x00000000,[17]=0x00000000,[18]=0x00000000,[19]=0x00000000,[20]=0xc740f000,[21]=0xc740f000,[22]=0xc7208430,[23]=0xc7208430,[24]=0x00000000,[25]=0x00000000,[26]=0x00000000,[27]=0x00000000,[28]=0x3d020c4a,[29]=0x3d020c4a,[30]=0x3d020c4a,[31]=0x3d020c4a,[32]=0xbd2b92b4,[33]=0xbd2b92b4,[34]=0xbd00ae00,[35]=0xbd00ae00,[36]=0x3dea161e,[38]=0x3e1c0ded,[39]=0x3e1c0ebf,[40]=0x3f2b851e,[41]=0xbbcd88b8,[42]=0xbb12cf5f,[43]=0x0000000a,[44]=0x0000000f,[45]=0x3e70967a,[46]=0x3e70967a,[47]=0x00000000,[48]=0x41800000,[49]=0x4279b75a,[50]=0x00000001,[51]=0x00000004,[52]=0x00000000,[53]=0x00000011,[54]=0x0000001e,[55]=0x00000033,[56]=0x00000042,[57]=0x0000007a,[58]=0x00000000,[59]=0x3f599999,[60]=0x3f599999,[61]=0x41c80000,[62]=0xc1b570a4,[63]=0xc11126e9,[64]=0x00000000,[65]=0x00000000,[66]=0x00000000,[67]=0x3d6856a3,[68]=0x3d6856a3}},
+    jasper = {file="jasper.cup.sim",sha256="99e32fd4f6cc752e55bcd3c697f761446489d4e672a232c3fcef95981dae57bf",items={[0]=0x41a80000,[1]=0x41a80000,[2]=0x41a80000,[3]=0x41a80000,[4]=0x00000004,[5]=0x00000004,[6]=0x00000002,[7]=0x00000002,[8]=0x00000000,[9]=0x00000000,[10]=0x00000000,[11]=0x00000000,[12]=0x00000005,[13]=0x00000005,[14]=0x00000004,[15]=0x00000004,[16]=0x00000000,[17]=0x00000000,[18]=0x00000000,[19]=0x00000000,[20]=0xc77e5d81,[21]=0xc77e5d81,[22]=0xc7142b40,[23]=0xc7142b40,[24]=0x00000000,[25]=0x00000000,[26]=0x00000000,[27]=0x00000000,[28]=0x3d020c4a,[29]=0x3d020c4a,[30]=0x3d020c4a,[31]=0x3d020c4a,[32]=0xbd87d424,[33]=0xbd87d424,[34]=0xbd00ae00,[35]=0xbd00ae00,[36]=0x3dea161e,[38]=0x3e0f0d84,[39]=0x3e1c0ebf,[40]=0x3f2e147b,[41]=0xbb92cf5f,[42]=0xbb12cf5f,[43]=0x00000007,[44]=0x00000003,[45]=0x3e771718,[46]=0x3e771718,[47]=0x00000000,[48]=0x41e00000,[49]=0x4279b75b,[50]=0x00000001,[51]=0x00000004,[52]=0x00000000,[53]=0x00000012,[54]=0x0000001e,[55]=0x00000033,[56]=0x00000041,[57]=0x0000007c,[58]=0x00000000,[59]=0x3f199999,[60]=0x3f199999,[61]=0x41c80000,[62]=0xc1b570a4,[63]=0xc13570a4,[64]=0x00000000,[65]=0x00000000,[66]=0x00000000,[67]=0x3d8efa41,[68]=0x3d8efa41}},
+}
+local M = {}
+function M.new(Setup, name)
+    name = name or "fast"
+    local data = assert(DATA[name], "WatkinsGlenSetup must be fast, easy, qualify or jasper")
+    local items = Setup.defaults()
+    for i, raw in pairs(data.items) do items[i] = raw end
+    assert(Setup.validateLoaded(items), "Original Watkins Glen setup validation failed")
+    return items, name, data.sha256
+end
+return M
+]=]},
+{id="controls",parent=modules,name="SetupTestControls",class="ModuleScript",oldLen=0,oldHash=0,source=[=[
+-- Server-side preset selection. The caller owns driver authorization and the reset/epoch operation.
+local M = {}
+M.names = table.freeze({"fast", "easy", "qualify", "jasper"})
+local indices = {}
+for index, name in ipairs(M.names) do indices[name] = index end
+
+function M.next(name)
+    local index = indices[name] or 1
+    return M.names[index % #M.names + 1]
+end
+
+local function override(name)
+    return string.sub(name, 1, 6) == "Setup_" or name == "SetupBrakeBias"
+        or name == "SetupGrilleTape" or name == "SetupSpoiler"
+end
+local function tracked(name)
+    return override(name) or name == "WatkinsGlenSetup" or name == "TrackSetupApplied" or name == "TrackSetupSHA256"
+end
+
+function M.cycle(car, resetCallback)
+    assert(car:GetAttribute("NR2003Track") == "watkins_glen", "Setup cycling requires the original Watkins Glen track")
+    assert(type(resetCallback) == "function", "Setup cycling requires a reset callback")
+    local before = car:GetAttributes()
+    local chosen = M.next(before.TrackSetupApplied or before.WatkinsGlenSetup or "fast")
+    local ok, result, reason = pcall(function()
+        for name in pairs(before) do if override(name) then car:SetAttribute(name, nil) end end
+        car:SetAttribute("WatkinsGlenSetup", chosen)
+        return resetCallback(chosen)
+    end)
+    if not ok or result == false then
+        for name in pairs(car:GetAttributes()) do if tracked(name) then car:SetAttribute(name, nil) end end
+        for name, value in pairs(before) do if tracked(name) then car:SetAttribute(name, value) end end
+        error(ok and (reason or "The selected setup could not be applied") or result, 0)
+    end
+    return chosen
+end
+
+return M
+]=]},
+{id="bindings",parent=starter,name="NR2003SetupTestBindings",class="LocalScript",oldLen=0,oldHash=0,source=[=[
+-- Independent test shortcuts: K selects the next original preset; Comma toggles the telemetry HUD.
+local function bind(services, keyCodes)
+    local input = services:GetService("UserInputService")
+    local player = services:GetService("Players").LocalPlayer
+    local gui = player:WaitForChild("PlayerGui")
+    local package = services:GetService("ReplicatedStorage"):WaitForChild("NR2003Lab")
+    local remote = package:WaitForChild("Input")
+    local existing = gui:FindFirstChild("NR2003LabHUD")
+    local visible = existing == nil or existing.Enabled
+    local held, connections = {}, {}
+    local function show(child)
+        if child.Name == "NR2003LabHUD" and child:IsA("ScreenGui") then child.Enabled = visible end
+    end
+    connections[#connections + 1] = gui.ChildAdded:Connect(show)
+    connections[#connections + 1] = input.InputBegan:Connect(function(event, processed)
+        if processed or input:GetFocusedTextBox() then return end
+        local key = event.KeyCode
+        if (key ~= keyCodes.K and key ~= keyCodes.Comma) or held[key] then return end
+        held[key] = true
+        if key == keyCodes.K then
+            remote:FireServer({kind="cycleSetup"})
+        else
+            visible = not visible
+            for _, child in ipairs(gui:GetChildren()) do show(child) end
+        end
+    end)
+    connections[#connections + 1] = input.InputEnded:Connect(function(event) held[event.KeyCode] = nil end)
+    connections[#connections + 1] = input.WindowFocusReleased:Connect(function() table.clear(held) end)
+    return function()
+        for _, connection in ipairs(connections) do connection:Disconnect() end
+    end
+end
+
+if game then bind(game, Enum.KeyCode) end
+return bind
+]=]},
+{id="prediction",parent=modules,name="PredictionServer",class="ModuleScript",oldLen=12132,oldHash=2873754171,source=[=[
+local RS=game:GetService("ReplicatedStorage")
+local Players=game:GetService("Players")
+local Run=game:GetService("RunService")
+local package=script.Parent.Parent
+local C=require(script.Parent.PredictionConfig)
+local P=require(script.Parent.PredictionProtocol)
+local Codec=require(script.Parent.PredictionCheckpoint)
+local Session=require(script.Parent.PredictionSession)
+local Simulation=require(script.Parent.PredictionSimulation)
+local Snap=require(script.Parent.RenderSnapshot)
+local Tune=require(package.Core.TestTune)
+local M={}
+local function start(ownerScript,setCleanup)
+    package:SetAttribute("PredictionServerRunning",true)
+    assert(require(script.Parent.ModeConfig).mode=="NR2003_CUP","Stage 14 requires NR2003_CUP")
+    local function event(name,class)
+        local r=package:FindFirstChild(name)
+        if not r then r=Instance.new(class);r.Name=name;r.Parent=package end
+        assert(r.ClassName==class,"remote class: "..name);return r
+    end
+    local control=event("PredictionControl","RemoteEvent")
+    local state=event("PredictionState","UnreliableRemoteEvent")
+    local input=package:WaitForChild("Input")
+    local world=workspace:FindFirstChild("NR2003LabWorld")
+    if not world then
+        world=Instance.new("Folder");world.Name="NR2003LabWorld";world.Parent=workspace
+    end
+    if not world:FindFirstChild("TestCar") then
+        local b=require(script.Parent.CarBuilder);b.create(world,b.spawnCFrame(Tune.new()),Tune.new())
+    end
+    local modelFolder=package:FindFirstChild("CarModel")
+    local Draw=modelFolder and require(modelFolder.NR2003DrawState)
+    local entries,conns={},{};local nextId=0;local ready={};local actionTimes={};local closed=false
+    local function stop()
+        if closed then return end
+        closed=true
+        for _,c in ipairs(conns) do c:Disconnect() end
+        for _,e in pairs(entries) do pcall(function() e.sim:destroy() end) end
+        package:SetAttribute("PredictionServerRunning",nil)
+    end
+    setCleanup(stop)
+    conns[#conns+1]=ownerScript.Destroying:Connect(stop)
+    local function sendStart(e)
+        if not e.driver or not ready[e.driver] then return end
+        if e.sim:tick()%8~=0 then e.startRequested=true;return end
+        e.startRequested=nil;e.correction=nil;e.needsCorrection=nil
+        -- Ownership/reset epochs invalidate all traffic from an earlier lifecycle.
+        e.epoch+=1;e.initial=e.sim:checkpoint();e.session=Session.new(e.epoch,e.sim:tick(),os.clock(),e.sim)
+        e.lastAck=0;e.forceAck=true;e.base=e.initial.memory
+        e.session.onWitness=function(seq,accepted,witness)
+            local bad,error=P.error(accepted,witness)
+            e.lastError=error;e.lastError.tick=e.session.startTick+seq*8
+            if error.maximum&gt;0 then e.divergentFrames=(e.divergentFrames or 0)+1 end
+            if bad then e.needsCorrection=true end
+        end
+        e.car:SetAttribute("PredictionEpoch",e.epoch)
+        control:FireClient(e.driver,{kind="start",id=e.id,car=e.car,epoch=e.epoch,
+            checkpoint=Codec.pack(e.initial),tick=e.sim:tick()})
+    end
+    local function add(car)
+        if closed or car.Parent~=world or not car:IsA("Model") or not car:FindFirstChild("DriverSeat") or not car:FindFirstChild("Chassis") then return end
+        if entries[car] then return end
+        nextId+=1
+        local sim=Simulation.new(car,Tune.new(),input,false,nil,nextId==1)
+        local e={car=car,id=nextId,sim=sim,epoch=0,seq=0,renderTimer=0,ackTimer=0,idle=0}
+        entries[car]=e;car:SetAttribute("PredictionVehicleId",e.id);car:SetAttribute("PredictionEnabled",true)
+    end
+    for _,car in ipairs(world:GetChildren()) do add(car) end
+    local function deferAdd(car) if task then task.defer(add,car) else add(car) end end
+    conns[#conns+1]=world.ChildAdded:Connect(deferAdd)
+    if world.DescendantAdded then conns[#conns+1]=world.DescendantAdded:Connect(function(child)
+        if child.Name=="DriverSeat" or child.Name=="Chassis" then deferAdd(child.Parent) end
+    end) end
+    local function find(player,id)
+        for _,e in pairs(entries) do if e.id==id and e.driver==player and e.sim.adapter:driver()==player then return e end end
+    end
+    local function guard(fn)
+        return function(...)
+            local ok,err=pcall(fn,...);if not ok then warn("Stage 14: "..tostring(err)) end
+        end
+    end
+    conns[#conns+1]=control.OnServerEvent:Connect(guard(function(player,msg)
+        if type(msg)~="table" then return end
+        if msg.kind=="ready" then
+            if ready[player] and os.clock()-ready[player]&lt;1 then return end
+            ready[player]=os.clock()
+            for _,e in pairs(entries) do if e.driver==player then sendStart(e) end end
+            return
+        end
+        local e=find(player,msg.id);if not e or not e.session or msg.epoch~=e.epoch then return end
+        if msg.kind=="commands" then
+            local ok=e.session:receive(msg,os.clock())
+            if not ok then e.session.rejected+=1 end
+        elseif msg.kind=="resync" and os.clock()-(e.lastResync or 0)&gt;1 then
+            e.lastResync=os.clock();sendStart(e)
+        elseif msg.kind=="ping" and P.finite(msg.echo) and os.clock()-(e.lastPing or -1)&gt;0.25 then
+            e.lastPing=os.clock();control:FireClient(player,{kind="pong",id=e.id,epoch=e.epoch,echo=msg.echo})
+        end
+    end))
+    conns[#conns+1]=input.OnServerEvent:Connect(guard(function(player,msg)
+        if type(msg)~="table" then return end
+        local e
+        for _,candidate in pairs(entries) do
+            if candidate.sim.adapter:driver()==player then e=candidate;break end
+        end
+        if msg.kind=="enter" then
+            -- The existing seat handler still performs distance, life, cooldown, ownership checks.
+            local root=player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+            if root then
+                local nearest,dist
+                for _,candidate in pairs(entries) do
+                    local d=(candidate.car.DriverSeat.Position-root.Position).Magnitude
+                    if not dist or d&lt;dist then nearest,dist=candidate,d end
+                end
+                if nearest then nearest.sim.adapter:requestEntry(player) end
+            end
+            return
+        end
+        if not e or os.clock()-(actionTimes[player] or 0)&lt;0.15 then return end
+        actionTimes[player]=os.clock()
+        if msg.kind=="exit" then e.sim.adapter:exit(player)
+        elseif msg.kind=="reset" then
+            e.sim.adapter:reset();e.faulted=nil;e.driver=player;e.car:SetAttribute("PredictionFault",nil);sendStart(e)
+        elseif msg.kind=="cycleSetup" and e.car:GetAttribute("NR2003Track")=="watkins_glen" then
+            local ok,reason=pcall(require(script.Parent.SetupTestControls).cycle,e.car,function() e.sim.adapter:reset() end)
+            if ok then
+                e.faulted=nil;e.driver=player;e.car:SetAttribute("PredictionFault",nil);sendStart(e)
+            else warn("NR2003 preset switch failed: "..tostring(reason)) end
+        elseif msg.kind=="debug" then
+            e.sim.adapter.debugVisible=not e.sim.adapter.debugVisible
+            e.car:SetAttribute("DebugContacts",e.sim.adapter.debugVisible)
+        end -- legacy input/shift messages cannot drive a Stage 14 car
+    end))
+    conns[#conns+1]=Players.PlayerRemoving:Connect(function(player)
+        ready[player]=nil;actionTimes[player]=nil
+        for _,e in pairs(entries) do
+            if e.driver==player then e.driver=nil;e.session=nil;e.epoch+=1 end
+        end
+    end)
+    conns[#conns+1]=Run.PreSimulation:Connect(function(dt)
+        local cycleStart=os.clock()
+        local ordered={};for _,e in pairs(entries) do ordered[#ordered+1]=e end
+        table.sort(ordered,function(a,b) return a.id&lt;b.id end)
+        M.cursor=((M.cursor or 0)%math.max(1,#ordered))+1
+        for index=1,#ordered do
+            local e=ordered[(M.cursor+index-2)%#ordered+1];local car=e.car
+            if not car:IsDescendantOf(world) then e.sim:destroy();entries[car]=nil;continue end
+            if e.faulted then e.sim.adapter.access:step();continue end
+            local ok,err=pcall(function()
+                local a=e.sim.adapter;a.access:step()
+                local driver=a:driver()
+                if driver~=e.driver then
+                    local old=e.driver
+                    if old and old.Parent==Players then control:FireClient(old,{kind="stop",id=e.id,epoch=e.epoch}) end
+                    e.driver=driver;e.session=nil;e.epoch+=1
+                    -- Finish an idle partial device frame before changing ownership.
+                    while e.sim:tick()%8~=0 do e.sim:step({}) end
+                    sendStart(e)
+                end
+                if e.session and driver then
+                    local s=e.session
+                    local budget=math.max(0,C.serverBudget-(os.clock()-cycleStart))
+                    if budget&gt;0 then
+                        s:advance(C.maxSteps,budget,function()
+                            if e.needsCorrection then
+                                e.correction={tick=e.sim:tick(),ack=s.ack,checkpoint=Codec.pack(e.sim:checkpoint(),e.base),error=e.lastError}
+                                e.needsCorrection=nil
+                            end
+                        end)
+                    end
+                    if e.needsCorrection and e.sim:tick()%8==0 then
+                        e.correction={tick=e.sim:tick(),ack=s.ack,checkpoint=Codec.pack(e.sim:checkpoint(),e.base),error=e.lastError}
+                        e.needsCorrection=nil
+                    end
+                    if e.startRequested and e.sim:tick()%8==0 then sendStart(e);s=e.session end
+                    if os.clock()-s.lastReceive&gt;C.timeout then
+                        -- End authority for a disconnected driver; its client can keep predicting until seat replication.
+                        a:exit(driver);e.session=nil
+                    end
+                    e.ackTimer+=dt
+                    if e.ackTimer&gt;=1/C.ackHz or e.forceAck or e.correction then
+                        e.ackTimer=0;e.forceAck=false
+                        local m=e.correction or {tick=s.startTick+s.ack*8,ack=s.ack}
+                        m.kind="ack";m.id=e.id;m.epoch=e.epoch;m.echo=s.echo
+                        m.divergence=e.lastError;m.rejected=s.rejected;m.validationCPU=s.cpu
+                        control:FireClient(driver,m);e.correction=nil
+                    end
+                elseif not driver then
+                    e.idle+=dt
+                    local count=0
+                    while e.idle&gt;=1/288 and count&lt;C.maxSteps do
+                        e.sim:step({});e.idle-=1/288;count+=1
+                    end
+                end
+                e.sim:present()
+                e.renderTimer+=dt
+                if e.renderTimer&gt;=1/30 and (e.lastSentTick~=e.sim:tick() or e.lastSentEpoch~=e.epoch) then
+                    e.renderTimer=e.renderTimer%(1/30);e.seq=(e.seq+1)%65536
+                    local time=workspace:GetServerTimeNow()
+                    -- Accepted motion is entirely server-computed, even when a client witness is forged.
+                    local snap=a:renderSnapshot(e.seq,time,e.id)
+                    local draw=Draw and Draw.sample(a.core,{}, {})
+                    local message={id=e.id,epoch=e.epoch,snapshot=Snap.encode(snap),
+                        draw=draw and Draw.encode(e.seq,time,draw) or nil}
+                    -- Clients register both listeners before declaring readiness.
+                    for player in pairs(ready) do
+                        if player.Parent==Players then state:FireClient(player,message) end
+                    end
+                    e.lastSentTick=e.sim:tick();e.lastSentEpoch=e.epoch
+                end
+            end)
+            if not ok then
+                e.faulted=true
+                car:SetAttribute("PredictionFault",tostring(err));warn("Stage 14 vehicle "..e.id..": "..tostring(err))
+                if e.driver then e.sim.adapter:exit(e.driver) end;e.session=nil
+            end
+        end
+    end)
+    return entries
+end
+function M.start(ownerScript)
+    assert(not package:GetAttribute("PredictionServerRunning"),"Another Stage 14 server controller is already running")
+    local cleanup
+    local ok,result=pcall(start,ownerScript,function(fn) cleanup=fn end)
+    if not ok then
+        if cleanup then pcall(cleanup) end
+        package:SetAttribute("PredictionServerRunning",nil)
+        error(result,0)
+    end
+    return result
+end
+return M
+]=]},
+{id="legacy",parent=servers,name="NR2003Server",class="Script",oldLen=4742,oldHash=3952310422,source=[=[
+local RS=game:GetService("ReplicatedStorage")
+local Players=game:GetService("Players")
+local RunService=game:GetService("RunService")
+local package=RS:WaitForChild("NR2003Lab")
+local Tune=require(package.Core.TestTune)
+local Builder=require(package.Roblox.CarBuilder)
+local Mode=require(package.Roblox.ModeConfig)
+local RenderConfig=require(package.Roblox.RenderConfig)
+local RenderSnapshot=require(package.Roblox.RenderSnapshot)
+local U=require(package.Core.MathUtil)
+local tune=Tune.new(); local world=workspace:FindFirstChild("NR2003LabWorld")
+if not world then
+    world=Instance.new("Folder"); world.Name="NR2003LabWorld"; world.Parent=workspace; Builder.makeTrack(world)
+end
+local car=world:FindFirstChild("TestCar") or Builder.create(world,Builder.spawnCFrame(tune),tune)
+local remote=package:WaitForChild("Input"); local telemetry=package:WaitForChild("Telemetry")
+local renderState=package:WaitForChild("RenderState")
+local controller
+if Mode.mode=="ROBLOX_ADAPTER" then
+    controller=require(package.Roblox.LegacyRobloxAdapter).new(car,tune,remote)
+elseif Mode.mode=="NR2003_CORE" then
+    controller=require(package.Roblox.CoreChassisAdapter).new(car,tune,remote)
+elseif Mode.mode=="NR2003_CUP" then
+    -- Stage 6/7: original NR2003 Cup 45-state core (Core.NR2003Cup); Roblox = contact/presentation host
+    controller=require(package.Roblox.CupChassisAdapter).new(car,tune,remote)
+else error("Unknown NR2003 mode: "..tostring(Mode.mode)) end
+-- Stage 12: only the Cup core sends the ORIGINAL steering-wheel angle in the render snapshots
+car:SetAttribute("CockpitWheelAngle",Mode.mode=="NR2003_CUP")
+local input={throttle=0,brake=1,steer=0,handbrake=0,clutch=1}
+local lastInput,lastAction=0,0; local lastDriver=nil; local packetTimes={}
+local renderInterval=1/RenderConfig.snapshotHz;local renderAccumulator=renderInterval;local renderSeq=0
+remote.OnServerEvent:Connect(function(player,message)
+    if type(message)~="table" then return end
+    if message.kind=="enter" then controller:requestEntry(player);return end
+    if player~=controller:driver() then return end
+    local now=os.clock()
+    if message.kind=="input" then
+        if now-(packetTimes[player] or 0)&lt;1/tune.adapter.maxPacketHz then return end
+        packetTimes[player]=now
+        for _,key in ipairs({"throttle","brake","steer","handbrake","clutch"}) do
+            if not U.finite(message[key]) then return end
+        end
+        for _,key in ipairs({"throttle","brake","steer","handbrake","clutch"}) do
+            input[key]=U.clamp(message[key],key=="steer" and -1 or 0,1)
+        end
+        -- Stage 12 (NR2003_CUP): raw steering controls of the client device layer (optional; the legacy
+        -- 'steer' keeps the Stage 5 modes working): keys steerLeft/steerRight 0..1, analog steerAxis -1..1
+        input.steerLeft=U.finite(message.steerLeft) and U.clamp(message.steerLeft,0,1) or nil
+        input.steerRight=U.finite(message.steerRight) and U.clamp(message.steerRight,0,1) or nil
+        input.steerAxis=U.finite(message.steerAxis) and U.clamp(message.steerAxis,-1,1) or nil
+        input.steerAnalog=message.steerAnalog==true and input.steerAxis~=nil
+        lastInput=now
+    elseif now-lastAction&gt;0.15 then
+        if message.kind=="shift" and U.finite(message.delta) then controller:shift(message.delta)
+        elseif message.kind=="reset" then controller:reset()
+        elseif message.kind=="cycleSetup" and Mode.mode=="NR2003_CUP" and car:GetAttribute("NR2003Track")=="watkins_glen" then
+            local ok,reason=pcall(require(package.Roblox.SetupTestControls).cycle,car,function() controller:reset() end)
+            if not ok then warn("NR2003 preset switch failed: "..tostring(reason)) end
+        elseif message.kind=="debug" then controller.debugVisible=not controller.debugVisible;car:SetAttribute("DebugContacts",controller.debugVisible)
+        elseif message.kind=="exit" then controller:exit(player) end
+        lastAction=now
+    end
+end)
+Players.PlayerRemoving:Connect(function(player) packetTimes[player]=nil end)
+RunService.PreSimulation:Connect(function(dt)
+    local driver=controller:driver()
+    if driver~=lastDriver then lastInput=0; lastDriver=driver end
+    if not driver or os.clock()-lastInput&gt;tune.adapter.inputTimeout then
+        input={throttle=0,brake=1,steer=0,handbrake=0,clutch=1}
+    end
+    controller:step(dt,input)
+    if RenderConfig.enabled and controller.renderSnapshot then
+        renderAccumulator=renderAccumulator+dt
+        if renderAccumulator&gt;=renderInterval then
+            renderAccumulator=renderAccumulator%renderInterval
+            renderSeq=(renderSeq+1)%65536
+            local snapshot=controller:renderSnapshot(renderSeq,workspace:GetServerTimeNow(),RenderConfig.vehicleId)
+            renderState:FireAllClients(RenderSnapshot.encode(snapshot))
+        end
+    end
+    if driver and controller.telemetryTimer&gt;=1/tune.adapter.telemetryHz then
+        controller.telemetryTimer=0; telemetry:FireClient(driver,controller:telemetry())
+    end
+end)
+script.Destroying:Connect(function() controller:destroy() end)
+]=]},
+    }
+    local prediction=modules:FindFirstChild("PredictionServer")~=nil
+    local changes={}
+    for _,s in ipairs(specs) do
+        if (s.id=="prediction" and not prediction) or (s.id=="legacy" and prediction) then continue end
+        local target=s.parent:FindFirstChild(s.name)
+        if target then
+            assert(target:IsA(s.class),s.name..": unexpected class")
+            local current=norm(target.Source)
+            if current==s.source then continue end
+            assert(#current==s.oldLen and fnv(current)==s.oldHash,s.name..": source differs from verified baseline; update refused")
+        else assert(s.oldLen==0,s.name..": required existing script missing") end
+        s.target=target;changes[#changes+1]=s
+    end
+    if #changes==0 then print("Official presets and K / , controls already installed");return true end
+    local storage=game:GetService("ServerStorage")
+    assert(not storage:FindFirstChild("NR2003Backup_Patch1201"),"Previous patch backup exists; restore it before a partial reinstall")
+    local backup=Instance.new("Folder");backup.Name="NR2003Backup_Patch1201";backup.Parent=storage
+    local applied={}
+    local ok,reason=pcall(function()
+        for i,s in ipairs(changes) do
+            local item=Instance.new("Folder");item.Name=tostring(i);item.Parent=backup
+            local ref=Instance.new("ObjectValue");ref.Name="Target";ref.Parent=item
+            local original=Instance.new("StringValue");original.Name="OriginalSource"
+            original.Value=s.target and s.target.Source or "";original.Parent=item
+            item:SetAttribute("Added",s.target==nil)
+            item:SetAttribute("NewHash",fnv(s.source));item:SetAttribute("NewBytes",#s.source)
+            if not s.target then s.target=Instance.new(s.class);s.target.Name=s.name;s.target.Parent=s.parent end
+            ref.Value=s.target;applied[#applied+1]={target=s.target,added=item:GetAttribute("Added"),source=original.Value}
+            s.target.Source=s.source
+            assert(norm(s.target.Source)==s.source,s.name..": source readback differs")
+        end
+    end)
+    if not ok then
+        for i=#applied,1,-1 do local s=applied[i];if s.added then s.target:Destroy() else s.target.Source=s.source end end
+        backup:Destroy();error(reason)
+    end
+    print("Official Watkins Glen FAST/QUALIFY installed; EASY/JASPER preserved. K cycles presets and resets at spawn; , toggles telemetry. Start Play again.")
+    return true
+end
+return apply
+</ProtectedString></Properties></Item></roblox>

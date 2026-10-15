@@ -1,0 +1,10 @@
+pit_fast 1.00 s after gas: speed 15.606 / original 15.595 km/h; RPM 1172.52 / original 1113.93
+pit_fast 3.33 s after gas: speed 63.784 / original 63.783 km/h; RPM 4093.87 / original 4011.02
+pit_fast: 150 exact spec/profile constants; pedal/gear/material mismatches 0/0/0; max position 0.000793457031 m, velocity 0.0167508125 m/s, RPM 100.812135, yaw 0.000399330514 rad/s, force 4379.287 N; force RMS 229.739 N
+pit_easy 1.00 s after gas: speed 15.800 / original 15.793 km/h; RPM 1178.77 / original 1120.28
+pit_easy 3.33 s after gas: speed 63.931 / original 63.926 km/h; RPM 4103.55 / original 4019.43
+pit_easy: 150 exact spec/profile constants; pedal/gear/material mismatches 0/0/0; max position 0.001953125 m, velocity 0.0136320591 m/s, RPM 104.552893, yaw 0.000477923633 rad/s, force 5001.593 N; force RMS 259.895 N
+concrete_fast 1.00 s after gas: speed 11.442 / original 11.442 km/h; RPM 1003.70 / original 932.22
+concrete_fast 3.33 s after gas: speed 50.765 / original 50.764 km/h; RPM 3271.38 / original 3196.15
+concrete_fast: 150 exact spec/profile constants; pedal/gear/material mismatches 0/0/0; max position 0.00146484375 m, velocity 0.00701093674 m/s, RPM 84.096495, yaw 0.00191829354 rad/s, force 264.018 N; force RMS 14.016 N
+Road-course selectors/constants/input checks passed. Numerical dynamics discrepancies are reported above.

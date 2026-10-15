@@ -1,0 +1,1 @@
+Original setup file load: 280 input fields bit-exact; four profiles, default selection, invalid-name rejection and cleared internals passed

@@ -1,0 +1,11 @@
+PASS  original garage conversion at 5.0 in
+PASS  build rideHeightLF 5.0 in
+PASS  original garage conversion at 5.5 in
+PASS  build rideHeightLF 5.5 in
+PASS  90 poses: actual tyre camber arguments and render axes match original x86  360 values, max abs error 0, tolerance 2e-06
+PASS  0.10 m travel changes actual tyre camber input by 0.02..0.04
+PASS  render wheel axes stay constant with suspension travel
+PASS  0.2 rad steering changes actual tyre camber input
+PASS  0.05 rad chassis roll reaches actual tyre camber input
+PASS  regression detects disabled camber gain on both front tyres
+Patch 1.2.0.1 camber: 10 passed, 0 failed

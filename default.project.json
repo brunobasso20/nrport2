@@ -84,6 +84,9 @@
           },
           "VisualRig": {
             "$path": "roblox/VisualRig.lua"
+          },
+          "SetupTestControls": {
+            "$path": "roblox/SetupTestControls.lua"
           }
         },
         "Input": {
@@ -106,6 +109,9 @@
       "StarterPlayerScripts": {
         "NR2003Client": {
           "$path": "roblox/Client.client.lua"
+        },
+        "NR2003SetupTestBindings": {
+          "$path": "roblox/SetupTestBindings.client.lua"
         }
       }
     }

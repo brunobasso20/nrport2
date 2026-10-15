@@ -53,6 +53,9 @@ remote.OnServerEvent:Connect(function(player,message)
     elseif now-lastAction>0.15 then
         if message.kind=="shift" and U.finite(message.delta) then controller:shift(message.delta)
         elseif message.kind=="reset" then controller:reset()
+        elseif message.kind=="cycleSetup" and Mode.mode=="NR2003_CUP" and car:GetAttribute("NR2003Track")=="watkins_glen" then
+            local ok,reason=pcall(require(package.Roblox.SetupTestControls).cycle,car,function() controller:reset() end)
+            if not ok then warn("NR2003 preset switch failed: "..tostring(reason)) end
         elseif message.kind=="debug" then controller.debugVisible=not controller.debugVisible;car:SetAttribute("DebugContacts",controller.debugVisible)
         elseif message.kind=="exit" then controller:exit(player) end
         lastAction=now
