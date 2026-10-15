@@ -45,14 +45,16 @@ local T={
     --                        front-end default of a saved controls.cfg)
     --   cockpitLimit         cockpit wheel draw limit: "lock" = the full lock (180 deg per side at 360), "original" =
     --                        the 005662d0 limit 2.79 rad (160 deg)
-    driver={steeringLockDegrees=360,setupSteeringRatio=12,momentumKeys=nil,momentumAxis=0,cockpitLimit="lock",
+    driver={steeringLockDegrees=360,setupSteeringRatio=12,momentumKeys=0,momentumAxis=0,cockpitLimit="lock",
         -- Stage 13 bench defaults (car attributes override): force feedback ON with the image values of the executable
         -- (strength 80, damping 0, latency 0 = no controls.cfg), FF output present (HUD + gamepad motors). The original
         -- default without controls.cfg is OFF; the effect still needs the steering on an analog axis (0054fed0)
         ffbEnabled=true,ffbStrength=nil,ffbDamping=nil,ffbLatency=nil,ffbDevice=true,
         -- presentation only (NOT original): the constant force drives the large motor of the active gamepad with |force|
         -- (Roblox has no directional force feedback); false = HUD only
-        ffbRumble=true},
+        ffbRumble=true,
+        -- User-requested test defaults. The core maps these to original NR2003 option cells.
+        assists={automatic=true,autoClutch=true,abs=true,tractionControl=false,stabilityControl=false,steering=0}},
     engine={gears=4,limiterRPM=9300},          -- engine+0x444 / engine+0x438 (display)
     environment={ambientC=26.6667},            -- e0b830 (tire thermal frozen: Stage 11)
     adapter=U.copy(Base.adapter),

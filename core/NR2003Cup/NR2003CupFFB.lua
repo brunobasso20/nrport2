@@ -608,5 +608,11 @@ return function(V)
 		out.setupRatio, out.airspeed = rf32(SETUP_RATIO), rf32(AIRSPEED)
 		return out
 	end
+
+	-- Stage 14 checkpoint: ffb
+	V._registerCheckpoint("ffb", function() return {device=device, effect=effect, kind=configuredKind, options=options, last=last} end, function(h)
+		device, effect, configuredKind, options = h.device, h.effect, h.kind, h.options
+		for k,v in pairs(h.last) do last[k]=v end
+	end)
 	return V
 end

@@ -77,12 +77,16 @@ function M.fromLoader(get)
     -- follows the control-7 binding written by the steering device layer) and after the frame end (its hooks)
     local ffb=get("NR2003CupFFB")
     if ffb then ffb(V) end
-    -- Watkins Glen port: installed last (its enterTrack / reset / session wrappers are the outermost)
+    local automatic=get("NR2003CupAutomatic")
+    if automatic then automatic(V) end
+    -- Watkins Glen wraps placement/session first; assist options are reapplied after its reset wrapper.
     if trackHost then
         trackHost(V,collect(get,"NR2003CupTrackCode"),trackData,
             {build=get("NR2003CupTrackBuild"),placed=collect(get,"NR2003CupJITP"),placedGeneric=collect(get,"NR2003CupJITPG"),
                 vehicle=get("NR2003CupWatkinsGlenSpec"),roadGeneric=collect(get,"NR2003CupJITWG")})
     end
+    local assists=get("NR2003CupAssists")
+    if assists then assists(V) end
     return setmetatable({V=V,state=table.create(45,0),pos={0,0,0},rot={1,0,0,0,1,0,0,0,1}},M)
 end
 function M.new(folder)
@@ -158,6 +162,8 @@ function M:setSteeringOptions(o) return self.V.setSteeringOptions(o) end
 function M:steeringOptions() return self.V.steeringOptions() end
 function M:steeringState(out) return self.V.steeringState(out) end
 function M:steeringWheelAngle() return self.V.steeringWheelAngle() end
+function M:setDrivingAssists(o) return self.V.setDrivingAssists(o) end
+function M:drivingAssists() return self.V.drivingAssists() end
 -- Stage 13 force feedback API (ORIGINAL chain; see CORE_API.md / STAGE13_FFB_STATE_MAP.md)
 function M:setForceFeedbackOptions(o) return self.V.setForceFeedbackOptions(o) end
 function M:forceFeedbackOptions() return self.V.forceFeedbackOptions() end

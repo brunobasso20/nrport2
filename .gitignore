@@ -15,3 +15,5 @@ tests/stage11/dev/*.lua
 watkinsglen_implementation/**/__pycache__/
 # Downloaded reference projects, source archives and local recovery work stay local.
 work/
+# Regenerated from the shipped assist installer XML and verified source baselines.
+tests/assists/generated_installer_test.luau

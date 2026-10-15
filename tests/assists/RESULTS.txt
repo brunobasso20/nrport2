@@ -1,0 +1,49 @@
+assist_implementation validation (Luau 0.741; Unicorn 2.1.4; NR2003 1.2.0.1)
+
+Roblox Studio runtime not available; Studio driving/performance test remains.
+
+Original automatic shifts: 50 initializer cells exact; 102 predicted-RPM vectors (max relative 1.24e-16, f32-down exact); 588 selector cases bit-exact
+
+Original stability: 36 vectors; 252/252 force/scalar bits exact, max abs error 0; 6 aid-on corrective vectors; disabled/hardcore add zero
+
+PASS original throttle/traction-control	1440	vectors; output bits and digital-key state exact
+
+PASS	requested defaults use original option cells
+PASS	steering assistance cannot silently use missing racing-line data
+PASS	manual + auto clutch uses ShiftMethod 1 and original timing
+PASS	manual clutch uses ShiftMethod 3
+PASS	hardcore race flag disables ABS/TC/stability but retains automatic/clutch
+PASS	automatic selects and executes forward shifts without E/Q
+PASS	automatic + ABS replay restores complete native memory
+PASS	checkpoint restores assist options as well as flags
+PASS	reset reapplies restored assist selection
+PASS	original FPU stack stays balanced
+10	assist integration checks passed
+
+PASS	fast	road setup + requested aids + native contacts + exact checkpoint replay + reset
+PASS	easy	road setup + requested aids + native contacts + exact checkpoint replay + reset
+PASS	qualify	road setup + requested aids + native contacts + exact checkpoint replay + reset
+PASS	jasper	road setup + requested aids + native contacts + exact checkpoint replay + reset
+PASS missing original racing-line data confirmed in installed track image; positive steering help remains guarded
+
+assist-adapter-results.log: track adapter: 15 passed, 0 failed
+
+assist-installer-results.log: 89	installer assertions passed
+
+assist-brake-regression.log: 49 passed, 0 failed
+
+assist-steering-regression.log: 52 passed, 0 failed
+
+assist-stage10-run.luau.log: 61 passed, 0 failed
+
+assist-stage10-run_setup.luau.log: Stage 10 setup conversion: 23 passed, 0 failed
+
+assist-stage11-run.luau.log: 66 passed, 0 failed
+
+assist-stage13-run.luau.log: Stage 13: 40 PASS, 0 FAIL  (15.4 s)
+
+assist-stage67-run.luau.log: 16 passed, 0 failed
+
+assist-stage9-run.luau.log: 59 passed, 0 failed
+
+Additional patch1201 setup and K/comma control regressions passed. Runtime + installer script syntax compilation passed. git diff --check passed.

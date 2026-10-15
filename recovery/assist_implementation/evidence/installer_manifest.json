@@ -1,0 +1,377 @@
+[
+  {
+    "path": "core/CupTune.lua",
+    "name": "CupTune",
+    "parent": "core",
+    "class_name": "ModuleScript",
+    "id": "CupTune",
+    "added": false,
+    "studio_ref": 36,
+    "baselines": [
+      [
+        5569,
+        669310955
+      ],
+      [
+        5567,
+        1522935590
+      ]
+    ],
+    "bytes": 5776,
+    "fnv": 3850969893,
+    "payload": "Source1"
+  },
+  {
+    "path": "core/NR2003CupVehicle.lua",
+    "name": "NR2003CupVehicle",
+    "parent": "core",
+    "class_name": "ModuleScript",
+    "id": "NR2003CupVehicle",
+    "added": false,
+    "studio_ref": 37,
+    "baselines": [
+      [
+        11559,
+        23420924
+      ]
+    ],
+    "bytes": 11857,
+    "fnv": 286943652,
+    "payload": "Source2"
+  },
+  {
+    "path": "core/NR2003Cup/NR2003CupCore.lua",
+    "name": "NR2003CupCore",
+    "parent": "cup",
+    "class_name": "ModuleScript",
+    "id": "NR2003CupCore",
+    "added": false,
+    "studio_ref": 48,
+    "baselines": [
+      [
+        172961,
+        3970145072
+      ],
+      [
+        174162,
+        715788098
+      ]
+    ],
+    "bytes": 174162,
+    "fnv": 715788098,
+    "payload": "Source3"
+  },
+  {
+    "path": "core/NR2003Cup/NR2003CupAero.lua",
+    "name": "NR2003CupAero",
+    "parent": "cup",
+    "class_name": "ModuleScript",
+    "id": "NR2003CupAero",
+    "added": false,
+    "studio_ref": 46,
+    "baselines": [
+      [
+        24048,
+        2996434456
+      ],
+      [
+        24285,
+        3106855419
+      ]
+    ],
+    "bytes": 24285,
+    "fnv": 3106855419,
+    "payload": "Source4"
+  },
+  {
+    "path": "core/NR2003Cup/NR2003CupGarage.lua",
+    "name": "NR2003CupGarage",
+    "parent": "cup",
+    "class_name": "ModuleScript",
+    "id": "NR2003CupGarage",
+    "added": false,
+    "studio_ref": 47,
+    "baselines": [
+      [
+        9074,
+        4186699810
+      ],
+      [
+        9483,
+        2360502931
+      ]
+    ],
+    "bytes": 9483,
+    "fnv": 2360502931,
+    "payload": "Source5"
+  },
+  {
+    "path": "core/NR2003Cup/NR2003CupFrame.lua",
+    "name": "NR2003CupFrame",
+    "parent": "cup",
+    "class_name": "ModuleScript",
+    "id": "NR2003CupFrame",
+    "added": false,
+    "studio_ref": 64,
+    "baselines": [
+      [
+        19894,
+        3334463608
+      ],
+      [
+        20193,
+        2816773156
+      ]
+    ],
+    "bytes": 20193,
+    "fnv": 2816773156,
+    "payload": "Source6"
+  },
+  {
+    "path": "core/NR2003Cup/NR2003CupSteering.lua",
+    "name": "NR2003CupSteering",
+    "parent": "cup",
+    "class_name": "ModuleScript",
+    "id": "NR2003CupSteering",
+    "added": false,
+    "studio_ref": 70,
+    "baselines": [
+      [
+        21927,
+        1014127710
+      ],
+      [
+        22469,
+        3811679489
+      ]
+    ],
+    "bytes": 22469,
+    "fnv": 3811679489,
+    "payload": "Source7"
+  },
+  {
+    "path": "core/NR2003Cup/NR2003CupFFB.lua",
+    "name": "NR2003CupFFB",
+    "parent": "cup",
+    "class_name": "ModuleScript",
+    "id": "NR2003CupFFB",
+    "added": false,
+    "studio_ref": 71,
+    "baselines": [
+      [
+        30938,
+        3259516721
+      ],
+      [
+        31245,
+        3491798103
+      ]
+    ],
+    "bytes": 31245,
+    "fnv": 3491798103,
+    "payload": "Source8"
+  },
+  {
+    "path": "core/NR2003Cup/NR2003CupDriver.lua",
+    "name": "NR2003CupDriver",
+    "parent": "cup",
+    "class_name": "ModuleScript",
+    "id": "NR2003CupDriver",
+    "added": false,
+    "studio_ref": 69,
+    "baselines": [
+      [
+        28922,
+        2406267304
+      ]
+    ],
+    "bytes": 29338,
+    "fnv": 3995972376,
+    "payload": "Source9"
+  },
+  {
+    "path": "core/NR2003Cup/NR2003CupAutomatic.lua",
+    "name": "NR2003CupAutomatic",
+    "parent": "cup",
+    "class_name": "ModuleScript",
+    "id": "NR2003CupAutomatic",
+    "added": true,
+    "studio_ref": null,
+    "baselines": [],
+    "bytes": 4875,
+    "fnv": 2697052207,
+    "payload": "Source10"
+  },
+  {
+    "path": "core/NR2003Cup/NR2003CupAssists.lua",
+    "name": "NR2003CupAssists",
+    "parent": "cup",
+    "class_name": "ModuleScript",
+    "id": "NR2003CupAssists",
+    "added": true,
+    "studio_ref": null,
+    "baselines": [],
+    "bytes": 3203,
+    "fnv": 2959946511,
+    "payload": "Source11"
+  },
+  {
+    "path": "watkinsglen_implementation/core/NR2003Cup/NR2003CupTrack.lua",
+    "name": "NR2003CupTrack",
+    "parent": "cup",
+    "class_name": "ModuleScript",
+    "id": "track",
+    "added": false,
+    "studio_ref": 80,
+    "baselines": [
+      [
+        18353,
+        1248282231
+      ],
+      [
+        18720,
+        3874394234
+      ]
+    ],
+    "bytes": 18779,
+    "fnv": 4154609673,
+    "payload": "Source12"
+  },
+  {
+    "path": "roblox/CupChassisAdapter.lua",
+    "name": "CupChassisAdapter",
+    "parent": "modules",
+    "class_name": "ModuleScript",
+    "id": "CupChassisAdapter",
+    "added": false,
+    "studio_ref": 121,
+    "baselines": [
+      [
+        39839,
+        1331715496
+      ],
+      [
+        40480,
+        3201489678
+      ]
+    ],
+    "bytes": 41701,
+    "fnv": 4209972494,
+    "payload": "Source13"
+  },
+  {
+    "path": "roblox/NR2003WatkinsGlenSetup.lua",
+    "name": "NR2003WatkinsGlenSetup",
+    "parent": "modules",
+    "class_name": "ModuleScript",
+    "id": "NR2003WatkinsGlenSetup",
+    "added": false,
+    "studio_ref": 130,
+    "baselines": [
+      [
+        5362,
+        559407406
+      ],
+      [
+        5349,
+        734809296
+      ]
+    ],
+    "bytes": 5362,
+    "fnv": 559407406,
+    "payload": "Source14"
+  },
+  {
+    "path": "roblox/SetupTestControls.lua",
+    "name": "SetupTestControls",
+    "parent": "modules",
+    "class_name": "ModuleScript",
+    "id": "SetupTestControls",
+    "added": true,
+    "studio_ref": null,
+    "baselines": [
+      [
+        1683,
+        2035896022
+      ]
+    ],
+    "bytes": 1683,
+    "fnv": 2035896022,
+    "payload": "Source15"
+  },
+  {
+    "path": "roblox/SetupTestBindings.client.lua",
+    "name": "NR2003SetupTestBindings",
+    "parent": "starter",
+    "class_name": "LocalScript",
+    "id": "NR2003SetupTestBindings",
+    "added": true,
+    "studio_ref": null,
+    "baselines": [
+      [
+        1704,
+        1453482639
+      ]
+    ],
+    "bytes": 1704,
+    "fnv": 1453482639,
+    "payload": "Source16"
+  },
+  {
+    "path": "roblox/PredictionServer.lua",
+    "name": "PredictionServer",
+    "parent": "modules",
+    "class_name": "ModuleScript",
+    "id": "prediction",
+    "added": false,
+    "studio_ref": 137,
+    "baselines": [
+      [
+        12555,
+        469903293
+      ],
+      [
+        12132,
+        2873754171
+      ]
+    ],
+    "bytes": 12555,
+    "fnv": 469903293,
+    "payload": "Source17"
+  },
+  {
+    "path": "roblox/Server.server.lua",
+    "name": "NR2003Server",
+    "parent": "servers",
+    "class_name": "Script",
+    "id": "legacy",
+    "added": false,
+    "studio_ref": null,
+    "baselines": [
+      [
+        5077,
+        457098053
+      ],
+      [
+        4742,
+        3952310422
+      ]
+    ],
+    "bytes": 5077,
+    "fnv": 457098053,
+    "payload": "Source18"
+  },
+  {
+    "path": "roblox/AssistTelemetry.client.lua",
+    "name": "NR2003AssistTelemetry",
+    "parent": "starter",
+    "class_name": "LocalScript",
+    "id": "NR2003AssistTelemetry",
+    "added": true,
+    "studio_ref": null,
+    "baselines": [],
+    "bytes": 2107,
+    "fnv": 2989639335,
+    "payload": "Source19"
+  }
+]

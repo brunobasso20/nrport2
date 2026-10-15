@@ -12,7 +12,7 @@
 -- axis (gamepad / wheel, normalised -1..1 by Roblox) -> both controls split by sign. Driver options from car
 -- attributes: SteeringLinearity (controls.cfg value 0..100), SteeringMomentum (0..100, 0 = no slew),
 -- SteeringLowSpeedOverride (bool); absent = the original values when no controls.cfg was loaded. (The arcade
--- driving mode and steering assistance are not ported: the core refuses them.) The cockpit wheel draws the ORIGINAL 005662d0 angle; front wheels use the solver poses.
+-- driving mode is not ported; positive steering help requires the missing original racing lines.) The cockpit wheel draws the ORIGINAL 005662d0 angle; front wheels use the solver poses.
 -- Stage 11: the ORIGINAL per-frame runtime systems run inside the core (fuel burn and fuel mass, tyre thermal /
 -- hot pressure / wear / failure, brake temperature, engine thermal / damage / failure, random failures, collision
 -- damage). The adapter only starts the Stage 11 session with the race options (car attributes RaceDamageLevel 0..3,
@@ -56,7 +56,8 @@ local function localRotation(r)
         r[2],-r[3],r[1]
 end
 
-function M.new(car,tune,remote)
+function M.new(car,tune,remote,options)
+    options=options or {}
     local cup=CupTune.new()
     local self=setmetatable({car=car,root=car.Chassis,tune=cup,benchTune=tune,telemetryTimer=0,debugVisible=false,
         fault=nil,renderSpin={},lastRenderSnapshotTime=nil,renderTeleport=true,pendingShift=0,steeringOut={},
@@ -75,11 +76,18 @@ function M.new(car,tune,remote)
     local params=RaycastParams.new();params.FilterType=Enum.RaycastFilterType.Exclude
     params.FilterDescendantsInstances={car};params.RespectCanCollide=true;params.IgnoreWater=false
     self.params=params
-    self.visual=Visual.new(car,cup);self.access=SeatAccess.new(car,remote);Cockpit.ensure(car,cup)
+    self.clientSimulation=options.client==true
+    self.networked=options.networked==true
+    self.visual=Visual.new(car,cup)
+    if self.clientSimulation then
+        -- Local physics has no admission, spawn, or server seat connections.
+        self.access={driver=options.driver or function() return true end,step=function() end,destroy=function() end}
+    else self.access=SeatAccess.new(car,remote) end
+    Cockpit.ensure(car,cup)
     self.core=Vehicle.new(Core:WaitForChild("NR2003Cup"))
     if TrackHost then TrackHost.attach(self) end
     self:initialize()
-    if self.originalTrack then
+    if self.originalTrack and not self.clientSimulation and options.prepareSpawn~=false then
         TrackHost.prepareDriverSpawn(self, assert(car.Parent, "Parent TestCar before initializing the original track"))
     end
     return self
@@ -187,7 +195,7 @@ function M:initialize()
         local clamp=self.car:GetAttribute("CockpitWheelClamp")
         if clamp~="original" and clamp~="lock" then clamp=d.cockpitLimit end
         local o=self.core:setSteeringOptions({linearity=num("SteeringLinearity"),momentum=num("SteeringMomentum"),
-            lowSpeedOverride=flag("SteeringLowSpeedOverride"),lockDegrees=pick("SteeringLockDegrees",d.steeringLockDegrees),
+            lowSpeedOverride=flag("SteeringLowSpeedOverride")==true,lockDegrees=pick("SteeringLockDegrees",d.steeringLockDegrees),
             momentumKeys=pick("SteeringMomentumKeys",d.momentumKeys),momentumAxis=pick("SteeringMomentumAxis",d.momentumAxis),
             cockpitLimit=clamp})
         self.car:SetAttribute("SteeringLinearityApplied",o.linearity);self.car:SetAttribute("SteeringRateApplied",o.steerRate)
@@ -227,6 +235,16 @@ function M:initialize()
             windDirection=num("WeatherWindDirection"),conditions=num("WeatherConditions"),night=self.car:GetAttribute("WeatherNight")==true,
             trackNorth=num("TrackNorth")},{damageLevel=num("RaceDamageLevel"),consumptionRate=num("RaceConsumptionRate"),
             series=num("RosterSeries"),seed=num("RandomSeed")})
+    end
+    -- Apply after setup/build and placement: automatic thresholds depend on the active car and gear ratios.
+    if self.core.V.setDrivingAssists then
+        local d=(self.tune.driver and self.tune.driver.assists) or {}
+        local function flag(name,default) local v=self.car:GetAttribute(name);if type(v)=="boolean" then return v end;return default end
+        self.core:setDrivingAssists({automatic=flag("AutomaticTransmission",d.automatic==true),
+            autoClutch=flag("AutoClutch",d.autoClutch==true),abs=flag("ABS",d.abs==true),
+            tractionControl=flag("TractionControl",d.tractionControl==true),
+            stabilityControl=flag("StabilityControl",d.stabilityControl==true),
+            steering=num("SteeringAssistance") or d.steering or 0})
     end
     self.stage11Out={}
     self.car:SetAttribute("AirDensityApplied",self.weather and self.weather.density or 0)
@@ -330,7 +348,7 @@ function M:tickCore(input)
         local throttle=U.clamp(input.throttle or 0,0,1)
         controls={throttle=throttle,throttleControl=throttle,throttleDigital=input.throttleAxis~=true,
             brakeControl=U.clamp(input.brake or 0,0,1),brakeDigital=input.brakeAxis~=true,
-            clutch=1-U.clamp(input.clutch or 0,0,1),originalPedals=self.originalTrack==true}
+            clutch=1-U.clamp(input.clutch or 0,0,1),originalPedals=true}
         steerControls(controls,input)
     end
     if frame and self.pendingShift~=0 and controls.driver~=false then
@@ -344,7 +362,7 @@ function M:tickCore(input)
         self.controlsSuspended=suspended;self.core:setControlsSuspended(suspended)
     end
     self.core:step(controls,self.contactFn)
-    if self.core:tick()%8==0 and self.weather then self:stage11TestEvents() end
+    if self.core:tick()%8==0 and self.weather and not self.networked then self:stage11TestEvents() end
     self:pose(false)
 end
 
@@ -458,6 +476,19 @@ function M:step(elapsed,input)
     if self.fault then return end
     local ok,reason=pcall(function()
         self.runner:advance(elapsed,input,nil)
+        self:present()
+    end)
+    if not ok then self.fault=tostring(reason);self.car:SetAttribute("PhysicsFault",self.fault);warn("NR2003 Cup core paused: "..self.fault) end
+end
+
+-- Presentation may run at any rate; fixed ticks do not depend on it.
+function M:present()
+        if self.core.V.drivingAssists then
+            local assists=self.core:drivingAssists()
+            for _,name in ipairs({"automatic","autoClutch","abs","tractionControl","stabilityControl","steering","steeringAvailable","lowSpeedSteering"}) do
+                self.car:SetAttribute("DrivingAssist_"..name,assists[name])
+            end
+        end
         if self.originalTrack then TrackHost.update(self) end
         self.car:PivotTo(self.rootCF)
         self.car:SetAttribute("CoreTick",self.core:tick());self.car:SetAttribute("CoreCollision",self.collision==true)
@@ -474,8 +505,6 @@ function M:step(elapsed,input)
             self.car:SetAttribute("FFBForce",f.force);self.car:SetAttribute("FFBMagnitude",f.magnitude)
             self.car:SetAttribute("FFBActive",f.acquired and f.effect and not f.suspended)
         end
-    end)
-    if not ok then self.fault=tostring(reason);self.car:SetAttribute("PhysicsFault",self.fault);warn("NR2003 Cup core paused: "..self.fault) end
 end
 
 -- Stage 12 presentation: the ORIGINAL steering-wheel angle of the car model (005662d0: clamp(-(00554fb0() *
@@ -586,7 +615,8 @@ function M:telemetry()
         -- a rotation about the inclined steering axis (caster 2.455 deg, inclination 9.215 deg); roadWheelAngle = mean
         -- front wheel yaw measured from the solver wheel poses (+ = right, Stage 5 sign; about -0.99 q, no Ackermann)
         hubSteerAngle=st[16]*0.5+st[22]*0.5,roadWheelAngle=(self.wheelPose[1].steer+self.wheelPose[2].steer)*0.5,
-        steeringWheelAngle=self:steeringWheelAngle(),steering=self:steeringTelemetry(),ffb=self:forceFeedbackTelemetry()}
+        steeringWheelAngle=self:steeringWheelAngle(),steering=self:steeringTelemetry(),ffb=self:forceFeedbackTelemetry(),
+        assists=self.core.V.drivingAssists and self.core:drivingAssists() or nil}
 end
 -- Stage 13 force-feedback telemetry (original cells + the last device output, see STAGE13_FFB_STATE_MAP.md)
 function M:forceFeedbackTelemetry()
@@ -609,6 +639,7 @@ function M:reset()
     self.rootCF=nil;self:initialize();self.car:PivotTo(self.rootCF)
 end
 function M:destroy()
+    if self.clientSimulation then self.access:destroy();return end
     if TrackHost then TrackHost.clearDriverSpawn(self) end
     self.access:destroy();self.car:SetAttribute("NR2003CorePoseOwner",nil)
     self.root.Anchored=self.oldAnchored;self.root.CanCollide=self.oldCollide

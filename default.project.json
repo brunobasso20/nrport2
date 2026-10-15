@@ -112,6 +112,9 @@
         },
         "NR2003SetupTestBindings": {
           "$path": "roblox/SetupTestBindings.client.lua"
+        },
+        "NR2003AssistTelemetry": {
+          "$path": "roblox/AssistTelemetry.client.lua"
         }
       }
     }

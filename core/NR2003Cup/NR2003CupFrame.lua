@@ -363,5 +363,12 @@ return function(V, codeParts, dataParts)
 	V._stage11Supplement = SUPPLEMENT
 	buffer.copy(M, 0, PRISTINE, 0, V.imageSize)   -- the supplement is part of the reset image
 	V.reset()
+
+	-- Stage 14 checkpoint: runtime
+	V._registerCheckpoint("runtime", function() return {mode=mode, session=session11, R=ctx.R, F=ctx.F} end, function(h)
+		mode, session11 = h.mode, h.session
+		for k,v in pairs(h.R) do ctx.R[k]=v end
+		table.clear(ctx.F);for k,v in pairs(h.F) do ctx.F[k]=v end
+	end)
 	return V
 end

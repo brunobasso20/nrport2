@@ -4,6 +4,10 @@
 pelos estágios já correspondem ao executável atualizado. Não reaplique reduções de camber ou de vácuo sobre essa base.
 Evidência, limites da comparação com 1.0 e regressão de camber: [PATCH1201_AUDIT.md](PATCH1201_AUDIT.md).
 
+**assist_implementation:** automático, embreagem automática e ABS ligados para teste; TC, estabilidade e boost
+de direção desligados, com estados na telemetria. [Instalação no Studio](assist_implementation/README.md) ·
+[recuperação e validação](ASSIST_IMPLEMENTATION.md). O auxílio de direção depende das linhas originais ausentes.
+
 ## Aplicar o Stage 13 sobre o Stage 12.1
 
 1. Studio, **fora do Play**, na **Command Bar**, sobre a bancada **Stage 12.1 publicada** (se ainda estiver no Stage 12,
