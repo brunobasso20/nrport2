@@ -372,6 +372,9 @@
           },
           "NR2003WatkinsGlen": {
             "$path": "roblox/NR2003WatkinsGlen.lua"
+          },
+          "NR2003Track1": {
+            "$path": "roblox/NR2003Track1.lua"
           }
         },
         "Input": {

@@ -1,0 +1,24 @@
+[NR2003 Stage 10] setup aplicado (natural, 0.32 s): molas -71344/-71344/-41092/-41092 N/m, freio 2812/988 N*m, marchas 2.133/1.611/1.261/1.000 x 4.500
+[NR2003 Stage 12] direção original: relação 12:1 (item 0x30), trava 360° (180° por lado), override baixa velocidade off, linearidade 0.00, taxa 0.0330/quadro (teclas 0, eixo 0), volante até 180°
+[NR2003 Stage 13] force feedback original ligado: força 80, amortecimento 0, latência 0 ms, dispositivo sim (efeito adquirido pelo 0054fed0 só com o eixo analógico)
+[NR2003 Stage 9] sessão: 70 F, condições 0, dia, vento 0 mph dir 0 -> ar 49.11 C, rho 1.081192 kg/m3, vento (-0.000, 0.000) m/s | fita 0%, aerofólio 65°
+PASS  track1 selects host mesh contacts and never loads the old world
+PASS  car originates beside dedicated track1 marker
+PASS  original core steps against col-only raycasts  nil
+PASS  HUD packet identifies track1 and original asphalt grip
+PASS  concrete and local contact multiplier enter tire arguments
+PASS  banked road normals are converted without flattening
+PASS  missing road gives no grounded contact
+[NR2003 Stage 12] direção original: relação 12:1 (item 0x30), trava 360° (180° por lado), override baixa velocidade off, linearidade 0.00, taxa 0.0330/quadro (teclas 0, eixo 0), volante até 180°
+[NR2003 Stage 13] force feedback original ligado: força 80, amortecimento 0, latência 0 ms, dispositivo sim (efeito adquirido pelo 0054fed0 só com o eixo analógico)
+[NR2003 Stage 9] sessão: 70 F, condições 0, dia, vento 0 mph dir 0 -> ar 49.11 C, rho 1.081192 kg/m3, vento (-0.000, 0.000) m/s | fita 0%, aerofólio 65°
+PASS  reset rereads moved track1 marker instead of Watkins spawn
+PASS  reset reapplies independent track surface settings
+PASS  reset leaves original thermal/wear simulation drivable
+[NR2003 Stage 10] setup aplicado (natural, 0.31 s): molas -71344/-71344/-41092/-41092 N/m, freio 2812/988 N*m, marchas 2.133/1.611/1.261/1.000 x 4.500
+[NR2003 Stage 12] direção original: relação 12:1 (item 0x30), trava 360° (180° por lado), override baixa velocidade off, linearidade 0.00, taxa 0.0330/quadro (teclas 0, eixo 0), volante até 180°
+[NR2003 Stage 13] force feedback original ligado: força 80, amortecimento 0, latência 0 ms, dispositivo sim (efeito adquirido pelo 0054fed0 só com o eixo analógico)
+[NR2003 Stage 9] sessão: 70 F, condições 0, dia, vento 0 mph dir 0 -> ar 49.11 C, rho 1.081192 kg/m3, vento (-0.000, 0.000) m/s | fita 0%, aerofólio 65°
+PASS  predicted client attaches to the same col and parameter inputs
+PASS  existing original driving assist options are preserved
+track1 adapter: 12 passed, 0 failed

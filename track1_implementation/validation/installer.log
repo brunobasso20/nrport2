@@ -1,0 +1,33 @@
+PASS installer applies actual payload
+PASS only small adapter insertions preserve existing prediction/local source
+PASS asphalt/concrete indices are applied separately
+PASS visuals never collide or answer tire queries
+PASS collision stays invisible, queryable and persistent
+PASS track1 has a separate scene marker and selector
+PASS Watkins Glen module and spawn identities are preserved
+PASS track HUD selects its name without dropping existing fields
+PASS repeat installation makes no writes
+PASS rollback refuses newer source edits before writing
+PASS rollback executes
+PASS rollback restores original active track and source
+PASS rollback restores original folder and material properties
+PASS rollback removes only created track1 objects
+PASS source write failure reverses earlier new modules
+PASS spawn failure restores all source/geometry changes
+PASS installation during Play is refused without writes
+PASS unsupported source is refused without writes
+PASS ambiguous col roots are refused without writes
+PASS journal preserves a prior false attribute value
+PASS matching Rojo modules are reused and preserved by rollback
+PASS reported 579660-byte backup persists below the per-value limit
+PASS large backup can be decoded and fully rolled back
+PASS Unicode boundaries survive journal chunking and rollback
+PASS truncated backup is rejected before rollback writes
+PASS small v1 StringValue backups remain readable
+PASS 438 visual and 765 collision parts install and roll back under the string limit
+PASS failure halfway through backup chunks restores installation changes
+PASS existing player receives dedicated track1 respawn
+PASS existing avatar is moved from old world to track1
+PASS driver teardown restores prior respawn without deleting either marker
+PASS spawn lifecycle leaves seated avatars in place
+track1 installer/rollback: 32 passed, 0 failed
