@@ -29,9 +29,11 @@ function M.evaluate(c,x)
     end
     error("Unsupported/uncompiled CES response kind "..tostring(c.kind))
 end
--- 004ec250: 0=both, 1=focus/interior only, 2=other/exterior only.
-function M.selected(sample,focus,interior)
-    return not ((sample.focus==1 and not focus) or (sample.focus==2 and focus)
+-- 004ec250: first selector follows the original composite control flag 7c1
+-- (failure state in 00563bd0), separately from focus-bank and camera selection.
+function M.selected(sample,controlFlag,interior)
+    local selector=sample.selector or sample.focus or 0 -- legacy manifest field
+    return not ((selector==1 and not controlFlag) or (selector==2 and controlFlag)
         or (sample.perspective==1 and not interior) or (sample.perspective==2 and interior))
 end
 -- 004ecb70 / 004ecdb0: group reference RPM, with ORIGINAL minimum 0.25.

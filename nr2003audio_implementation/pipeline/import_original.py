@@ -75,11 +75,11 @@ def parse_ces(data,native=None):
     samples=[]
     for i in range(count):
         name=safe_name(r.take(64).split(b'\0',1)[0].decode('latin-1'))
-        focus,phase,mechanical=r.unpack('3i');enabled=r.unpack('B')[0]!=0
+        selector,phase,mechanical=r.unpack('3i');enabled=r.unpack('B')[0]!=0
         perspective,group=r.unpack('2i')
-        if focus not in (0,1,2) or perspective not in (0,1,2) or mechanical not in (0,1) or not 0<=group<8 or phase not in (0,1,2):
+        if selector not in (0,1,2) or perspective not in (0,1,2) or mechanical not in (0,1) or not 0<=group<8 or phase not in (0,1,2):
             raise ValueError('Unsupported CES sample selectors at sample '+str(i))
-        samples.append({'file':name,'focus':focus,'phase':phase,'mechanical':mechanical,
+        samples.append({'file':name,'selector':selector,'phase':phase,'mechanical':mechanical,
             'enabled':enabled,'perspective':perspective,'group':group,
             'curves':[curve(r,version,native) for _ in range(4)],'loop':{'wholeFile':phase==0}})
     if r.pos!=len(data):raise ValueError('CES has unparsed trailing bytes; refusing a partial bank')
@@ -163,8 +163,8 @@ def main(argv=None):
                 name+='.wav';data=res.get(name);sample['file']=name
             if data is None:missing.append(name);continue
             info=wave_info(data);waves[name]=info
+            sample['durationSeconds']=info['duration']
             if 'loop' in info:sample['loop']=info['loop']
-            if sample['phase']!=0:warnings.append(name+': original intro/outro scheduler is retained in metadata but not played by this continuous-loop stage')
             assets[name]=('rbxasset://sounds/nr2003_reference/'+name) if a.studio_local else asset_ids.get(name)
             p=out/'wav'/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(data)
     for name in banks:

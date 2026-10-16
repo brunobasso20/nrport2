@@ -7,16 +7,24 @@ Automated validation runs in the container and Luau CLI. **No Roblox Studio or l
 | Check | Scope |
 |---|---|
 | Response kernels | 235 stored vectors produced by original x86 linear/Gaussian/Bezier routines with documented CRT bridges; exact tested float32 agreement, including plateau edges, overlap and extrapolation |
-| Mixer/lifecycle | RPM/reference and actual gear-scalar pitch, normalization, interior selectors, stable voice ownership, confirmed shift de-duplication, reset and stale-state silence, missing IDs, empty self-made profile |
+| Mixer/lifecycle | 80 original-x86 normalized-weight configurations; original group ordering/limit; RPM/reference and actual gear-scalar pitch; disabled and missing samples; failure/interior selectors; stable voice ownership; confirmed shift de-duplication; reset/stale silence |
+| Transport phases | 2,400 original-x86 threshold/gate/cooldown decisions; mock one-shot intro/outro starts, reversal position, original intro-tail blend, gear entry, completion, missing intro and original half-gain branch |
+| Tire presentation | Original-x86 fade, remote aggregation and LCG vectors; onset/release sequence, source-tick cadence, repeated render calls, reset and unchanged input controls |
 | Real core state | Eight changing-throttle blocks on the existing complete Cup core; whole memory buffer identical before/after every audio sample; direct original RPM/load/tire control cells; mixed asphalt/concrete/grass/gravel metadata |
 | Transport | 476-byte packets; the original 204 bytes remain identical; existing render decoder accepts the extended packet; float32/gear/contact/material round trips; invalid data rejected; render-time interpolation, discrete gear changes, reset epoch and old-packet rejection, 500 ms stale cutoff |
 | Installation | Actual generated payload executed in the existing Studio mock; preserves local source edits and track/core objects; idempotent install; exact rollback; modified-source refusal; unsupported-hook preflight; injected Source and backup-chunk failures; chunked backups; Play-mode refusal |
-| Playback API mock | Actual Spatial module executed with an injected API surface; one start per loaded loop, late load once, no restart during control updates, loop metadata, 0.28 scale, contained loading errors, owned-object cleanup and late-callback rejection |
+| Playback API mock | Actual Spatial module executed with an injected API surface; one start per loaded loop, late load once, no restart during control updates, loop metadata, 0.28 scale, contained loading errors, owned-object cleanup, one-shot completion, deferred seek/start, cancellation and late-callback rejection |
 | Import | CES v2/v3 shape, reference-pair layout, malformed/truncated/trailing data, unsupported curves without native reference, traversal rejection, unchanged PCM bytes/sample rate, generated XML, missing original-bank rejection |
 | Existing track | Existing `tests/track1/surfaces.luau` regression; original material and thermal/wear behavior |
 | Source scope | Core, adapters, setup calculations, track parameters, model runtime and original snapshot codec unchanged from the selected base commit |
 
-`RESULTS.txt` records the completed test runs. Test fixture IDs and generated silent WAVs are synthetic test inputs, not working asset mappings for the original profile. Numeric fixture probes are not captured gameplay audio.
+`tools/validate_audio.py` builds once and runs these suites, syntax checks and the preserved-source scope check automatically. Optional `--reference-memory` regenerates all numeric fixtures privately and verifies byte identity. `RESULTS.txt` records the completed test runs. Test fixture IDs and generated silent WAVs are synthetic test inputs, not working asset mappings for the original profile. Numeric fixture probes are not captured gameplay audio.
+
+## Phase and cadence checks
+
+The automated transport tests use synthetic CES/sample handles. They verify the recovered decisions and the adapter's event ownership, not the shipped samples' audible durations. The playback API mock verifies that one-shots do not loop, loading does not create duplicate starts, a cancelled deferred start stays cancelled, and a pending tire-loop phase survives loading.
+
+The native regeneration completed without modifying the Ghidra project, committed fixtures, or vehicle code. The real-core sampler compares the **entire memory buffer** before/after its reads, including the new component-failure flag.
 
 ## Studio comparison procedure (pending)
 
@@ -32,8 +40,8 @@ Install/link the original assets as described in README, then start a new Play s
 | Upshifts/downshifts | Original RPM/load change the active samples; one diagnostic shift event per confirmed change, none on reset. No synthetic click was added | De-duplication tested; listening pending |
 | Garage ratios/final drive | Change actual setup in the existing garage, rebuild/reset normally, then confirm the sound's gear scalar changes with `car+454/+474` without audio recalibration | Readout formula tested; garage driving pending |
 | Rev limiter | Existing original core controls engine/shift cuts; inspect actual limiter/load/RPM. No new timing or cutoff waveform is invented | Original data path present; high-RPM listening pending |
-| Asphalt/other materials | Grounded wheels select the original sound class and completed tire volume/pitch/crossfade. Lift, lock and slide a wheel; airborne wheels must remain silent | Mixed-state metadata tested; listening pending |
-| Damage/ignition cuts | Match the original core's RPM/load and verify that audio does not simulate extra failures or modify power. Dedicated failure/start effects remain outside this stage | Readouts present; driving/listening pending |
+| Asphalt/other materials | Grounded wheels select the original sound class and completed tire volume/pitch/crossfade. Lift, lock and slide a wheel; airborne wheels must create no new tire excitation; the existing voice releases through the original fade | Mixed-state metadata tested; listening pending |
+| Damage/ignition cuts | Match the original core's RPM/load and verify that audio does not simulate extra failures or modify power. Bank-controlled startup/shutdown follows recovered phase rules; the core's unported manual ignition inputs are not replaced by audio | Readouts present; driving/listening pending |
 | Cockpit/exterior | Original sample selectors follow `carModel.vars._cockpit`, including look-left/right, or the existing fallback cockpit camera | Selector math tested; Studio mode switch pending |
 | Reset/avatar respawn | Reset epoch discards old states without a shift event; loops do not multiply. Repeat entry/exit/reset; check Sound counts remain stable | Buffer/controller tests; Studio lifecycle pending |
 | Missing/unavailable audio | Remove a mapping or deny one asset. Other samples and driving must continue; diagnostics must show missing/loading/failure | Missing IDs tested; platform load failure pending |
@@ -42,4 +50,4 @@ Install/link the original assets as described in README, then start a new Play s
 
 Measure expected sample pitch objectively as `RPM/referenceRPM`, or `RPM/gearReferenceRPM*gearScalar`, clamped first by the original 0.25 minimum and then by the backend's configured maximum. Record camera, effective load, gear and profile together with the audible capture. A nonzero pitch-clamp count means the backend cannot reproduce that requested playback rate; do not call that sample/range verified.
 
-No end-to-end waveform, exact DirectSound mix, starter/shutdown phase scheduling, original tire fade timing, remote-car aggregation, reverb or acoustic latency comparison is marked as passed. These require the original banks, a real game baseline, and Roblox Studio.
+Native transport decisions, tire fade arithmetic, remote aggregation and numeric mixer weights passed the automated reference comparisons. Actual startup/shutdown/tire timing on Roblox, end-to-end waveform, original backfire playback, exact DirectSound mixing, reverb and acoustic latency are not marked as passed. Those require the original banks, a real game baseline, and Roblox Studio.

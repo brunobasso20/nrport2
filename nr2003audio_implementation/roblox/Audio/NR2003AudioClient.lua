@@ -76,6 +76,7 @@ function M:update(dt,driving,carModel,cameraMode)
             car:SetAttribute("NR2003AudioLoaded",s.loaded)
             car:SetAttribute("NR2003AudioShiftEvents",s.shifts)
             car:SetAttribute("NR2003AudioPitchClamps",s.clipped)
+            car:SetAttribute("NR2003AudioEnginePhase",s.enginePhase)
         end
     end
     if self.diagTimer>=0.25 then self.diagTimer=0 end

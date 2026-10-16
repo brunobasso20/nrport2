@@ -1,5 +1,6 @@
 Audio reference validation — 2026-10-16
-101 automated checks; 235 original-kernel numerical vectors; no listening claim.
+140 automated checks; 2803 original-x86 numeric vectors; no listening claim.
+17 sources compile; private native regeneration verified.
 
 [kernels]
 PASS 235 response vectors agree with original x86 kernels (documented CRT bridges)
@@ -19,6 +20,35 @@ PASS invalid/missing IDs rejected
 PASS local Studio references reject path traversal
 PASS audio payload stays below the UnreliableRemoteEvent limit
 audio kernels/lifecycle: 15 passed, 0 failed
+
+[transitions]
+PASS 2400 transport decisions agree with original x86, including threshold/gate/cooldown edges
+PASS 24 tire fade/clamp vectors agree with original x86 instruction block
+PASS 32 remote tire combinations agree with original x86 and leave inputs unchanged
+PASS 32 playback random vectors agree with original x86 LCG/uniform
+PASS original four-composite limit keeps engines first in bank order
+PASS original tire constructor selects engine group zero
+PASS 80 mixer configurations retain exact original float32 normalization, including disabled/inactive samples
+PASS CES failure selector uses original control flag independently of camera
+PASS selector change clears reused controls instead of carrying an old sample group
+PASS low-RPM startup starts original intro once and mutes continuous/gear samples
+PASS render updates do not restart one-shots
+PASS intro tail crosses into loops at original 0.6 position with 2.500000238 slope
+PASS shared gear layer enters continuous transport without an invented gear fade
+PASS completed intro leaves stable continuous playback
+PASS bank RPM threshold starts original outro
+PASS outro completion stops the transport
+PASS joining above original startup gate enters loops directly
+PASS original car+596 branch halves composite gain without changing pitch
+PASS reversing intro into outro mirrors normalized sample position
+PASS reversing outro into intro preserves original position mirror
+PASS missing intro cannot trap a loaded engine in startup
+PASS tire onset uses old fade before the original quarter-step
+PASS tire release retains last volume until the original fade ends
+PASS 300 render calls inside one original frame advance tire fade once
+PASS next original frame advances the audible tire ramp
+PASS reset clears transport and tire fade history without a shift event
+audio transitions: 26 passed, 0 failed
 
 [state]
 PASS actual core state sampling is read-only, block 1
@@ -55,15 +85,20 @@ PASS 476-byte packet preserves all 204 original render bytes, block 8
 PASS all four material/contact states survive packing, block 8
 PASS test exercised changing original engine RPM
 PASS old render packets need no migration
+PASS CES failure selector reads the original damage bit without mutating core memory
+PASS original CES failure selector survives the existing reserved packet flags
+PASS player-car and original half-volume branch survive the same packet flags
+PASS original failure selector type 1 always selects its default branch
 PASS non-finite audio data is rejected
 PASS audio uses the visual presentation time with continuous RPM
 PASS gear events never occur before their original timestamp
 PASS mechanical pitch ratio changes at the confirmed gear timestamp
+PASS failure selectors switch at the confirmed state timestamp
 PASS duplicate/out-of-order packet cannot repeat an event
 PASS stale packet stream silences within 500 ms
 PASS reset epochs cannot interpolate with the previous car state
 PASS delayed pre-reset packets are rejected
-audio state/core/transport: 42 passed, 0 failed; RPM 176.7..1854.7
+audio state/core/transport: 47 passed, 0 failed; RPM 176.7..1854.7
 
 [installer]
 PASS actual audio installer executes
@@ -90,10 +125,18 @@ PASS metre-to-stud rolloff uses existing 0.28 scale
 PASS wheel positioning only moves owned audio attachments
 PASS unloaded assets do not claim playback
 PASS late loading starts once
+PASS one-shot loads without starting or accepting a WAV loop region
+PASS one-shot starts once at requested normalized position
+PASS actual completion signal advances the one-shot clock to its end
+PASS one-shot can await asynchronous loading without a repeated start
+PASS late-loaded one-shot starts at the saved phase once
+PASS cancelled pending one-shot cannot start on a late load
+PASS original tire start phase survives asynchronous loop loading
 PASS content loading failures are contained and reported
+PASS failed pending one-shot releases its phase wait
 PASS cleanup is idempotent and only removes owned sound objects
 PASS late callbacks after destruction cannot restart audio
-audio playback backend mock: 10 passed, 0 failed
+audio playback backend mock: 18 passed, 0 failed
 
 [track1]
 PASS asphalt uses original material scalar, without Watkins Glen override
@@ -114,10 +157,23 @@ track1 surfaces: 12 passed, 0 failed
 Python unittest: 8 tests passed (CES/WAV format and hook/XML cases).
 
 [syntax]
-All 9 audio modules, Studio installer and four hooked entry points compile with Luau CLI.
+All 17 audio/installer/entry-point sources compile.
 
 [scope]
-Physics, garage, adapters, tracks, model runtime, original render codec/buffer/presentation unchanged from base.
+Physics, garage, adapters, tracks, model runtime and original render codec/buffer/presentation unchanged from base.
+
+[regenerate_curves]
+Regenerated 235 original curve vectors
+
+[regenerate_transport]
+Regenerated 2400 original transport vectors
+Regenerated 168 original tire/random/mixer vectors
+
+[native_fixture_identity]
+Fresh original x86 output matches all committed numeric fixtures.
+
+[whitespace]
+Passed.
 
 [not performed]
-Original-bank/WAV extraction (files unavailable); Roblox Studio; listening/latency comparison; full original phase/effects reproduction.
+Original-bank/WAV extraction (files unavailable); Roblox Studio; listening/latency and DirectSound waveform comparison.

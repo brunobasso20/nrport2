@@ -1,0 +1,84 @@
+004eaa60 MOV EDX,dword ptr [ESP + 0x8]
+004eaa64 PUSH EBX
+004eaa65 PUSH EBP
+004eaa66 MOV EBP,dword ptr [ESP + 0xc]
+004eaa6a PUSH ESI
+004eaa6b MOV ESI,dword ptr [ESP + 0x18]
+004eaa6f TEST ESI,ESI
+004eaa71 PUSH EDI
+004eaa72 JGE 0x004eaacd
+004eaa74 XOR ESI,ESI
+004eaa76 TEST EDX,EDX
+004eaa78 JLE 0x004eaaac
+004eaa7a MOV EAX,dword ptr [EBP + ESI*0x4]
+004eaa7e TEST EAX,EAX
+004eaa80 JZ 0x004eaaa1
+004eaa82 XOR ECX,ECX
+004eaa84 ADD EAX,0x3a0
+004eaa89 MOV EDI,dword ptr [EAX + 0xfffffef0]
+004eaa8f TEST EDI,EDI
+004eaa91 JNZ 0x004eaaa8
+004eaa93 CMP dword ptr [EAX],0x0
+004eaa96 JNZ 0x004eaaa8
+004eaa98 INC ECX
+004eaa99 ADD EAX,0x44
+004eaa9c CMP ECX,0x2
+004eaa9f JL 0x004eaa89
+004eaaa1 INC ESI
+004eaaa2 CMP ESI,EDX
+004eaaa4 JL 0x004eaa7a
+004eaaa6 JMP 0x004eaaac
+004eaaa8 CMP ESI,EDX
+004eaaaa JL 0x004eaad1
+004eaaac XOR ESI,ESI
+004eaaae TEST EDX,EDX
+004eaab0 JLE 0x004eaac6
+004eaab2 MOV EAX,dword ptr [EBP + ESI*0x4]
+004eaab6 TEST EAX,EAX
+004eaab8 JZ 0x004eaac1
+004eaaba MOV ECX,dword ptr [EAX + 0x10]
+004eaabd TEST ECX,ECX
+004eaabf JZ 0x004eaacd
+004eaac1 INC ESI
+004eaac2 CMP ESI,EDX
+004eaac4 JL 0x004eaab2
+004eaac6 POP EDI
+004eaac7 POP ESI
+004eaac8 POP EBP
+004eaac9 XOR AL,AL
+004eaacb POP EBX
+004eaacc RET
+004eaacd CMP ESI,EDX
+004eaacf JGE 0x004eaac6
+004eaad1 TEST ESI,ESI
+004eaad3 JL 0x004eaac6
+004eaad5 MOV EBX,dword ptr [EBP + ESI*0x4]
+004eaad9 TEST EBX,EBX
+004eaadb JZ 0x004eaac6
+004eaadd MOV EAX,dword ptr [EBX + 0x10]
+004eaae0 TEST EAX,EAX
+004eaae2 JNZ 0x004eaac6
+004eaae4 MOV ECX,EBX
+004eaae6 CALL 0x004eabf0
+004eaaeb MOV EAX,dword ptr [ESP + 0x18]
+004eaaef XOR EDI,EDI
+004eaaf1 TEST EAX,EAX
+004eaaf3 JLE 0x004eab13
+004eaaf5 CMP EDI,ESI
+004eaaf7 JZ 0x004eab0a
+004eaaf9 MOV ECX,dword ptr [EBP + EDI*0x4]
+004eaafd TEST ECX,ECX
+004eaaff JZ 0x004eab0a
+004eab01 MOV EAX,dword ptr [EBX + 0x14]
+004eab04 PUSH EAX
+004eab05 CALL 0x004eac10
+004eab0a MOV EAX,dword ptr [ESP + 0x18]
+004eab0e INC EDI
+004eab0f CMP EDI,EAX
+004eab11 JL 0x004eaaf5
+004eab13 POP EDI
+004eab14 POP ESI
+004eab15 POP EBP
+004eab16 MOV AL,0x1
+004eab18 POP EBX
+004eab19 RET

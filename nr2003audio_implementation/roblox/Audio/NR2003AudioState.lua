@@ -26,6 +26,16 @@ function M.sample(core,host,out)
     out.limiter=core:revLimiter();out.power=V.rf32(ENGINE+0x554)
     out.cutTimer=V.rf32(ENGINE+0x550);out.engineFlags=V.r32(ENGINE+0x548)
     out.damage=V.rf32(CAR+0x1493+0x58)
+    -- 00563bd0 -> 0051c2d0/+0xc -> 00548a00: this CES control flag
+    -- is a component-failure selector, NOT the camera's focus-car flag.
+    local failure=V.r32(0xbcf76c)
+    out.isPlayerCar=V.r32(CAR+0x5b2)==V.r32(0xc06926)
+    out.engineHalfVolume=V.r32(CAR+0x596)==0 -- 00563bd0's exact 0.5 gain branch
+    out.cesSelector=false
+    if out.isPlayerCar and failure<=8 and failure~=1 then
+        local shift=failure==0 and 0 or failure-1
+        out.cesSelector=bit32.band(V.r8(CAR+0x1493+0xe),bit32.lshift(1,shift))~=0
+    end
     local spec=V.r32(CAR+0x576)
     out.revLimit=spec~=0 and V.rf32(spec+0x2c) or 0
     out.fault=host and host.fault~=nil or false
@@ -58,7 +68,8 @@ function M.append(base,s,epoch)
     local b=buffer.create(M.BASE_BYTES+M.SIZE);buffer.copy(b,0,base)
     local o=M.BASE_BYTES
     buffer.writeu32(b,o,M.MAGIC);buffer.writeu8(b,o+4,M.VERSION);buffer.writeu8(b,o+5,4)
-    buffer.writeu16(b,o+6,(s.limiter and 1 or 0)+(s.fault and 2 or 0))
+    buffer.writeu16(b,o+6,(s.limiter and 1 or 0)+(s.fault and 2 or 0)+(s.cesSelector and 4 or 0)
+        +(s.engineHalfVolume and 8 or 0)+(s.isPlayerCar and 16 or 0))
     buffer.writeu32(b,o+8,epoch or 0);buffer.writei32(b,o+12,s.gear)
     for i,k in ipairs(FIELDS) do buffer.writef32(b,o+12+i*4,s[k] or 0) end
     buffer.writeu32(b,o+60,s.engineFlags or 0)
@@ -79,6 +90,8 @@ function M.decode(b)
     if buffer.readu8(b,0)~=1 or buffer.readu8(b,1)~=4 or not finite(s.time) then return nil,"render header" end
     if s.gear< -1 or s.gear>4 then return nil,"gear" end
     local flags=buffer.readu16(b,o+6);s.limiter=bit32.band(flags,1)~=0;s.fault=bit32.band(flags,2)~=0
+    s.cesSelector=bit32.band(flags,4)~=0
+    s.engineHalfVolume=bit32.band(flags,8)~=0;s.isPlayerCar=bit32.band(flags,16)~=0
     s.teleport=bit32.band(buffer.readu16(b,6),1)~=0;s.engineFlags=buffer.readu32(b,o+60)
     for i,k in ipairs(FIELDS) do
         local v=buffer.readf32(b,o+12+i*4);if not finite(v) then return nil,"non-finite "..k end;s[k]=v

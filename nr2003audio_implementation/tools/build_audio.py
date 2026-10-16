@@ -32,7 +32,7 @@ def main():
     (OUT/'NR2003_Audio_Install.rbxmx').write_text('<roblox version="4">'+module('NR2003_Audio_Install',source,children)+'</roblox>\n')
     (OUT/'INSTALL.lua').write_text('-- Stop Play; Insert from File: NR2003_Audio_Install.rbxmx, then run:\nrequire(workspace.NR2003_Audio_Install)()\n')
     (OUT/'ROLLBACK.lua').write_text('-- Stop Play; reverts only this audio patch. AudioAssets bindings are retained.\nlocal T=(function()\n'+journal+'\nend)()\nT.rollback()\n')
-    manifest={'version':'1.0.0','baseCommit':'25be672a755d64b4010b02399c800522aa0ca040',
+    manifest={'version':'1.1.0','baseCommit':'25be672a755d64b4010b02399c800522aa0ca040',
         'branch':'codex/nr2003-original-audio','originalAssetsIncluded':False,'selfmadeAssetsEnabled':False,
         'audioTailBytes':272,'renderPacketBytes':476,'additionalPayloadBytesPerSecondAt60Hz':16320,
         'profiles':['NR2003_ORIGINAL_REFERENCE','NASCAR_SELFMADE'],'requiredOriginalBanks':

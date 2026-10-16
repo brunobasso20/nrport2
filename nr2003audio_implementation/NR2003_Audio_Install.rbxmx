@@ -32,7 +32,7 @@ return function()
     local installed=storage:FindFirstChild(Transaction.BACKUP)
     local folder=package:FindFirstChild("Audio")
     if installed then
-        assert(folder and folder:GetAttribute("NR2003AudioVersion")=="1.0.0","Incomplete audio installation")
+        assert(folder and folder:GetAttribute("NR2003AudioVersion")=="1.1.0","Incomplete audio installation")
         assert(serverSource==server.Source and clientSource==client.Source,"Audio hooks changed after installation")
         for name,source in pairs(Sources) do
             local m=folder:FindFirstChild(name)
@@ -45,7 +45,7 @@ return function()
     local tx=Transaction.new()
     local ok,reason=pcall(function()
         folder=tx:create("Folder","Audio",package)
-        tx:write(folder,"attribute","NR2003AudioVersion","1.0.0")
+        tx:write(folder,"attribute","NR2003AudioVersion","1.1.0")
         for name,source in pairs(Sources) do
             local module=tx:create("ModuleScript",name,folder);tx:write(module,"property","Source",source)
         end
@@ -61,6 +61,136 @@ return function()
     return true
 end
 </ProtectedString></Properties><Item class="ModuleScript"><Properties><string name="Name">Sources</string><ProtectedString name="Source">return {
+["NR2003AudioBank"]=[=[
+-- A CES bank's original shared phase transport, adapted to asynchronous Sound
+-- voices. The platform owns sample clocks; no second engine is simulated here.
+local Engine=require(script and script.Parent.NR2003AudioEngine or "./NR2003AudioEngine")
+local Curves=require(script and script.Parent.NR2003AudioCurves or "./NR2003AudioCurves")
+local Phases=require(script and script.Parent.NR2003AudioPhases or "./NR2003AudioPhases")
+local M={};M.__index=M
+function M.layout(bank,tire)
+    -- 00556b0d creates tire banks as engine/group 0. 004eab20/004ea9f0
+    -- take up to four engine/gear groups in first appearance order, engines first.
+    if tire then return {"0:0"} end
+    local list,seen={},{}
+    for mechanical=0,1 do for _,s in ipairs(bank.samples) do
+        local key=s.mechanical..":"..s.group
+        if s.mechanical==mechanical and not seen[key] and #list&lt;4 then
+            seen[key]=true;list[#list+1]=key
+        end
+    end end
+    return list
+end
+function M.new(bank,key,voices,backend)
+    local self=setmetatable({bank=bank,key=key,backend=backend,phase=Phases.new(),groups={},controls={},available={}},M)
+    local byKey={}
+    for i,s in ipairs(bank.samples) do
+        local voice=voices[key..":"..i]
+        if voice then
+            self.available[i]=true
+            local k=s.mechanical..":"..s.group
+            local g=byKey[k] or {key=k,samples={},mechanical=s.mechanical,group=s.group}
+            byKey[k]=g;g.samples[#g.samples+1]={index=i,voice=voice}
+            if s.mechanical==0 and s.phase~=0 then g.hasPhases=true end
+        end
+    end
+    for _,k in ipairs(M.layout(bank,key:match("^tire_")~=nil)) do
+        if byKey[k] then self.groups[#self.groups+1]=byKey[k] end
+    end
+    for _,g in ipairs(self.groups) do if g.hasPhases then self.master=g;break end end
+    self.master=self.master or self.groups[1]
+    return self
+end
+local function first(group,phase,interior)
+    if not group then return nil end
+    for _,e in ipairs(group.samples) do
+        local s=e.voice.sample
+        -- 004ec2b0 builds intro/outro lists with selector parameter 1.
+        if s.phase==phase and Curves.selected(s,false,interior) then return e end
+    end
+    return nil
+end
+function M:normalized(e) return e and self.backend.normalized and self.backend:normalized(e.voice.handle) or 0 end
+function M:changed(old,interior)
+    local phase=self.phase.phase
+    if phase~=Phases.LOOP then self.blend=false end
+    if phase~=Phases.INTRO and phase~=Phases.OUTRO then
+        for _,g in ipairs(self.groups) do for _,e in ipairs(g.samples) do
+            local s=e.voice.sample
+            local tail=phase==Phases.LOOP and self.blend and g==self.master and s.phase==1
+            if s.phase~=0 and not tail and self.backend.stop then self.backend:stop(e.voice.handle) end
+        end end
+        return
+    end
+    local samplePhase=phase==Phases.INTRO and 1 or 2
+    for _,g in ipairs(self.groups) do
+        local opposite=first(g,samplePhase==1 and 2 or 1,interior)
+        local mirrored=(old==Phases.INTRO or old==Phases.OUTRO) and opposite~=nil
+        local position=mirrored and 1-self:normalized(opposite) or 0
+        for _,e in ipairs(g.samples) do
+            if e.voice.sample.phase==samplePhase and self.backend.play then self.backend:play(e.voice.handle,position)
+            elseif e.voice.sample.phase~=0 and self.backend.stop then self.backend:stop(e.voice.handle) end
+        end
+    end
+end
+function M:stop()
+    for _,g in ipairs(self.groups) do for _,e in ipairs(g.samples) do
+        if e.voice.sample.phase~=0 and self.backend.stop then self.backend:stop(e.voice.handle) end
+    end end
+end
+function M:seek(position)
+    if not self.backend.seek then return end
+    local phase=self.phase.phase
+    local samplePhase=phase==Phases.INTRO and 1 or (phase==Phases.OUTRO and 2 or 0)
+    for _,g in ipairs(self.groups) do for _,e in ipairs(g.samples) do
+        if e.voice.sample.phase==samplePhase then self.backend:seek(e.voice.handle,position) end
+    end end
+end
+function M:update(state,selector,interior,now,gate,outerGain,volumeBank,apply)
+    local intro,outro=first(self.master,1,interior),first(self.master,2,interior)
+    local old=self.phase.phase
+    if Phases.update(self.phase,self.bank.thresholds or {0,0},state.rpm,state.load,gate,intro~=nil,outro~=nil,now) then
+        self:changed(old,interior)
+    end
+    local phase=self.phase.phase
+    if phase==Phases.INTRO or phase==Phases.OUTRO then
+        local samplePhase=phase==Phases.INTRO and 1 or 2
+        local playing=false
+        if self.master then for _,e in ipairs(self.master.samples) do
+            if e.voice.sample.phase==samplePhase and self.backend.playing and self.backend:playing(e.voice.handle) then playing=true end
+        end end
+        local blend=phase==Phases.INTRO and intro and self:normalized(intro)&gt;0.6000000238418579
+        if blend or not playing then
+            Phases.change(self.phase,phase==Phases.INTRO and Phases.LOOP or Phases.STOP,now)
+            self.blend=blend==true;self:changed(phase,interior);phase=self.phase.phase
+        end
+    end
+    local groups
+    self.controls,groups=Engine.controls(self.bank,state,selector,interior,self.controls,volumeBank,self.available)
+    local loopFactor=1
+    if self.blend then loopFactor=math.clamp((self:normalized(intro)-0.6000000238418579)*2.500000238418579,0,1) end
+    if self.blend and loopFactor==1 then self.blend=false;self:stop() end
+    for i,c in ipairs(self.controls) do
+        local gain=c.gain
+        if phase~=Phases.LOOP then gain=0
+        elseif self.blend and self.master and c.group==self.master.key then gain*=loopFactor end
+        apply(self.key..":"..i,{gain=gain*outerGain,pitch=c.pitch})
+    end
+    for _,g in ipairs(self.groups) do
+        local e=nil;local scale=1
+        if phase==Phases.INTRO then e=first(g,1,interior)
+        elseif phase==Phases.OUTRO then e=first(g,2,interior)
+        elseif self.blend and g==self.master then e=first(g,1,interior);scale=1-loopFactor end
+        if e then
+            local s=e.voice.sample;local control=groups[g.key]
+            local gain=s.enabled and control and math.min(control.weight,1)*control.gain*scale*outerGain or 0
+            local pitch=state.fixedPitch or Curves.pitch(self.bank,s,state.rpm,state.gearScale) or 1
+            apply(self.key..":"..e.index,{gain=gain,pitch=pitch})
+        end
+    end
+end
+return M
+]=],
 ["NR2003AudioClient"]=[=[
 local State=require(script.Parent.NR2003AudioState)
 local Profiles=require(script.Parent.NR2003AudioProfiles)
@@ -140,6 +270,7 @@ function M:update(dt,driving,carModel,cameraMode)
             car:SetAttribute("NR2003AudioLoaded",s.loaded)
             car:SetAttribute("NR2003AudioShiftEvents",s.shifts)
             car:SetAttribute("NR2003AudioPitchClamps",s.clipped)
+            car:SetAttribute("NR2003AudioEnginePhase",s.enginePhase)
         end
     end
     if self.diagTimer&gt;=0.25 then self.diagTimer=0 end
@@ -155,20 +286,25 @@ return M
 ]=],
 ["NR2003AudioController"]=[=[
 local Profiles=require(script and script.Parent.NR2003AudioProfiles or "./NR2003AudioProfiles")
-local Engine=require(script and script.Parent.NR2003AudioEngine or "./NR2003AudioEngine")
+local Bank=require(script and script.Parent.NR2003AudioBank or "./NR2003AudioBank")
 local Tires=require(script and script.Parent.NR2003AudioTires or "./NR2003AudioTires")
+local Curves=require(script and script.Parent.NR2003AudioCurves or "./NR2003AudioCurves")
 local M={};M.__index=M
 -- The backend is injectable for deterministic lifecycle tests. It only owns its
 -- own client-created sounds and attachments; it cannot alter vehicle physics.
 function M.new(profile,backend)
-    local self=setmetatable({profile=profile,backend=backend,voices={},engineControls={},tireControls={},
-        frames=0,shifts=0,resets=0,missing=0,clipped=0,active=false},M)
+    local self=setmetatable({profile=profile,backend=backend,voices={},transports={},tireSlots={},
+        frames=0,shifts=0,resets=0,missing=0,clipped=0,active=false,seed=profile.audioSeed or 1},M)
+    self.applyControl=function(key,c) self:apply(key,c) end
     for bankName,bank in pairs(profile.banks or {}) do
         if bankName=="engvol.ces" then continue end
         local wheelBank=bankName:match("^tire_")~=nil
+        local allowed={};for _,key in ipairs(Bank.layout(bank,wheelBank)) do allowed[key]=true end
         for j=1,(wheelBank and 4 or 1) do
             for i,sample in ipairs(bank.samples or {}) do
-                if sample.phase~=0 or not sample.enabled then continue end
+                if not allowed[sample.mechanical..":"..sample.group] then continue end
+                if sample.mechanical==1 and sample.phase~=0 then continue end
+                -- Disabled samples retain their original weight and phase clock.
                 local key=bankName..":"..j..":"..i
                 local id=Profiles.assetId(profile.assets[sample.file])
                 if id then
@@ -181,32 +317,69 @@ function M.new(profile,backend)
     return self
 end
 function M:silence()
+    if self.active then self:resetPlayback() end
     self.active=false
     for _,voice in pairs(self.voices) do self.backend:set(voice.handle,0,1) end
+end
+function M:resetPlayback()
+    for _,r in pairs(self.transports) do r:stop() end
+    self.transports={};self.tireSlots={};self.tireFrame=nil
+end
+function M:bank(name,wheel,state,selector,interior,now,gate,gain,volumeBank)
+    local key=name..":"..wheel
+    local r=self.transports[key] or Bank.new(self.profile.banks[name],key,self.voices,self.backend)
+    self.transports[key]=r
+    r:update(state,selector,interior,now,gate,gain,volumeBank,self.applyControl)
+    return r
 end
 function M:update(state,focus,interior)
     self.frames+=1
     if not state or state.fault then self:silence();return end
     if self.epoch~=state.epoch then
-        if self.epoch~=nil then self.resets+=1 end
+        if self.epoch~=nil then self.resets+=1;self:resetPlayback() end
         self.epoch=state.epoch;self.gear=state.gear
     elseif self.gear~=state.gear then self.shifts+=1;self.gear=state.gear end
     self.active=true;self.rpm=state.rpm;self.age=state.age or 0
     for _,v in pairs(self.voices) do v.gain=0;v.pitch=1 end
-    local profile=self.profile
+    local profile=self.profile;local now=state.sampleTime or state.time or 0
     local bankName=focus and (profile.engineBank or "winston.ces") or (profile.otherEngineBank or "winston_nf.ces")
-    local bank=profile.banks[bankName]
-    if bank and state.rpm&gt;0 then
-        self.engineControls=Engine.controls(bank,state,focus,interior,self.engineControls,profile.banks["engvol.ces"])
-        for i,c in ipairs(self.engineControls) do self:apply(bankName..":1:"..i,c) end
+    if bankName~=self.engineBank then
+        if self.engineBank then self:resetPlayback() end
+        self.engineBank=bankName
     end
+    if profile.banks[bankName] then
+        local selector=state.cesSelector==true
+        local player=state.isPlayerCar;if player==nil then player=focus end
+        self:bank(bankName,1,state,selector,interior,now,state.startGate or (player and 800 or -2),
+            state.engineHalfVolume and .5 or 1,profile.banks["engvol.ces"])
+    end
+    local frame=math.floor((state.tick or now*288)/8)
+    local steps=self.tireFrame and math.clamp(frame-self.tireFrame,0,18) or 1
+    self.tireFrame=frame
+    local aggregate=not focus and Tires.aggregate(state.wheels) or nil
     for j,w in ipairs(state.wheels) do
-        local controls,tireBank=Tires.controls(profile,w,self.tireControls[j],focus,interior)
-        self.tireControls[j]=controls
-        if controls then
-            if self.backend.position then self.backend:position(j,w.cx or 0,w.cy or 0,w.cz or 0) end
-            local name=Tires.BANKS[w.soundType]
-            for i,c in ipairs(controls) do self:apply(name..":"..j..":"..i,c) end
+        local input=focus and w or (j==1 and aggregate or {volume=0,pitch=w.pitch,xfade=w.xfade,soundType=w.soundType})
+        local slot=self.tireSlots[j] or Tires.newSlot();self.tireSlots[j]=slot
+        local starts=slot.starts;local output=Tires.advance(slot,input,steps)
+        if self.backend.position then self.backend:position(j,focus and (w.cx or 0) or 0,focus and (w.cy or 0) or 0,focus and (w.cz or 0) or 0) end
+        local name=Tires.BANKS[output.soundType]
+        if slot.runtime and (not slot.active or starts~=slot.starts) then
+            slot.runtime:stop();self.transports[slot.runtime.key]=nil;slot.runtime=nil
+        end
+        if slot.active and name and profile.banks[name] then
+            local key=name..":"..j
+            if starts~=slot.starts then
+                if self.transports[key] then self.transports[key]:stop() end
+                self.transports[key]=nil
+            end
+            local r=self:bank(name,j,{rpm=output.xfade,load=1,gearScale=1,fixedPitch=output.pitch,volumeOverride=1},false,interior,now,-1,output.volume)
+            slot.runtime=r
+            if starts~=slot.starts then
+                -- Original LCG/uniform formula, with a private playback seed.
+                -- The original global random stream is not a physics input.
+                local position;self.seed,position=Tires.random(self.seed)
+                r:seek(Curves.f32(position))
+            end
         end
     end
     for _,voice in pairs(self.voices) do self.backend:set(voice.handle,voice.gain,voice.pitch) end
@@ -219,8 +392,10 @@ function M:apply(key,c)
     voice.gain=gain;voice.pitch=pitch
 end
 function M:stats()
+    local r=self.engineBank and self.transports[self.engineBank..":1"]
     local s={profile=self.profile.name,frames=self.frames,shifts=self.shifts,resets=self.resets,
-        missing=self.missing,clipped=self.clipped,active=self.active,rpm=self.rpm or 0,age=self.age or 0}
+        missing=self.missing,clipped=self.clipped,active=self.active,rpm=self.rpm or 0,age=self.age or 0,
+        enginePhase=r and r.phase.phase or 3}
     if self.backend.stats then for k,v in pairs(self.backend:stats()) do s[k]=v end end
     return s
 end
@@ -261,9 +436,11 @@ function M.evaluate(c,x)
     end
     error("Unsupported/uncompiled CES response kind "..tostring(c.kind))
 end
--- 004ec250: 0=both, 1=focus/interior only, 2=other/exterior only.
-function M.selected(sample,focus,interior)
-    return not ((sample.focus==1 and not focus) or (sample.focus==2 and focus)
+-- 004ec250: first selector follows the original composite control flag 7c1
+-- (failure state in 00563bd0), separately from focus-bank and camera selection.
+function M.selected(sample,controlFlag,interior)
+    local selector=sample.selector or sample.focus or 0 -- legacy manifest field
+    return not ((selector==1 and not controlFlag) or (selector==2 and controlFlag)
         or (sample.perspective==1 and not interior) or (sample.perspective==2 and interior))
 end
 -- 004ecb70 / 004ecdb0: group reference RPM, with ORIGINAL minimum 0.25.
@@ -280,8 +457,16 @@ return M
 -- controls only; playback and spatialization belong to the Roblox backend.
 local Curves=require(script and script.Parent.NR2003AudioCurves or "./NR2003AudioCurves")
 local M={}
-function M.controls(bank,state,focus,interior,out,volumeBank)
-    out=out or {};local totals={}
+function M.volume(bank,sample,state,overrideGain)
+    local volume=sample.mechanical==1 and bank.gearVolume or bank.engineVolume
+    volume=volume or {0,1}
+    local gain=Curves.f32(volume[1]+(volume[2]-volume[1])*state.load)
+    if state.volumeOverride then gain=state.volumeOverride end
+    if overrideGain then gain=overrideGain end
+    return math.max(0,gain)
+end
+function M.controls(bank,state,controlFlag,interior,out,volumeBank,available)
+    out=out or {};local totals={};local groups={}
     local overrideGain=nil
     if volumeBank and #(volumeBank.samples or {})&gt;0 then
         local v=0
@@ -291,36 +476,68 @@ function M.controls(bank,state,focus,interior,out,volumeBank)
             if s.mechanical==0 and (activeA or activeB) then v=Curves.f32(v+Curves.f32(a*b)) end
         end
         local bounds=volumeBank.engineVolume or {0,1}
-        overrideGain=bounds[1]+(bounds[2]-bounds[1])*math.clamp(v,0,1)
+        overrideGain=Curves.f32(bounds[1]+(bounds[2]-bounds[1])*math.clamp(v,0,1))
     end
     for i,sample in ipairs(bank.samples or {}) do
-        local c=out[i] or {};out[i]=c;c.gain=0;c.pitch=1
-        if sample.phase==0 and sample.enabled and Curves.selected(sample,focus,interior) then
+        local c=out[i] or {};out[i]=c;c.gain=0;c.pitch=1;c.group=nil;c.weight=0;c.raw=-1
+        if sample.phase==0 and (not available or available[i]) and Curves.selected(sample,controlFlag,interior) then
             local a,activeA=Curves.evaluate(sample.curves[1],state.rpm)
             local b,activeB=Curves.evaluate(sample.curves[2],state.load)
-            if activeA or activeB then
-                c.gain=Curves.f32(a*b)
-                c.pitch=state.fixedPitch or Curves.pitch(bank,sample,state.rpm,state.gearScale)
-                if not c.pitch then c.gain=0;c.pitch=1 end
-                local key=sample.mechanical..":"..sample.group
-                c.group=key;totals[key]=Curves.f32((totals[key] or 0)+c.gain)
-            end
+            local key=sample.mechanical..":"..sample.group
+            c.group=key;totals[key]=totals[key] or 0
+            if activeA or activeB then c.raw=Curves.f32(a*b);totals[key]=Curves.f32(totals[key]+c.raw) end
+            c.pitch=state.fixedPitch or Curves.pitch(bank,sample,state.rpm,state.gearScale)
+            c.validPitch=c.pitch~=nil;c.pitch=c.pitch or 1
         end
     end
     for i,sample in ipairs(bank.samples or {}) do
         local c=out[i];local sum=c.group and totals[c.group] or 0
-        if sum&gt;0 and c.gain&gt;0 then
+        if c.group then
             -- Original mixer normalizes by sum + 1e-5, then multiplies the
             -- composite's volume (engvol.ces or the engine-load volume ramp).
-            local volume=bank.engineVolume or {0,1}
-            if sample.mechanical==1 then volume=bank.gearVolume or {0,1} end
-            local gain=volume[1]+(volume[2]-volume[1])*state.load
-            if state.volumeOverride then gain=state.volumeOverride end
-            if overrideGain then gain=overrideGain end
-            c.gain=Curves.f32(c.gain/(sum+9.999999747378752e-6))*math.max(0,gain)
+            local gain=M.volume(bank,sample,state,overrideGain)
+            -- Inactive pairs use the original -1 sentinel and still undergo
+            -- normalization. Preserve it for the phase mixer's composite sum.
+            c.weight=Curves.f32(c.raw*Curves.f32(1/(sum+9.999999747378752e-6)))
+            c.gain=sample.enabled and c.validPitch and c.weight&gt;0.0001 and c.weight*gain or 0
+            local group=groups[c.group] or {weight=0,gain=gain,pitch=c.pitch}
+            groups[c.group]=group;group.weight=Curves.f32(group.weight+c.weight)
         else c.gain=0 end
     end
-    return out
+    return out,groups
+end
+return M
+]=],
+["NR2003AudioPhases"]=[=[
+-- CES shared transport: 004eac30, 004f01f0, 004f02d0. These are playback
+-- states, not ignition/physics states. Native fixtures exercise the decisions.
+local M={INTRO=0,OUTRO=1,LOOP=2,STOP=3}
+function M.new() return {phase=M.STOP,lastTransition=-1000} end
+function M.change(transport,phase,now)
+    if phase==M.INTRO or phase==M.OUTRO then
+        if transport.phase==phase or (now&gt;=0 and now&lt;=transport.lastTransition+0.5) then return false end
+        transport.lastTransition=now
+    else transport.lastTransition=-1000 end
+    local changed=transport.phase~=phase
+    transport.phase=phase
+    return changed
+end
+function M.update(transport,thresholds,rpm,load,startGate,hasIntro,hasOutro,now)
+    local a,b=thresholds[1],thresholds[2]
+    local phase=transport.phase;local target=nil
+    if a&gt;0 or b&gt;0 then
+        local running=(a&lt;=0 or rpm&gt;a) and (b&lt;=0 or load&gt;b)
+        if phase==M.INTRO or phase==M.LOOP then
+            if not running then target=hasOutro and math.abs(startGate+2)&gt;0.5 and M.OUTRO or M.STOP end
+        elseif phase==M.OUTRO then
+            if running then target=hasIntro and M.INTRO or M.LOOP end
+        elseif phase==M.STOP and running then
+            local start=hasIntro and ((startGate&gt;=0 and rpm&lt;startGate) or math.abs(startGate+1)&lt;0.5)
+            target=start and M.INTRO or M.LOOP
+        end
+    else target=load&gt;0.0001 and M.LOOP or M.STOP end
+    if target~=nil then return M.change(transport,target,now) end
+    return false
 end
 return M
 ]=],
@@ -392,11 +609,11 @@ function M.new(car,profile)
     return self
 end
 function M:create(key,id,wheel,sample)
-    local s=Instance.new("Sound");s.Name=key;s.SoundId=id;s.Volume=0;s.Looped=true
+    local s=Instance.new("Sound");s.Name=key;s.SoundId=id;s.Volume=0;s.Looped=(sample.phase or 0)==0
     s.RollOffMode=Enum.RollOffMode.InverseTapered
     s.RollOffMinDistance=self.profile.rollOffMinMetres/0.28
     s.RollOffMaxDistance=self.profile.rollOffMaxMetres/0.28
-    if sample.loop and sample.loop.startSeconds and sample.loop.endSeconds then
+    if s.Looped and sample.loop and sample.loop.startSeconds and sample.loop.endSeconds then
         local ok=pcall(function()
             s.PlaybackRegionsEnabled=true
             s.LoopRegion=NumberRange.new(sample.loop.startSeconds,sample.loop.endSeconds)
@@ -404,12 +621,19 @@ function M:create(key,id,wheel,sample)
         if not ok then self.failures+=1 end
     end
     s.Parent=self.attachments[wheel]
-    local entry={sound=s,gain=0,pitch=1,started=false};self.sounds[#self.sounds+1]=entry
+    local entry={sound=s,gain=0,pitch=1,started=false,looping=s.Looped,ready=false};self.sounds[#self.sounds+1]=entry
     local function start()
-        if self.destroyed or entry.started or not s.IsLoaded then return end
-        entry.started=true;self.loaded+=1;self.starts+=1;s:Play()
+        if self.destroyed or not s.IsLoaded then return end
+        entry.failed=false
+        if not entry.ready then entry.ready=true;self.loaded+=1 end
+        if entry.looping then
+            if entry.started then return end
+            if entry.seek~=nil then self:seek(entry,entry.seek);entry.seek=nil end
+            entry.started=true;self.starts+=1;s:Play()
+        elseif entry.pending~=nil then self:play(entry,entry.pending) end
     end
     self.connections[#self.connections+1]=s.Loaded:Connect(start)
+    self.connections[#self.connections+1]=s.Ended:Connect(function() entry.completed=true;entry.started=false end)
     start()
     return entry
 end
@@ -418,11 +642,19 @@ function M:preload()
     local sounds={};for _,entry in ipairs(self.sounds) do sounds[#sounds+1]=entry.sound end
     task.spawn(function()
         local ok=pcall(function()
-            game:GetService("ContentProvider"):PreloadAsync(sounds,function(_,status)
-                if not self.destroyed and status~=Enum.AssetFetchStatus.Success then self.failures+=1 end
+            game:GetService("ContentProvider"):PreloadAsync(sounds,function(id,status)
+                if not self.destroyed and status~=Enum.AssetFetchStatus.Success then
+                    self.failures+=1
+                    for _,entry in ipairs(self.sounds) do
+                        if entry.sound.SoundId==id and not entry.ready then entry.failed=true;entry.pending=nil end
+                    end
+                end
             end)
         end)
-        if not ok and not self.destroyed then self.failures+=1 end
+        if not ok and not self.destroyed then
+            self.failures+=1
+            for _,entry in ipairs(self.sounds) do if not entry.ready then entry.failed=true;entry.pending=nil end end
+        end
     end)
 end
 function M:set(entry,gain,pitch)
@@ -431,6 +663,30 @@ function M:set(entry,gain,pitch)
     if entry.gain~=gain then entry.gain=gain;entry.sound.Volume=gain end
     if entry.pitch~=pitch then entry.pitch=pitch;entry.sound.PlaybackSpeed=pitch end
 end
+function M:seek(entry,normalized)
+    if self.destroyed then return end
+    local s=entry.sound
+    if not entry.ready then entry.seek=normalized;return end
+    s.TimePosition=math.clamp(normalized,0,1)*s.TimeLength
+end
+function M:play(entry,normalized)
+    if self.destroyed or entry.failed then return end
+    if not entry.ready then entry.pending=normalized;return end
+    entry.pending=nil;entry.completed=false
+    entry.sound:Stop();self:seek(entry,normalized)
+    entry.started=true;self.starts+=1;entry.sound:Play()
+end
+function M:stop(entry)
+    entry.pending=nil
+    if self.destroyed or entry.looping or not entry.started then return end
+    entry.sound:Stop();entry.started=false
+end
+function M:normalized(entry)
+    local s=entry.sound
+    if entry.completed then return 1 end
+    return entry.ready and s.TimeLength&gt;0 and math.clamp(s.TimePosition/s.TimeLength,0,1) or 0
+end
+function M:playing(entry) return not entry.failed and (entry.pending~=nil or (entry.started and not entry.completed)) end
 function M:position(j,x,y,z) self.attachments[j].Position=Vector3.new(x,y,z) end
 function M:stats() return {voices=#self.sounds,loaded=self.loaded,failures=self.failures,starts=self.starts} end
 function M:destroy()
@@ -470,6 +726,16 @@ function M.sample(core,host,out)
     out.limiter=core:revLimiter();out.power=V.rf32(ENGINE+0x554)
     out.cutTimer=V.rf32(ENGINE+0x550);out.engineFlags=V.r32(ENGINE+0x548)
     out.damage=V.rf32(CAR+0x1493+0x58)
+    -- 00563bd0 -&gt; 0051c2d0/+0xc -&gt; 00548a00: this CES control flag
+    -- is a component-failure selector, NOT the camera's focus-car flag.
+    local failure=V.r32(0xbcf76c)
+    out.isPlayerCar=V.r32(CAR+0x5b2)==V.r32(0xc06926)
+    out.engineHalfVolume=V.r32(CAR+0x596)==0 -- 00563bd0's exact 0.5 gain branch
+    out.cesSelector=false
+    if out.isPlayerCar and failure&lt;=8 and failure~=1 then
+        local shift=failure==0 and 0 or failure-1
+        out.cesSelector=bit32.band(V.r8(CAR+0x1493+0xe),bit32.lshift(1,shift))~=0
+    end
     local spec=V.r32(CAR+0x576)
     out.revLimit=spec~=0 and V.rf32(spec+0x2c) or 0
     out.fault=host and host.fault~=nil or false
@@ -502,7 +768,8 @@ function M.append(base,s,epoch)
     local b=buffer.create(M.BASE_BYTES+M.SIZE);buffer.copy(b,0,base)
     local o=M.BASE_BYTES
     buffer.writeu32(b,o,M.MAGIC);buffer.writeu8(b,o+4,M.VERSION);buffer.writeu8(b,o+5,4)
-    buffer.writeu16(b,o+6,(s.limiter and 1 or 0)+(s.fault and 2 or 0))
+    buffer.writeu16(b,o+6,(s.limiter and 1 or 0)+(s.fault and 2 or 0)+(s.cesSelector and 4 or 0)
+        +(s.engineHalfVolume and 8 or 0)+(s.isPlayerCar and 16 or 0))
     buffer.writeu32(b,o+8,epoch or 0);buffer.writei32(b,o+12,s.gear)
     for i,k in ipairs(FIELDS) do buffer.writef32(b,o+12+i*4,s[k] or 0) end
     buffer.writeu32(b,o+60,s.engineFlags or 0)
@@ -523,6 +790,8 @@ function M.decode(b)
     if buffer.readu8(b,0)~=1 or buffer.readu8(b,1)~=4 or not finite(s.time) then return nil,"render header" end
     if s.gear&lt; -1 or s.gear&gt;4 then return nil,"gear" end
     local flags=buffer.readu16(b,o+6);s.limiter=bit32.band(flags,1)~=0;s.fault=bit32.band(flags,2)~=0
+    s.cesSelector=bit32.band(flags,4)~=0
+    s.engineHalfVolume=bit32.band(flags,8)~=0;s.isPlayerCar=bit32.band(flags,16)~=0
     s.teleport=bit32.band(buffer.readu16(b,6),1)~=0;s.engineFlags=buffer.readu32(b,o+60)
     for i,k in ipairs(FIELDS) do
         local v=buffer.readf32(b,o+12+i*4);if not finite(v) then return nil,"non-finite "..k end;s[k]=v
@@ -583,11 +852,53 @@ return M
 -- The original tire response is already evaluated inside the physics frame.
 -- Feed (xfade,1) to tire_*.ces, then apply the original volume/pitch controls.
 local Engine=require(script and script.Parent.NR2003AudioEngine or "./NR2003AudioEngine")
+local Curves=require(script and script.Parent.NR2003AudioCurves or "./NR2003AudioCurves")
 local M={BANKS={[1]="tire_asphalt.ces",[2]="tire_grass.ces",[3]="tire_gravel.ces",[4]="tire_rumble.ces"}}
+function M.random(seed)
+    seed=bit32.band(seed*1664525+1013904223,0xffffffff)
+    return seed,bit32.bor(bit32.band(seed,0x7ffffffe),1)/2147483648
+end
+function M.newSlot() return {fade=0,step=0,active=false,lastVolume=0,starts=0,output={volume=0}} end
+-- 00563bd0: apply the OLD fade to this frame's volume, THEN add +/-0.25.
+-- Call at original 36 Hz frame boundaries, never once per RenderStepped.
+function M.advance(slot,wheel,steps)
+    for _=1,steps do
+        local volume=wheel.volume
+        if volume&lt;=9.999999747378752e-5 then
+            if slot.active then slot.step=-0.25;volume=slot.lastVolume end
+            if slot.fade&lt;0.0001 then slot.active=false end
+        elseif M.BANKS[wheel.soundType] then
+            if not slot.active or slot.soundType~=wheel.soundType then
+                if not slot.active then slot.fade=0 end
+                slot.starts+=1;slot.active=true;slot.soundType=wheel.soundType
+            end
+            slot.step=0.25;slot.lastVolume=volume
+        end
+        local out=slot.output
+        out.volume=slot.active and Curves.f32(slot.fade*volume) or 0
+        out.soundType=slot.soundType;out.pitch=wheel.pitch;out.xfade=wheel.xfade
+        slot.fade=math.clamp(Curves.f32(slot.fade+slot.step),0,1)
+    end
+    return slot.output
+end
+function M.aggregate(wheels,out)
+    out=out or {};out.volume=0;out.xfade=0;out.pitch=1;out.soundType=0
+    -- Preserve the shipped executable's unusual loop over wheels 2..4 only.
+    -- This is a presentation copy; the physics wheel fields are never cleared.
+    for j=2,4 do
+        local w=wheels[j]
+        if w then
+            out.volume=math.max(out.volume,w.volume);out.xfade=math.max(out.xfade,w.xfade)
+            out.pitch=math.min(out.pitch,w.pitch);out.soundType=math.max(out.soundType,w.soundType)
+        end
+    end
+    return out
+end
 function M.controls(profile,wheel,out,focus,interior)
     local bank=profile.banks[M.BANKS[wheel.soundType]]
-    if not bank or not wheel.grounded or wheel.volume&lt;=0 then return nil end
-    out=Engine.controls(bank,{rpm=wheel.xfade,load=1,gearScale=1,fixedPitch=wheel.pitch,volumeOverride=1},focus,interior,out)
+    if not bank or wheel.volume&lt;=0 then return nil end
+    -- Original tire call supplies selector=false, independently of camera focus.
+    out=Engine.controls(bank,{rpm=wheel.xfade,load=1,gearScale=1,fixedPitch=wheel.pitch,volumeOverride=1},false,interior,out)
     for _,c in ipairs(out) do c.gain*=wheel.volume;c.pitch=wheel.pitch end
     return out,bank
 end

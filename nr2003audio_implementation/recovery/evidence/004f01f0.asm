@@ -1,0 +1,12 @@
+004f01f0 MOV EAX,ECX
+004f01f2 MOV ECX,dword ptr [ESP + 0x4]
+004f01f6 MOV dword ptr [EAX + 0x4],ECX
+004f01f9 XOR ECX,ECX
+004f01fb MOV dword ptr [EAX + 0x18],ECX
+004f01fe MOV dword ptr [EAX + 0x1c],0x3
+004f0205 MOV dword ptr [EAX + 0x20],ECX
+004f0208 MOV dword ptr [EAX + 0x24],ECX
+004f020b MOV dword ptr [EAX + 0x28],ECX
+004f020e MOV dword ptr [EAX + 0x2c],0xc08f4000
+004f0215 MOV dword ptr [EAX],0x6f3a28   ; [006f3a28] f32=7.25686512084e-39 i32=5178672 f64=-0.00781250000898
+004f021b RET 0x4

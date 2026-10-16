@@ -1,0 +1,69 @@
+004ea810 PUSH EBX
+004ea811 PUSH EBP
+004ea812 PUSH ESI
+004ea813 XOR EBX,EBX
+004ea815 PUSH EDI
+004ea816 PUSH EBX
+004ea817 PUSH 0x3f800000
+004ea81c MOV ESI,ECX
+004ea81e CALL 0x004ecf90
+004ea823 MOV EAX,dword ptr [ESP + 0x14]
+004ea827 MOV dword ptr [ESI],0x6f38fc   ; [006f38fc] f32=7.23731420467e-39 i32=5164720 f64=1.25903544525e-306
+004ea82d MOV dword ptr [ESI + 0x28],EAX
+004ea830 MOV dword ptr [ESI + 0x7a0],EBX
+004ea836 MOV dword ptr [ESI + 0x7a4],EBX
+004ea83c MOV dword ptr [ESI + 0x7a8],EBX
+004ea842 MOV dword ptr [ESI + 0x7ac],EBX
+004ea848 MOV dword ptr [ESI + 0x7b0],EBX
+004ea84e MOV dword ptr [ESI + 0x7b4],EBX
+004ea854 MOV dword ptr [ESI + 0x7b8],EBX
+004ea85a MOV dword ptr [ESI + 0x7bc],EBX
+004ea860 MOV dword ptr [ESI + 0x14],EBX
+004ea863 MOV dword ptr [ESI + 0x790],EBX
+004ea869 MOV dword ptr [ESI + 0x794],EBX
+004ea86f MOV dword ptr [ESI + 0x798],EBX
+004ea875 MOV dword ptr [ESI + 0x79c],EBX
+004ea87b MOV byte ptr [ESI + 0x7c2],0x1
+004ea882 MOV byte ptr [ESI + 0x7c3],BL
+004ea888 LEA EAX,[ESI + 0x180]
+004ea88e MOV EDX,0x2
+004ea893 MOV ECX,0x2
+004ea898 MOV dword ptr [EAX + 0xfffffef0],EBX
+004ea89e MOV dword ptr [EAX],EBX
+004ea8a0 ADD EAX,0x44
+004ea8a3 DEC ECX
+004ea8a4 JNZ 0x004ea898
+004ea8a6 DEC EDX
+004ea8a7 JNZ 0x004ea893
+004ea8a9 LEA EAX,[ESI + 0x318]
+004ea8af MOV ECX,0x2
+004ea8b4 MOV dword ptr [EAX + 0xffffff78],EBX
+004ea8ba MOV dword ptr [EAX],EBX
+004ea8bc MOV dword ptr [EAX + 0x88],EBX
+004ea8c2 MOV dword ptr [EAX + 0x110],EBX
+004ea8c8 ADD EAX,0x44
+004ea8cb DEC ECX
+004ea8cc JNZ 0x004ea8b4
+004ea8ce LEA ECX,[ESI + 0x610]
+004ea8d4 LEA EAX,[ESI + 0x470]
+004ea8da LEA EDI,[ESI + 0x694]
+004ea8e0 MOV EBP,0x20
+004ea8e5 OR EDX,0xffffffff
+004ea8e8 MOV dword ptr [EDI],EBX
+004ea8ea MOV byte ptr [EAX + 0xc],0x1
+004ea8ee MOV dword ptr [EAX],0x3f800000
+004ea8f4 MOV dword ptr [EAX + 0x4],EDX
+004ea8f7 MOV dword ptr [EAX + 0x8],0x3f800000
+004ea8fe MOV dword ptr [ECX],EBX
+004ea900 ADD ECX,0x4
+004ea903 ADD EDI,0x8
+004ea906 ADD EAX,0xd
+004ea909 DEC EBP
+004ea90a JNZ 0x004ea8e8
+004ea90c MOV byte ptr [ESI + 0x7c0],BL
+004ea912 MOV EAX,ESI
+004ea914 POP EDI
+004ea915 POP ESI
+004ea916 POP EBP
+004ea917 POP EBX
+004ea918 RET 0x4

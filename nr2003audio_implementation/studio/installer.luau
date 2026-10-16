@@ -32,7 +32,7 @@ return function()
     local installed=storage:FindFirstChild(Transaction.BACKUP)
     local folder=package:FindFirstChild("Audio")
     if installed then
-        assert(folder and folder:GetAttribute("NR2003AudioVersion")=="1.0.0","Incomplete audio installation")
+        assert(folder and folder:GetAttribute("NR2003AudioVersion")=="1.1.0","Incomplete audio installation")
         assert(serverSource==server.Source and clientSource==client.Source,"Audio hooks changed after installation")
         for name,source in pairs(Sources) do
             local m=folder:FindFirstChild(name)
@@ -45,7 +45,7 @@ return function()
     local tx=Transaction.new()
     local ok,reason=pcall(function()
         folder=tx:create("Folder","Audio",package)
-        tx:write(folder,"attribute","NR2003AudioVersion","1.0.0")
+        tx:write(folder,"attribute","NR2003AudioVersion","1.1.0")
         for name,source in pairs(Sources) do
             local module=tx:create("ModuleScript",name,folder);tx:write(module,"property","Source",source)
         end

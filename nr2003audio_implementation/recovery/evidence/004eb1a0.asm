@@ -1,0 +1,46 @@
+004eb1a0 MOV DL,byte ptr [ECX + 0x7c1]
+004eb1a6 XOR EAX,EAX
+004eb1a8 TEST DL,DL
+004eb1aa PUSH EBX
+004eb1ab MOV BL,byte ptr [ECX + 0x7c2]
+004eb1b1 SETZ AL
+004eb1b4 XOR EDX,EDX
+004eb1b6 PUSH ESI
+004eb1b7 TEST BL,BL
+004eb1b9 SETZ DL
+004eb1bc LEA EAX,[EDX + EAX*0x2]
+004eb1bf MOV ESI,EAX
+004eb1c1 SHL ESI,0x4
+004eb1c4 ADD ESI,EAX
+004eb1c6 LEA EAX,[ECX + ESI*0x4]
+004eb1c9 MOV ESI,dword ptr [ECX + ESI*0x4 + 0x70]
+004eb1cd MOV dword ptr [ECX + 0x794],ESI
+004eb1d3 LEA ESI,[EAX + 0x30]
+004eb1d6 MOV dword ptr [ECX + 0x790],ESI
+004eb1dc MOV ESI,dword ptr [EAX + 0x180]
+004eb1e2 ADD EAX,0x140
+004eb1e7 MOV dword ptr [ECX + 0x79c],ESI
+004eb1ed MOV dword ptr [ECX + 0x798],EAX
+004eb1f3 MOV EAX,EDX
+004eb1f5 SHL EAX,0x4
+004eb1f8 ADD EAX,EDX
+004eb1fa MOV EDX,dword ptr [ECX + EAX*0x4 + 0x290]
+004eb201 MOV dword ptr [ECX + 0x7a4],EDX
+004eb207 POP ESI
+004eb208 LEA EAX,[ECX + EAX*0x4]
+004eb20b POP EBX
+004eb20c LEA EDX,[EAX + 0x250]
+004eb212 MOV dword ptr [ECX + 0x7a0],EDX
+004eb218 MOV EDX,dword ptr [EAX + 0x318]
+004eb21e MOV dword ptr [ECX + 0x7ac],EDX
+004eb224 LEA EDX,[EAX + 0x2d8]
+004eb22a MOV dword ptr [ECX + 0x7a8],EDX
+004eb230 MOV EDX,dword ptr [EAX + 0x3a0]
+004eb236 MOV dword ptr [ECX + 0x7b4],EDX
+004eb23c LEA EDX,[EAX + 0x360]
+004eb242 MOV dword ptr [ECX + 0x7b0],EDX
+004eb248 MOV EDX,dword ptr [EAX + 0x428]
+004eb24e ADD EAX,0x3e8
+004eb253 MOV dword ptr [ECX + 0x7bc],EDX
+004eb259 MOV dword ptr [ECX + 0x7b8],EAX
+004eb25f RET

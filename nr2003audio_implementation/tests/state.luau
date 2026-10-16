@@ -38,18 +38,32 @@ check("test exercised changing original engine RPM",maximum>minimum)
 local base=Render.encode(snapshot)
 check("old render packets need no migration",State.decode(base)==nil)
 local original=State.sample(car,host)
+local V=car.V;local failureAddress=0xc12030+0x1493+0xe
+local savedOption,savedFlags=V.r32(0xbcf76c),V.r8(failureAddress)
+V.w32(0xbcf76c,2);V.w8(failureAddress,2)
+local before=buffer.tostring(V.memory());local failed=State.sample(car,host)
+check("CES failure selector reads the original damage bit without mutating core memory",failed.cesSelector and before==buffer.tostring(V.memory()))
+local failedPacket=State.append(base,failed,5)
+check("original CES failure selector survives the existing reserved packet flags",State.decode(failedPacket).cesSelector)
+local decodedFlags=assert(State.decode(failedPacket))
+check("player-car and original half-volume branch survive the same packet flags",decodedFlags.isPlayerCar==failed.isPlayerCar and decodedFlags.engineHalfVolume==failed.engineHalfVolume)
+V.w32(0xbcf76c,1)
+check("original failure selector type 1 always selects its default branch",not State.sample(car,host).cesSelector)
+V.w32(0xbcf76c,savedOption);V.w8(failureAddress,savedFlags)
 local packet=State.append(base,original,5)
 buffer.writef32(packet,204+16,0/0)
 check("non-finite audio data is rejected",State.decode(packet)==nil)
 packet=State.append(base,original,5)
 local a=assert(State.decode(packet));a.time=1;a.seq=1;a.rpm=2000;a.gear=1
 local b=assert(State.decode(packet));b.time=2;b.seq=2;b.rpm=4000;b.gear=2
+a.cesSelector=false;b.cesSelector=true
 a.gearScale=10;b.gearScale=4
 local buf=State.newBuffer();buf:push(a,2);buf:push(b,2)
 local s=assert(buf:sample(1.5,2))
 check("audio uses the visual presentation time with continuous RPM",s.rpm==3000)
 check("gear events never occur before their original timestamp",s.gear==1 and buf:sample(2,2).gear==2)
 check("mechanical pitch ratio changes at the confirmed gear timestamp",s.gearScale==10 and buf:sample(2,2).gearScale==4)
+check("failure selectors switch at the confirmed state timestamp",not s.cesSelector and buf:sample(2,2).cesSelector)
 check("duplicate/out-of-order packet cannot repeat an event",not buf:push(a,2.1) and #buf.list==2)
 check("stale packet stream silences within 500 ms",buf:sample(2,2.51)==nil)
 local reset=assert(State.decode(packet));reset.epoch=6;reset.time=3;reset.rpm=1000;reset.gear=0

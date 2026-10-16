@@ -20,5 +20,17 @@
     "00401000.bin": "1d00d8e158d217ce4e39473871767fcc69bcc7a6e598136c87f7a175c8835093",
     "01127000.bin": "9756c358737b322a1f8dd2e2a86476d9c67abc94fd22ae3330be729bcc0f873f",
     "00400000.bin": "f9f19af1c1564bf3be8a1e00e0abcabff488974f75d11322c418b3e04fdfc229"
-  }
+  },
+  "numericProbes": {
+    "responseVectors": 235,
+    "transportDecisions": 2400,
+    "mixerConfigurations": 80,
+    "tireFadeSteps": 24,
+    "remoteTireCombinations": 32,
+    "uniformConversions": 32,
+    "total": 2803
+  },
+  "transportBoundary": "Original host clock at a6c238 supplied as an input; shared phase callback lists empty; original decision routines execute without code patches.",
+  "playbackBoundary": "Roblox Sound clocks, loading, PCM mixer, spatialization and resampling are not the original DirectSound backend; no listening verification.",
+  "unresolvedCrt": "006c522a (backfire random source) is encrypted; no substituted distribution enabled."
 }

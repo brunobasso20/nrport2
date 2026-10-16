@@ -4,11 +4,11 @@ This branch adds the original CES control path to the current **track1 / assists
 
 **The original recordings are not included.** The available `mysounds.zip` and earlier `snds.zip` contain the same self-made recording set. They were not imported, converted or enabled. The branch starts silently until original resources are linked. OpenNR2003 is a Ghidra project, not a complete source-and-audio distribution.
 
-This is a tested **continuous-loop reference implementation**, not a completed claim of 100% NR2003 audio fidelity. Original startup/shutdown intro/outro scheduling, backfires, original tire onset fades, remote-car tire aggregation, DirectSound resampling, reverb and directional filtering are not ported. Real-bank extraction and listening remain unverified because the original sound bank files were not supplied. See [RECOVERY.md](RECOVERY.md) and [VALIDATION.md](VALIDATION.md).
+Version **1.1.0** includes recovered continuous weights, shared intro/loop/outro/stopped transport, threshold/gate decisions, intro-tail blending, original tire onset/release ramps, remote-car tire aggregation, and the original component-failure selector. It does **not** claim 100% audio fidelity. Backfires, DirectSound PCM mixing/resampling, reverb and directional filtering remain outside the implemented playback path. Real-bank extraction, sample timing on Roblox and listening remain unverified because the original sound bank files were not supplied. See [RECOVERY.md](RECOVERY.md) and [VALIDATION.md](VALIDATION.md).
 
 ## Install in an existing Studio place
 
-1. Stop Play. Keep your current working track1/car/physics installation.
+1. Stop Play. Keep your current working track1/car/physics installation. Use the current **1.1.0** audio payload once; intermediate audio versions are unnecessary.
 2. Insert `NR2003_Audio_Install.rbxmx` using **Insert from File**, into Workspace.
 3. Run in the Command Bar:
 
@@ -16,7 +16,7 @@ This is a tested **continuous-loop reference implementation**, not a completed c
    require(workspace.NR2003_Audio_Install)()
    ```
 
-The patch checks the existing entry points before writing, preserves unrelated/local source edits, installs `ReplicatedStorage.NR2003Lab.Audio`, and keeps a chunked transaction backup in `ServerStorage.NR2003Backup_Audio`. A second installation changes nothing. It never saves or publishes the place. Incompatible/edited hooks abort before installation.
+The patch checks the existing entry points before writing, preserves unrelated/local source edits, installs `ReplicatedStorage.NR2003Lab.Audio`, and keeps a chunked transaction backup in `ServerStorage.NR2003Backup_Audio`. A second installation of the same version changes nothing. If an earlier audio version was installed, roll it back before installing this version. It never saves or publishes the place. Incompatible/edited hooks abort before installation.
 
 Missing assets are expected to produce `NR2003AudioStatus = "awaiting audio assets"` on the car, without breaking gameplay. The optional server hook falls back to the original render packet if audio initialization fails.
 
@@ -68,7 +68,7 @@ For audio you have permission to host, pass `--asset-map asset_ids.json` instead
 
 `NR2003AudioProfile` on `NR2003Lab`, or on an individual car, selects `NR2003_ORIGINAL_REFERENCE` or `NASCAR_SELFMADE`. `NR2003AudioEnabled=false` mutes the system; the package-level setting also stops adding the audio tail. The self-made profile is structurally ready and intentionally empty. In phase two, supply that profile's banks, sample roles, curves/reference RPMs, loop regions and real asset IDs in `AudioAssets`; no physics/network rewrite is needed.
 
-Client attributes include `NR2003AudioStatus`, `NR2003AudioRPM`, `NR2003AudioAgeMs`, `NR2003AudioMissing`, `NR2003AudioLoaded`, `NR2003AudioShiftEvents`, and `NR2003AudioPitchClamps`. These are diagnostics, not inputs to physics. `AgeMs` measures source-state age, not sound-device latency. Playback limits are profile-level 0.25–20, gains are explicit, loop metadata is per sample. Asset/loop failures are reported without stopping the vehicle.
+Client attributes include `NR2003AudioStatus`, `NR2003AudioRPM`, `NR2003AudioAgeMs`, `NR2003AudioMissing`, `NR2003AudioLoaded`, `NR2003AudioShiftEvents`, `NR2003AudioPitchClamps`, and `NR2003AudioEnginePhase` (0 intro, 1 outro, 2 loop, 3 stopped). These are diagnostics, not inputs to physics. `AgeMs` measures source-state age, not sound-device latency. Playback limits are profile-level 0.25–20, gains are explicit, loop metadata is per sample. Asset/loop failures are reported without stopping the vehicle.
 
 The current server registers the existing car ID. Additional car senders can share `RenderState` with unique vehicle IDs and `NR2003AudioVehicleId` attributes; `NR2003AudioClient:register(car,id,presentation)` accepts their existing presentation buffers. This does not implement new multiplayer simulation or prediction. Non-primary cars have a bounded 55 ms fallback interpolation delay and still require multiplayer validation.
 
@@ -78,16 +78,14 @@ Stop Play and run `ROLLBACK.lua` in the Command Bar. It restores the exact clien
 
 ## Verify
 
+Run the complete regression command. It builds the installer once, executes independent suites with at most three local test processes, compiles the changed sources, checks the preserved source scope, and saves concise JSON/logs under ignored `work/audio/`:
+
 ```bash
-python3 nr2003audio_implementation/tools/build_audio.py
-python3 -m unittest discover -s nr2003audio_implementation/tests -p 'test_*.py'
-python3 nr2003audio_implementation/tools/build_installer_test.py
-luau -O2 nr2003audio_implementation/tests/kernels.luau
-luau -O2 --codegen nr2003audio_implementation/tests/state.luau
-luau -O2 work/audio/installer_test.luau
-luau -O2 work/audio/spatial_test.luau
+python3 nr2003audio_implementation/tools/validate_audio.py --luau /path/to/luau --write-results
 ```
 
-Golden fixtures can be regenerated with `recovery/regenerate_curves.py --memory <private-memory-export>`. They are numeric synthetic curve probes of the original executable, not fabricated game recordings or listening results.
+`luau-compile` is found beside `luau`, on PATH, or through `--luau-compile`. `LUAU_BIN` can supply the CLI path. The committed fixtures contain 2,803 original-x86 numeric probes: 235 response vectors, 2,400 transport decisions, 80 mixer configurations, 24 tire fade steps, 32 remote tire combinations and 32 random conversions. These are synthetic numeric inputs, not game recordings or listening results.
+
+Add `--reference-memory /path/to/private-memory-export` to regenerate all native fixtures in a temporary directory and compare them byte for byte with the committed fixtures. This optional check requires Unicorn and does not rewrite the stored fixtures. `--write-results` refreshes `RESULTS.txt` only after every check passes. No original recordings, network, upload, Studio or listening test is part of this command.
 
 Roblox references: [Sound](https://create.roblox.com/docs/reference/engine/classes/Sound), [content paths](https://create.roblox.com/docs/projects/assets), [UnreliableRemoteEvent](https://create.roblox.com/docs/reference/engine/classes/UnreliableRemoteEvent), [ContentProvider](https://create.roblox.com/docs/reference/engine/classes/ContentProvider).
