@@ -19,8 +19,15 @@ PASS unsupported source is refused without writes
 PASS ambiguous col roots are refused without writes
 PASS journal preserves a prior false attribute value
 PASS matching Rojo modules are reused and preserved by rollback
+PASS reported 579660-byte backup persists below the per-value limit
+PASS large backup can be decoded and fully rolled back
+PASS Unicode boundaries survive journal chunking and rollback
+PASS truncated backup is rejected before rollback writes
+PASS small v1 StringValue backups remain readable
+PASS 438 visual and 765 collision parts install and roll back under the string limit
+PASS failure halfway through backup chunks restores installation changes
 PASS existing player receives dedicated track1 respawn
 PASS existing avatar is moved from old world to track1
 PASS driver teardown restores prior respawn without deleting either marker
 PASS spawn lifecycle leaves seated avatars in place
-track1 installer/rollback: 25 passed, 0 failed
+track1 installer/rollback: 32 passed, 0 failed

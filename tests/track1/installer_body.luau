@@ -34,6 +34,13 @@ mt.__index=function(o,k)
     return methods.FindFirstChild(o,k)
 end
 mt.__newindex=function(o,k,v)
+    if o.values.ClassName=="StringValue" and k=="Value" and type(v)=="string" then
+        assert(#v<200000,"Provided string length is greater than or equal to max length (200000)")
+        if o.state.failValueName==o.Name and o.state.failRemaining>0 then
+            o.state.failRemaining-=1;error("injected backup chunk write failure")
+        end
+        o.state.maxStringValueBytes=math.max(o.state.maxStringValueBytes or 0,#v)
+    end
     if k=="Parent" then
         local p=o.values.Parent
         if p then for i,c in ipairs(p.children) do if c==o then table.remove(p.children,i);break end end end
@@ -104,8 +111,33 @@ local function fixture()
     local cp=new("MeshPart","COL_Oval_1",col);local concrete=new("MeshPart","COL_Oval_2",col)
     concrete:SetAttribute("INDY_Surface","concrete");state.colPart=cp
     local stored={};local Http={}
-    function Http:JSONEncode(value) local key=tostring(#stored+1);stored[tonumber(key)]=copy(value);return key end
-    function Http:JSONDecode(value) return copy(assert(stored[tonumber(value)])) end
+    local function encode(value)
+        if type(value)=="string" then
+            return '"'..value:gsub('[%z\1-\31\\"]',function(c)
+                if c=='"' then return '\\"' end
+                if c=='\\' then return '\\\\' end
+                return string.format('\\u%04x',string.byte(c))
+            end)..'"'
+        end
+        if type(value)=="number" or type(value)=="boolean" then return tostring(value) end
+        local items={}
+        if value[1]~=nil or next(value)==nil then
+            for _,item in ipairs(value) do items[#items+1]=encode(item) end
+            return '['..table.concat(items,',')..']'
+        end
+        local keys={};for key in pairs(value) do keys[#keys+1]=key end;table.sort(keys)
+        for _,key in ipairs(keys) do items[#items+1]=encode(key)..':'..encode(value[key]) end
+        return '{'..table.concat(items,',')..'}'
+    end
+    function Http:JSONEncode(value)
+        local encoded=encode(value)
+        if state.journalBytes then
+            assert(#encoded<=state.journalBytes)
+            encoded..=string.rep(' ',state.journalBytes-#encoded)
+        end
+        stored[encoded]=copy(value);return encoded
+    end
+    function Http:JSONDecode(value) return copy(assert(stored[value],"Journal content changed during persistence")) end
     local services={ReplicatedStorage=rs,ServerStorage=storage,StarterPlayer=starter,HttpService=Http,
         RunService={IsRunning=function() return state.running end}}
     local payload=new("ModuleScript","NR2003_Track1",workspace,INSTALLER)
@@ -174,6 +206,49 @@ local rs=r.new("ModuleScript","NR2003Track1Surface",r.core,SURFACE)
 local rh=r.new("ModuleScript","NR2003Track1",r.modules,HOST)
 r.install();r.journal().rollback()
 check("matching Rojo modules are reused and preserved by rollback",r.core.NR2003Track1Surface==rs and r.modules.NR2003Track1==rh)
+local large=fixture();large.state.journalBytes=579660
+large.install()
+local backup=large.storage.NR2003Backup_Track1
+check("reported 579660-byte backup persists below the per-value limit",backup.Journal:GetAttribute("ByteLength")==579660
+    and backup.Journal:GetAttribute("ChunkCount")==4 and large.state.maxStringValueBytes<=150000)
+check("large backup can be decoded and fully rolled back",large.journal().rollback()
+    and large.package:GetAttribute("NR2003Track")=="watkins_glen" and large.col.Parent==large.workspace)
+local unicode=fixture();local note=unicode.new("StringValue","Note",unicode.workspace)
+note.Value=string.rep("á",75001)
+local originalNote=note.Value
+local utx=unicode.journal().new();utx:write(note,"property","Value",string.rep("é",75001));utx:commit()
+local valid=true
+for _,chunk in ipairs(unicode.storage.NR2003Backup_Track1.Journal:GetChildren()) do
+    valid=valid and utf8.len(chunk.Value)~=nil and #chunk.Value<=150000
+end
+unicode.journal().rollback()
+check("Unicode boundaries survive journal chunking and rollback",valid and note.Value==originalNote)
+local corrupt=fixture();corrupt.install()
+local firstChunk=corrupt.storage.NR2003Backup_Track1.Journal.Part00001
+firstChunk.Value=firstChunk.Value:sub(1,-2);local beforeCorruptRollback=corrupt.state.writes
+check("truncated backup is rejected before rollback writes",not pcall(corrupt.journal().rollback)
+    and corrupt.state.writes==beforeCorruptRollback)
+local legacy=fixture();local ltx=legacy.journal().new()
+ltx:write(legacy.cp,"attribute","LegacyFlag",true);ltx:commit()
+local lb=legacy.storage.NR2003Backup_Track1
+local encoded={};for _,chunk in ipairs(lb.Journal:GetChildren()) do encoded[#encoded+1]=chunk.Value end
+lb.Journal:Destroy();local oldJournal=legacy.new("StringValue","Journal",lb);oldJournal.Value=table.concat(encoded)
+check("small v1 StringValue backups remain readable",legacy.journal().rollback() and legacy.cp:GetAttribute("LegacyFlag")==nil)
+local circuit=fixture()
+for n=1,437 do circuit.new("MeshPart","VIS_"..n,circuit.vis) end
+for n=1,763 do circuit.new("MeshPart","COL_"..n,circuit.col) end
+circuit.install()
+local whole=circuit.storage.NR2003Backup_Track1.Journal
+local wholeBytes=whole:GetAttribute("ByteLength")
+circuit.journal().rollback()
+check("438 visual and 765 collision parts install and roll back under the string limit",wholeBytes>579660
+    and #circuit.vis:GetChildren()==438 and #circuit.col:GetChildren()==765 and circuit.col.Parent==circuit.workspace
+    and circuit.state.maxStringValueBytes<=150000)
+local partial=fixture();partial.state.journalBytes=579660
+partial.state.failValueName="Part00002";partial.state.failRemaining=1
+check("failure halfway through backup chunks restores installation changes",not pcall(partial.install)
+    and not partial.storage.NR2003Backup_Track1 and not partial.package.Track1Config
+    and partial.col.Parent==partial.workspace and partial.package:GetAttribute("NR2003Track")=="watkins_glen")
 local function signal()
     local event={callbacks={}}
     function event:Connect(fn)

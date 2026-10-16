@@ -182,7 +182,7 @@ local function apply(options)
         local restored,restoreError=pcall(function() tx:undo() end)
         error(tostring(reason)..(restored and " (all track1 changes restored)" or " (restore error: "..tostring(restoreError)..")"))
     end
-    print(string.format("track1 installed: %d visual parts, %d collision parts, %d property warnings. Start Play.",
+    print(string.format("track1 v1.0.1 installed: %d visual parts, %d collision parts, %d property warnings. Start Play.",
         #visuals,#colliders,warnings))
     print("Car reset and player respawn use NR2003LabWorld.track1. Original Watkins Glen sources/spawn preserved.")
     return true

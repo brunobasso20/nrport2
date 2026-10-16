@@ -1,8 +1,47 @@
 -- Stop Play. Restore only the changes made by the track1 installer.
 local Transaction=(function()
 -- Scoped, persistent journal for track1 installation. Never saves or publishes.
-local T={BACKUP="NR2003Backup_Track1"}
+local T={BACKUP="NR2003Backup_Track1",VERSION="1.0.1",CHUNK_BYTES=150000}
 local Http=game:GetService("HttpService")
+local function writeJournal(backup,encoded)
+    local journal=Instance.new("Folder");journal.Name="Journal";journal.Parent=backup
+    local first,count=1,0
+    while first<=#encoded do
+        local last=math.min(first+T.CHUNK_BYTES-1,#encoded)
+        -- A property must receive valid UTF-8 even when a boundary crosses a
+        -- non-ASCII name or a source comment. Keep the whole code point together.
+        if last<#encoded then
+            local byte=encoded:byte(last+1)
+            while byte and byte>=128 and byte<=191 do last-=1;byte=encoded:byte(last+1) end
+        end
+        count+=1
+        local part=Instance.new("StringValue");part.Name=string.format("Part%05d",count)
+        part.Value=encoded:sub(first,last);part.Parent=journal
+        first=last+1
+    end
+    journal:SetAttribute("ChunkCount",count)
+    journal:SetAttribute("ByteLength",#encoded)
+    backup:SetAttribute("JournalFormat",2)
+    backup:SetAttribute("Track1InstallerVersion",T.VERSION)
+end
+function T.readJournal(backup)
+    local journal=assert(backup:FindFirstChild("Journal"),"track1 backup journal missing")
+    -- Preserve rollback compatibility with successfully installed v1 backups.
+    if journal:IsA("StringValue") then return Http:JSONDecode(journal.Value) end
+    assert(journal:IsA("Folder"),"track1 backup journal has an unexpected class")
+    local count=journal:GetAttribute("ChunkCount")
+    assert(type(count)=="number" and count>0 and count==math.floor(count)
+        and count==#journal:GetChildren(),"track1 backup journal chunk count mismatch")
+    local parts={}
+    for i=1,count do
+        local part=journal:FindFirstChild(string.format("Part%05d",i))
+        assert(part and part:IsA("StringValue"),"track1 backup journal chunk missing: "..i)
+        parts[i]=part.Value
+    end
+    local encoded=table.concat(parts)
+    assert(#encoded==journal:GetAttribute("ByteLength"),"track1 backup journal byte length mismatch")
+    return Http:JSONDecode(encoded)
+end
 local function same(a,b,key)
     if key=="Source" and type(a)=="string" and type(b)=="string" then
         return a:gsub("\r\n","\n")==b:gsub("\r\n","\n")
@@ -66,7 +105,7 @@ function T.new()
             for id,target in ipairs(self.refs) do
                 local ref=Instance.new("ObjectValue");ref.Name=tostring(id);ref.Value=target;ref.Parent=refs
             end
-            local journal=Instance.new("StringValue");journal.Name="Journal";journal.Value=encoded;journal.Parent=backup
+            writeJournal(backup,encoded)
             backup:SetAttribute("Track1PatchVersion",1);backup.Parent=storage
         end)
         if not ok then backup:Destroy();error(reason) end
@@ -77,7 +116,7 @@ end
 function T.rollback()
     assert(not game:GetService("RunService"):IsRunning(),"Stop Play before rolling back track1")
     local backup=assert(game:GetService("ServerStorage"):FindFirstChild(T.BACKUP),"track1 backup not found")
-    local data=Http:JSONDecode(backup.Journal.Value)
+    local data=T.readJournal(backup)
     local tx=T.new();tx.ops=data.ops;tx.created=data.created
     for _,ref in ipairs(backup.Targets:GetChildren()) do tx.refs[tonumber(ref.Name)]=ref.Value end
     local final={};local owned={}

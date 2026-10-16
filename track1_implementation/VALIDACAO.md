@@ -8,11 +8,19 @@ As verificações de track1 executam o código Luau real com o core numérico or
 |---|---|
 | Parâmetros de superfície, células originais, bits float32 e runtime térmico/desgaste | 12/12 PASS |
 | Adaptador track1, col exclusivo, normais inclinadas, falta de contato e reset | 12/12 PASS |
-| Instalador, falhas, reversão, idempotência e ciclo de respawn | 25/25 PASS |
+| Instalador, falhas, reversão, idempotência e ciclo de respawn | 32/32 PASS |
 | Regressão do adaptador nativo de Watkins Glen | 15/15 PASS |
 | Sintaxe dos módulos, scripts e payloads XML entregues | PASS |
 
 Os testes incluem configuração de asfalto/concreto misturados, preservação das assistências, preparação do host de cliente com as mesmas referências/parâmetros, jogador já existente, avatar sentado, proteção contra fontes incompatíveis, falha de escrita e preservação de edições posteriores na reversão. O teste do host cliente não é uma sessão de rede real.
+
+### Correção 1.0.1 após o teste no Studio
+
+O teste do usuário encontrou um backup serializado de 579.660 bytes atribuído a um único `StringValue`, acima do limite de 200.000. O mock anterior usava um identificador curto em vez de representar o tamanho do JSON, e não detectou esse limite. Isso foi corrigido no instalador e no teste.
+
+O backup é persistido em partes de até 150.000 bytes, preservando limites de caracteres UTF-8. A leitura verifica a contagem de partes e o tamanho total antes de restaurar qualquer campo. Backups v1 pequenos continuam legíveis. As novas verificações impõem o limite real em cada `StringValue`, cobrem exatamente 579.660 bytes, um circuito com 438 peças visuais e 765 de colisão, conteúdo Unicode, bloco truncado e falha na escrita do segundo bloco. A instalação e a reversão passaram nesses cenários.
+
+Nesta correção foram reexecutados os testes do instalador e a compilação dos payloads. Os módulos de grip, o host de contatos e as verificações numéricas anteriores permanecem inalterados. O instalador corrigido ainda precisa ser executado no Studio do usuário.
 
 ## Resultado da bancada anterior
 

@@ -12,7 +12,7 @@
     "failed": 0
   },
   "installer_rollback_and_spawn": {
-    "passed": 25,
+    "passed": 32,
     "failed": 0
   },
   "watkins_adapter": {
@@ -36,5 +36,15 @@
     "stage 12.1: SteeringLockDegrees=540 -> full input target = f32(3 pi / 2) / 7 at rest; CockpitWheelClamp='original' -> 005662d0 limit -2.79 rad",
     "stage 12.1: attributes removed -> bench defaults again (linearity 0, rate 0.033, override on, ratio 12, lock 360)"
   ],
-  "same_failure_names": true
+  "same_failure_names": true,
+  "installer_version": "1.0.1",
+  "backup_regression": {
+    "reported_bytes": 579660,
+    "chunk_bytes_max": 150000,
+    "whole_circuit_visual": 438,
+    "whole_circuit_collision": 765,
+    "utf8_chunks": true,
+    "legacy_backup_readable": true,
+    "partial_write_rollback": true
+  }
 }

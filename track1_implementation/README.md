@@ -1,5 +1,7 @@
 # track1 — Indianapolis V2 no port NR2003
 
+**Instalador 1.0.1:** corrige o erro de backup com mais de 200.000 caracteres. O registro agora usa blocos de até 150.000 bytes e a reversão remonta esses blocos. Para substituir uma tentativa que falhou, pare o Play, remova **somente o módulo instalador antigo `Workspace.NR2003_Track1`**, insira o novo `NR2003_Track1.rbxmx` e execute novamente o mesmo comando. Preserve `vis`, `col`, o carro e os backups existentes; não é necessário reimportar a pista. A mensagem de sucesso identifica `track1 v1.0.1`.
+
 Patch para a pista já importada em pastas chamadas `vis` e `col`. Base: branch `assist_implementation`, commit `0731d03ce0086a0b68025ed600ff4957a426f933`, que inclui Watkins Glen, o patch 1.2.0.1 e as assistências atuais. Nenhum arquivo de física de pneus, carro, assistências, predição ou mundo nativo de Watkins Glen é substituído.
 
 ## Instalar no Studio

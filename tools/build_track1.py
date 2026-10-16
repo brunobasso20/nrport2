@@ -49,7 +49,7 @@ def main():
     names=['NR2003_Track1.rbxmx','INSTALL.lua','ROLLBACK.lua','DIAGNOSE.lua','APPLY_SURFACE_SELECTED.lua',
            'README.md','VALIDACAO.md','SURFACES.md']
     available=[OUT/name for name in names if (OUT/name).is_file()]
-    manifest={'base_branch':'assist_implementation','base_commit':'0731d03ce0086a0b68025ed600ff4957a426f933',
+    manifest={'installer_version':'1.0.1','base_branch':'assist_implementation','base_commit':'0731d03ce0086a0b68025ed600ff4957a426f933',
               'files':[{"name":p.name,"bytes":p.stat().st_size,"sha256":hashlib.sha256(p.read_bytes()).hexdigest()} for p in available]}
     (OUT/'MANIFEST.json').write_text(json.dumps(manifest,indent=2)+'\n')
     archive=OUT/'NR2003_TRACK1_PATCH.zip'
