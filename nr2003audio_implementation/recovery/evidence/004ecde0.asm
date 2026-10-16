@@ -1,0 +1,28 @@
+004ecde0 PUSH ECX
+004ecde1 MOV EAX,dword ptr [ECX + 0x28]
+004ecde4 FLD dword ptr [EAX + 0x1878]
+004ecdea FSUB dword ptr [EAX + 0x1874]
+004ecdf0 FMUL dword ptr [ECX + 0x1c]
+004ecdf3 MOV ECX,dword ptr [ECX + 0x14]
+004ecdf6 TEST ECX,ECX
+004ecdf8 FADD dword ptr [EAX + 0x1874]
+004ecdfe FST dword ptr [ESP]
+004ece02 JZ 0x004ece3b
+004ece04 MOV EAX,dword ptr [ECX + 0x1c]
+004ece07 TEST EAX,EAX
+004ece09 JNZ 0x004ece3b
+004ece0b FSTP ST0
+004ece0d CALL 0x004f03d0
+004ece12 FCOM dword ptr [0x006ed6c8]   ; [006ed6c8] f32=0.75 i32=1061158912 f64=5.24282163197e-315
+004ece18 FNSTSW AX
+004ece1a AND EAX,0x4100
+004ece1f JNZ 0x004ece33
+004ece21 FSUB dword ptr [0x006ed6c8]   ; [006ed6c8] f32=0.75 i32=1061158912 f64=5.24282163197e-315
+004ece27 FMUL dword ptr [ESP]
+004ece2b FMUL dword ptr [0x006e9804]   ; [006e9804] f32=4.0 i32=1082130432 f64=5.34643470771e-315
+004ece31 POP ECX
+004ece32 RET
+004ece33 FSTP ST0
+004ece35 FLD dword ptr [0x006ea454]   ; [006ea454] f32=0.0 i32=0 f64=-2048.0
+004ece3b POP ECX
+004ece3c RET

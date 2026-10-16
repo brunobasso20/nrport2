@@ -426,6 +426,9 @@
         },
         "DrawState": {
           "$className": "UnreliableRemoteEvent"
+        },
+        "Audio": {
+          "$path": "nr2003audio_implementation/roblox/Audio"
         }
       }
     },

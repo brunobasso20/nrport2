@@ -1,0 +1,18 @@
+004e9130 FLD dword ptr [ESP + 0x8]
+004e9134 FMUL dword ptr [ECX + 0x83d]
+004e913a MOV EAX,dword ptr [ESP + 0x4]
+004e913e MOV DL,byte ptr [ESP + 0xc]
+004e9142 TEST DL,DL
+004e9144 FMUL dword ptr [0x006f3814]   ; [006f3814] f32=256.0 i32=1132462080 f64=5.59510608946e-315
+004e914a FADD dword ptr [ECX + 0x39]
+004e914d FSTP dword ptr [EAX + 0x4]
+004e9150 JNZ 0x004e915b
+004e9152 MOV ECX,dword ptr [ESP + 0x8]
+004e9156 MOV dword ptr [EAX],ECX
+004e9158 RET 0xc
+004e915b FLD dword ptr [ESP + 0x8]
+004e915f FMUL dword ptr [ECX + 0x841]
+004e9165 FMUL dword ptr [0x006f3814]   ; [006f3814] f32=256.0 i32=1132462080 f64=5.59510608946e-315
+004e916b FADD dword ptr [ECX + 0x35]
+004e916e FSTP dword ptr [EAX]
+004e9170 RET 0xc

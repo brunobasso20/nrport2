@@ -1,0 +1,824 @@
+<roblox version="4"><Item class="ModuleScript"><Properties><string name="Name">NR2003_Audio_Install</string><ProtectedString name="Source">local Transaction=require(script.Journal)
+local Sources=require(script.Sources)
+local Rules=require(script.Rules)
+local function patch(source,kind)
+    source=source:gsub("\r\n","\n")
+    local list=Rules[kind]
+    if kind=="client" and source:find("local carModel",1,true) then list=Rules.carClient end
+    for _,rule in ipairs(list) do
+        local marker,old,new=rule[1],rule[2],rule[3]
+        if source:find(marker,1,true) then
+            assert(source:find(new,1,true),"Edited audio hook: "..marker)
+        else
+            local first,last=source:find(old,1,true)
+            assert(first and not source:find(old,last+1,true),"Unsupported/ambiguous audio "..kind.." hook: "..marker)
+            source=source:sub(1,first-1)..new..source:sub(last+1)
+        end
+    end
+    return source
+end
+return function()
+    assert(not game:GetService("RunService"):IsRunning(),"Stop Play before installing audio")
+    local package=assert(game:GetService("ReplicatedStorage"):FindFirstChild("NR2003Lab"),"NR2003Lab missing")
+    local core=assert(package:FindFirstChild("Core"),"Original Cup core missing")
+    assert(core:FindFirstChild("NR2003CupVehicle"),"Original Cup vehicle missing")
+    local server=assert(game:GetService("ServerScriptService"):FindFirstChild("NR2003Server"),"NR2003Server missing")
+    local starter=game:GetService("StarterPlayer"):FindFirstChild("StarterPlayerScripts")
+    local client=assert(starter and starter:FindFirstChild("NR2003Client"),"NR2003Client missing")
+    assert(server:IsA("Script") and client:IsA("LocalScript"),"Unexpected NR2003 scripts")
+    -- Validate every source anchor before changing any object.
+    local serverSource,clientSource=patch(server.Source,"server"),patch(client.Source,"client")
+    local storage=game:GetService("ServerStorage")
+    local installed=storage:FindFirstChild(Transaction.BACKUP)
+    local folder=package:FindFirstChild("Audio")
+    if installed then
+        assert(folder and folder:GetAttribute("NR2003AudioVersion")=="1.0.0","Incomplete audio installation")
+        assert(serverSource==server.Source and clientSource==client.Source,"Audio hooks changed after installation")
+        for name,source in pairs(Sources) do
+            local m=folder:FindFirstChild(name)
+            assert(m and m.Source==source,"Installed audio source changed: "..name)
+        end
+        print("NR2003 audio already installed; no changes")
+        return true
+    end
+    assert(not folder,"NR2003Lab.Audio exists without this patch's backup; refusing to overwrite it")
+    local tx=Transaction.new()
+    local ok,reason=pcall(function()
+        folder=tx:create("Folder","Audio",package)
+        tx:write(folder,"attribute","NR2003AudioVersion","1.0.0")
+        for name,source in pairs(Sources) do
+            local module=tx:create("ModuleScript",name,folder);tx:write(module,"property","Source",source)
+        end
+        tx:write(server,"property","Source",serverSource);tx:write(client,"property","Source",clientSource)
+        if package:GetAttribute("NR2003AudioProfile")==nil then
+            tx:write(package,"attribute","NR2003AudioProfile","NR2003_ORIGINAL_REFERENCE")
+        end
+        if package:GetAttribute("NR2003AudioEnabled")==nil then tx:write(package,"attribute","NR2003AudioEnabled",true) end
+        tx:commit()
+    end)
+    if not ok then tx:undo();error(reason) end
+    print("NR2003 audio installed. Link local original CES/WAV resources; missing assets remain silent. Place was not saved.")
+    return true
+end
+</ProtectedString></Properties><Item class="ModuleScript"><Properties><string name="Name">Sources</string><ProtectedString name="Source">return {
+["NR2003AudioClient"]=[=[
+local State=require(script.Parent.NR2003AudioState)
+local Profiles=require(script.Parent.NR2003AudioProfiles)
+local Controller=require(script.Parent.NR2003AudioController)
+local Spatial=require(script.Parent.NR2003AudioSpatial)
+local M={};M.__index=M
+function M.new(car,presentation,package,remote)
+    local config=require(package.Roblox.RenderConfig)
+    local self=setmetatable({package=package,vehicles={},primary=car,diagTimer=0,discovery=0,dead=false},M)
+    self:register(car,config.vehicleId or 1,presentation)
+    self.connection=remote.OnClientEvent:Connect(function(packet)
+        local s=State.decode(packet);if not s then return end
+        local entry=self.vehicles[s.vehicleId]
+        if entry then entry.buffer:push(s,workspace:GetServerTimeNow()) end
+    end)
+    return self
+end
+function M:register(car,id,presentation)
+    assert(type(id)=="number" and id&gt;=0 and id&lt;=65535,"Invalid audio vehicle ID")
+    local old=self.vehicles[id]
+    if old then old.controller:destroy();old.destroyConnection:Disconnect() end
+    local name=car:GetAttribute("NR2003AudioProfile") or self.package:GetAttribute("NR2003AudioProfile") or Profiles.DEFAULT
+    local assets=self.package:FindFirstChild("AudioAssets")
+    local profile=Profiles.resolve(name,assets and require(assets) or nil)
+    local entry={car=car,presentation=presentation,profile=name,buffer=State.newBuffer(),state={wheels={}},
+        controller=Controller.new(profile,Spatial.new(car,profile))}
+    self.vehicles[id]=entry
+    entry.destroyConnection=car.Destroying:Connect(function()
+        if self.vehicles[id]~=entry then return end
+        entry.controller:destroy();entry.destroyConnection:Disconnect();self.vehicles[id]=nil
+    end)
+    return entry
+end
+function M:update(dt,driving,carModel,cameraMode)
+    if self.dead then return end
+    local now=workspace:GetServerTimeNow()
+    self.diagTimer+=dt;self.discovery+=dt
+    if self.discovery&gt;=1 then
+        self.discovery=0
+        -- Additional senders can register cars explicitly or mark Models with a
+        -- unique NR2003AudioVehicleId. This does not add a multiplayer protocol.
+        for _,car in ipairs(workspace:GetDescendants()) do
+            if car:IsA("Model") then
+                local id=car:GetAttribute("NR2003AudioVehicleId")
+                if type(id)=="number" and not self.vehicles[id] and car:FindFirstChild("Chassis") then
+                    self:register(car,id,nil)
+                end
+            end
+        end
+    end
+    for id,entry in pairs(self.vehicles) do
+        local car=entry.car
+        local name=car:GetAttribute("NR2003AudioProfile") or self.package:GetAttribute("NR2003AudioProfile") or Profiles.DEFAULT
+        if name~=entry.profile then entry=self:register(car,id,entry.presentation) end
+        local presentation=entry.presentation
+        local time=presentation and presentation.active and presentation.sampled.time or nil
+        -- A registered remote car without a presentation buffer uses a small,
+        -- bounded interpolation delay; callers may provide its own presentation.
+        if not presentation then time=now-0.055 end
+        local enabled=self.package:GetAttribute("NR2003AudioEnabled")~=false
+            and car:GetAttribute("NR2003AudioEnabled")~=false
+        local state=enabled and time and entry.buffer:sample(time,now,entry.state) or nil
+        local focus=car==self.primary and driving==true
+        local interior=focus and cameraMode==2
+        if focus and carModel and carModel.active and carModel.vars then interior=carModel.vars._cockpit==true end
+        entry.controller:update(state,focus,interior)
+        if self.diagTimer&gt;=0.25 then
+            local s=entry.controller:stats()
+            local status=s.voices==0 and "awaiting audio assets" or (s.active and "active" or "waiting/stale")
+            if s.voices&gt;0 and s.loaded==0 then status="loading audio assets" end
+            if s.loaded&gt;0 and (s.loaded&lt;s.voices or s.missing&gt;0) then status="partial audio assets" end
+            if s.failures&gt;0 then status="asset load/loop error" end
+            car:SetAttribute("NR2003AudioStatus",status)
+            car:SetAttribute("NR2003AudioRPM",s.rpm)
+            car:SetAttribute("NR2003AudioAgeMs",s.age*1000)
+            car:SetAttribute("NR2003AudioMissing",s.missing)
+            car:SetAttribute("NR2003AudioLoaded",s.loaded)
+            car:SetAttribute("NR2003AudioShiftEvents",s.shifts)
+            car:SetAttribute("NR2003AudioPitchClamps",s.clipped)
+        end
+    end
+    if self.diagTimer&gt;=0.25 then self.diagTimer=0 end
+end
+function M:stats(id) local entry=self.vehicles[id];return entry and entry.controller:stats() end
+function M:destroy()
+    if self.dead then return end;self.dead=true
+    if self.connection then self.connection:Disconnect() end
+    for _,e in pairs(self.vehicles) do e.destroyConnection:Disconnect();e.controller:destroy() end
+    table.clear(self.vehicles)
+end
+return M
+]=],
+["NR2003AudioController"]=[=[
+local Profiles=require(script and script.Parent.NR2003AudioProfiles or "./NR2003AudioProfiles")
+local Engine=require(script and script.Parent.NR2003AudioEngine or "./NR2003AudioEngine")
+local Tires=require(script and script.Parent.NR2003AudioTires or "./NR2003AudioTires")
+local M={};M.__index=M
+-- The backend is injectable for deterministic lifecycle tests. It only owns its
+-- own client-created sounds and attachments; it cannot alter vehicle physics.
+function M.new(profile,backend)
+    local self=setmetatable({profile=profile,backend=backend,voices={},engineControls={},tireControls={},
+        frames=0,shifts=0,resets=0,missing=0,clipped=0,active=false},M)
+    for bankName,bank in pairs(profile.banks or {}) do
+        if bankName=="engvol.ces" then continue end
+        local wheelBank=bankName:match("^tire_")~=nil
+        for j=1,(wheelBank and 4 or 1) do
+            for i,sample in ipairs(bank.samples or {}) do
+                if sample.phase~=0 or not sample.enabled then continue end
+                local key=bankName..":"..j..":"..i
+                local id=Profiles.assetId(profile.assets[sample.file])
+                if id then
+                    self.voices[key]={handle=backend:create(key,id,wheelBank and j or 0,sample),sample=sample,bank=bankName}
+                else self.missing+=1 end
+            end
+        end
+    end
+    if backend.preload then backend:preload() end
+    return self
+end
+function M:silence()
+    self.active=false
+    for _,voice in pairs(self.voices) do self.backend:set(voice.handle,0,1) end
+end
+function M:update(state,focus,interior)
+    self.frames+=1
+    if not state or state.fault then self:silence();return end
+    if self.epoch~=state.epoch then
+        if self.epoch~=nil then self.resets+=1 end
+        self.epoch=state.epoch;self.gear=state.gear
+    elseif self.gear~=state.gear then self.shifts+=1;self.gear=state.gear end
+    self.active=true;self.rpm=state.rpm;self.age=state.age or 0
+    for _,v in pairs(self.voices) do v.gain=0;v.pitch=1 end
+    local profile=self.profile
+    local bankName=focus and (profile.engineBank or "winston.ces") or (profile.otherEngineBank or "winston_nf.ces")
+    local bank=profile.banks[bankName]
+    if bank and state.rpm&gt;0 then
+        self.engineControls=Engine.controls(bank,state,focus,interior,self.engineControls,profile.banks["engvol.ces"])
+        for i,c in ipairs(self.engineControls) do self:apply(bankName..":1:"..i,c) end
+    end
+    for j,w in ipairs(state.wheels) do
+        local controls,tireBank=Tires.controls(profile,w,self.tireControls[j],focus,interior)
+        self.tireControls[j]=controls
+        if controls then
+            if self.backend.position then self.backend:position(j,w.cx or 0,w.cy or 0,w.cz or 0) end
+            local name=Tires.BANKS[w.soundType]
+            for i,c in ipairs(controls) do self:apply(name..":"..j..":"..i,c) end
+        end
+    end
+    for _,voice in pairs(self.voices) do self.backend:set(voice.handle,voice.gain,voice.pitch) end
+end
+function M:apply(key,c)
+    local voice=self.voices[key];if not voice then return end
+    local pitch=math.clamp(c.pitch,self.profile.minPitch,self.profile.maxPitch)
+    if pitch~=c.pitch then self.clipped+=1 end
+    local gain=math.clamp(c.gain*self.profile.masterGain,0,10)
+    voice.gain=gain;voice.pitch=pitch
+end
+function M:stats()
+    local s={profile=self.profile.name,frames=self.frames,shifts=self.shifts,resets=self.resets,
+        missing=self.missing,clipped=self.clipped,active=self.active,rpm=self.rpm or 0,age=self.age or 0}
+    if self.backend.stats then for k,v in pairs(self.backend:stats()) do s[k]=v end end
+    return s
+end
+function M:destroy()
+    self:silence();self.backend:destroy();table.clear(self.voices)
+end
+return M
+]=],
+["NR2003AudioCurves"]=[=[
+-- CES response kernels. Nonlinear lookup tables are compiled by running the
+-- original constructors/evaluators in Unicorn, not by inventing RPM bands.
+local M={}
+local scratch=buffer.create(4)
+local function f32(x) buffer.writef32(scratch,0,x);return buffer.readf32(scratch,0) end
+M.f32=f32
+function M.evaluate(c,x)
+    if not c or c.kind==3 or c.kind==4 then return 1,false end
+    x=f32(x) -- original evaluator receives a float32 argument
+    if c.kind==0 then
+        return f32(math.max(0,c.constant or (c.intercept+c.slope*x))),true
+    elseif c.kind==1 then
+        local delta=f32(x-c.center)
+        if -c.half&lt;=delta and delta&lt;c.half then return c.peak,true end
+        delta=f32(delta&lt; -c.half and delta+c.half or delta-c.half)
+        local side=delta&lt;0 and c.left or c.right
+        local z=(delta-side.min)*side.inv*127
+        local i=z&lt;0 and math.ceil(z) or math.floor(z);local t=f32(z-i)
+        if i&lt;0 or i&gt;=128 then return side.baseline,true end
+        local a=side.y[i+1]
+        if i==0 and t&lt;0 then return f32(a-(c.left.baseline-a)*t),true end
+        return f32(a+(side.y[i+2]-a)*t),true
+    elseif c.kind==2 then
+        local t=f32((x-c.min)*c.inv)
+        if t&lt;0 then return f32(c.y[1]+t*c.slopeLeft*256),true end
+        if t&gt;=1 then return f32(c.y[256]+(t-1)*c.slopeRight*256),true end
+        local z=t*255;local i=math.floor(z);local a=c.y[i+1]
+        return f32(a+(c.y[i+2]-a)*f32(z-i)),true
+    end
+    error("Unsupported/uncompiled CES response kind "..tostring(c.kind))
+end
+-- 004ec250: 0=both, 1=focus/interior only, 2=other/exterior only.
+function M.selected(sample,focus,interior)
+    return not ((sample.focus==1 and not focus) or (sample.focus==2 and focus)
+        or (sample.perspective==1 and not interior) or (sample.perspective==2 and interior))
+end
+-- 004ecb70 / 004ecdb0: group reference RPM, with ORIGINAL minimum 0.25.
+function M.pitch(bank,sample,rpm,gearScale)
+    local refs=sample.mechanical==1 and bank.gearRefs or bank.engineRefs
+    local reference=refs and refs[sample.group+1]
+    if not reference or reference&lt;=0 then return nil end
+    return math.max(0.25,rpm/reference*(sample.mechanical==1 and gearScale or 1))
+end
+return M
+]=],
+["NR2003AudioEngine"]=[=[
+-- Original CES continuous sample weighting, 004eb260. This module computes
+-- controls only; playback and spatialization belong to the Roblox backend.
+local Curves=require(script and script.Parent.NR2003AudioCurves or "./NR2003AudioCurves")
+local M={}
+function M.controls(bank,state,focus,interior,out,volumeBank)
+    out=out or {};local totals={}
+    local overrideGain=nil
+    if volumeBank and #(volumeBank.samples or {})&gt;0 then
+        local v=0
+        for _,s in ipairs(volumeBank.samples) do
+            local a,activeA=Curves.evaluate(s.curves[1],state.rpm)
+            local b,activeB=Curves.evaluate(s.curves[2],state.load)
+            if s.mechanical==0 and (activeA or activeB) then v=Curves.f32(v+Curves.f32(a*b)) end
+        end
+        local bounds=volumeBank.engineVolume or {0,1}
+        overrideGain=bounds[1]+(bounds[2]-bounds[1])*math.clamp(v,0,1)
+    end
+    for i,sample in ipairs(bank.samples or {}) do
+        local c=out[i] or {};out[i]=c;c.gain=0;c.pitch=1
+        if sample.phase==0 and sample.enabled and Curves.selected(sample,focus,interior) then
+            local a,activeA=Curves.evaluate(sample.curves[1],state.rpm)
+            local b,activeB=Curves.evaluate(sample.curves[2],state.load)
+            if activeA or activeB then
+                c.gain=Curves.f32(a*b)
+                c.pitch=state.fixedPitch or Curves.pitch(bank,sample,state.rpm,state.gearScale)
+                if not c.pitch then c.gain=0;c.pitch=1 end
+                local key=sample.mechanical..":"..sample.group
+                c.group=key;totals[key]=Curves.f32((totals[key] or 0)+c.gain)
+            end
+        end
+    end
+    for i,sample in ipairs(bank.samples or {}) do
+        local c=out[i];local sum=c.group and totals[c.group] or 0
+        if sum&gt;0 and c.gain&gt;0 then
+            -- Original mixer normalizes by sum + 1e-5, then multiplies the
+            -- composite's volume (engvol.ces or the engine-load volume ramp).
+            local volume=bank.engineVolume or {0,1}
+            if sample.mechanical==1 then volume=bank.gearVolume or {0,1} end
+            local gain=volume[1]+(volume[2]-volume[1])*state.load
+            if state.volumeOverride then gain=state.volumeOverride end
+            if overrideGain then gain=overrideGain end
+            c.gain=Curves.f32(c.gain/(sum+9.999999747378752e-6))*math.max(0,gain)
+        else c.gain=0 end
+    end
+    return out
+end
+return M
+]=],
+["NR2003AudioProfiles"]=[=[
+-- No proprietary samples and no made-up asset IDs. Local CES conversion fills
+-- AudioAssets. Both profiles use the same physical-state and controller API.
+local M={}
+M.DEFAULT="NR2003_ORIGINAL_REFERENCE"
+M.PROFILES={
+    NR2003_ORIGINAL_REFERENCE={name="NR2003_ORIGINAL_REFERENCE",referenceOnly=true,banks={},assets={},
+        status="Original sound resources have not been linked",masterGain=1,
+        minPitch=0.25,maxPitch=20,rollOffMinMetres=8,rollOffMaxMetres=250},
+    NASCAR_SELFMADE={name="NASCAR_SELFMADE",referenceOnly=false,banks={},assets={},
+        status="Reserved for phase two; no self-made recordings are enabled",masterGain=1,
+        minPitch=0.25,maxPitch=20,rollOffMinMetres=8,rollOffMaxMetres=250},
+}
+function M.resolve(name,assets)
+    local base=M.PROFILES[name]
+    assert(base,"Unknown audio profile: "..tostring(name))
+    local out={};for k,v in pairs(base) do out[k]=v end
+    local override=assets and assets.profiles and assets.profiles[name]
+    if override then for k,v in pairs(override) do out[k]=v end end
+    out.name=name
+    return out
+end
+function M.assetId(value)
+    if type(value)=="number" and value&gt;0 and value==math.floor(value) then return "rbxassetid://"..string.format("%.0f",value) end
+    if type(value)=="string" and value:match("^rbxassetid://[1-9]%d*$") then return value end
+    -- Studio-only local files may be linked through rbxasset:// in a private
+    -- Studio content directory. Local content never makes a published asset.
+    if type(value)=="string" and value:match("^rbxasset://sounds/nr2003_reference/[%w_./%-]+$")
+        and not value:find("..",1,true) then return value end
+    return nil
+end
+return M
+]=],
+["NR2003AudioServer"]=[=[
+-- No work on the server beyond reading the core and appending one bounded tail.
+local State=require(script and script.Parent.NR2003AudioState or "./NR2003AudioState")
+local M={};M.__index=M
+function M.new(controller,package)
+    return setmetatable({controller=controller,package=package,state={wheels={}},epoch=0},M)
+end
+function M:encode(snapshot,packet)
+    if self.package:GetAttribute("NR2003AudioEnabled")==false then return packet end
+    local core=self.controller.core
+    if not core then return packet end
+    local car=self.controller.car
+    if car and car:GetAttribute("NR2003AudioVehicleId")~=snapshot.vehicleId then
+        car:SetAttribute("NR2003AudioVehicleId",snapshot.vehicleId)
+    end
+    if bit32.band(snapshot.flags or 0,1)~=0 or (self.lastTick and snapshot.tick&lt;self.lastTick) then self.epoch+=1 end
+    self.lastTick=snapshot.tick
+    return State.append(packet,State.sample(core,self.controller,self.state),self.epoch)
+end
+return M
+]=],
+["NR2003AudioSpatial"]=[=[
+-- Roblox playback adapter. Sound.PlaybackSpeed changes both pitch and duration.
+-- Roll-off and Sound's mixer/resampler are Roblox choices, not NR2003 DirectSound.
+local M={};M.__index=M
+function M.new(car,profile)
+    local root=assert(car:FindFirstChild("Chassis") or car.PrimaryPart,"Audio car has no Chassis")
+    local self=setmetatable({root=root,profile=profile,sounds={},connections={},attachments={},failures=0,
+        loaded=0,starts=0,destroyed=false},M)
+    for j=0,4 do
+        local a=Instance.new("Attachment");a.Name="NR2003Audio_"..j;a.Parent=root;self.attachments[j]=a
+    end
+    return self
+end
+function M:create(key,id,wheel,sample)
+    local s=Instance.new("Sound");s.Name=key;s.SoundId=id;s.Volume=0;s.Looped=true
+    s.RollOffMode=Enum.RollOffMode.InverseTapered
+    s.RollOffMinDistance=self.profile.rollOffMinMetres/0.28
+    s.RollOffMaxDistance=self.profile.rollOffMaxMetres/0.28
+    if sample.loop and sample.loop.startSeconds and sample.loop.endSeconds then
+        local ok=pcall(function()
+            s.PlaybackRegionsEnabled=true
+            s.LoopRegion=NumberRange.new(sample.loop.startSeconds,sample.loop.endSeconds)
+        end)
+        if not ok then self.failures+=1 end
+    end
+    s.Parent=self.attachments[wheel]
+    local entry={sound=s,gain=0,pitch=1,started=false};self.sounds[#self.sounds+1]=entry
+    local function start()
+        if self.destroyed or entry.started or not s.IsLoaded then return end
+        entry.started=true;self.loaded+=1;self.starts+=1;s:Play()
+    end
+    self.connections[#self.connections+1]=s.Loaded:Connect(start)
+    start()
+    return entry
+end
+function M:preload()
+    if #self.sounds==0 then return end
+    local sounds={};for _,entry in ipairs(self.sounds) do sounds[#sounds+1]=entry.sound end
+    task.spawn(function()
+        local ok=pcall(function()
+            game:GetService("ContentProvider"):PreloadAsync(sounds,function(_,status)
+                if not self.destroyed and status~=Enum.AssetFetchStatus.Success then self.failures+=1 end
+            end)
+        end)
+        if not ok and not self.destroyed then self.failures+=1 end
+    end)
+end
+function M:set(entry,gain,pitch)
+    if self.destroyed then return end
+    -- Calls only update controls. Active loops keep their playback positions.
+    if entry.gain~=gain then entry.gain=gain;entry.sound.Volume=gain end
+    if entry.pitch~=pitch then entry.pitch=pitch;entry.sound.PlaybackSpeed=pitch end
+end
+function M:position(j,x,y,z) self.attachments[j].Position=Vector3.new(x,y,z) end
+function M:stats() return {voices=#self.sounds,loaded=self.loaded,failures=self.failures,starts=self.starts} end
+function M:destroy()
+    if self.destroyed then return end;self.destroyed=true
+    for _,c in ipairs(self.connections) do c:Disconnect() end
+    for _,a in pairs(self.attachments) do a:Destroy() end
+    table.clear(self.sounds);table.clear(self.connections);table.clear(self.attachments)
+end
+return M
+]=],
+["NR2003AudioState"]=[=[
+-- Read-only view of the existing Cup core. The optional tail shares RenderState's
+-- vehicle/sequence/tick/time and never creates an input or a second simulation.
+local M={MAGIC=0x3141524e,VERSION=1,BASE_BYTES=204,HEADER=64,WHEEL_BYTES=52}
+M.SIZE=M.HEADER+4*M.WHEEL_BYTES
+local CAR,ENGINE,TYRE=0xc12030,0xc1203c,0xbf3a20
+local FIELDS={"rpm","throttle","clutch","engineOmega","shaftOmega","power","cutTimer","revLimit","damage","load","gearScale"}
+local WFIELDS={"omega","vx","slipX","slipY","fx","fy","fz","tread","volume","pitch","xfade","soundType"}
+local WHEEL_RATE={19,25,31,33} -- CupTune's zero-based rates 18,24,30,32 + 1
+local function finite(v) return type(v)=="number" and v==v and math.abs(v)&lt;math.huge end
+M.finite=finite
+function M.sample(core,host,out)
+    if not (core and core.V and core.V.wheelBrake and core.V.rf32) then return nil end
+    local V=core.V
+    out=out or {wheels={}};out.wheels=out.wheels or {}
+    -- The authoritative tick already exported bf6d40. core:readState() invokes
+    -- the original exporter into host scratch; audio needs only direct reads.
+    local function state(i) return V.rf32(0xbf6d40+(i-1)*4) end
+    local _,_,throttle,_,clutch=core:inputs()
+    -- These are the exact inputs of 00563bd0 -&gt; 004eac30. 00551e10
+    -- already writes RPM and effective load from the original drivetrain.
+    out.rpm=V.rf32(CAR+0x1508);out.load=V.rf32(CAR+0x1510)
+    out.throttle=throttle;out.clutch=clutch
+    out.engineOmega=state(35);out.shaftOmega=state(37)
+    out.gear=core:gearIndex()-1 -- R=-1, N=0, 1..4 (core indices 0..5)
+    out.gearScale=V.rf32(CAR+0x454+core:gearIndex()*4)*V.rf32(CAR+0x474)
+    out.limiter=core:revLimiter();out.power=V.rf32(ENGINE+0x554)
+    out.cutTimer=V.rf32(ENGINE+0x550);out.engineFlags=V.r32(ENGINE+0x548)
+    out.damage=V.rf32(CAR+0x1493+0x58)
+    local spec=V.r32(CAR+0x576)
+    out.revLimit=spec~=0 and V.rf32(spec+0x2c) or 0
+    out.fault=host and host.fault~=nil or false
+    for j=1,4 do
+        local w=out.wheels[j] or {};out.wheels[j]=w
+        local t=TYRE+(j-1)*0xa39
+        w.omega=state(WHEEL_RATE[j]);w.vx=V.rf32(t+0x2f0);w.slipX=V.rf32(t+0x2ec)
+        w.slipY=V.rf32(t+0x2e8)
+        w.fx=V.rf32(t+0x2d8);w.fy=V.rf32(t+0x2dc);w.fz=V.rf32(t+0x2e0);w.tread=V.rf32(t+0x2cc)
+        w.locked=math.abs(w.vx)&gt;0.5 and w.tread&lt;0.05*math.abs(w.vx)
+        -- 00556e30 is ALREADY lifted in NR2003CupFrameCode3, called by
+        -- 00551990. Reuse its force/surface-based controls without recalculation.
+        w.volume=V.rf32(CAR+0x11cb+(j-1)*4)
+        w.pitch=V.rf32(CAR+0x11db+(j-1)*4)
+        w.xfade=V.rf32(CAR+0x11eb+(j-1)*4)
+        w.soundType=V.r32(CAR+0x120b+(j-1)*4)
+        if host and host.originalTrack and V.trackContact then
+            local c=V.trackContact(j-1,{})
+            w.grounded=c.grounded==true;w.surface=c.surface or 0
+        elseif host then
+            w.grounded=host.inContact and host.inContact[j]==true or false
+            w.surface=host.planes and host.planes[j] and host.planes[j][8] or 0
+        else w.grounded=false;w.surface=0 end
+    end
+    return out
+end
+function M.append(base,s,epoch)
+    if not s then return base end
+    assert(buffer.len(base)==M.BASE_BYTES,"audio requires the v1 204-byte render packet")
+    local b=buffer.create(M.BASE_BYTES+M.SIZE);buffer.copy(b,0,base)
+    local o=M.BASE_BYTES
+    buffer.writeu32(b,o,M.MAGIC);buffer.writeu8(b,o+4,M.VERSION);buffer.writeu8(b,o+5,4)
+    buffer.writeu16(b,o+6,(s.limiter and 1 or 0)+(s.fault and 2 or 0))
+    buffer.writeu32(b,o+8,epoch or 0);buffer.writei32(b,o+12,s.gear)
+    for i,k in ipairs(FIELDS) do buffer.writef32(b,o+12+i*4,s[k] or 0) end
+    buffer.writeu32(b,o+60,s.engineFlags or 0)
+    for j=1,4 do
+        local w=s.wheels[j];local p=o+M.HEADER+(j-1)*M.WHEEL_BYTES
+        for i,k in ipairs(WFIELDS) do buffer.writef32(b,p+(i-1)*4,w[k] or 0) end
+        buffer.writeu8(b,p+48,math.clamp(math.floor(w.surface or 0),0,19))
+        buffer.writeu8(b,p+49,w.grounded and 1 or 0);buffer.writeu8(b,p+50,w.locked and 1 or 0)
+    end
+    return b
+end
+function M.decode(b)
+    if type(b)~="buffer" or buffer.len(b)~=M.BASE_BYTES+M.SIZE then return nil,"no audio tail" end
+    local o=M.BASE_BYTES
+    if buffer.readu32(b,o)~=M.MAGIC or buffer.readu8(b,o+4)~=M.VERSION or buffer.readu8(b,o+5)~=4 then return nil,"audio version" end
+    local s={vehicleId=buffer.readu16(b,2),seq=buffer.readu16(b,4),tick=buffer.readu32(b,8),
+        time=buffer.readf64(b,12),epoch=buffer.readu32(b,o+8),gear=buffer.readi32(b,o+12),wheels={}}
+    if buffer.readu8(b,0)~=1 or buffer.readu8(b,1)~=4 or not finite(s.time) then return nil,"render header" end
+    if s.gear&lt; -1 or s.gear&gt;4 then return nil,"gear" end
+    local flags=buffer.readu16(b,o+6);s.limiter=bit32.band(flags,1)~=0;s.fault=bit32.band(flags,2)~=0
+    s.teleport=bit32.band(buffer.readu16(b,6),1)~=0;s.engineFlags=buffer.readu32(b,o+60)
+    for i,k in ipairs(FIELDS) do
+        local v=buffer.readf32(b,o+12+i*4);if not finite(v) then return nil,"non-finite "..k end;s[k]=v
+    end
+    for j=1,4 do
+        local w={};s.wheels[j]=w;local p=o+M.HEADER+(j-1)*M.WHEEL_BYTES
+        for i,k in ipairs(WFIELDS) do
+            local v=buffer.readf32(b,p+(i-1)*4);if not finite(v) then return nil,"non-finite wheel" end;w[k]=v
+        end
+        if w.soundType&lt;0 or w.soundType&gt;4 or w.soundType~=math.floor(w.soundType) then return nil,"tire sound type" end
+        w.surface=buffer.readu8(b,p+48);if w.surface&gt;19 then return nil,"surface" end
+        w.grounded=buffer.readu8(b,p+49)==1;w.locked=buffer.readu8(b,p+50)==1
+        local c=76+(j-1)*32
+        w.cx=buffer.readf32(b,c+16);w.cy=buffer.readf32(b,c+20);w.cz=buffer.readf32(b,c+24)
+        if not (finite(w.cx) and finite(w.cy) and finite(w.cz)) then return nil,"contact position" end
+    end
+    return s
+end
+-- Causal interpolation: discrete state changes only at their timestamp. Never
+-- interpolate across reset epochs, extrapolate RPM, or use future throttle/gears.
+local B={};B.__index=B
+function M.newBuffer() return setmetatable({list={},received=0,rejected=0,resets=0,lastArrival=nil},B) end
+function B:push(s,arrival)
+    local list=self.list;local last=list[#list]
+    if last and (s.epoch&lt;last.epoch or (s.epoch==last.epoch and s.time&lt;=last.time)) then self.rejected+=1;return false end
+    if last and s.epoch~=last.epoch then self.list={};list=self.list;self.resets+=1 end
+    list[#list+1]=s;while #list&gt;64 do table.remove(list,1) end
+    self.lastArrival=arrival;self.received+=1;return true
+end
+function B:sample(t,now,out)
+    local l=self.list;local n=#l
+    if n==0 or not self.lastArrival or now-self.lastArrival&gt;0.5 or t&lt;l[1].time then return nil end
+    local a,b=l[n],l[n]
+    for i=n-1,1,-1 do if l[i].time&lt;=t then a,b=l[i],l[i+1];break end end
+    if t&gt;=l[n].time then a,b=l[n],l[n] end
+    local alpha=a~=b and math.clamp((t-a.time)/(b.time-a.time),0,1) or 0
+    out=out or {};out.wheels=out.wheels or {}
+    for k,v in pairs(a) do if k~="wheels" then out[k]=v end end
+    for _,k in ipairs(FIELDS) do
+        if k~="gearScale" or a.gear==b.gear then out[k]=a[k]+(b[k]-a[k])*alpha end
+    end
+    for j=1,4 do
+        local w=out.wheels[j] or {};out.wheels[j]=w
+        local aw,bw=a.wheels[j],b.wheels[j]
+        for k,v in pairs(aw) do w[k]=v end
+        -- Contact transitions and material changes are discrete; never blend
+        -- airborne/contact force or road/gravel slip across the boundary.
+        if aw.grounded==bw.grounded and aw.surface==bw.surface and aw.soundType==bw.soundType then
+            for _,k in ipairs(WFIELDS) do w[k]=aw[k]+(bw[k]-aw[k])*alpha end
+        end
+    end
+    out.sampleTime=t;out.age=math.max(0,now-a.time)
+    return out
+end
+return M
+]=],
+["NR2003AudioTires"]=[=[
+-- The original tire response is already evaluated inside the physics frame.
+-- Feed (xfade,1) to tire_*.ces, then apply the original volume/pitch controls.
+local Engine=require(script and script.Parent.NR2003AudioEngine or "./NR2003AudioEngine")
+local M={BANKS={[1]="tire_asphalt.ces",[2]="tire_grass.ces",[3]="tire_gravel.ces",[4]="tire_rumble.ces"}}
+function M.controls(profile,wheel,out,focus,interior)
+    local bank=profile.banks[M.BANKS[wheel.soundType]]
+    if not bank or not wheel.grounded or wheel.volume&lt;=0 then return nil end
+    out=Engine.controls(bank,{rpm=wheel.xfade,load=1,gearScale=1,fixedPitch=wheel.pitch,volumeOverride=1},focus,interior,out)
+    for _,c in ipairs(out) do c.gain*=wheel.volume;c.pitch=wheel.pitch end
+    return out,bank
+end
+return M
+]=]
+}
+</ProtectedString></Properties></Item><Item class="ModuleScript"><Properties><string name="Name">Rules</string><ProtectedString name="Source">return {
+server={{[=[
+-- NR2003_AUDIO_SERVER_V1]=],[=[
+local input={throttle=0,brake=1,steer=0,handbrake=0,clutch=1}]=],[=[
+-- NR2003_AUDIO_SERVER_V1
+local audioServer=nil
+do
+    local f=package:FindFirstChild("Audio");local m=f and f:FindFirstChild("NR2003AudioServer")
+    if m and Mode.mode=="NR2003_CUP" then
+        local ok,value=pcall(function() return require(m).new(controller,package) end)
+        if ok then audioServer=value else warn("NR2003 audio server: "..tostring(value)) end
+    end
+end
+local function encodeAudioSnapshot(snapshot,packet)
+    if audioServer then
+        local ok,value=pcall(audioServer.encode,audioServer,snapshot,packet)
+        if ok then return value end
+        warn("NR2003 audio disabled: "..tostring(value));audioServer=nil
+    end
+    return packet
+end
+local input={throttle=0,brake=1,steer=0,handbrake=0,clutch=1}]=]},{[=[
+encodeAudioSnapshot(snapshot,RenderSnapshot.encode(snapshot))]=],[=[
+renderState:FireAllClients(RenderSnapshot.encode(snapshot))]=],[=[
+renderState:FireAllClients(encodeAudioSnapshot(snapshot,RenderSnapshot.encode(snapshot)))]=]}},
+client={{[=[
+-- NR2003_AUDIO_CLIENT_V1]=],[=[
+local function frame(dt)]=],[=[
+-- NR2003_AUDIO_CLIENT_V1
+local audioClient=nil
+do
+    local f=package:FindFirstChild("Audio");local m=f and f:FindFirstChild("NR2003AudioClient")
+    if m then
+        local ok,value=pcall(function() return require(m).new(car,presentation,package,renderState) end)
+        if ok then audioClient=value else warn("NR2003 audio client: "..tostring(value)) end
+    end
+end
+script.Destroying:Connect(function() if audioClient then audioClient:destroy() end end)
+local function frame(dt)]=]},{[=[
+-- NR2003_AUDIO_UPDATE_V1]=],[=[
+    if not driving then return end
+    header.Visible=expanded;]=],[=[
+    -- NR2003_AUDIO_UPDATE_V1
+    if audioClient then
+        local ok,value=pcall(audioClient.update,audioClient,dt,driving,nil,cameraMode)
+        if not ok then
+            warn("NR2003 audio disabled: "..tostring(value));audioClient:destroy();audioClient=nil
+        end
+    end
+    if not driving then return end
+    header.Visible=expanded;]=]}},
+carClient={{[=[
+-- NR2003_AUDIO_CLIENT_V1]=],[=[
+local function frame(dt)]=],[=[
+-- NR2003_AUDIO_CLIENT_V1
+local audioClient=nil
+do
+    local f=package:FindFirstChild("Audio");local m=f and f:FindFirstChild("NR2003AudioClient")
+    if m then
+        local ok,value=pcall(function() return require(m).new(car,presentation,package,renderState) end)
+        if ok then audioClient=value else warn("NR2003 audio client: "..tostring(value)) end
+    end
+end
+script.Destroying:Connect(function() if audioClient then audioClient:destroy() end end)
+local function frame(dt)]=]},{[=[
+-- NR2003_AUDIO_UPDATE_V1]=],[=[
+    if not driving then return end
+    header.Visible=expanded;]=],[=[
+    -- NR2003_AUDIO_UPDATE_V1
+    if audioClient then
+        local ok,value=pcall(audioClient.update,audioClient,dt,driving,carModel,cameraMode)
+        if not ok then
+            warn("NR2003 audio disabled: "..tostring(value));audioClient:destroy();audioClient=nil
+        end
+    end
+    if not driving then return end
+    header.Visible=expanded;]=]}}
+}
+</ProtectedString></Properties></Item><Item class="ModuleScript"><Properties><string name="Name">Journal</string><ProtectedString name="Source">-- Scoped, persistent journal for audio installation. Never saves or publishes.
+local T={BACKUP="NR2003Backup_Audio",VERSION="1.0.0",CHUNK_BYTES=150000}
+local Http=game:GetService("HttpService")
+local function writeJournal(backup,encoded)
+    local journal=Instance.new("Folder");journal.Name="Journal";journal.Parent=backup
+    local first,count=1,0
+    while first&lt;=#encoded do
+        local last=math.min(first+T.CHUNK_BYTES-1,#encoded)
+        -- A property must receive valid UTF-8 even when a boundary crosses a
+        -- non-ASCII name or a source comment. Keep the whole code point together.
+        if last&lt;#encoded then
+            local byte=encoded:byte(last+1)
+            while byte and byte&gt;=128 and byte&lt;=191 do last-=1;byte=encoded:byte(last+1) end
+        end
+        count+=1
+        local part=Instance.new("StringValue");part.Name=string.format("Part%05d",count)
+        part.Value=encoded:sub(first,last);part.Parent=journal
+        first=last+1
+    end
+    journal:SetAttribute("ChunkCount",count)
+    journal:SetAttribute("ByteLength",#encoded)
+    backup:SetAttribute("JournalFormat",2)
+    backup:SetAttribute("AudioInstallerVersion",T.VERSION)
+end
+function T.readJournal(backup)
+    local journal=assert(backup:FindFirstChild("Journal"),"audio backup journal missing")
+    -- Preserve rollback compatibility with successfully installed v1 backups.
+    if journal:IsA("StringValue") then return Http:JSONDecode(journal.Value) end
+    assert(journal:IsA("Folder"),"audio backup journal has an unexpected class")
+    local count=journal:GetAttribute("ChunkCount")
+    assert(type(count)=="number" and count&gt;0 and count==math.floor(count)
+        and count==#journal:GetChildren(),"audio backup journal chunk count mismatch")
+    local parts={}
+    for i=1,count do
+        local part=journal:FindFirstChild(string.format("Part%05d",i))
+        assert(part and part:IsA("StringValue"),"audio backup journal chunk missing: "..i)
+        parts[i]=part.Value
+    end
+    local encoded=table.concat(parts)
+    assert(#encoded==journal:GetAttribute("ByteLength"),"audio backup journal byte length mismatch")
+    return Http:JSONDecode(encoded)
+end
+local function same(a,b,key)
+    if key=="Source" and type(a)=="string" and type(b)=="string" then
+        return a:gsub("\r\n","\n")==b:gsub("\r\n","\n")
+    end
+    return a==b
+end
+function T.new()
+    local tx={ops={},created={},refs={},ids={}}
+    function tx:id(value)
+        if not self.ids[value] then self.refs[#self.refs+1]=value;self.ids[value]=#self.refs end
+        return self.ids[value]
+    end
+    function tx:pack(value)
+        local kind=typeof(value)
+        if value==nil then return {"nil"} end
+        if kind=="Instance" then return {"ref",self:id(value)} end
+        if kind=="EnumItem" then return {"enum",tostring(value.EnumType):gsub("^Enum%.",""),value.Name} end
+        if kind=="CFrame" then return {"CFrame",{value:GetComponents()}} end
+        if kind=="Vector3" then return {"Vector3",value.X,value.Y,value.Z} end
+        assert(kind=="string" or kind=="number" or kind=="boolean","Unsupported journal value "..kind)
+        return {"value",value}
+    end
+    function tx:write(target,kind,key,value)
+        local old
+        if kind=="attribute" then old=target:GetAttribute(key) else old=target[key] end
+        if same(old,value,key) then return end
+        local entry={kind,self:id(target),key,self:pack(old),self:pack(value)}
+        if kind=="attribute" then target:SetAttribute(key,value) else target[key]=value end
+        self.ops[#self.ops+1]=entry
+    end
+    function tx:create(class,name,parent)
+        local target=Instance.new(class);self:id(target)
+        self.created[#self.created+1]={self:id(target),name,parent and self:id(parent) or false}
+        target.Name=name;target.Parent=parent
+        return target
+    end
+    function tx:unpack(value)
+        local k=value[1]
+        if k=="nil" then return nil end
+        if k=="ref" then return self.refs[value[2]] end
+        if k=="enum" then return Enum[value[2]][value[3]] end
+        if k=="CFrame" then return CFrame.new(table.unpack(value[2])) end
+        if k=="Vector3" then return Vector3.new(value[2],value[3],value[4]) end
+        return value[2]
+    end
+    function tx:undo()
+        for i=#self.ops,1,-1 do
+            local op=self.ops[i];local target=self.refs[op[2]];local value=self:unpack(op[4])
+            if op[1]=="attribute" then target:SetAttribute(op[3],value) else target[op[3]]=value end
+        end
+        for i=#self.created,1,-1 do self.refs[self.created[i][1]]:Destroy() end
+    end
+    function tx:commit()
+        local storage=game:GetService("ServerStorage")
+        assert(not storage:FindFirstChild(T.BACKUP),"audio backup already exists")
+        -- Encode before constructing persistent state: failed encoding remains reversible.
+        local encoded=Http:JSONEncode({ops=self.ops,created=self.created})
+        local backup=Instance.new("Folder");backup.Name=T.BACKUP
+        local ok,reason=pcall(function()
+            local refs=Instance.new("Folder");refs.Name="Targets";refs.Parent=backup
+            for id,target in ipairs(self.refs) do
+                local ref=Instance.new("ObjectValue");ref.Name=tostring(id);ref.Value=target;ref.Parent=refs
+            end
+            writeJournal(backup,encoded)
+            backup:SetAttribute("AudioPatchVersion",1);backup.Parent=storage
+        end)
+        if not ok then backup:Destroy();error(reason) end
+        return backup
+    end
+    return tx
+end
+function T.rollback()
+    assert(not game:GetService("RunService"):IsRunning(),"Stop Play before rolling back audio")
+    local backup=assert(game:GetService("ServerStorage"):FindFirstChild(T.BACKUP),"audio backup not found")
+    local data=T.readJournal(backup)
+    local tx=T.new();tx.ops=data.ops;tx.created=data.created
+    for _,ref in ipairs(backup.Targets:GetChildren()) do tx.refs[tonumber(ref.Name)]=ref.Value end
+    local final={};local owned={}
+    for _,entry in ipairs(tx.created) do owned[entry[1]]=true end
+    -- Validate the final value for every field before restoring any field.
+    for i=#tx.ops,1,-1 do
+        local op=tx.ops[i];local key=op[2]..":"..op[1]..":"..op[3]
+        if not final[key] then
+            local target=assert(tx.refs[op[2]],"audio rollback: target was removed")
+            local actual
+            if op[1]=="attribute" then actual=target:GetAttribute(op[3]) else actual=target[op[3]] end
+            assert(same(actual,tx:unpack(op[5]),op[3]),
+                "audio rollback refused: changed after installation: "..target:GetFullName().."."..op[3])
+            final[key]=true
+        end
+    end
+    for _,entry in ipairs(tx.created) do
+        local target=assert(tx.refs[entry[1]],"audio rollback: created target was removed")
+        assert(target.Name==entry[2],"audio rollback: created object was renamed")
+        local expected=entry[3] and tx.refs[entry[3]] or nil
+        assert(target.Parent==expected,"audio rollback: created object was moved")
+        for _,child in ipairs(target:GetChildren()) do
+            local id=table.find(tx.refs,child)
+            assert(id and (owned[id] or final[id..":property:Parent"]),
+                "audio rollback refused: new child in "..target:GetFullName())
+        end
+    end
+    tx:undo();backup:Destroy()
+    print("audio rolled back; previous scripts and audio settings restored")
+    return true
+end
+return T
+</ProtectedString></Properties></Item></Item></roblox>

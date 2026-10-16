@@ -1,0 +1,36 @@
+{
+  "version": "1.0.0",
+  "baseCommit": "25be672a755d64b4010b02399c800522aa0ca040",
+  "branch": "codex/nr2003-original-audio",
+  "originalAssetsIncluded": false,
+  "selfmadeAssetsEnabled": false,
+  "audioTailBytes": 272,
+  "renderPacketBytes": 476,
+  "additionalPayloadBytesPerSecondAt60Hz": 16320,
+  "profiles": [
+    "NR2003_ORIGINAL_REFERENCE",
+    "NASCAR_SELFMADE"
+  ],
+  "requiredOriginalBanks": [
+    "winston.ces",
+    "winston_nf.ces",
+    "engvol.ces",
+    "tire_asphalt.ces",
+    "tire_grass.ces",
+    "tire_gravel.ces",
+    "tire_rumble.ces"
+  ],
+  "assetIds": {},
+  "listeningVerified": false,
+  "files": {
+    "NR2003AudioState.lua": "521fb95e1a015dff60de5ded71ac7b0b81e05886b682b3d72c7e99e49ad1852e",
+    "NR2003AudioController.lua": "d7168d3ed66ec4b863fc13a3df94c9f5b8c2d51417efc342b219a54ef46f808d",
+    "NR2003AudioProfiles.lua": "5e6196d0b57b459539e4b443ff27727f478685ac29fb6e01cb5061007afe46d0",
+    "NR2003AudioSpatial.lua": "b2176875b9d45bac9e42ccceaafb8f9fccb6e8c1d2f84849e5b11ffa4c861efd",
+    "NR2003AudioCurves.lua": "1ffa8bada6ac60d97759829554f8be6b64ab433c54ae953014365b5a2e41aa16",
+    "NR2003AudioServer.lua": "8dc4c636cc43a6c2fb329948bc842cb46474ac13deab86e8975a1a231443ae35",
+    "NR2003AudioClient.lua": "04b497cfa3434598301ccda898c97b63d639f7b3f1f67baa6d0b7fa1bcb0b0a1",
+    "NR2003AudioEngine.lua": "26088d99b18aa349398865aa56ee912d354521d2f39ab18e4adde7c1545ef38e",
+    "NR2003AudioTires.lua": "535cad0429785a9cc15d067508d9f6596b13bb324d8d58678ca32a0f01c7a092"
+  }
+}

@@ -1,0 +1,10 @@
+004e9540 MOV ECX,dword ptr [ESP + 0x10]
+004e9544 MOV EDX,dword ptr [ESP + 0x8]
+004e9548 FLD dword ptr [ECX + EDX*0x8 + 0xc]
+004e954c FSUB dword ptr [ECX + EDX*0x8 + 0x4]
+004e9550 LEA EAX,[ECX + EDX*0x8 + 0x4]
+004e9554 FMUL dword ptr [ESP + 0xc]
+004e9558 FADD dword ptr [EAX]
+004e955a MOV EAX,dword ptr [ESP + 0x4]
+004e955e FSTP dword ptr [EAX + 0x4]
+004e9561 RET 0x14

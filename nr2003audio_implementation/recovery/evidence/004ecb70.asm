@@ -1,0 +1,11 @@
+004ecb70 MOV EAX,dword ptr [ECX + 0x2c]
+004ecb73 MOV EDX,dword ptr [ECX + 0x28]
+004ecb76 FLD dword ptr [ECX + 0x18]
+004ecb79 FDIV dword ptr [EDX + EAX*0x4 + 0x182c]
+004ecb80 FCOM dword ptr [0x006ea50c]   ; [006ea50c] f32=0.25 i32=1048576000 f64=9.2703669417e-18
+004ecb86 FNSTSW AX
+004ecb88 TEST AH,0x5
+004ecb8b JP 0x004ecb95
+004ecb8d FSTP ST0
+004ecb8f FLD dword ptr [0x006ea50c]   ; [006ea50c] f32=0.25 i32=1048576000 f64=9.2703669417e-18
+004ecb95 RET

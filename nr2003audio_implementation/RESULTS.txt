@@ -1,0 +1,123 @@
+Audio reference validation — 2026-10-16
+101 automated checks; 235 original-kernel numerical vectors; no listening claim.
+
+[kernels]
+PASS 235 response vectors agree with original x86 kernels (documented CRT bridges)
+maximum absolute kernel error	0
+PASS equal overlapping samples normalize without invented RPM thresholds
+PASS engine pitch follows actual RPM/reference
+PASS gear pitch uses recovered gear/final-drive scalar
+PASS original minimum pitch is 0.25
+PASS interior-only sample is excluded outside
+PASS 300 frames keep the same voices; playback is never restarted by RPM updates
+PASS confirmed gear transition counted once
+PASS reset clears gear history without generating a shift
+PASS stale/missing state silences all voices
+PASS controller destroys only its owned backend
+PASS self-made profile stays empty
+PASS invalid/missing IDs rejected
+PASS local Studio references reject path traversal
+PASS audio payload stays below the UnreliableRemoteEvent limit
+audio kernels/lifecycle: 15 passed, 0 failed
+
+[state]
+PASS actual core state sampling is read-only, block 1
+PASS recovered RPM/load and tire controls are read directly, block 1
+PASS 476-byte packet preserves all 204 original render bytes, block 1
+PASS all four material/contact states survive packing, block 1
+PASS actual core state sampling is read-only, block 2
+PASS recovered RPM/load and tire controls are read directly, block 2
+PASS 476-byte packet preserves all 204 original render bytes, block 2
+PASS all four material/contact states survive packing, block 2
+PASS actual core state sampling is read-only, block 3
+PASS recovered RPM/load and tire controls are read directly, block 3
+PASS 476-byte packet preserves all 204 original render bytes, block 3
+PASS all four material/contact states survive packing, block 3
+PASS actual core state sampling is read-only, block 4
+PASS recovered RPM/load and tire controls are read directly, block 4
+PASS 476-byte packet preserves all 204 original render bytes, block 4
+PASS all four material/contact states survive packing, block 4
+PASS actual core state sampling is read-only, block 5
+PASS recovered RPM/load and tire controls are read directly, block 5
+PASS 476-byte packet preserves all 204 original render bytes, block 5
+PASS all four material/contact states survive packing, block 5
+PASS actual core state sampling is read-only, block 6
+PASS recovered RPM/load and tire controls are read directly, block 6
+PASS 476-byte packet preserves all 204 original render bytes, block 6
+PASS all four material/contact states survive packing, block 6
+PASS actual core state sampling is read-only, block 7
+PASS recovered RPM/load and tire controls are read directly, block 7
+PASS 476-byte packet preserves all 204 original render bytes, block 7
+PASS all four material/contact states survive packing, block 7
+PASS actual core state sampling is read-only, block 8
+PASS recovered RPM/load and tire controls are read directly, block 8
+PASS 476-byte packet preserves all 204 original render bytes, block 8
+PASS all four material/contact states survive packing, block 8
+PASS test exercised changing original engine RPM
+PASS old render packets need no migration
+PASS non-finite audio data is rejected
+PASS audio uses the visual presentation time with continuous RPM
+PASS gear events never occur before their original timestamp
+PASS mechanical pitch ratio changes at the confirmed gear timestamp
+PASS duplicate/out-of-order packet cannot repeat an event
+PASS stale packet stream silences within 500 ms
+PASS reset epochs cannot interpolate with the previous car state
+PASS delayed pre-reset packets are rejected
+audio state/core/transport: 42 passed, 0 failed; RPM 176.7..1854.7
+
+[installer]
+PASS actual audio installer executes
+PASS client/server local edits are preserved
+PASS original core, adapter, surfaces and track selection remain untouched
+PASS all installed modules are actual source files
+PASS second installation is idempotent
+PASS rollback restores exact previous client/server sources
+PASS rollback removes audio code and retains separately imported bindings
+PASS unsupported scripts fail preflight before any mutation
+PASS injected Source failure rolls the whole installation back
+PASS large backup journal uses safe chunks
+PASS chunked backup can roll back
+PASS backup chunk failure restores all scripts
+PASS rollback protects edits made after installation
+PASS installation never runs during Play
+audio Studio installer/rollback mock: 14 passed, 0 failed
+
+[spatial]
+PASS loaded loop starts exactly once
+PASS preloading/300 control updates never restart a loop
+PASS original loop-region metadata reaches the sound
+PASS metre-to-stud rolloff uses existing 0.28 scale
+PASS wheel positioning only moves owned audio attachments
+PASS unloaded assets do not claim playback
+PASS late loading starts once
+PASS content loading failures are contained and reported
+PASS cleanup is idempotent and only removes owned sound objects
+PASS late callbacks after destruction cannot restart audio
+audio playback backend mock: 10 passed, 0 failed
+
+[track1]
+PASS asphalt uses original material scalar, without Watkins Glen override
+PASS concrete uses original material scalar
+PASS independent track heat/wear defaults
+PASS original asphalt/concrete heat factors remain distinct
+PASS original rolling constant and speed-squared coefficient retained
+PASS loader follows original float32 rounding for recovered Watkins reference values
+PASS heat/wear inputs reach original accessor cells
+PASS invalid settings rejected before any write
+PASS native Watkins Glen world cannot be overwritten
+PASS reset and explicit reapplication restore track1 values
+PASS original core accepts mixed asphalt/concrete contacts
+PASS original thermal and wear runtime stays active
+track1 surfaces: 12 passed, 0 failed
+
+[pipeline]
+Python unittest: 8 tests passed (CES/WAV format and hook/XML cases).
+
+[syntax]
+All 9 audio modules, Studio installer and four hooked entry points compile with Luau CLI.
+
+[scope]
+Physics, garage, adapters, tracks, model runtime, original render codec/buffer/presentation unchanged from base.
+
+[not performed]
+Original-bank/WAV extraction (files unavailable); Roblox Studio; listening/latency comparison; full original phase/effects reproduction.

@@ -235,6 +235,16 @@ local function updateRenderDiag(dt)
         s.dropped or 0,s.outOfOrder or 0,s.resets or 0,s.extrapEpisodes or 0,(s.maxExtrapSeen or 0)*1000,
         tostring(s.mode),s.alpha or 0,tostring(s.active))
 end
+-- NR2003_AUDIO_CLIENT_V1
+local audioClient=nil
+do
+    local f=package:FindFirstChild("Audio");local m=f and f:FindFirstChild("NR2003AudioClient")
+    if m then
+        local ok,value=pcall(function() return require(m).new(car,presentation,package,renderState) end)
+        if ok then audioClient=value else warn("NR2003 audio client: "..tostring(value)) end
+    end
+end
+script.Destroying:Connect(function() if audioClient then audioClient:destroy() end end)
 local function frame(dt)
     local nowDriving=isDriver() and true or false
     presentation:setDriverActive(nowDriving)
@@ -257,6 +267,13 @@ local function frame(dt)
     if carModel then
         local ok,res=pcall(carModel.update,carModel,dt,driving)
         if ok then modelActive=res==true else warn("NR2003 car model: "..tostring(res));carModel=nil end
+    end
+    -- NR2003_AUDIO_UPDATE_V1
+    if audioClient then
+        local ok,value=pcall(audioClient.update,audioClient,dt,driving,carModel,cameraMode)
+        if not ok then
+            warn("NR2003 audio disabled: "..tostring(value));audioClient:destroy();audioClient=nil
+        end
     end
     if not driving then return end
     header.Visible=expanded;for _,r in ipairs(rows) do r.Visible=expanded end

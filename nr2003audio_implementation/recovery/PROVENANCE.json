@@ -1,0 +1,24 @@
+{
+  "referenceRepository": "https://github.com/TChapman500/OpenNR2003",
+  "referenceCommit": "03bcafb44cf63464493f1864edbd9f781fac24f4",
+  "ghidraVersion": "11.1.2",
+  "jdk": "Temurin 17.0.20.1+1",
+  "readOnly": true,
+  "unicorn": "2.1.4",
+  "crtBoundary": [
+    "006c5c40 _CIpow: x87 bridge inherited from physics recovery",
+    "006c5018 _ftol: x87 truncation bridge inherited from physics recovery",
+    "006c6a24 modf: x87 truncate/store/subtract bridge"
+  ],
+  "memorySHA256": {
+    "006e9000.bin": "16dc95d49d96e687ce09e8a293e47403d59258b68d6e5df07b9df38ca3fe82e5",
+    "0112b000.bin": "8cbae0eacc32720ea557945147bcc23f678631bb4708aeb185116c78a239a656",
+    "00fb0000.bin": "c2eff782b74cd749540f949b7740404f159bd5306554e3aeb5df8a6b19eaa433",
+    "00761000.bin": "e61c71c049f63cd8bd3961e94b33d015afbde9147687e290a647cf0517f06671",
+    "0071b000.bin": "4b6f89f3559f372e7039eed42bbc4d9f3a492354f816f4dd3e001ed385858c0f",
+    "01039000.bin": "1266f3fbdd1ea0e7ad2438d0642b2db756bd0b31f18f5a403e4acf53e5c0f33f",
+    "00401000.bin": "1d00d8e158d217ce4e39473871767fcc69bcc7a6e598136c87f7a175c8835093",
+    "01127000.bin": "9756c358737b322a1f8dd2e2a86476d9c67abc94fd22ae3330be729bcc0f873f",
+    "00400000.bin": "f9f19af1c1564bf3be8a1e00e0abcabff488974f75d11322c418b3e04fdfc229"
+  }
+}

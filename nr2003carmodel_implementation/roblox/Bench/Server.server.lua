@@ -36,6 +36,23 @@ do
         if ok then carModelServer=mod.new(controller,package) else warn("NR2003 car model server: "..tostring(mod)) end
     end
 end
+-- NR2003_AUDIO_SERVER_V1
+local audioServer=nil
+do
+    local f=package:FindFirstChild("Audio");local m=f and f:FindFirstChild("NR2003AudioServer")
+    if m and Mode.mode=="NR2003_CUP" then
+        local ok,value=pcall(function() return require(m).new(controller,package) end)
+        if ok then audioServer=value else warn("NR2003 audio server: "..tostring(value)) end
+    end
+end
+local function encodeAudioSnapshot(snapshot,packet)
+    if audioServer then
+        local ok,value=pcall(audioServer.encode,audioServer,snapshot,packet)
+        if ok then return value end
+        warn("NR2003 audio disabled: "..tostring(value));audioServer=nil
+    end
+    return packet
+end
 local input={throttle=0,brake=1,steer=0,handbrake=0,clutch=1}
 local lastInput,lastAction=0,0; local lastDriver=nil; local packetTimes={}
 local renderInterval=1/RenderConfig.snapshotHz;local renderAccumulator=renderInterval;local renderSeq=0
@@ -83,7 +100,7 @@ RunService.PreSimulation:Connect(function(dt)
             renderSeq=(renderSeq+1)%65536
             local snapshotTime=workspace:GetServerTimeNow()
             local snapshot=controller:renderSnapshot(renderSeq,snapshotTime,RenderConfig.vehicleId)
-            renderState:FireAllClients(RenderSnapshot.encode(snapshot))
+            renderState:FireAllClients(encodeAudioSnapshot(snapshot,RenderSnapshot.encode(snapshot)))
             if carModelServer then carModelServer:send(renderSeq,snapshotTime) end
         end
     end
