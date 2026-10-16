@@ -1,0 +1,541 @@
+<roblox version="4"><Item class="ModuleScript" referent="TRACK1_NR2003_Track1"><Properties><string name="Name">NR2003_Track1</string><ProtectedString name="Source">local Transaction=require(script:WaitForChild("Journal"))
+local SurfaceSource=require(script:WaitForChild("SurfaceSource"))
+local HostSource=require(script:WaitForChild("HostSource"))
+local Rules=require(script:WaitForChild("Rules"))
+local HudRule=require(script:WaitForChild("HudRule"))
+local function patch(source)
+    source=source:gsub("\r\n","\n")
+    for _,rule in ipairs(Rules) do
+        local marker,old,new=rule[1],rule[2],rule[3]
+        if source:find(marker,1,true) then
+            assert(source:find(new,1,true),"track1: hook was edited: "..marker)
+        else
+            local first,last=source:find(old,1,true)
+            assert(first and not source:find(old,last+1,true),"track1: unsupported/ambiguous adapter hook "..marker)
+            source=source:sub(1,first-1)..new..source:sub(last+1)
+        end
+    end
+    return source
+end
+local function folder(name,explicit)
+    if explicit then
+        assert(explicit:IsDescendantOf(workspace) and (explicit:IsA("Folder") or explicit:IsA("Model")),
+            "track1: folder reference must be a Folder or Model in Workspace")
+        return explicit
+    end
+    local found={}
+    for _,node in ipairs(workspace:GetDescendants()) do
+        if node.Name==name and (node:IsA("Folder") or node:IsA("Model")) then found[#found+1]=node end
+    end
+    assert(#found==1,"track1: expected exactly one folder/model named "..name.."; found "..#found)
+    return found[1]
+end
+local function parts(root)
+    local result={}
+    for _,part in ipairs(root:GetDescendants()) do if part:IsA("BasePart") then result[#result+1]=part end end
+    assert(#result&gt;0,"track1: empty geometry folder "..root:GetFullName())
+    table.sort(result,function(a,b) return a.Name&lt;b.Name end)
+    return result
+end
+local function chooseSpawn(collision,colliders)
+    local params=RaycastParams.new();params.FilterType=Enum.RaycastFilterType.Include
+    params.FilterDescendantsInstances={collision};params.RespectCanCollide=true
+    -- Prefer the oval's straight sections, and require space for all four tires.
+    for priority=1,2 do
+        for _,part in ipairs(colliders) do
+            if priority==2 or part.Name:find("Oval",1,true) then
+                local p=part.Position
+                local hit=workspace:Raycast(p+Vector3.yAxis*(part.Size.Y/2+80),
+                    -Vector3.yAxis*(part.Size.Y+240),params)
+                if hit and hit.Normal.Y&gt;0.999 then
+                    local axis=part.Size.X&gt;=part.Size.Z and part.CFrame.RightVector or part.CFrame.LookVector
+                    local forward=Vector3.new(axis.X,0,axis.Z)
+                    if forward.Magnitude&lt;0.01 then continue end
+                    forward=forward.Unit
+                    local cf=CFrame.lookAt(hit.Position,hit.Position+forward,Vector3.yAxis)
+                    local supported=true
+                    for _,offset in ipairs({Vector3.new(-8,0,0),Vector3.new(-8-0.77/0.28,0,-1.21/0.28),
+                        Vector3.new(-8+0.77/0.28,0,-1.21/0.28),Vector3.new(-8-0.77/0.28,0,1.59/0.28),
+                        Vector3.new(-8+0.77/0.28,0,1.59/0.28)}) do
+                        local point=cf:PointToWorldSpace(offset)
+                        local road=workspace:Raycast(point+Vector3.yAxis*80,-Vector3.yAxis*240,params)
+                        if not road or road.Normal.Y&lt;0.995 or math.abs(road.Position.Y-hit.Position.Y)&gt;1 then
+                            supported=false;break
+                        end
+                    end
+                    if supported then return cf+Vector3.yAxis*0.125 end
+                end
+            end
+        end
+    end
+    error("track1: no clear, nearly level spawn found. Run with {spawnCFrame=CFrame...} on col")
+end
+local function apply(options)
+    options=options or {}
+    assert(not game:GetService("RunService"):IsRunning(),"Stop Play before installing track1")
+    local package=assert(game:GetService("ReplicatedStorage"):FindFirstChild("NR2003Lab"),"NR2003Lab missing")
+    local core=assert(package:FindFirstChild("Core"),"NR2003Lab.Core missing")
+    local modules=assert(package:FindFirstChild("Roblox"),"NR2003Lab.Roblox missing")
+    assert(core:FindFirstChild("NR2003CupVehicle") and core:FindFirstChild("NR2003Cup"),"Original Cup core missing")
+    local adapter=assert(modules:FindFirstChild("CupChassisAdapter"),"CupChassisAdapter missing")
+    local source=patch(adapter.Source)
+    local hudChanges={}
+    local starter=game:GetService("StarterPlayer"):FindFirstChild("StarterPlayerScripts")
+    if starter then
+        for _,client in ipairs(starter:GetDescendants()) do
+            if client:IsA("LocalScript") then
+                local current=client.Source
+                local first,last=current:find(HudRule[1],1,true)
+                if first and not current:find(HudRule[1],last+1,true) then
+                    hudChanges[#hudChanges+1]={client,current:sub(1,first-1)..HudRule[2]..current:sub(last+1)}
+                end
+            end
+        end
+    end
+    local storage=game:GetService("ServerStorage")
+    if storage:FindFirstChild(Transaction.BACKUP) then
+        local config=package:FindFirstChild("Track1Config")
+        assert(config and config:GetAttribute("Track1PatchVersion")==1 and source==adapter.Source
+            and core:FindFirstChild("NR2003Track1Surface") and core.NR2003Track1Surface.Source==SurfaceSource
+            and modules:FindFirstChild("NR2003Track1") and modules.NR2003Track1.Source==HostSource,
+            "Existing track1 backup: installation was changed; do not overwrite it")
+        print("track1 already installed. Reset the car after editing its track parameters.");return true
+    end
+    assert(not package:FindFirstChild("Track1Config"),"Track1Config already exists without its installation journal")
+    for _,entry in ipairs({{core,"NR2003Track1Surface",SurfaceSource},{modules,"NR2003Track1",HostSource}}) do
+        local existing=entry[1]:FindFirstChild(entry[2])
+        assert(not existing or existing:IsA("ModuleScript") and existing.Source==entry[3],
+            "track1 module name collision; existing modules preserved: "..entry[2])
+    end
+    assert(not workspace:FindFirstChild("NR2003Track1Collision"),"NR2003Track1Collision already exists without this patch's journal")
+    local visual=folder("vis",options.visual)
+    local collision=folder("col",options.collision)
+    assert(visual~=collision and not visual:IsDescendantOf(collision) and not collision:IsDescendantOf(visual),
+        "vis and col must be separate geometry roots")
+    local visuals,colliders=parts(visual),parts(collision)
+    local world=assert(workspace:FindFirstChild("NR2003LabWorld"),
+        "NR2003LabWorld missing; open the test place containing the existing car first")
+    assert(not world:FindFirstChild("track1"),"A track1 spawn already exists; existing object preserved")
+    local tx=Transaction.new()
+    local warnings=0
+    local function write(target,key,value) tx:write(target,"property",key,value) end
+    local function attr(target,key,value) tx:write(target,"attribute",key,value) end
+    local function optional(target,key,value)
+        local ok,err=pcall(write,target,key,value)
+        if not ok then warnings+=1;warn("track1: set "..key.." manually on "..target:GetFullName()..": "..tostring(err)) end
+    end
+    local ok,reason=pcall(function()
+        local sm=core:FindFirstChild("NR2003Track1Surface") or tx:create("ModuleScript","NR2003Track1Surface",core)
+        write(sm,"Source",SurfaceSource)
+        local hm=modules:FindFirstChild("NR2003Track1") or tx:create("ModuleScript","NR2003Track1",modules)
+        write(hm,"Source",HostSource)
+        write(adapter,"Source",source)
+        for _,entry in ipairs(hudChanges) do write(entry[1],"Source",entry[2]) end
+        -- A persistent model keeps collision geometry available to predicted clients.
+        -- Existing folder/part identities and all world CFrames are preserved.
+        local stream=tx:create("Model","NR2003Track1Collision",workspace)
+        write(stream,"ModelStreamingMode",Enum.ModelStreamingMode.Persistent)
+        write(collision,"Parent",stream)
+        for _,part in ipairs(visuals) do
+            write(part,"Anchored",true);write(part,"CanCollide",false);write(part,"CanQuery",false)
+            write(part,"CanTouch",false);write(part,"Transparency",0)
+            if part:IsA("MeshPart") then optional(part,"RenderFidelity",Enum.RenderFidelity.Precise) end
+            attr(part,"NRTrack","track1");attr(part,"INDY_Role","Visual")
+        end
+        for _,part in ipairs(colliders) do
+            local index=part:GetAttribute("NRSurface")
+            if index==nil then
+                local hint=part:GetAttribute("INDY_Surface")
+                index=(hint=="concrete" or part.Material==Enum.Material.Concrete) and 2 or 1
+            end
+            assert(index==1 or index==2,"track1: col expects asphalt=1 or concrete=2: "..part:GetFullName())
+            local grip=part:GetAttribute("NRGripMultiplier")
+            if grip==nil then grip=1 end
+            assert(type(grip)=="number" and grip==grip and grip&gt;=0 and grip&lt;=4,"Invalid NRGripMultiplier")
+            write(part,"Anchored",true);write(part,"CanCollide",true);write(part,"CanQuery",true)
+            write(part,"CanTouch",false);write(part,"Transparency",1)
+            write(part,"Material",index==2 and Enum.Material.Concrete or Enum.Material.Asphalt)
+            if part:IsA("MeshPart") then optional(part,"CollisionFidelity",Enum.CollisionFidelity.PreciseConvexDecomposition) end
+            attr(part,"NRSurface",index);attr(part,"NRGripMultiplier",grip)
+            attr(part,"NRTrack","track1");attr(part,"INDY_Surface",index==2 and "concrete" or "asphalt")
+            attr(part,"INDY_Role","Collision")
+        end
+        local spawn=tx:create("SpawnLocation","track1",world)
+        write(spawn,"Size",Vector3.new(6,0.25,6))
+        write(spawn,"CFrame",options.spawnCFrame or chooseSpawn(collision,colliders))
+        write(spawn,"Anchored",true);write(spawn,"CanCollide",false);write(spawn,"CanQuery",false)
+        write(spawn,"CanTouch",false);write(spawn,"Transparency",1)
+        write(spawn,"Neutral",true);write(spawn,"Duration",0)
+        attr(spawn,"NRTrack","track1")
+        local config=tx:create("Folder","Track1Config",package)
+        for name,value in pairs({TrackAsphaltGrip=1,TrackConcreteGrip=1,TrackTireHeat=1,TrackTireWear=1,
+            TrackTireWearLoss=0.20000000298023224,TrackTireWearExponent=1,Track1PatchVersion=1}) do attr(config,name,value) end
+        for name,target in pairs({CollisionRoot=collision,VisualRoot=visual,Spawn=spawn}) do
+            local ref=tx:create("ObjectValue",name,config);write(ref,"Value",target)
+        end
+        -- Keep existing setup attributes, assists, prediction and all Watkins Glen files.
+        -- Change only the track selector after the complete track1 scene is ready.
+        attr(package,"NR2003Track","track1")
+        tx:commit()
+    end)
+    if not ok then
+        local restored,restoreError=pcall(function() tx:undo() end)
+        error(tostring(reason)..(restored and " (all track1 changes restored)" or " (restore error: "..tostring(restoreError)..")"))
+    end
+    print(string.format("track1 installed: %d visual parts, %d collision parts, %d property warnings. Start Play.",
+        #visuals,#colliders,warnings))
+    print("Car reset and player respawn use NR2003LabWorld.track1. Original Watkins Glen sources/spawn preserved.")
+    return true
+end
+return apply
+</ProtectedString></Properties><Item class="ModuleScript" referent="TRACK1_Journal"><Properties><string name="Name">Journal</string><ProtectedString name="Source">-- Scoped, persistent journal for track1 installation. Never saves or publishes.
+local T={BACKUP="NR2003Backup_Track1"}
+local Http=game:GetService("HttpService")
+local function same(a,b,key)
+    if key=="Source" and type(a)=="string" and type(b)=="string" then
+        return a:gsub("\r\n","\n")==b:gsub("\r\n","\n")
+    end
+    return a==b
+end
+function T.new()
+    local tx={ops={},created={},refs={},ids={}}
+    function tx:id(value)
+        if not self.ids[value] then self.refs[#self.refs+1]=value;self.ids[value]=#self.refs end
+        return self.ids[value]
+    end
+    function tx:pack(value)
+        local kind=typeof(value)
+        if value==nil then return {"nil"} end
+        if kind=="Instance" then return {"ref",self:id(value)} end
+        if kind=="EnumItem" then return {"enum",tostring(value.EnumType):gsub("^Enum%.",""),value.Name} end
+        if kind=="CFrame" then return {"CFrame",{value:GetComponents()}} end
+        if kind=="Vector3" then return {"Vector3",value.X,value.Y,value.Z} end
+        assert(kind=="string" or kind=="number" or kind=="boolean","Unsupported journal value "..kind)
+        return {"value",value}
+    end
+    function tx:write(target,kind,key,value)
+        local old
+        if kind=="attribute" then old=target:GetAttribute(key) else old=target[key] end
+        if same(old,value,key) then return end
+        local entry={kind,self:id(target),key,self:pack(old),self:pack(value)}
+        if kind=="attribute" then target:SetAttribute(key,value) else target[key]=value end
+        self.ops[#self.ops+1]=entry
+    end
+    function tx:create(class,name,parent)
+        local target=Instance.new(class);self:id(target)
+        self.created[#self.created+1]={self:id(target),name,parent and self:id(parent) or false}
+        target.Name=name;target.Parent=parent
+        return target
+    end
+    function tx:unpack(value)
+        local k=value[1]
+        if k=="nil" then return nil end
+        if k=="ref" then return self.refs[value[2]] end
+        if k=="enum" then return Enum[value[2]][value[3]] end
+        if k=="CFrame" then return CFrame.new(table.unpack(value[2])) end
+        if k=="Vector3" then return Vector3.new(value[2],value[3],value[4]) end
+        return value[2]
+    end
+    function tx:undo()
+        for i=#self.ops,1,-1 do
+            local op=self.ops[i];local target=self.refs[op[2]];local value=self:unpack(op[4])
+            if op[1]=="attribute" then target:SetAttribute(op[3],value) else target[op[3]]=value end
+        end
+        for i=#self.created,1,-1 do self.refs[self.created[i][1]]:Destroy() end
+    end
+    function tx:commit()
+        local storage=game:GetService("ServerStorage")
+        assert(not storage:FindFirstChild(T.BACKUP),"track1 backup already exists")
+        -- Encode before constructing persistent state: failed encoding remains reversible.
+        local encoded=Http:JSONEncode({ops=self.ops,created=self.created})
+        local backup=Instance.new("Folder");backup.Name=T.BACKUP
+        local ok,reason=pcall(function()
+            local refs=Instance.new("Folder");refs.Name="Targets";refs.Parent=backup
+            for id,target in ipairs(self.refs) do
+                local ref=Instance.new("ObjectValue");ref.Name=tostring(id);ref.Value=target;ref.Parent=refs
+            end
+            local journal=Instance.new("StringValue");journal.Name="Journal";journal.Value=encoded;journal.Parent=backup
+            backup:SetAttribute("Track1PatchVersion",1);backup.Parent=storage
+        end)
+        if not ok then backup:Destroy();error(reason) end
+        return backup
+    end
+    return tx
+end
+function T.rollback()
+    assert(not game:GetService("RunService"):IsRunning(),"Stop Play before rolling back track1")
+    local backup=assert(game:GetService("ServerStorage"):FindFirstChild(T.BACKUP),"track1 backup not found")
+    local data=Http:JSONDecode(backup.Journal.Value)
+    local tx=T.new();tx.ops=data.ops;tx.created=data.created
+    for _,ref in ipairs(backup.Targets:GetChildren()) do tx.refs[tonumber(ref.Name)]=ref.Value end
+    local final={};local owned={}
+    for _,entry in ipairs(tx.created) do owned[entry[1]]=true end
+    -- Validate the final value for every field before restoring any field.
+    for i=#tx.ops,1,-1 do
+        local op=tx.ops[i];local key=op[2]..":"..op[1]..":"..op[3]
+        if not final[key] then
+            local target=assert(tx.refs[op[2]],"track1 rollback: target was removed")
+            local actual
+            if op[1]=="attribute" then actual=target:GetAttribute(op[3]) else actual=target[op[3]] end
+            assert(same(actual,tx:unpack(op[5]),op[3]),
+                "track1 rollback refused: changed after installation: "..target:GetFullName().."."..op[3])
+            final[key]=true
+        end
+    end
+    for _,entry in ipairs(tx.created) do
+        local target=assert(tx.refs[entry[1]],"track1 rollback: created target was removed")
+        assert(target.Name==entry[2],"track1 rollback: created object was renamed")
+        local expected=entry[3] and tx.refs[entry[3]] or nil
+        assert(target.Parent==expected,"track1 rollback: created object was moved")
+        for _,child in ipairs(target:GetChildren()) do
+            local id=table.find(tx.refs,child)
+            assert(id and (owned[id] or final[id..":property:Parent"]),
+                "track1 rollback refused: new child in "..target:GetFullName())
+        end
+    end
+    tx:undo();backup:Destroy()
+    print("track1 rolled back; previous sources, surfaces, active track and respawn marker restored")
+    return true
+end
+return T
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="TRACK1_SurfaceSource"><Properties><string name="Name">SurfaceSource</string><ProtectedString name="Source">return [=[
+-- Track1 configuration input to the ORIGINAL tire routines, not a new tire model.
+-- Addresses and material tables: watkinsglen_implementation/recovery/evidence/
+-- 0050fbd0.c, 00510080.c, 00510090.c, 0054ef10.c and surface_tables.json.
+local Data=require(script and script.Parent.RecoveredData or "./RecoveredData")
+local M={}
+local scratch=buffer.create(4)
+local function iniFloat(value)
+    -- ProfileManager's parsed inputs are nearest float32; the original loader's
+    -- subsequent multiplication stores under the simulation's downward mode.
+    buffer.writef32(scratch,0,value);return buffer.readf32(scratch,0)
+end
+M.ADDRESS={baseGrip=0x6f6570,loadedGrip=0x74fb30,wear=0x74b9d8,heat=0x74b9dc,
+    wearLoss=0x74b9e0,wearExponent=0x74b9e4}
+M.DEFAULTS={TrackAsphaltGrip=1,TrackConcreteGrip=1,TrackTireHeat=Data.trackDefaults.track_tire_heat,
+    TrackTireWear=Data.trackDefaults.track_tire_wear,TrackTireWearLoss=Data.trackDefaults.track_tire_wear_loss,
+    TrackTireWearExponent=Data.trackDefaults.track_tire_wear_exp}
+local function number(settings,key)
+    local value=settings[key]
+    if value==nil then value=M.DEFAULTS[key] end
+    assert(type(value)=="number" and value==value and math.abs(value)&lt;math.huge and value&gt;=0,
+        "track1: invalid nonnegative parameter "..key)
+    return value
+end
+function M.apply(V,settings)
+    settings=settings or {}
+    assert(V.rf32 and V.wf32 and V.wf32d,"track1 requires the original Cup memory/float32 API")
+    assert(not V.trackLoaded or not V.trackLoaded(),"track1 must not modify a loaded Watkins Glen world")
+    local a=M.ADDRESS
+    -- Verify the ABI before writing anything. Track-specific loaded values may differ.
+    for index=0,19 do
+        assert(V.rf32(a.baseGrip+4*index)==Data.surfaces[index+1].base,
+            "track1: incompatible original material table at index "..index)
+    end
+    local values={}
+    for key in pairs(M.DEFAULTS) do values[key]=number(settings,key) end
+    assert(values.TrackTireWearLoss&lt;=1,"track1: TrackTireWearLoss must be 0..1")
+    assert(values.TrackTireWearExponent&gt;0,"track1: TrackTireWearExponent must be positive")
+    -- Original ini values are float32 before the final base*multiplier store.
+    for index=0,19 do
+        local mult=index==1 and values.TrackAsphaltGrip or index==2 and values.TrackConcreteGrip or 1
+        V.wf32d(a.loadedGrip+4*index,V.rf32(a.baseGrip+4*index)*iniFloat(mult))
+    end
+    V.wf32(a.wear,values.TrackTireWear)
+    V.wf32(a.heat,values.TrackTireHeat)
+    V.wf32(a.wearLoss,values.TrackTireWearLoss)
+    V.wf32(a.wearExponent,values.TrackTireWearExponent)
+    return M.read(V)
+end
+function M.read(V)
+    local a=M.ADDRESS
+    return {asphaltGrip=V.rf32(a.loadedGrip+4),concreteGrip=V.rf32(a.loadedGrip+8),
+        tireHeat=V.rf32(a.heat),tireWear=V.rf32(a.wear),wearLoss=V.rf32(a.wearLoss),
+        wearExponent=V.rf32(a.wearExponent)}
+end
+return M
+]=]
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="TRACK1_HostSource"><Properties><string name="Name">HostSource</string><ProtectedString name="Source">return [=[
+-- Optional mesh-contact host. The original NR2003 tire/thermal/wear solver is retained.
+-- No original Watkins Glen geometry, placement or material settings are loaded in this mode.
+local package=script.Parent.Parent
+local Surface=require(package.Core.NR2003Track1Surface)
+local M={TRACK="track1",METRES_PER_STUD=0.28}
+function M.enabled() return package:GetAttribute("NR2003Track")==M.TRACK end
+local function reference(config,name)
+    local value=config:FindFirstChild(name)
+    return assert(value and value.Value,"track1: missing reference "..name)
+end
+function M.attach(controller)
+    if not M.enabled() then return false end
+    assert(math.abs(controller.tune.metresPerStud-M.METRES_PER_STUD)&lt;1e-12,
+        "track1 and the car require 0.28 metres per stud")
+    local config=assert(package:FindFirstChild("Track1Config"),"Install the track1 patch in Edit mode first")
+    controller.track1Config=config
+    controller.track1Col=reference(config,"CollisionRoot")
+    controller.track1Spawn=reference(config,"Spawn")
+    assert(controller.track1Col:IsDescendantOf(workspace),"track1: col is not in Workspace")
+    assert(controller.track1Spawn:IsA("SpawnLocation") and controller.track1Spawn.Name=="track1",
+        "track1: expected the dedicated SpawnLocation named track1")
+    assert(not controller.core:trackLoaded(),"track1 cannot use the Watkins Glen native collision world")
+    controller.track1=true
+    controller.params.FilterType=Enum.RaycastFilterType.Include
+    controller.params.FilterDescendantsInstances={controller.track1Col}
+    controller.car:SetAttribute("NR2003Track",M.TRACK)
+    controller.car:SetAttribute("TrackContactMode","track1 mesh raycasts / original NR2003 tires")
+    return true
+end
+function M.origin(controller)
+    local spawn=controller.track1Spawn
+    assert(spawn:IsDescendantOf(workspace),"track1 spawn was removed from Workspace")
+    -- Only yaw belongs in the numeric frame: aligning it to banking would tilt gravity.
+    local f=spawn.CFrame.LookVector
+    f=Vector3.new(f.X,0,f.Z)
+    assert(f.Magnitude&gt;0.01,"track1 spawn must have a horizontal heading")
+    local yaw=CFrame.lookAt(spawn.Position,spawn.Position+f.Unit,Vector3.yAxis)
+    local target=spawn.Position-yaw.RightVector*8
+    local hit=workspace:Raycast(target+Vector3.yAxis*80,-Vector3.yAxis*240,controller.params)
+    assert(hit and hit.Normal.Y&gt;0.5,"track1: no road beneath car spawn; move track1 onto col")
+    controller.spawn=(yaw-yaw.Position)+hit.Position+Vector3.yAxis*(0.42/M.METRES_PER_STUD)
+    return (yaw-yaw.Position)+hit.Position
+end
+function M.applySurface(controller)
+    assert(controller.car:GetAttribute("AeroSession")~=false,"track1 requires an active NR2003 session")
+    assert(controller.car:GetAttribute("Stage11Runtime")~="frozen","track1 requires the tire thermal/wear runtime")
+    local settings={}
+    for key in pairs(Surface.DEFAULTS) do settings[key]=controller.track1Config:GetAttribute(key) end
+    controller.track1Settings=Surface.apply(controller.core.V,settings)
+    for name,value in pairs(controller.track1Settings) do controller.car:SetAttribute("Track1_"..name,value) end
+end
+function M.telemetry(controller)
+    local result={name="track1",contactMode="mesh raycasts",wheels={},parameters=controller.track1Settings}
+    for j,c in ipairs(controller.tune.corners) do
+        local grounded=controller.inContact[j]
+        local index=controller.planes[j][8]
+        local b=controller.core:wheelBrake(j-1)
+        local fx,fy,fz=grounded and b.fx or 0,grounded and b.fy or 0,grounded and b.fz or 0
+        result.wheels[j]={name=c.name,grounded=grounded,surface=grounded and index or nil,
+            surfaceGrip=grounded and controller.core.V.rf32(Surface.ADDRESS.loadedGrip+4*index) or 0,
+            contactGripMultiplier=controller.planes[j][9],fx=fx,fy=fy,fz=fz,
+            muUsed=fz&gt;1 and math.sqrt(fx*fx+fy*fy)/fz or 0,slipVelocity=b.vslip}
+        controller.car:SetAttribute("Track1_Grounded_"..c.name,grounded)
+        controller.car:SetAttribute("Track1_Surface_"..c.name,grounded and index or -1)
+    end
+    return result
+end
+function M.clearDriverSpawn(controller)
+    local state=controller.track1DriverState
+    if not state then return end
+    controller.track1DriverState=nil;state.closed=true
+    for _,connection in ipairs(state.connections) do connection:Disconnect() end
+    for player,entry in pairs(state.players) do
+        entry.connection:Disconnect()
+        if player.Parent==state.service and player.RespawnLocation==state.spawn then
+            local previous=entry.previous
+            if previous and not previous:IsDescendantOf(workspace) then previous=nil end
+            player.RespawnLocation=previous
+        end
+    end
+    -- The Edit-mode marker belongs to the scene, not this controller's lifetime.
+end
+function M.prepareDriverSpawn(controller)
+    M.clearDriverSpawn(controller)
+    local players=game:GetService("Players")
+    local spawn=controller.track1Spawn
+    local state={service=players,spawn=spawn,connections={},players={},closed=false}
+    controller.track1DriverState=state
+    local function place(player,character)
+        task.defer(function()
+            local root=character:WaitForChild("HumanoidRootPart",10)
+            local humanoid=character:WaitForChild("Humanoid",10)
+            if state.closed or player.Parent~=players or player.Character~=character or not root or not humanoid
+                or humanoid.Health&lt;=0 or humanoid.SeatPart or not spawn.Parent then return end
+            if (root.Position-spawn.Position).Magnitude&gt;12 then
+                character:PivotTo(character:GetPivot()+(spawn.Position+Vector3.yAxis*4-root.Position))
+                root.AssemblyLinearVelocity=Vector3.zero;root.AssemblyAngularVelocity=Vector3.zero
+            end
+        end)
+    end
+    local function bind(player)
+        if state.closed or state.players[player] or player.Parent~=players then return end
+        state.players[player]={previous=player.RespawnLocation,
+            connection=player.CharacterAdded:Connect(function(character) place(player,character) end)}
+        player.RespawnLocation=spawn
+        if player.Character then place(player,player.Character) end
+    end
+    state.connections[1]=players.PlayerAdded:Connect(bind)
+    state.connections[2]=players.PlayerRemoving:Connect(function(player)
+        local entry=state.players[player]
+        if entry then entry.connection:Disconnect();state.players[player]=nil end
+    end)
+    state.connections[3]=spawn.Destroying:Connect(function() M.clearDriverSpawn(controller) end)
+    for _,player in ipairs(players:GetPlayers()) do bind(player) end
+end
+return M
+]=]
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="TRACK1_Rules"><Properties><string name="Name">Rules</string><ProtectedString name="Source">return {
+{[=[
+-- TRACK1_HOST_V1]=],[=[
+local M={};M.__index=M]=],[=[
+-- TRACK1_HOST_V1
+local track1Module=script.Parent:FindFirstChild("NR2003Track1")
+local Track1=track1Module and require(track1Module)
+local M={};M.__index=M]=]},
+{[=[
+-- TRACK1_ATTACH_V1]=],[=[
+    if TrackHost then TrackHost.attach(self) end]=],[=[
+    -- TRACK1_ATTACH_V1
+    if Track1 then Track1.attach(self) end
+    if TrackHost then TrackHost.attach(self) end]=]},
+{[=[
+-- TRACK1_AVATAR_V1]=],[=[
+    if self.originalTrack and not self.clientSimulation and options.prepareSpawn~=false then]=],[=[
+    -- TRACK1_AVATAR_V1
+    if self.track1 and not self.clientSimulation and options.prepareSpawn~=false then
+        Track1.prepareDriverSpawn(self)
+    end
+    if self.originalTrack and not self.clientSimulation and options.prepareSpawn~=false then]=]},
+{[=[
+-- TRACK1_ORIGIN_V1]=],[=[
+function M:groundOrigin(pivot)
+]=],[=[
+function M:groundOrigin(pivot)
+    -- TRACK1_ORIGIN_V1
+    if self.track1 then return Track1.origin(self) end
+]=]},
+{[=[
+-- TRACK1_PARAMETERS_V1]=],[=[
+    if self.car:GetAttribute("AeroSession")==false then]=],[=[
+    -- TRACK1_PARAMETERS_V1
+    if self.track1 then Track1.applySurface(self) end
+    if self.car:GetAttribute("AeroSession")==false then]=]},
+{[=[
+-- TRACK1_QUERY_V1]=],[=[
+    self.params.FilterDescendantsInstances=occupant and {self.car,occupant.Parent} or {self.car}]=],[=[
+    -- TRACK1_QUERY_V1
+    self.params.FilterDescendantsInstances=self.track1 and {self.track1Col}
+        or (occupant and {self.car,occupant.Parent} or {self.car})]=]},
+{[=[
+-- TRACK1_NO_BOUNDARY_CLIP_V1]=],[=[
+    if not self.originalTrack and not teleport and self.rootCF then]=],[=[
+    -- TRACK1_NO_BOUNDARY_CLIP_V1: asphalt has no host-made barrier response.
+    if not self.originalTrack and not self.track1 and not teleport and self.rootCF then]=]},
+{[=[
+-- TRACK1_TELEMETRY_V1]=],[=[
+    local pedal,target,tickValue,coreBrake=self.core:brakeState()]=],[=[
+    -- TRACK1_TELEMETRY_V1
+    if self.track1 then track=Track1.telemetry(self) end
+    local pedal,target,tickValue,coreBrake=self.core:brakeState()]=]},
+{[=[
+-- TRACK1_CLEANUP_V1]=],[=[
+function M:destroy()
+]=],[=[
+function M:destroy()
+    -- TRACK1_CLEANUP_V1
+    if Track1 then Track1.clearDriverSpawn(self) end
+]=]}
+}
+</ProtectedString></Properties></Item><Item class="ModuleScript" referent="TRACK1_HudRule"><Properties><string name="Name">HudRule</string><ProtectedString name="Source">return {[=[
+trackTitle.Text=string.format("WG | setup %s]=],[=[
+trackTitle.Text=string.format((tr.name=="track1" and "TRACK1" or "WG").." | setup %s]=]}
+</ProtectedString></Properties></Item></Item></roblox>

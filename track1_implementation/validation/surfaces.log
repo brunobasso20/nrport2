@@ -1,0 +1,13 @@
+PASS asphalt uses original material scalar, without Watkins Glen override
+PASS concrete uses original material scalar
+PASS independent track heat/wear defaults
+PASS original asphalt/concrete heat factors remain distinct
+PASS original rolling constant and speed-squared coefficient retained
+PASS loader follows original float32 rounding for recovered Watkins reference values
+PASS heat/wear inputs reach original accessor cells
+PASS invalid settings rejected before any write
+PASS native Watkins Glen world cannot be overwritten
+PASS reset and explicit reapplication restore track1 values
+PASS original core accepts mixed asphalt/concrete contacts
+PASS original thermal and wear runtime stays active
+track1 surfaces: 12 passed, 0 failed

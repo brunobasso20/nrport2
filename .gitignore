@@ -17,3 +17,4 @@ watkinsglen_implementation/**/__pycache__/
 work/
 # Regenerated from the shipped assist installer XML and verified source baselines.
 tests/assists/generated_installer_test.luau
+tests/track1/generated_*.luau

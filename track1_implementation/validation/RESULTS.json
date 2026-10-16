@@ -1,0 +1,40 @@
+{
+  "base_branch": "assist_implementation",
+  "base_commit": "0731d03ce0086a0b68025ed600ff4957a426f933",
+  "studio_executed": false,
+  "native_network_session_executed": false,
+  "track1_surfaces": {
+    "passed": 12,
+    "failed": 0
+  },
+  "track1_adapter": {
+    "passed": 12,
+    "failed": 0
+  },
+  "installer_rollback_and_spawn": {
+    "passed": 25,
+    "failed": 0
+  },
+  "watkins_adapter": {
+    "passed": 15,
+    "failed": 0
+  },
+  "legacy_bench": {
+    "passed": 70,
+    "failed": 7
+  },
+  "unmodified_adapter_control": {
+    "passed": 57,
+    "failed": 7
+  },
+  "preexisting_failure_names": [
+    "upshifts reached 2nd gear",
+    "stage 8: key brake ramps up (<= 1/12 per 36 Hz frame) to 1.0 (digital binding)",
+    "stage 12.1: analog axis -1 at rest -> road-wheel target pi / 7 (12:1 -> 7:1 below 8.94 m/s), axis momentum 0 (rate 1), cockpit wheel -180 deg (full lock) in Cockpit + render snapshot",
+    "stage 12.1: steer-right key -> digital control 8 = 1.0 -> road-wheel target -pi / 7 at rest; keys use the image rate 0.033 (smooth)",
+    "stage 12: legacy input.steer = -1 -> steer-left key (digital control 7)",
+    "stage 12.1: SteeringLockDegrees=540 -> full input target = f32(3 pi / 2) / 7 at rest; CockpitWheelClamp='original' -> 005662d0 limit -2.79 rad",
+    "stage 12.1: attributes removed -> bench defaults again (linearity 0, rate 0.033, override on, ratio 12, lock 360)"
+  ],
+  "same_failure_names": true
+}

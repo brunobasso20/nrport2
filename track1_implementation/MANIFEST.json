@@ -1,0 +1,46 @@
+{
+  "base_branch": "assist_implementation",
+  "base_commit": "0731d03ce0086a0b68025ed600ff4957a426f933",
+  "files": [
+    {
+      "name": "NR2003_Track1.rbxmx",
+      "bytes": 30218,
+      "sha256": "4b1de8a5e2dd892c2bd324d0885132a3f76dcb34447587e24d3d98da834f11da"
+    },
+    {
+      "name": "INSTALL.lua",
+      "bytes": 102,
+      "sha256": "fc8125561b4af251c0f120055fe1fda06386b84fa77206a55501a0f016c7134d"
+    },
+    {
+      "name": "ROLLBACK.lua",
+      "bytes": 5696,
+      "sha256": "2ee1b1916a8ac74aa2115002b6f683e640aa7e345cf1377ce05458cdf207bde0"
+    },
+    {
+      "name": "DIAGNOSE.lua",
+      "bytes": 2383,
+      "sha256": "46a076016b066ef75268f1f55a8fc1a9cfc7166514d51443ea2b0cf93d337af6"
+    },
+    {
+      "name": "APPLY_SURFACE_SELECTED.lua",
+      "bytes": 1031,
+      "sha256": "cd5df8acf886db3fd07a02bc2b012d1eeb6412719350b2dbdc70c585d1df835f"
+    },
+    {
+      "name": "README.md",
+      "bytes": 7405,
+      "sha256": "4e606a79b92bde6d0fe75fb342eef936763f628ce6233901bb9e28a80aaeb0b9"
+    },
+    {
+      "name": "VALIDACAO.md",
+      "bytes": 4756,
+      "sha256": "49687d4bc10382c2981702a301b30a1fde5aa60827e7251f22a53ea963e68fb3"
+    },
+    {
+      "name": "SURFACES.md",
+      "bytes": 2981,
+      "sha256": "dc154019b352be43c2a721ad3d7d437eef372d7330a97e031737e924a9c33c9d"
+    }
+  ]
+}

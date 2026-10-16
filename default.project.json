@@ -87,6 +87,9 @@
           },
           "SetupTestControls": {
             "$path": "roblox/SetupTestControls.lua"
+          },
+          "NR2003Track1": {
+            "$path": "roblox/NR2003Track1.lua"
           }
         },
         "Input": {

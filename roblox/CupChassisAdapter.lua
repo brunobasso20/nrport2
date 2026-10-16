@@ -44,6 +44,9 @@ local Cockpit=require(script.Parent.Cockpit)
 local RenderSnapshot=require(script.Parent.RenderSnapshot)
 local trackModule=script.Parent:FindFirstChild("NR2003WatkinsGlen")
 local TrackHost=trackModule and require(trackModule)
+-- TRACK1_HOST_V1
+local track1Module=script.Parent:FindFirstChild("NR2003Track1")
+local Track1=track1Module and require(track1Module)
 local M={};M.__index=M
 
 -- NR2003 vehicle-world (+X fwd, +Y left, +Z up) <-> Roblox origin-local (+X right, +Y up, -Z fwd)
@@ -85,8 +88,14 @@ function M.new(car,tune,remote,options)
     else self.access=SeatAccess.new(car,remote) end
     Cockpit.ensure(car,cup)
     self.core=Vehicle.new(Core:WaitForChild("NR2003Cup"))
+    -- TRACK1_ATTACH_V1
+    if Track1 then Track1.attach(self) end
     if TrackHost then TrackHost.attach(self) end
     self:initialize()
+    -- TRACK1_AVATAR_V1
+    if self.track1 and not self.clientSimulation and options.prepareSpawn~=false then
+        Track1.prepareDriverSpawn(self)
+    end
     if self.originalTrack and not self.clientSimulation and options.prepareSpawn~=false then
         TrackHost.prepareDriverSpawn(self, assert(car.Parent, "Parent TestCar before initializing the original track"))
     end
@@ -95,6 +104,8 @@ end
 
 -- numeric frame: origin on the ground under the spawn pose (the core starts at z=0.42 m)
 function M:groundOrigin(pivot)
+    -- TRACK1_ORIGIN_V1
+    if self.track1 then return Track1.origin(self) end
     local hit=workspace:Raycast(pivot.Position+pivot.UpVector*2,-pivot.UpVector*60,self.params)
     local rot=pivot-pivot.Position
     if hit then return CFrame.new(hit.Position)*rot end
@@ -224,6 +235,8 @@ function M:initialize()
         print(string.format("[NR2003 Stage 13] force feedback original %s: força %g, amortecimento %g, latência %g ms, dispositivo %s (efeito adquirido pelo 0054fed0 só com o eixo analógico)",
             o.enabled and "ligado" or "desligado",o.strength,o.damping,o.latency,boolAttr("ForceFeedbackDevice",d.ffbDevice==true) and "sim" or "não"))
     end
+    -- TRACK1_PARAMETERS_V1
+    if self.track1 then Track1.applySurface(self) end
     if self.car:GetAttribute("AeroSession")==false then
         self.core:endSession();self.weather=nil
     else
@@ -278,7 +291,9 @@ end
 function M:contacts(phase)
     local t=self.tune;local q=t.contactQuery;local mps=t.metresPerStud
     local occupant=self.car.DriverSeat.Occupant
-    self.params.FilterDescendantsInstances=occupant and {self.car,occupant.Parent} or {self.car}
+    -- TRACK1_QUERY_V1
+    self.params.FilterDescendantsInstances=self.track1 and {self.track1Col}
+        or (occupant and {self.car,occupant.Parent} or {self.car})
     local _,crot=self.core:componentPose(0,self.scratchPos,self.scratchRot)
     local ux,uy,uz=crot[3],crot[6],crot[9]                      -- chassis +Z in vehicle-world
     local upWorld=self:worldVector(ux,uy,uz)
@@ -433,7 +448,8 @@ function M:pose(teleport)
         return self.origin*CFrame.new(lp.X,lp.Y,lp.Z,r00,r01,r02,r10,r11,r12,r20,r21,r22)
     end
     local cf=target()
-    if not self.originalTrack and not teleport and self.rootCF then
+    -- TRACK1_NO_BOUNDARY_CLIP_V1: asphalt has no host-made barrier response.
+    if not self.originalTrack and not self.track1 and not teleport and self.rootCF then
         local delta=cf.Position-self.rootCF.Position
         if delta.Magnitude>1e-6 then
             local cast=self.rootCF*CFrame.new(0,self.tune.collision.raise/mps,0)
@@ -588,6 +604,8 @@ function M:telemetry()
             brakeTorque=b.torque,brakeCapacity=b.brakeCap,dragCapacity=b.dragCap,locked=b.locked,
             fx=b.fx,fy=b.fy,fz=b.fz,slipVelocity=b.vslip,brakeTemperatureK=b.temperature}
     end
+    -- TRACK1_TELEMETRY_V1
+    if self.track1 then track=Track1.telemetry(self) end
     local pedal,target,tickValue,coreBrake=self.core:brakeState()
     local gear=self.core:gearIndex()
     -- Stage 9: ORIGINAL 00561b70 evaluated at the current state (read-only; see CORE_API.md)
@@ -639,6 +657,8 @@ function M:reset()
     self.rootCF=nil;self:initialize();self.car:PivotTo(self.rootCF)
 end
 function M:destroy()
+    -- TRACK1_CLEANUP_V1
+    if Track1 then Track1.clearDriverSpawn(self) end
     if self.clientSimulation then self.access:destroy();return end
     if TrackHost then TrackHost.clearDriverSpawn(self) end
     self.access:destroy();self.car:SetAttribute("NR2003CorePoseOwner",nil)
